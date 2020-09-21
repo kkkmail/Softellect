@@ -1,27 +1,30 @@
-﻿open System
+﻿namespace Softellect.Communication.Samples
+
+open System
 open CoreWCF.Configuration
 open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.Server.Kestrel.Core
 
-let CreateWebHostBuilder args : IWebHostBuilder =
-    WebHost
-        .CreateDefaultBuilder(args)
-        //.UseKestrel(fun options -> [ options.ListenLocalhost(8080) ])
-        .UseUrls("http://localhost:8080")
-        .UseNetTcp(8808)
-        .UseStartup()
+open Startup
+
+module Program =
+
+    let CreateWebHostBuilder args : IWebHostBuilder =
+        let applyOptions (options : KestrelServerOptions) = options.ListenLocalhost(8080)
+
+        WebHost
+            .CreateDefaultBuilder(args)
+            .UseKestrel(applyOptions)
+            .UseUrls("http://localhost:8080")
+            .UseNetTcp(8808)
+            .UseStartup<Startup>()
 
 
-    //.UseKestrel(options => { options.ListenLocalhost(8080); })
-    //.UseUrls("http://localhost:8080")
-    //.UseNetTcp(8808)
-    //.UseStartup<Startup>()
-
-
-[<EntryPoint>]
-let main argv =
-    printfn "Hello World from F#!"
-    let host = (CreateWebHostBuilder argv).Build()
-    host.Run()
-    0
+    [<EntryPoint>]
+    let main argv =
+        printfn "Hello World from F#!"
+        let host = (CreateWebHostBuilder argv).Build()
+        host.Run()
+        0
