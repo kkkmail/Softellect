@@ -2,6 +2,7 @@
 
 open CoreWCF
 open CoreWCF.Configuration
+open System
 open System.Runtime.Serialization
 open System.ServiceProcess
 open System.ServiceModel
@@ -13,28 +14,33 @@ open Softellect.Communication.Samples.EchoWcfServiceInfo
 
 module EchoWcfService =
 
-
-    type EchoWcfService() =
-        let toEchoError f = f
-        let toComplexEchoError f = f
-
+    type EchoService() =
         let getReply m =
             {
                 a = m.x
-                b = [1; 2; 3]
+                b = [ DateTime.Now.Hour; DateTime.Now.Minute; DateTime.Now.Second ]
                 echoType = A
             }
 
-        let echo (m : string) : Result<unit, WcfError> =
+        let echoImpl (m : string) : Result<unit, WcfError> =
             printfn "Simple message: %A" m
             Ok()
 
-        let complexEcho (m : EchoMessage) : Result<EchoReply, WcfError> =
+        let complexEchoImpl (m : EchoMessage) : Result<EchoReply, WcfError> =
             printfn "Complex message: %A" m
             m |> getReply |> Ok
 
+        interface IEchoService with
+            member _.echo m = echoImpl m
+            member _.complexEcho m = complexEchoImpl m
+
+
+    type EchoWcfService() =
+        let service = EchoService() :> IEchoService
+        let toEchoError f = f
+        let toComplexEchoError f = f
 
         interface IEchoWcfService
             with
-            member _.echo m = tryReply echo toEchoError m
-            member _.complexEcho m = tryReply complexEcho toComplexEchoError m
+            member _.echo m = tryReply service.echo toEchoError m
+            member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
