@@ -4,7 +4,7 @@ open System.Runtime.Serialization
 open System.ServiceModel
 
 
-module EchoService =
+module EchoClient =
 
     [<DataContract>]
     type EchoMessage() =

@@ -5,7 +5,12 @@ open CoreWCF.Configuration
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
-open EchoService
+
+open Softellect.Core.GeneralErrors
+open Softellect.Communication.Wcf
+open Softellect.Communication.Samples.EchoWcfServiceInfo
+
+open EchoWcfService
 
 module Startup =
 
@@ -13,9 +18,9 @@ module Startup =
 
         let createServiceModel (builder : IServiceBuilder) = 
             builder
-                .AddService<EchoService>()
-                .AddServiceEndpoint<EchoService, IEchoService>(new BasicHttpBinding(), "/basichttp")
-                .AddServiceEndpoint<EchoService, IEchoService>(new NetTcpBinding(), "/nettcp")
+                .AddService<EchoWcfService>()
+                .AddServiceEndpoint<EchoWcfService, IEchoWcfService>(new BasicHttpBinding(), "/basichttp")
+                .AddServiceEndpoint<EchoWcfService, IEchoWcfService>(new NetTcpBinding(), "/nettcp")
             |> ignore
 
 

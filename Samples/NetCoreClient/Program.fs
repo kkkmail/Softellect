@@ -5,8 +5,9 @@ open System.ServiceModel
 open System.Text
 open System.IO
 
-open EchoService
+open EchoClient
 
+/// Port of C# CoreWCF client example.
 module Program =
 
     let basicHttpEndPointAddress = @"http://localhost:8080/basichttp";

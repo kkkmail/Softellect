@@ -8,8 +8,9 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Server.Kestrel.Core
 
 open Startup
+open EchoWcfServiceInfo
+open EchoWcfService
 
-/// Port of C# CoreWCF server example.
 module Program =
 
     let CreateWebHostBuilder args : IWebHostBuilder =

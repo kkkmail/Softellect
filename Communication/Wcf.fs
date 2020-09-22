@@ -34,7 +34,7 @@ module Wcf =
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- SecurityMode.None
+        binding.Security.Mode <- SecurityMode.Transport
         binding
 
 
