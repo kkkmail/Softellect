@@ -16,7 +16,7 @@ module Program =
 
         WebHost
             .CreateDefaultBuilder(args)
-            .UseKestrel(applyOptions)
+            .UseKestrel(fun options -> applyOptions options)
             .UseUrls("http://localhost:8080")
             .UseNetTcp(8808)
             .UseStartup<Startup>()
@@ -24,7 +24,6 @@ module Program =
 
     [<EntryPoint>]
     let main argv =
-        printfn "Hello World from F#!"
         let host = (CreateWebHostBuilder argv).Build()
         host.Run()
         0

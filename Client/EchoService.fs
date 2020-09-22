@@ -1,7 +1,7 @@
 ﻿namespace Softellect.Communication.Samples
 
-open CoreWCF
 open System.Runtime.Serialization
+open System.ServiceModel
 
 
 module EchoService =
@@ -22,16 +22,3 @@ module EchoService =
         [<OperationContract(Name = "complexEcho")>]
         abstract complexEcho : text:EchoMessage -> string
         
-
-    type EchoService() =
-
-        interface IEchoService
-            with
-
-            member _.echo text =
-                printfn "Received %s from client!" text
-                text
-
-            member _.complexEcho text =
-                printfn "Received %s from client!" text.text
-                text.text
