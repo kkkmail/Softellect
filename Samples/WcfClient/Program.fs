@@ -8,7 +8,9 @@ open EchoWcfClient
 
 module Program =
 
-    let basicNetTcpEndPointAddress = @"net.tcp://localhost:8808/nettcp"
+    let basicHttpEndPointAddress = @"http://192.168.1.89:8080/basichttp";
+    //let basicNetTcpEndPointAddress = @"net.tcp://localhost:8808/nettcp"
+    let basicNetTcpEndPointAddress = @"net.tcp://192.168.1.89:8808/nettcp"
 
 
     let createEchoMessage() =
@@ -23,7 +25,8 @@ module Program =
 
 
     let callUsingWcf() =
-        let service = EchoWcfResponseHandler basicNetTcpEndPointAddress
+        //let service = EchoWcfResponseHandler basicNetTcpEndPointAddress
+        let service = EchoWcfResponseHandler basicHttpEndPointAddress
 
         while true do
             try

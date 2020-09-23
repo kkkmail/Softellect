@@ -14,13 +14,25 @@ open EchoWcfService
 module Program =
 
     let CreateWebHostBuilder args : IWebHostBuilder =
-        let applyOptions (options : KestrelServerOptions) = options.ListenLocalhost(8080)
+        //let applyOptions (options : KestrelServerOptions) = options.ListenLocalhost(8080)
+
+        //WebHost
+        //    .CreateDefaultBuilder(args)
+        //    .UseKestrel(fun options -> applyOptions options)
+        //    .UseUrls("http://localhost:8080")
+        //    .UseNetTcp(8808)
+        //    .UseStartup<Startup>()
+
+        let applyOptions (options : KestrelServerOptions) =
+            let address : Net.IPAddress = Net.IPAddress.Parse("192.168.1.89")
+            let port = 8080
+            let endPoint : Net.IPEndPoint = new Net.IPEndPoint(address, port)
+            options.Listen(endPoint)
 
         WebHost
-            .CreateDefaultBuilder(args)
+            .CreateDefaultBuilder()
             .UseKestrel(fun options -> applyOptions options)
-            .UseUrls("http://localhost:8080")
-            .UseNetTcp(8808)
+            //.UseNetTcp(8808)
             .UseStartup<Startup>()
 
 

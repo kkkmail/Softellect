@@ -26,18 +26,22 @@ module Wcf =
         "net.tcp://" + serviceAddress + ":" + (servicePort.ToString()) + "/" + serviceName
 
 
+    /// Gets net tcp binding suitable for sending very large data objects.
     let getBinding() =
-        let binding = new NetTcpBinding()
+        //let binding = new NetTcpBinding()
+        let binding = new BasicHttpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
         binding.OpenTimeout <- connectionTimeOut
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- SecurityMode.Transport
+        //binding.Security.Mode <- SecurityMode.Transport
+        binding.Security.Mode <- BasicHttpSecurityMode.None
         binding
 
 
+    /// Tries getting a Wcf Client.
     let tryGetWcfService<'T> url =
         try
             let binding = getBinding()
