@@ -27,8 +27,20 @@ module Wcf =
 
 
     /// Gets net tcp binding suitable for sending very large data objects.
-    let getBinding() =
-        //let binding = new NetTcpBinding()
+    let getNetTcpBinding() =
+        let binding = new NetTcpBinding()
+        binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferSize <- Int32.MaxValue
+        binding.OpenTimeout <- connectionTimeOut
+        binding.CloseTimeout <- connectionTimeOut
+        binding.SendTimeout <- dataTimeOut
+        binding.ReceiveTimeout <- dataTimeOut
+        binding.Security.Mode <- SecurityMode.Transport
+        binding
+
+
+    /// Gets basic http binding suitable for sending very large data objects.
+    let getBasicHttpBinding() =
         let binding = new BasicHttpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
@@ -36,9 +48,10 @@ module Wcf =
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-        //binding.Security.Mode <- SecurityMode.Transport
         binding.Security.Mode <- BasicHttpSecurityMode.None
         binding
+
+    let getBinding() = getNetTcpBinding()
 
 
     /// Tries getting a Wcf Client.

@@ -25,11 +25,13 @@ module Program =
 
 
     let callUsingWcf() =
-        //let service = EchoWcfResponseHandler basicNetTcpEndPointAddress
-        let service = EchoWcfResponseHandler basicHttpEndPointAddress
+        let address = basicNetTcpEndPointAddress
+        let service = EchoWcfResponseHandler address
+        //let service = EchoWcfResponseHandler basicHttpEndPointAddress
 
         while true do
             try
+                printfn "Connecting using: %s" address
                 "Abcd" |> (service :> IEchoService).echo |> printfn "%A"
                 createEchoMessage() |> (service :> IEchoService).complexEcho |> printfn "%A"
             with
