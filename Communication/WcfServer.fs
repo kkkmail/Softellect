@@ -17,17 +17,48 @@ module WcfServer =
 
     type WcfServiceAccessInfo =
         {
-            serviceAddress : ServiceAddress
-            httpServicePort : ServicePort
-            netTcpServicePort : ServicePort
-            serviceName : ServiceName
+            ipAddress : IPAddress
+            httpPort : int
+            httpServiceName : string
+            netTcpPort : int
+            netTcpServiceName : string
+            logError : (string -> unit)
+            logInfo : (string -> unit)
         }
+
+        static member tryCreate (i : ServiceAccessInfo) =
+            let logError = i.logError |> Option.defaultValue (printfn "Error: %s")
+            let logInfo = i.logInfo |> Option.defaultValue (printfn "Error: %s")
+
+            let fail e =
+                logError e
+                None
+
+            match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
+            | (true, ipAddress), false ->
+                {
+                    ipAddress = ipAddress
+                    httpPort = i.httpServicePort.value
+                    httpServiceName = i.httpServiceName.value
+                    netTcpPort = i.netTcpServicePort.value
+                    netTcpServiceName = i.netTcpServiceName.value
+                    logError = logError
+                    logInfo = logInfo
+                }
+                |> Some
+
+            | (true, _), true ->
+                fail (sprintf "http service port: %A must be different from nettcp service port: %A" i.httpServicePort i.netTcpServicePort)
+            | (false, _), false ->
+                fail (sprintf "invalid IP address: %s" i.serviceAddress.value)
+            | (false, _), true ->
+                fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" i.serviceAddress.value i.httpServicePort i.netTcpServicePort)
 
 
     type WcfServiceAccessInfo<'S>() =
         static let mutable info : WcfServiceAccessInfo option = None
 
-        static member setInfo i = info <- Some i
+        static member setInfo i = info <- WcfServiceAccessInfo.tryCreate i
         static member serviceAccessInfo = info
         member _.serviceType = typeof<'S>
 
@@ -36,11 +67,15 @@ module WcfServer =
         let accessInfo = WcfServiceAccessInfo<'S>.serviceAccessInfo
 
         let createServiceModel (builder : IServiceBuilder) = 
-            builder
-                .AddService<'S>()
-                .AddServiceEndpoint<'S, 'I>(new BasicHttpBinding(), "/basichttp")
-                .AddServiceEndpoint<'S, 'I>(new NetTcpBinding(), "/" + accessInfo.Value.serviceName.value)
-            |> ignore
+            match accessInfo with
+            | Some i ->
+                builder
+                    .AddService<'S>()
+                    .AddServiceEndpoint<'S, 'I>(new BasicHttpBinding(), "/" + i.httpServiceName)
+                    .AddServiceEndpoint<'S, 'I>(new NetTcpBinding(), "/" + i.netTcpServiceName)
+                |> ignore
+            | None ->
+                failwith ""
 
         member _.ConfigureServices(services : IServiceCollection) =
             do services.AddServiceModelServices() |> ignore
@@ -50,27 +85,30 @@ module WcfServer =
 
 
     type WcfService<'S, 'I when 'I : not struct and 'S : not struct>() =
-        static let createWebHostBuilder (i : WcfServiceAccessInfo option) : WcfResult<IWebHost> =
+        static let tryCreateWebHostBuilder (i : WcfServiceAccessInfo option) : WcfResult<IWebHost> =
             match i with
             | Some info ->
-                let address : IPAddress = IPAddress.Parse(info.serviceAddress.value)
-                let port = info.httpServicePort.value
-                let netTcpPort = info.netTcpServicePort.value
-                let endPoint : IPEndPoint = new IPEndPoint(address, port)
-                printfn "address = %A, port = %A, netTcpPort = %A" address port netTcpPort
+                try
+                    let ipAddress = info.ipAddress
+                    let httpPort = info.httpPort
+                    let netTcpPort = info.netTcpPort
+                    let endPoint : IPEndPoint = new IPEndPoint(ipAddress, httpPort)
+                    info.logInfo (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" ipAddress httpPort netTcpPort)
 
-                let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
+                    let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
 
-                WebHost
-                    .CreateDefaultBuilder()
-                    .UseKestrel(fun options -> applyOptions options)
-                    .UseNetTcp(netTcpPort)
-                    .UseStartup<WcfStartup<'S, 'I>>()
-                    .Build()
-                |> Ok
+                    WebHost
+                        .CreateDefaultBuilder()
+                        .UseKestrel(fun options -> applyOptions options)
+                        .UseNetTcp(netTcpPort)
+                        .UseStartup<WcfStartup<'S, 'I>>()
+                        .Build()
+                    |> Ok
+                with
+                | e -> WcfExn e |> Error
             | None -> WcfServiceNotInitializedErr |> Error
 
         static let service : Lazy<WcfResult<IWebHost>> =
-            new Lazy<WcfResult<IWebHost>>(fun () -> createWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
+            new Lazy<WcfResult<IWebHost>>(fun () -> tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
             
         static member getService() = service.Value

@@ -6,8 +6,8 @@ open Softellect.Communication.Samples.EchoWcfServiceInfo
 
 module EchoWcfClient =
 
-    type EchoWcfResponseHandler (url) =
-        let tryGetWcfService() = tryGetWcfService<IEchoWcfService> url
+    type EchoWcfResponseHandler (i: ServiceAccessInfo) =
+        let tryGetWcfService() = tryGetWcfService<IEchoWcfService> i.netTcpUrl
 
         let echoWcfErr (e : WcfError) = e
         let echoImpl m = tryCommunicate tryGetWcfService (fun service -> service.echo) echoWcfErr m

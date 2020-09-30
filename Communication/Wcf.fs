@@ -125,3 +125,19 @@ module Wcf =
         match trySerialize wcfSerializationFormat reply with
         | Ok r -> r
         | Error _ -> [||]
+
+
+    type ServiceAccessInfo =
+        {
+            serviceAddress : ServiceAddress
+            httpServicePort : ServicePort
+            httpServiceName : ServiceName
+            netTcpServicePort : ServicePort
+            netTcpServiceName : ServiceName
+            logError : (string -> unit) option
+            logInfo : (string -> unit) option
+        }
+
+        member i.httpUrl = "http://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
+        member i.httpsUrl = "https://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
+        member i.netTcpUrl = "net.tcp://" + i.serviceAddress.value + ":" + i.netTcpServicePort.value.ToString() + "/" + i.netTcpServiceName.value
