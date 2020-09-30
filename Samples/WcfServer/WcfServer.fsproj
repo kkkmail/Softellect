@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <Compile Include="EchoWcfService.fs" />
-    <Compile Include="Startup.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

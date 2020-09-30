@@ -74,8 +74,7 @@ module WcfServer =
                     .AddServiceEndpoint<'S, 'I>(new BasicHttpBinding(), "/" + i.httpServiceName)
                     .AddServiceEndpoint<'S, 'I>(new NetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
-            | None ->
-                failwith ""
+            | None -> failwith "Service access information is missing."
 
         member _.ConfigureServices(services : IServiceCollection) =
             do services.AddServiceModelServices() |> ignore
@@ -111,4 +110,9 @@ module WcfServer =
         static let service : Lazy<WcfResult<IWebHost>> =
             new Lazy<WcfResult<IWebHost>>(fun () -> tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
             
+        static member setInfo i = WcfServiceAccessInfo<'S>.setInfo i
         static member getService() = service.Value
+
+        static member getService i =
+             WcfService<'S, 'I>.setInfo i
+             WcfService<'S, 'I>.getService()

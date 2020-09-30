@@ -1,16 +1,11 @@
 ﻿namespace Softellect.Communication.Samples
 
-open CoreWCF
-open CoreWCF.Configuration
 open System
-open System.Runtime.Serialization
-open System.ServiceProcess
-open System.ServiceModel
 
 open Softellect.Core.GeneralErrors
 open Softellect.Communication.Wcf
+open Softellect.Communication.WcfServer
 open Softellect.Communication.Samples.EchoWcfServiceInfo
-
 
 module EchoWcfService =
 
@@ -40,7 +35,9 @@ module EchoWcfService =
         let toEchoError f = f
         let toComplexEchoError f = f
 
-        interface IEchoWcfService
-            with
+        interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m
             member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
+
+
+    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService>

@@ -8,32 +8,22 @@ open EchoWcfClient
 
 module Program =
 
-    let basicHttpEndPointAddress = @"http://192.168.1.89:8080/basichttp";
-    //let basicNetTcpEndPointAddress = @"net.tcp://localhost:8808/nettcp"
-    let basicNetTcpEndPointAddress = @"net.tcp://192.168.1.89:8808/nettcp"
-
-
     let createEchoMessage() =
-        let message = 
-            {
-                x = 1
-                y = DateTime.Now
-                echoType = C 2
-            }
-
-        message
+        {
+            x = 1
+            y = DateTime.Now
+            echoType = C 2
+        }
 
 
     let callUsingWcf() =
-        //let address = basicNetTcpEndPointAddress
-        let service = EchoWcfResponseHandler echoWcfServiceAccessInfo
-        //let service = EchoWcfResponseHandler basicHttpEndPointAddress
+        let service = EchoWcfResponseHandler echoWcfServiceAccessInfo :> IEchoService
 
         while true do
             try
                 printfn "Connecting using: %s" echoWcfServiceAccessInfo.netTcpUrl
-                "Abcd" |> (service :> IEchoService).echo |> printfn "%A"
-                createEchoMessage() |> (service :> IEchoService).complexEcho |> printfn "%A"
+                "Abcd" |> service.echo |> printfn "%A"
+                createEchoMessage() |> service.complexEcho |> printfn "%A"
             with
             | e -> printfn "Exception: %A" e
 
