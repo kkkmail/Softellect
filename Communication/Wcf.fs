@@ -2,7 +2,6 @@
 
 open System
 open System.ServiceModel
-//open GeneralData
 open Softellect.Core.GeneralErrors
 open Softellect.Core.Primitives
 
@@ -12,6 +11,7 @@ module Wcf =
     let connectionTimeOut = TimeSpan(0, 10, 0)
     let dataTimeOut = TimeSpan(1, 0, 0)
     let wcfSerializationFormat = BinaryZippedFormat
+    type WcfResult<'T> = Result<'T, WcfError>
 
 
     let toValidServiceName (serviceName : string) =

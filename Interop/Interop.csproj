@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>Softellect.Interop</AssemblyName>
+    <RootNamespace>Softellect.Interop</RootNamespace>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.128" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.128" />
+    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.128" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="System.ServiceModel.Http" Version="4.8.0-preview3.20412.3" />
+    <PackageReference Include="System.ServiceModel.NetTcp" Version="4.8.0-preview3.20412.3" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.0-preview3.20412.3" />
+  </ItemGroup>
+
+</Project>

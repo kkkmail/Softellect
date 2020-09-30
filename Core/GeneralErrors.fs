@@ -35,6 +35,7 @@ module GeneralErrors =
 
 
     type WcfError =
+        | WcfServiceNotInitializedErr
         | WcfExn of exn
         | WcfSerializationErr of SerializationError
 
@@ -44,3 +45,13 @@ module GeneralErrors =
     //    | UninstallServiceErr of exn
     //    | StartServiceErr of exn
     //    | StopServiceErr of exn
+
+
+    type GeneralError =
+        | JsonParseErr of JsonParseError
+        | SerializationErr of SerializationError
+        | WcfErr of WcfError
+
+
+    type UnitResult<'E> = Result<unit, 'E>
+    type UnitResult = UnitResult<GeneralError>
