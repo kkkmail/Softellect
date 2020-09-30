@@ -88,18 +88,14 @@ module WcfServer =
             match i with
             | Some info ->
                 try
-                    let ipAddress = info.ipAddress
-                    let httpPort = info.httpPort
-                    let netTcpPort = info.netTcpPort
-                    let endPoint : IPEndPoint = new IPEndPoint(ipAddress, httpPort)
-                    info.logInfo (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" ipAddress httpPort netTcpPort)
-
+                    info.logInfo (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
+                    let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
                     let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
 
                     WebHost
                         .CreateDefaultBuilder()
                         .UseKestrel(fun options -> applyOptions options)
-                        .UseNetTcp(netTcpPort)
+                        .UseNetTcp(info.netTcpPort)
                         .UseStartup<WcfStartup<'S, 'I>>()
                         .Build()
                     |> Ok
