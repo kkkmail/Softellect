@@ -1,11 +1,12 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.NetCoreService
 
 open CoreWCF
 open CoreWCF.Configuration
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
-open EchoService
+
+open Softellect.Samples.Wcf.NetCoreService.EchoService
 
 module Startup =
 

@@ -1,9 +1,10 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.WcfService
 
 open System
 
-open Softellect.Communication.Samples.EchoWcfServiceInfo
-open Softellect.Communication.Samples.EchoWcfService
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
+open Softellect.Samples.Wcf.WcfService.EchoWcfService
+
 
 module Program =
 

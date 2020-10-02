@@ -1,11 +1,11 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.WcfServiceInfo
 
 open System
 open System.ServiceModel
 
-open Softellect.Core.GeneralErrors
-open Softellect.Core.Primitives
-open Softellect.Communication.Wcf
+open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Primitives
+open Softellect.Wcf.Common
 
 module EchoWcfServiceInfo =
 

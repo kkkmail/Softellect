@@ -1,4 +1,4 @@
-﻿namespace Softellect.Core
+﻿namespace Softellect.Sys
 
 open System
 open System.Threading.Tasks

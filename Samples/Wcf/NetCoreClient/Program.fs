@@ -1,11 +1,11 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.NetCoreClient
 
 open System
 open System.ServiceModel
 open System.Text
 open System.IO
 
-open EchoClient
+open Softellect.Samples.Wcf.NetCoreClient.EchoClient
 
 /// Port of C# CoreWCF client example.
 module Program =

@@ -1,4 +1,4 @@
-﻿namespace Softellect.Communication
+﻿namespace Softellect.Wcf
 
 open System.Net
 open CoreWCF
@@ -8,14 +8,26 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
-
-open Softellect.Core.Primitives
-open Softellect.Core.GeneralErrors
-open Softellect.Communication.Wcf
 open System.Threading
 open Microsoft.FSharp.Core.Operators
 
-module WcfServer =
+open Softellect.Sys.Primitives
+open Softellect.Sys.GeneralErrors
+open Softellect.Wcf.Common
+
+module Service =
+
+    /// Service reply.
+    let tryReply p f a =
+        let reply =
+            match tryDeserialize wcfSerializationFormat a with
+            | Ok m -> p m
+            | Error e -> toWcfSerializationError f e
+
+        match trySerialize wcfSerializationFormat reply with
+        | Ok r -> r
+        | Error _ -> [||]
+
 
     type WcfServiceAccessInfo =
         {

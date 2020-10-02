@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
-    <AssemblyName>Softellect.Communication.Samples.WcfClient</AssemblyName>
+    <AssemblyName>Softellect.Samples.Wcf.WcfClient</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -39,8 +39,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Communication\Communication.fsproj" />
-    <ProjectReference Include="..\..\Core\Core.fsproj" />
     <ProjectReference Include="..\WcfServiceInfo\WcfServiceInfo.fsproj" />
   </ItemGroup>
 

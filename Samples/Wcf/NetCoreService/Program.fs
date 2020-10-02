@@ -1,15 +1,13 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.NetCoreService
 
-open System
 open CoreWCF.Configuration
 open Microsoft.AspNetCore
-open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Server.Kestrel.Core
 
-open Startup
+open Softellect.Samples.Wcf.NetCoreService.Startup
 
-/// Port of C# CoreWCF server example.
+/// Port of C# CoreWCF service example.
 module Program =
 
     let CreateWebHostBuilder args : IWebHostBuilder =

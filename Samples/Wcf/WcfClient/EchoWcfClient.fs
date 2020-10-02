@@ -1,8 +1,9 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.WcfClient
 
-open Softellect.Core.GeneralErrors
-open Softellect.Communication.Wcf
-open Softellect.Communication.Samples.EchoWcfServiceInfo
+open Softellect.Sys.GeneralErrors
+open Softellect.Wcf.Common
+open Softellect.Wcf.Client
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfClient =
 

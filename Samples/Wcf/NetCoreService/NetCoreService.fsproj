@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
-    <AssemblyName>Softellect.Core</AssemblyName>
+    <AssemblyName>Softellect.Samples.Wcf.NetCoreService</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -16,21 +17,20 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>x64</PlatformTarget>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="GeneralErrors.fs" />
-    <Compile Include="Primitives.fs" />
+    <Compile Include="EchoService.fs" />
+    <Compile Include="Startup.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.208" />
     <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.208" />
     <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.208" />
-    <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.8.0-preview3.20412.3" />

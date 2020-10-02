@@ -1,10 +1,10 @@
-﻿namespace Softellect.Communication.Samples
+﻿namespace Softellect.Samples.Wcf.WcfClient
 
 open System
 open System.Threading
 
-open Softellect.Communication.Samples.EchoWcfServiceInfo
-open EchoWcfClient
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
+open Softellect.Samples.Wcf.WcfClient.EchoWcfClient
 
 module Program =
 
