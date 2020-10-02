@@ -12,6 +12,8 @@ open Microsoft.Extensions.DependencyInjection
 open Softellect.Core.Primitives
 open Softellect.Core.GeneralErrors
 open Softellect.Communication.Wcf
+open System.Threading
+open Microsoft.FSharp.Core.Operators
 
 module WcfServer =
 
@@ -83,8 +85,32 @@ module WcfServer =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
 
+    /// Wrapper around IWebHost to abstract it away and convert C# async methods into F# flavor.
+    type WcfService(host : IWebHost, logger : (string -> unit)) =
+        let runTokenSource = new CancellationTokenSource()
+        let stopTokenSoruce = new CancellationTokenSource()
+        let shutDownTokenSource = new CancellationTokenSource()
+
+        let logErr e = 
+            let err = e |> WcfExn |> WcfErr |> Error
+            logger (sprintf "%A" err)
+            err
+
+        let tryExecute g = tryExecute (fun () -> g() |> Ok) logErr
+
+        member _.run() = tryExecute host.Run
+        member _.runAsync() = async { do! host.RunAsync runTokenSource.Token |> Async.AwaitTask }
+        member _.stopAsync() = async { do! host.StopAsync stopTokenSoruce.Token |> Async.AwaitTask }
+        member _.waitForShutdown() = host.WaitForShutdown()
+        member _.waitForShutdownAsync() = async { do! host.WaitForShutdownAsync shutDownTokenSource.Token |> Async.AwaitTask }
+
+        member _.cancelRunAsync() = tryExecute runTokenSource.Cancel
+        member _.cancelStopAsync() = tryExecute stopTokenSoruce.Cancel
+        member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
+
+
     type WcfService<'S, 'I when 'I : not struct and 'S : not struct>() =
-        static let tryCreateWebHostBuilder (i : WcfServiceAccessInfo option) : WcfResult<IWebHost> =
+        static let tryCreateWebHostBuilder (i : WcfServiceAccessInfo option) : WcfResult<WcfService> =
             match i with
             | Some info ->
                 try
@@ -92,19 +118,20 @@ module WcfServer =
                     let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
                     let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
 
-                    WebHost
-                        .CreateDefaultBuilder()
-                        .UseKestrel(fun options -> applyOptions options)
-                        .UseNetTcp(info.netTcpPort)
-                        .UseStartup<WcfStartup<'S, 'I>>()
-                        .Build()
-                    |> Ok
+                    let host =
+                        WebHost
+                            .CreateDefaultBuilder()
+                            .UseKestrel(fun options -> applyOptions options)
+                            .UseNetTcp(info.netTcpPort)
+                            .UseStartup<WcfStartup<'S, 'I>>()
+                            .Build()
+                    (host, info.logError) |> WcfService |> Ok
                 with
                 | e -> WcfExn e |> Error
             | None -> WcfServiceNotInitializedErr |> Error
 
-        static let service : Lazy<WcfResult<IWebHost>> =
-            new Lazy<WcfResult<IWebHost>>(fun () -> tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
+        static let service : Lazy<WcfResult<WcfService>> =
+            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
             
         static member setInfo i = WcfServiceAccessInfo<'S>.setInfo i
         static member getService() = service.Value
