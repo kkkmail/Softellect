@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>Softellect.Messaging</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Primitives.fs" />
+    <Compile Include="ServiceInfo.fs" />
+    <Compile Include="Client.fs" />
+    <Compile Include="Service.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.209" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
+  </ItemGroup>
+
+</Project>

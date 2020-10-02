@@ -23,6 +23,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NetCoreClient", "Samples\Wc
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NetCoreService", "Samples\Wcf\NetCoreService\NetCoreService.fsproj", "{FF4622E7-B18D-4A85-B4BD-532398DE1241}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Messaging", "Messaging\Messaging.fsproj", "{1252B389-8912-4BDB-A05A-4C85456880CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +105,14 @@ Global
 		{FF4622E7-B18D-4A85-B4BD-532398DE1241}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FF4622E7-B18D-4A85-B4BD-532398DE1241}.Release|x64.ActiveCfg = Release|x64
 		{FF4622E7-B18D-4A85-B4BD-532398DE1241}.Release|x64.Build.0 = Release|x64
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Debug|x64.Build.0 = Debug|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|x64.ActiveCfg = Release|Any CPU
+		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

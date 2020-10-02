@@ -27,9 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.208" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.208" />
-    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.208" />
+    <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.209" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.209" />
+    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.209" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.8.0-preview3.20412.3" />
@@ -38,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20478.4" />
+    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20501.2" />
   </ItemGroup>
 
 </Project>
