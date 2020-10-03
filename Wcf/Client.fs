@@ -3,8 +3,8 @@
 open System
 open System.ServiceModel
 
-open Softellect.Sys.GeneralErrors
-open Softellect.Sys.Primitives
+open Softellect.Sys.WcfErrors
+open Softellect.Sys.Core
 open Softellect.Wcf.Common
 
 module Client =

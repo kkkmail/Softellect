@@ -3,7 +3,7 @@
 open System
 open System.ServiceModel
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.WcfErrors
 open Softellect.Sys.Primitives
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
@@ -19,7 +19,7 @@ module Common =
         serviceName.Replace(" ", "").Replace("-", "").Replace(".", "")
 
 
-    let getWcfServiceUrlImpl (ServiceAddress serviceAddress) (ServicePort servicePort) serviceName =
+    let getNetTcpServiceUrl (ServiceAddress serviceAddress) (ServicePort servicePort) (ServiceName serviceName) =
         "net.tcp://" + serviceAddress + ":" + (servicePort.ToString()) + "/" + serviceName
 
 
@@ -69,4 +69,5 @@ module Common =
 
         member i.httpUrl = "http://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
         member i.httpsUrl = "https://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
-        member i.netTcpUrl = "net.tcp://" + i.serviceAddress.value + ":" + i.netTcpServicePort.value.ToString() + "/" + i.netTcpServiceName.value
+        member i.netTcpUrl = getNetTcpServiceUrl i.serviceAddress i.netTcpServicePort i.netTcpServiceName
+        

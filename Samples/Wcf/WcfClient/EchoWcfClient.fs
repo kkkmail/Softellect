@@ -1,8 +1,9 @@
 ﻿namespace Softellect.Samples.Wcf.WcfClient
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
+
 open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfClient =
@@ -10,10 +11,10 @@ module EchoWcfClient =
     type EchoWcfResponseHandler (i: ServiceAccessInfo) =
         let tryGetWcfService() = tryGetWcfService<IEchoWcfService> i.netTcpUrl
 
-        let echoWcfErr (e : WcfError) = e
+        let echoWcfErr e = WcfErr e
         let echoImpl m = tryCommunicate tryGetWcfService (fun service -> service.echo) echoWcfErr m
 
-        let complexEchoWcfErr (e : WcfError) = e
+        let complexEchoWcfErr e = WcfErr e
         let complexEchoImpl m = tryCommunicate tryGetWcfService (fun service -> service.complexEcho) complexEchoWcfErr m
 
         interface IEchoService with

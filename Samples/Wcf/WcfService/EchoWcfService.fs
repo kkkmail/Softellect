@@ -2,8 +2,10 @@
 
 open System
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 open Softellect.Wcf.Service
+
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoErrors
 open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfService =
@@ -16,11 +18,11 @@ module EchoWcfService =
                 echoType = A
             }
 
-        let echoImpl (m : string) : Result<unit, WcfError> =
+        let echoImpl (m : string) : UnitResult =
             printfn "Simple message: %A" m
             Ok()
 
-        let complexEchoImpl (m : EchoMessage) : Result<EchoReply, WcfError> =
+        let complexEchoImpl (m : EchoMessage) : EchoResult<EchoReply> =
             printfn "Complex message: %A" m
             m |> getReply |> Ok
 
@@ -31,8 +33,8 @@ module EchoWcfService =
 
     type EchoWcfService() =
         let service = EchoService() :> IEchoService
-        let toEchoError f = f
-        let toComplexEchoError f = f
+        let toEchoError f = WcfErr f
+        let toComplexEchoError f = WcfErr f
 
         interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m

@@ -11,8 +11,8 @@ open Microsoft.Extensions.DependencyInjection
 open System.Threading
 open Microsoft.FSharp.Core.Operators
 
-open Softellect.Sys.Primitives
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.WcfErrors
+open Softellect.Sys.Core
 open Softellect.Wcf.Common
 
 module Service =
@@ -104,7 +104,7 @@ module Service =
         let shutDownTokenSource = new CancellationTokenSource()
 
         let logErr e = 
-            let err = e |> WcfExn |> WcfErr |> Error
+            let err = e |> WcfExn |> Error
             logger (sprintf "%A" err)
             err
 

@@ -23,7 +23,14 @@
 
   <ItemGroup>
     <Compile Include="GeneralErrors.fs" />
+    <Compile Include="TimerErrors.fs" />
+    <Compile Include="WcfErrors.fs" />
+    <Compile Include="Errors.fs" />
     <Compile Include="Primitives.fs" />
+    <Compile Include="Logging.fs" />
+    <Compile Include="Core.fs" />
+    <Compile Include="Retry.fs" />
+    <Compile Include="TimerEvents.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20501.2" />
+    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20502.1" />
   </ItemGroup>
 
 </Project>
