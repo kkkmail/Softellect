@@ -4,6 +4,7 @@ open System
 
 open Softellect.Sys.Primitives
 open Softellect.Sys.MessagingPrimitives
+open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
@@ -138,3 +139,6 @@ module EchoMsgServiceInfo =
             expirationTime = TimeSpan.FromSeconds 10.0
             messagingDataVersion  = MessagingDataVersion 0
         }
+
+
+    let logger = Logger<EchoMsgError>.defaultValue

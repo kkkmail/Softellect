@@ -23,7 +23,7 @@ module Logging =
             v
 
 
-        static member defaultValue =
+        static member defaultValue : Logger<'E> =
             {
                 logError = printfn "ERROR: %A"
                 logWarn = printfn "WARN: %A"

@@ -69,6 +69,7 @@ module TimerEvents =
 
         let eventHandler _ =
             try
+                i.logger.logInfo info
                 if Interlocked.Increment(&counter) = 0
                 then timedImplementation false i.logger info g
                 else (i.handlerName, handlerId, DateTime.Now) |> StillRunningEventHandlerErr |> logWarn
