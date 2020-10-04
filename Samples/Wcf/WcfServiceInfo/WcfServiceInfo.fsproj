@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="EchoErrors.fs" />
+    <Compile Include="EchoWcfErrors.fs" />
     <Compile Include="EchoWcfServiceInfo.fs" />
   </ItemGroup>
 

@@ -5,7 +5,7 @@ open System
 open Softellect.Sys.Errors
 open Softellect.Wcf.Service
 
-open Softellect.Samples.Wcf.WcfServiceInfo.EchoErrors
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfErrors
 open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfService =
@@ -22,7 +22,7 @@ module EchoWcfService =
             printfn "Simple message: %A" m
             Ok()
 
-        let complexEchoImpl (m : EchoMessage) : EchoResult<EchoReply> =
+        let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
             printfn "Complex message: %A" m
             m |> getReply |> Ok
 

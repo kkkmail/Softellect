@@ -3,6 +3,8 @@
 open Softellect.Sys.GeneralErrors
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.TimerErrors
+open Softellect.Sys.MessagingClientErrors
+open Softellect.Sys.MessagingServiceErrors
 
 module Errors =
 
@@ -11,6 +13,9 @@ module Errors =
         | AggregateErr of Err<'E> * List<Err<'E>>
         | EventHandlerErr of EventHandlerError
         | WcfErr of WcfError
+        | MessagingServiceErr of MessagingServiceError
+        | MessagingClientErr of MessagingClientError
+
         | OtherErr of 'E
 
         static member (+) (a, b) =
@@ -26,6 +31,7 @@ module Errors =
     type StlResult<'T, 'E> = Result<'T, Err<'E>>
     type UnitResult<'E> = StlResult<unit, 'E>
     type ListResult<'T, 'E> = StlResult<list<StlResult<'T, 'E>>, 'E>
+    type StateWithResult<'T, 'E> = 'T * UnitResult<'E>
 
 
     /// Folds list<Err<'E>> into a single Err<'E>.

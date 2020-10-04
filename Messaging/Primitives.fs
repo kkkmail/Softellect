@@ -1,10 +1,33 @@
 ﻿namespace Softellect.Messaging
 
+open System
+open Softellect.Sys.MessagingPrimitives
+
 module Primitives =
+
+    [<Literal>]
+    let MessagingWcfServiceName = "MessagingWcfService"
+
+
+    type MessageType =
+        | IncomingMessage
+        | OutgoingMessage
+
 
     type MessageDeliveryType =
         | GuaranteedDelivery
         | NonGuaranteedDelivery
+
+        member d.value =
+            match d with
+            | GuaranteedDelivery -> 0
+            | NonGuaranteedDelivery -> 1
+
+        static member tryCreate i =
+            match i with
+            | 0 -> Some GuaranteedDelivery
+            | 1 -> Some NonGuaranteedDelivery
+            | _ -> None
 
 
     type MessageSize =
@@ -14,8 +37,8 @@ module Primitives =
 
 
     type MessageData<'M> =
-        | TextMessage of string
-        | Message of 'M
+        | TextMsg of string
+        | OtherMsg of 'M
 
         static member maxInfoLength = 500
 
@@ -37,3 +60,49 @@ module Primitives =
             let s = (sprintf "%A" this)
             s.Substring(0, min s.Length MessageData<'M>.maxInfoLength)
 
+
+
+    type MessageRecipientInfo =
+        {
+            recipient : MessagingClientId
+            deliveryType : MessageDeliveryType
+        }
+
+
+    type MessageInfo<'M> =
+        {
+            recipientInfo : MessageRecipientInfo
+            messageData : MessageData<'M>
+        }
+
+
+    type MessageDataInfo =
+        {
+            messageId : MessageId
+            dataVersion : MessagingDataVersion
+            sender : MessagingClientId
+            recipientInfo : MessageRecipientInfo
+            createdOn : DateTime
+        }
+
+
+        member this.isExpired (waitTime : TimeSpan) =
+            match this.recipientInfo.deliveryType with
+            | GuaranteedDelivery -> false
+            | NonGuaranteedDelivery -> if this.createdOn.Add waitTime < DateTime.Now then true else false
+
+
+    type Message<'M> =
+        {
+            messageDataInfo : MessageDataInfo
+            messageData : MessageData<'M>
+        }
+
+        member this.isExpired waitTime = this.messageDataInfo.isExpired waitTime
+
+
+    type MessageWithOptionalData<'M> =
+        {
+            messageDataInfo : MessageDataInfo
+            messageDataOpt : MessageData<'M> option
+        }

@@ -1,4 +1,7 @@
 ﻿namespace Softellect.Messaging
 
 module Client =
-    let x = 1
+
+    type MessagingClient<'M, 'E>(d: unit) =
+
+        member _.x = 1

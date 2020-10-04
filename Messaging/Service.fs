@@ -1,4 +1,7 @@
 ﻿namespace Softellect.Messaging
 
 module Service =
-    let x = 1
+
+    type MessagingService<'M, 'E>(d: unit) =
+
+        member _.x = 1

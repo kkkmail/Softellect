@@ -6,7 +6,7 @@ open System.ServiceModel
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
 
-open Softellect.Samples.Wcf.WcfServiceInfo.EchoErrors
+open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfErrors
 
 module EchoWcfServiceInfo =
 
@@ -44,7 +44,7 @@ module EchoWcfServiceInfo =
 
     type IEchoService =
         abstract echo : string -> UnitResult
-        abstract complexEcho : EchoMessage -> EchoResult<EchoReply>
+        abstract complexEcho : EchoMessage -> EchoWcfResult<EchoReply>
 
 
     let echoWcfServiceAccessInfo =
