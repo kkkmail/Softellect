@@ -76,9 +76,9 @@ module Primitives =
         | TextMessage of string
 
 
-    type MessageData<'M> =
+    type MessageData<'D> =
         | SystemMsg of SystemMessage
-        | UserMsg of 'M
+        | UserMsg of 'D
 
         static member maxInfoLength = 500
 
@@ -98,7 +98,7 @@ module Primitives =
 
         member this.getInfo() =
             let s = (sprintf "%A" this)
-            s.Substring(0, min s.Length MessageData<'M>.maxInfoLength)
+            s.Substring(0, min s.Length MessageData<'D>.maxInfoLength)
 
 
     type MessageRecipientInfo =
@@ -108,10 +108,10 @@ module Primitives =
         }
 
 
-    type MessageInfo<'M> =
+    type MessageInfo<'D> =
         {
             recipientInfo : MessageRecipientInfo
-            messageData : MessageData<'M>
+            messageData : MessageData<'D>
         }
 
 
@@ -131,17 +131,17 @@ module Primitives =
             | NonGuaranteedDelivery -> if this.createdOn.Add waitTime < DateTime.Now then true else false
 
 
-    type Message<'M> =
+    type Message<'D> =
         {
             messageDataInfo : MessageDataInfo
-            messageData : MessageData<'M>
+            messageData : MessageData<'D>
         }
 
         member this.isExpired waitTime = this.messageDataInfo.isExpired waitTime
 
 
-    type MessageWithOptionalData<'M> =
+    type MessageWithOptionalData<'D> =
         {
             messageDataInfo : MessageDataInfo
-            messageDataOpt : MessageData<'M> option
+            messageDataOpt : MessageData<'D> option
         }

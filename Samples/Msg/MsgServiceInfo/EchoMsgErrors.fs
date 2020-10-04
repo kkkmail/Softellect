@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.Messaging.MessagingServiceInfo
+﻿namespace Softellect.Samples.Msg.ServiceInfo
 
 open Softellect.Sys.Errors
 

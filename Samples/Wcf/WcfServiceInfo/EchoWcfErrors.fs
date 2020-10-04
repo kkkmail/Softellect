@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.Wcf.WcfServiceInfo
+﻿namespace Softellect.Samples.Wcf.ServiceInfo
 
 open Softellect.Sys.Errors
 

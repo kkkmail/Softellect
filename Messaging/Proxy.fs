@@ -13,22 +13,22 @@ open Softellect.Messaging.Primitives
 module Proxy =
 
     /// Provides IO proxy for messaging client.
-    type MessagingClientProxy<'M, 'E> =
+    type MessagingClientProxy<'D, 'E> =
         {
-            tryPickIncomingMessage : unit -> StlResult<Message<'M> option, 'E>
-            tryPickOutgoingMessage : unit -> StlResult<Message<'M> option, 'E>
-            saveMessage : Message<'M> -> UnitResult<'E>
+            tryPickIncomingMessage : unit -> StlResult<Message<'D> option, 'E>
+            tryPickOutgoingMessage : unit -> StlResult<Message<'D> option, 'E>
+            saveMessage : Message<'D> -> UnitResult<'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
             deleteExpiredMessages : TimeSpan -> UnitResult<'E>
-            getMessageSize : MessageData<'M> -> MessageSize
+            getMessageSize : MessageData<'D> -> MessageSize
         }
 
 
     /// Provides IO proxy for messaging service.
-    type MessagingServiceProxy<'M, 'E> =
+    type MessagingServiceProxy<'D, 'E> =
         {
-            tryPickMessage : MessagingClientId -> StlResult<Message<'M> option, 'E>
-            saveMessage : Message<'M> -> UnitResult<'E>
+            tryPickMessage : MessagingClientId -> StlResult<Message<'D> option, 'E>
+            saveMessage : Message<'D> -> UnitResult<'E>
             deleteMessage : MessageId -> UnitResult<'E>
             deleteExpiredMessages : TimeSpan -> UnitResult<'E>
         }
@@ -43,32 +43,32 @@ module Proxy =
         | BusyProcessing
 
 
-    type MessageProcessorProxy<'M, 'E> =
+    type MessageProcessorProxy<'D, 'E> =
         {
             start : unit -> UnitResult<'E>
-            tryPeekReceivedMessage : unit -> StlResult<Message<'M> option, 'E>
+            tryPeekReceivedMessage : unit -> StlResult<Message<'D> option, 'E>
             tryRemoveReceivedMessage : MessageId -> UnitResult<'E>
-            sendMessage : MessageInfo<'M> -> UnitResult<'E>
+            sendMessage : MessageInfo<'D> -> UnitResult<'E>
             tryReceiveMessages : unit -> UnitResult<'E>
             trySendMessages : unit -> UnitResult<'E>
             removeExpiredMessages : unit -> UnitResult<'E>
         }
 
 
-    type OnProcessMessageType<'S, 'M, 'E> = 'S -> Message<'M> -> StateWithResult<'S, 'E>
+    type OnProcessMessageType<'S, 'D, 'E> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
     type MessageResult<'S, 'E> = MessageProcessorResult<'S * UnitResult<'E>, 'E>
 
 
-    type OnGetMessagesProxy<'S, 'M, 'E> =
+    type OnGetMessagesProxy<'S, 'D, 'E> =
         {
-            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'M, 'E> -> MessageResult<'S, 'E>
-            onProcessMessage : 'S -> Message<'M> -> StateWithResult<'S, 'E>
+            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D, 'E> -> MessageResult<'S, 'E>
+            onProcessMessage : 'S -> Message<'D> -> StateWithResult<'S, 'E>
             maxMessages : list<unit>
             onError : OnGetMessagesError -> Err<'E>
         }
 
 
-    let onGetMessages<'S, 'M, 'E> (proxy : OnGetMessagesProxy<'S, 'M, 'E>) (s : 'S) =
+    let onGetMessages<'S, 'D, 'E> (proxy : OnGetMessagesProxy<'S, 'D, 'E>) (s : 'S) =
         let addError f e = ((proxy.onError f) + e) |> Error
         let toError e = e |> proxy.onError |> Error
 

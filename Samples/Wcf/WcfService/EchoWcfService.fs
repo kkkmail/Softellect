@@ -1,12 +1,12 @@
-﻿namespace Softellect.Samples.Wcf.WcfService
+﻿namespace Softellect.Samples.Wcf.Service
 
 open System
 
 open Softellect.Sys.Errors
 open Softellect.Wcf.Service
 
-open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfErrors
-open Softellect.Samples.Wcf.WcfServiceInfo.EchoWcfServiceInfo
+open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
+open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfService =
 
