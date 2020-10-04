@@ -14,13 +14,9 @@ open System.Threading
 
 module Client =
 
-    //type MessagingClient<'M, 'E>(d: unit) =
-    //    member _.x = 1
-
-
-
     /// Maximum number of messages to process in one go.
     let maxNumberOfMessages = 5_000
+    let maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
 
     let maxNumberOfSmallMessages = 5_000
     let maxNumberOfMediumMessages = 500
@@ -71,8 +67,6 @@ module Client =
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
-
 
     type TryReceiveSingleMessageProxy<'M, 'E> =
         {
@@ -80,6 +74,7 @@ module Client =
             tryDeleteMessage : MessageId -> UnitResult<'E>
             tryPeekMessage : unit -> StlResult<Message<'M> option, 'E>
             tryDeleteFromServer : MessageId -> UnitResult<'E>
+            getMessageSize : MessageData<'M> -> MessageSize
         }
 
 
@@ -92,7 +87,7 @@ module Client =
                 match proxy.saveMessage m with
                 | Ok() ->
                     match proxy.tryDeleteFromServer m.messageDataInfo.messageId with
-                    | Ok() -> m.messageData.getMessageSize() |> Some |> Ok
+                    | Ok() -> m.messageData |> proxy.getMessageSize |> Some |> Ok
                     | Error e ->
                         match proxy.tryDeleteMessage m.messageDataInfo.messageId with
                         | Ok() -> addError TryDeleteFromServerErr e
@@ -126,7 +121,7 @@ module Client =
                 | Ok None -> Ok()
                 | Error e -> Error e
 
-        let y = doTryTransmit MessagingClientData.maxMessages MessageCount.defaultValue
+        let y = doTryTransmit maxMessages MessageCount.defaultValue
         y
 
 
@@ -156,6 +151,7 @@ module Client =
             tryPickOutgoingMessage : unit -> StlResult<Message<'M> option, 'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
             sendMessage : Message<'M> -> UnitResult<'E>
+            getMessageSize : MessageData<'M> -> MessageSize
         }
 
 
@@ -166,7 +162,7 @@ module Client =
             match proxy.sendMessage m with
             | Ok() ->
                 match proxy.tryDeleteMessage m.messageDataInfo.messageId with
-                | Ok() -> m.messageData.getMessageSize() |> Some |> Ok
+                | Ok() -> m.messageData |> proxy.getMessageSize |> Some |> Ok
                 | Error e -> Error e
             | Error e -> Error e
         | Error e -> Error e
@@ -185,6 +181,7 @@ module Client =
                 tryDeleteMessage = proxy.tryDeleteMessage
                 tryPeekMessage = fun () -> d.messagingService.tryPeekMessage msgClientId
                 tryDeleteFromServer = fun m -> d.messagingService.tryDeleteFromServer (msgClientId, m)
+                getMessageSize = d.msgClientProxy.getMessageSize
             }
 
         let sendProxy =
@@ -192,6 +189,7 @@ module Client =
                 tryPickOutgoingMessage = proxy.tryPickOutgoingMessage
                 tryDeleteMessage = proxy.tryDeleteMessage
                 sendMessage = d.messagingService.sendMessage
+                getMessageSize = d.msgClientProxy.getMessageSize
             }
 
         /// Verifies that we have access to the relevant database and removes all expired messages.
@@ -226,6 +224,7 @@ module Client =
                 tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
                 tryPeekMessage = fun () -> d.messagingService.tryPeekMessage d.msgAccessInfo.msgClientId
                 tryDeleteFromServer = fun x -> d.messagingService.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
+                getMessageSize = d.msgClientProxy.getMessageSize
             }
 
 
@@ -274,5 +273,3 @@ module Client =
             |> TimerEventHandler
 
         do h2.start()
-
-

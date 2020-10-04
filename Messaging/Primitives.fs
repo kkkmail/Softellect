@@ -71,22 +71,27 @@ module Primitives =
         | LargeSize
 
 
+    type SystemMessage =
+        | DataVersion of MessagingDataVersion
+        | TextMessage of string
+
+
     type MessageData<'M> =
-        | TextMsg of string
-        | OtherMsg of 'M
+        | SystemMsg of SystemMessage
+        | UserMsg of 'M
 
         static member maxInfoLength = 500
 
-        member this.getMessageSize() = failwith ""
-        //    match this with
-        //    | TextMessage s ->
-        //        if s.Length < 1_000 then SmallSize
-        //        else if s.Length < 1_000_000 then MediumSize
-        //        else LargeSize
-        //    | Message m -> m.messageSize
+        //member this.getMessageSize() = failwith ""
+        ////    match this with
+        ////    | TextMessage s ->
+        ////        if s.Length < 1_000 then SmallSize
+        ////        else if s.Length < 1_000_000 then MediumSize
+        ////        else LargeSize
+        ////    | Message m -> m.messageSize
 
-        member this.keepInMemory() =
-            match this.getMessageSize() with
+        member this.keepInMemory getMessageSize =
+            match getMessageSize this with
             | SmallSize -> true
             | MediumSize -> false
             | LargeSize -> false

@@ -20,6 +20,7 @@ module Proxy =
             saveMessage : Message<'M> -> UnitResult<'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
             deleteExpiredMessages : TimeSpan -> UnitResult<'E>
+            getMessageSize : MessageData<'M> -> MessageSize
         }
 
 
