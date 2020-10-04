@@ -6,6 +6,8 @@ open System.ServiceModel
 open Softellect.Sys.Errors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives
+open Softellect.Wcf.Common
+open Softellect.Wcf.Client
 
 module ServiceInfo =
 
@@ -33,4 +35,21 @@ module ServiceInfo =
         abstract tryDeleteFromServer : cm:byte[] -> byte[]
 
 
+    type MessagingServiceAccessInfo =
+        {
+            messagingServiceAddress : MessagingServiceAddress
+            messagingServicePort : MessagingServicePort
+            messagingServiceName : MessagingServiceName
+            messagingDataVersion : MessagingDataVersion
+        }
 
+        member private s.serviceName = s.messagingServiceName.value.value
+        member s.wcfServiceName = toValidServiceName s.serviceName
+        member s.wcfServiceUrl = getNetTcpServiceUrl s.messagingServiceAddress.value s.messagingServicePort.value s.wcfServiceName
+
+
+    type MessagingClientAccessInfo =
+        {
+            msgClientId : MessagingClientId
+            msgSvcAccessInfo : MessagingServiceAccessInfo
+        }

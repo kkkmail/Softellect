@@ -16,7 +16,7 @@ module Common =
 
 
     let toValidServiceName (serviceName : string) =
-        serviceName.Replace(" ", "").Replace("-", "").Replace(".", "")
+        serviceName.Replace(" ", "").Replace("-", "").Replace(".", "") |> ServiceName
 
 
     let getNetTcpServiceUrl (ServiceAddress serviceAddress) (ServicePort servicePort) (ServiceName serviceName) =

@@ -4,7 +4,7 @@ open System
 
 module TimerErrors =
 
-    type EventHandlerError =
+    type TimerEventError =
         | UnhandledEventHandlerExn of string * Guid * exn
         | StillRunningEventHandlerErr of string * Guid * DateTime
 

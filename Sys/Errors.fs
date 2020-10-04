@@ -11,7 +11,7 @@ module Errors =
     /// All errors known in the system.
     type Err<'E> =
         | AggregateErr of Err<'E> * List<Err<'E>>
-        | EventHandlerErr of EventHandlerError
+        | TimerEventErr of TimerEventError
         | WcfErr of WcfError
         | MessagingServiceErr of MessagingServiceError
         | MessagingClientErr of MessagingClientError

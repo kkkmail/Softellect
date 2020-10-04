@@ -10,6 +10,7 @@ open Newtonsoft.Json
 
 open Softellect.Sys.GeneralErrors
 open Softellect.Sys.Primitives
+open Softellect.Sys.Logging
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -184,10 +185,19 @@ module Core =
         | e -> f e
 
 
-    //let getVersionImpl getter p =
-    //    match getter p with
-    //    | Some x -> x
-    //    | None -> versionNumberValue
+    /// http://www.fssnip.net/iW/title/Oneliner-generic-timing-function
+    let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
+
+
+    let timedImplementation<'E, 'A> b (l : Logger<'E>) name (f : unit -> 'A) =
+        let (r, t) = time f ()
+
+        if t.TotalSeconds <= 10.0
+        then
+            if b then l.logInfoString (sprintf "%s: Execution time: %A" name t)
+        else l.logInfoString (sprintf "%s: !!! LARGE Execution time: %A" name t)
+
+        r
 
 
     type IUpdater<'I, 'A, 'S> =
