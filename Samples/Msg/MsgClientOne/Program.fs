@@ -2,9 +2,13 @@
 
 open System
 
+open Softellect.Messaging.Client
+open Softellect.Samples.Msg.ServiceInfo
+open Softellect.Samples.Msg.ServiceInfo.EchoMsgServiceInfo
+
 module Program =
 
     [<EntryPoint>]
     let main argv =
-        printfn "Hello World from F#!"
-        0 // return an integer exit code
+
+        0

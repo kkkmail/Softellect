@@ -3,7 +3,6 @@
 open System
 
 open Softellect.Messaging.Service
-open Softellect.Samples.Msg.ServiceInfo
 open Softellect.Samples.Msg.ServiceInfo.EchoMsgServiceInfo
 
 module Program =

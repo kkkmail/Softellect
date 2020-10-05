@@ -2,9 +2,14 @@
 
 open System
 
+open CoreWCF
+
 open Softellect.Sys.Errors
+open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.TimerEvents
+open Softellect.Wcf.Service
+open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Proxy
 
@@ -36,3 +41,22 @@ module Service =
         let eventHandler _ = w.removeExpiredMessages()
         let h = TimerEventInfo<'E>.defaultValue logger eventHandler "MessagingService - removeExpiredMessages" |> TimerEventHandler
         do h.start()
+
+
+    //[<ServiceBehavior(IncludeExceptionDetailInFaults = true, InstanceContextMode = InstanceContextMode.PerSession)>]
+    type MessagingWcfService<'D, 'E>() =
+        let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr |> MessagingServiceErr
+        let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr |> MessagingServiceErr
+        let toTryPickMessageError f = f |> TryPeekMsgWcfErr |> TryPeekMessageErr |> MessagingServiceErr
+        let toTryDeleteFromServerError f = f |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> MessagingServiceErr
+
+        let getVersion() = messagingService.Value |> Rop.bind (fun e -> e.getVersion())
+        let sendMessage b = messagingService.Value |> Rop.bind (fun e -> e.sendMessage b)
+        let tryPeekMessage b = messagingService.Value |> Rop.bind (fun e -> e.tryPeekMessage b)
+        let tryDeleteFromServer b = messagingService.Value |> Rop.bind (fun e -> e.tryDeleteFromServer b)
+
+        interface IMessagingWcfService with
+            member _.getVersion b = tryReply getVersion toGetVersionError b
+            member _.sendMessage b = tryReply sendMessage toSendMessageError b
+            member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
+            member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
