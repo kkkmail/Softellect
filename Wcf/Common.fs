@@ -5,6 +5,7 @@ open System.ServiceModel
 
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.Primitives
+open Softellect.Sys.Logging
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
 module Common =
@@ -13,6 +14,7 @@ module Common =
     let dataTimeOut = TimeSpan(1, 0, 0)
     let wcfSerializationFormat = BinaryZippedFormat
     type WcfResult<'T> = Result<'T, WcfError>
+    type WcfLogger = Logger<WcfError>
 
 
     let toValidServiceName (serviceName : string) =
@@ -56,6 +58,7 @@ module Common =
     let toWcfSerializationError f e = e |> WcfSerializationErr |> f |> Error
 
 
+    /// Higher level (not yet parsed) service info.
     type ServiceAccessInfo =
         {
             serviceAddress : ServiceAddress
@@ -63,8 +66,6 @@ module Common =
             httpServiceName : ServiceName
             netTcpServicePort : ServicePort
             netTcpServiceName : ServiceName
-            logError : (string -> unit) option
-            logInfo : (string -> unit) option
         }
 
         member i.httpUrl = "http://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value

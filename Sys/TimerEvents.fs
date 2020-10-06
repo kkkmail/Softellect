@@ -55,21 +55,21 @@ module TimerEvents =
         let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
         let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> TimerEventErr |> i.logger.logError
-        let logWarn e = e |> TimerEventErr |> i.logger.logWarn
+        let logError e = e |> TimerEventErr |> i.logger.logErrData
+        let logWarn e = e |> TimerEventErr |> i.logger.logWarnData
         let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
 
         let g() =
             try
                 match i.eventHandler() with
                 | Ok() -> ignore()
-                | Error e -> i.logger.logError e
+                | Error e -> i.logger.logErrData e
             with
             | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
-                i.logger.logInfo info
+                i.logger.logInfoString info
                 if Interlocked.Increment(&counter) = 0
                 then timedImplementation false i.logger info g
                 else (i.handlerName, handlerId, DateTime.Now) |> StillRunningEventHandlerErr |> logWarn

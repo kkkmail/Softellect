@@ -21,18 +21,18 @@ module Primitives =
     //    member n.messagingClientName = MessagingClientName n.originalValue
 
 
-    type MessagingServiceAddress =
-        | MessagingServiceAddress of ServiceAddress
+    //type MessagingServiceAddress =
+    //    | MessagingServiceAddress of ServiceAddress
 
-        member this.value = let (MessagingServiceAddress v) = this in v
-        //static member defaultValue = DefaultMessagingServiceAddress |> ServiceAddress |> MessagingServiceAddress
+    //    member this.value = let (MessagingServiceAddress v) = this in v
+    //    //static member defaultValue = DefaultMessagingServiceAddress |> ServiceAddress |> MessagingServiceAddress
 
 
-    type MessagingServicePort =
-        | MessagingServicePort of ServicePort
+    //type MessagingServicePort =
+    //    | MessagingServicePort of ServicePort
 
-        member this.value = let (MessagingServicePort v) = this in v
-        //static member defaultValue = DefaultMessagingServicePort |> ServicePort |> MessagingServicePort
+    //    member this.value = let (MessagingServicePort v) = this in v
+    //    //static member defaultValue = DefaultMessagingServicePort |> ServicePort |> MessagingServicePort
 
 
     type MessagingServiceName =

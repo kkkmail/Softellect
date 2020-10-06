@@ -12,8 +12,10 @@ open System.Threading
 open Microsoft.FSharp.Core.Operators
 
 open Softellect.Sys.WcfErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
+open Softellect.Sys.Logging
 
 module Service =
 
@@ -36,16 +38,11 @@ module Service =
             httpServiceName : string
             netTcpPort : int
             netTcpServiceName : string
-            logError : (string -> unit)
-            logInfo : (string -> unit)
         }
 
-        static member tryCreate (i : ServiceAccessInfo) =
-            let logError = i.logError |> Option.defaultValue (printfn "Error: %s")
-            let logInfo = i.logInfo |> Option.defaultValue (printfn "Error: %s")
-
+        static member tryCreate (l : Logger<WcfError>) (i : ServiceAccessInfo) =
             let fail e =
-                logError e
+                e |> WcfCriticalErr |> WcfErr |> ErrLogData |> l.logCrit
                 None
 
             match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
@@ -56,8 +53,6 @@ module Service =
                     httpServiceName = i.httpServiceName.value
                     netTcpPort = i.netTcpServicePort.value
                     netTcpServiceName = i.netTcpServiceName.value
-                    logError = logError
-                    logInfo = logInfo
                 }
                 |> Some
 
@@ -69,19 +64,33 @@ module Service =
                 fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" i.serviceAddress.value i.httpServicePort i.netTcpServicePort)
 
 
-    type WcfServiceAccessInfo<'S>() =
-        static let mutable info : WcfServiceAccessInfo option = None
+    type WcfServiceProxy =
+        {
+            wcfServiceAccessInfoOpt :  WcfServiceAccessInfo option
+            loggerOpt : WcfLogger option
+        }
 
-        static member setInfo i = info <- WcfServiceAccessInfo.tryCreate i
-        static member serviceAccessInfo = info
+        static member defaultValue =
+            {
+                wcfServiceAccessInfoOpt = None
+                loggerOpt = None
+            }
+
+
+    type WcfServiceProxy<'S>() =
+        static let mutable serviceProxy = WcfServiceProxy.defaultValue
+        static member setProxy proxy = serviceProxy <- proxy
+        static member proxy = serviceProxy
+
+        /// It is not really needed but we want to "use" the generic type to make the compliler happy.
         member _.serviceType = typeof<'S>
 
 
     type WcfStartup<'S, 'I when 'I : not struct and 'S : not struct>() =
-        let accessInfo = WcfServiceAccessInfo<'S>.serviceAccessInfo
+        let a = WcfServiceProxy<'S>.proxy.wcfServiceAccessInfoOpt
 
-        let createServiceModel (builder : IServiceBuilder) = 
-            match accessInfo with
+        let createServiceModel (builder : IServiceBuilder) =
+            match a with
             | Some i ->
                 builder
                     .AddService<'S>()
@@ -90,23 +99,25 @@ module Service =
                 |> ignore
             | None -> failwith "Service access information is missing."
 
+        /// The name must match required signature.
         member _.ConfigureServices(services : IServiceCollection) =
             do services.AddServiceModelServices() |> ignore
 
+        /// The name must match required signature.
         member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
 
     /// Wrapper around IWebHost to abstract it away and convert C# async methods into F# flavor.
-    type WcfService(host : IWebHost, logger : (string -> unit)) =
+    type WcfService(logger : WcfLogger, host : IWebHost) =
         let runTokenSource = new CancellationTokenSource()
         let stopTokenSoruce = new CancellationTokenSource()
         let shutDownTokenSource = new CancellationTokenSource()
 
-        let logErr e = 
-            let err = e |> WcfExn |> Error
-            logger (sprintf "%A" err)
-            err
+        let logErr e =
+            let err = e |> WcfExn
+            err |> WcfErr |> logger.logErrData
+            Error err
 
         let tryExecute g = tryExecute (fun () -> g() |> Ok) logErr
 
@@ -122,11 +133,13 @@ module Service =
 
 
     type WcfService<'S, 'I when 'I : not struct and 'S : not struct>() =
-        static let tryCreateWebHostBuilder (i : WcfServiceAccessInfo option) : WcfResult<WcfService> =
-            match i with
+        static let tryCreateWebHostBuilder (proxy :  WcfServiceProxy) : WcfResult<WcfService> =
+            let logger = proxy.loggerOpt |> Option.defaultValue WcfLogger.defaultValue
+
+            match proxy.wcfServiceAccessInfoOpt with
             | Some info ->
                 try
-                    info.logInfo (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
+                    logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
                     let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
                     let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
 
@@ -137,17 +150,17 @@ module Service =
                             .UseNetTcp(info.netTcpPort)
                             .UseStartup<WcfStartup<'S, 'I>>()
                             .Build()
-                    (host, info.logError) |> WcfService |> Ok
+                    (logger, host) |> WcfService |> Ok
                 with
                 | e -> WcfExn e |> Error
             | None -> WcfServiceNotInitializedErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
-            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
+            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceProxy<'S>.proxy)
             
-        static member setInfo i = WcfServiceAccessInfo<'S>.setInfo i
+        static member setProxy proxy = WcfServiceProxy<'S>.setProxy proxy
         static member getService() = service.Value
 
-        static member getService i =
-             WcfService<'S, 'I>.setInfo i
+        static member getService proxy =
+             WcfService<'S, 'I>.setProxy proxy
              WcfService<'S, 'I>.getService()

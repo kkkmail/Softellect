@@ -8,3 +8,4 @@ module WcfErrors =
         | WcfServiceNotInitializedErr
         | WcfExn of exn
         | WcfSerializationErr of SerializationError
+        | WcfCriticalErr of string

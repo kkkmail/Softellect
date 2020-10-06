@@ -4,7 +4,9 @@ open System
 open System.ServiceModel
 
 open Softellect.Sys.Primitives
+open Softellect.Sys.Logging
 open Softellect.Wcf.Common
+open Softellect.Wcf.Service
 
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
 
@@ -54,7 +56,14 @@ module EchoWcfServiceInfo =
             httpServiceName = ServiceName "EchoHttpService"
             netTcpServicePort =  ServicePort 8808
             netTcpServiceName = ServiceName "EchoNetTcpService"
-            logError = Some (printfn "%s")
-            logInfo = Some (printfn "%s")
         }
-        
+
+
+    let echoLogger = Logger.defaultValue
+
+
+    let echoWcfServiceProxy =
+        {
+            wcfServiceAccessInfoOpt = WcfServiceAccessInfo.tryCreate echoLogger echoWcfServiceAccessInfo
+            loggerOpt = Some echoLogger
+        }

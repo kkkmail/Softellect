@@ -4,6 +4,7 @@ open System
 
 open CoreWCF
 
+open Softellect.Sys
 open Softellect.Sys.Errors
 open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingPrimitives
@@ -34,29 +35,35 @@ module Service =
         member _.tryDeleteFromServer (n : MessagingClientId, m : MessageId) : UnitResult<'E> = proxy.deleteMessage m
         member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
 
+        /// Call this function to create timer events necessary for automatic Messaging Service operation.
+        /// If you don't call it, then you have to operate Messaging Service by hands.
+        member w.createMessagingServiceEventHandlers logger =
+            let eventHandler _ = w.removeExpiredMessages()
+            let h = TimerEventInfo<'E>.defaultValue logger eventHandler "MessagingService - removeExpiredMessages" |> TimerEventHandler
+            do h.start()
 
-    /// Call this function to create timer events necessary for automatic Messaging Service operation.
-    /// If you don't call it, then you have to operate Messaging Service by hands.
-    let createMessagingServiceEventHandlers logger (w : MessagingService<'D, 'E>) =
-        let eventHandler _ = w.removeExpiredMessages()
-        let h = TimerEventInfo<'E>.defaultValue logger eventHandler "MessagingService - removeExpiredMessages" |> TimerEventHandler
-        do h.start()
 
+    ////[<ServiceBehavior(IncludeExceptionDetailInFaults = true, InstanceContextMode = InstanceContextMode.PerSession)>]
+    //type MessagingWcfService<'D, 'E>() =
+    //    static let tryCreateMessagingWcfService(i : MessagingServiceInfo) : StlResult<MessagingWcfService<'D, 'E>, 'E> =
+    //        failwith ""
 
-    //[<ServiceBehavior(IncludeExceptionDetailInFaults = true, InstanceContextMode = InstanceContextMode.PerSession)>]
-    type MessagingWcfService<'D, 'E>() =
-        let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr |> MessagingServiceErr
-        let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr |> MessagingServiceErr
-        let toTryPickMessageError f = f |> TryPeekMsgWcfErr |> TryPeekMessageErr |> MessagingServiceErr
-        let toTryDeleteFromServerError f = f |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> MessagingServiceErr
+    //    static let messagingService : Lazy<StlResult<MessagingService<'D, 'E>, 'E>> =
+    //        new Lazy<StlResult<MessagingService<'D, 'E>, 'E>>(fun () -> 0)
+    //        //tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
 
-        let getVersion() = messagingService.Value |> Rop.bind (fun e -> e.getVersion())
-        let sendMessage b = messagingService.Value |> Rop.bind (fun e -> e.sendMessage b)
-        let tryPeekMessage b = messagingService.Value |> Rop.bind (fun e -> e.tryPeekMessage b)
-        let tryDeleteFromServer b = messagingService.Value |> Rop.bind (fun e -> e.tryDeleteFromServer b)
+    //    let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr |> MessagingServiceErr
+    //    let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr |> MessagingServiceErr
+    //    let toTryPickMessageError f = f |> TryPeekMsgWcfErr |> TryPeekMessageErr |> MessagingServiceErr
+    //    let toTryDeleteFromServerError f = f |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> MessagingServiceErr
 
-        interface IMessagingWcfService with
-            member _.getVersion b = tryReply getVersion toGetVersionError b
-            member _.sendMessage b = tryReply sendMessage toSendMessageError b
-            member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
-            member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
+    //    let getVersion() = messagingService.Value |> Rop.bind (fun e -> e.getVersion())
+    //    let sendMessage b = messagingService.Value |> Rop.bind (fun e -> e.sendMessage b)
+    //    let tryPeekMessage b = messagingService.Value |> Rop.bind (fun e -> e.tryPeekMessage b)
+    //    let tryDeleteFromServer b = messagingService.Value |> Rop.bind (fun e -> e.tryDeleteFromServer b)
+
+    //    interface IMessagingWcfService with
+    //        member _.getVersion b = tryReply getVersion toGetVersionError b
+    //        member _.sendMessage b = tryReply sendMessage toSendMessageError b
+    //        member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
+    //        member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b

@@ -32,6 +32,7 @@
     <Compile Include="Errors.fs" />
     <Compile Include="Logging.fs" />
     <Compile Include="Core.fs" />
+    <Compile Include="Rop.fs" />
     <Compile Include="Retry.fs" />
     <Compile Include="TimerEvents.fs" />
   </ItemGroup>

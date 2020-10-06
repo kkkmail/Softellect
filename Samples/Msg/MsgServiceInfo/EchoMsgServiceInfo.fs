@@ -52,8 +52,6 @@ module EchoMsgServiceInfo =
             httpServiceName = ServiceName "EchoMessagingHttpService"
             netTcpServicePort =  ServicePort 8809
             netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
-            logError = Some (printfn "%s")
-            logInfo = Some (printfn "%s")
         }
 
 

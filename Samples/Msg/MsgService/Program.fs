@@ -10,7 +10,7 @@ module Program =
     [<EntryPoint>]
     let main _ =
         let service = EchoMsgService serviceData
-        createMessagingServiceEventHandlers logger service
+        //createMessagingServiceEventHandlers logger service
 
         printfn "Press any key to exit..."
         Console.ReadLine() |> ignore

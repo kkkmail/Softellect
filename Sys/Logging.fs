@@ -4,27 +4,35 @@ open Softellect.Sys.Errors
 
 module Logging =
 
+    type LogData<'E> =
+        | SimpleLogData of string
+        | ErrLogData of Err<'E>
+
+
     type Logger<'E> =
         {
-            logError : Err<'E> -> unit
-            logWarn : Err<'E> -> unit
-            logInfo : string -> unit
+            logCrit : LogData<'E> -> unit
+            logError : LogData<'E> -> unit
+            logWarn : LogData<'E> -> unit
+            logInfo : LogData<'E> -> unit
         }
 
-        //member this.logInfoString (s : string) = ClmInfo.create s |> this.logInfo
-        //member this.logExn s e = this.logError (UnhandledExn (s, e))
-        member this.logInfoString (s : string) = this.logInfo s
+        member this.logInfoString (s : string) = s |> SimpleLogData |> this.logInfo
+        member this.logErrData e = e |> ErrLogData |> this.logError
+        member this.logWarnData e = e |> ErrLogData |> this.logWarn
+        member this.logInfoData e = e |> ErrLogData |> this.logInfo
 
         member this.logIfError v =
             match v with
             | Ok _ -> ignore()
-            | Error e -> this.logError e
+            | Error e -> e |> ErrLogData |> this.logError
 
             v
 
 
         static member defaultValue : Logger<'E> =
             {
+                logCrit = printfn "CRIT: %A"
                 logError = printfn "ERROR: %A"
                 logWarn = printfn "WARN: %A"
                 logInfo = printfn "INFO: %A"

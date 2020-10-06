@@ -37,15 +37,13 @@ module ServiceInfo =
 
     type MessagingServiceAccessInfo =
         {
-            messagingServiceAddress : MessagingServiceAddress
-            messagingServicePort : MessagingServicePort
-            messagingServiceName : MessagingServiceName
+            messagingServiceAccessInfo : ServiceAccessInfo
             messagingDataVersion : MessagingDataVersion
         }
 
-        member private s.serviceName = s.messagingServiceName.value.value
-        member s.wcfServiceName = toValidServiceName s.serviceName
-        member s.wcfServiceUrl = getNetTcpServiceUrl s.messagingServiceAddress.value s.messagingServicePort.value s.wcfServiceName
+        //member private s.serviceName = s.messagingServiceName.value.value
+        //member s.wcfServiceName = toValidServiceName s.serviceName
+        //member s.wcfServiceUrl = getNetTcpServiceUrl s.messagingServiceAddress.value s.messagingServicePort.value s.wcfServiceName
 
 
     type MessagingClientAccessInfo =
