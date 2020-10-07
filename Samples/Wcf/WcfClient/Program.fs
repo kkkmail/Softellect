@@ -8,11 +8,16 @@ open Softellect.Samples.Wcf.Client.EchoWcfClient
 
 module Program =
 
+    [<Literal>]
+    let MaxSize = 1_000_000
+
+
     let createEchoMessage() =
         {
             x = 1
             y = DateTime.Now
             echoType = C 2
+            hugeData = [ for i in 0..MaxSize -> Random().Next() ]
         }
 
 

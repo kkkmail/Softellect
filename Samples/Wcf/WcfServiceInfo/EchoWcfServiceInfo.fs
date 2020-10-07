@@ -23,6 +23,7 @@ module EchoWcfServiceInfo =
             x : int
             y : DateTime
             echoType : EchoType
+            hugeData : list<int>
         }
 
 
@@ -64,6 +65,6 @@ module EchoWcfServiceInfo =
 
     let echoWcfServiceProxy =
         {
-            wcfServiceAccessInfoOpt = WcfServiceAccessInfo.tryCreate echoLogger echoWcfServiceAccessInfo
+            wcfServiceAccessInfoRes = WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo
             loggerOpt = Some echoLogger
         }

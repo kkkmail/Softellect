@@ -40,10 +40,8 @@ module Service =
             netTcpServiceName : string
         }
 
-        static member tryCreate (l : Logger<WcfError>) (i : ServiceAccessInfo) =
-            let fail e =
-                e |> WcfCriticalErr |> WcfErr |> ErrLogData |> l.logCrit
-                None
+        static member tryCreate (i : ServiceAccessInfo) =
+            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
 
             match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
             | (true, ipAddress), false ->
@@ -54,7 +52,7 @@ module Service =
                     netTcpPort = i.netTcpServicePort.value
                     netTcpServiceName = i.netTcpServiceName.value
                 }
-                |> Some
+                |> Ok
 
             | (true, _), true ->
                 fail (sprintf "http service port: %A must be different from nettcp service port: %A" i.httpServicePort i.netTcpServicePort)
@@ -66,13 +64,13 @@ module Service =
 
     type WcfServiceProxy =
         {
-            wcfServiceAccessInfoOpt :  WcfServiceAccessInfo option
+            wcfServiceAccessInfoRes : WcfResult<WcfServiceAccessInfo>
             loggerOpt : WcfLogger option
         }
 
         static member defaultValue =
             {
-                wcfServiceAccessInfoOpt = None
+                wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> Error
                 loggerOpt = None
             }
 
@@ -87,23 +85,25 @@ module Service =
 
 
     type WcfStartup<'S, 'I when 'I : not struct and 'S : not struct>() =
-        let a = WcfServiceProxy<'S>.proxy.wcfServiceAccessInfoOpt
+        let a = WcfServiceProxy<'S>.proxy.wcfServiceAccessInfoRes
 
         let createServiceModel (builder : IServiceBuilder) =
             match a with
-            | Some i ->
+            | Ok i ->
                 builder
                     .AddService<'S>()
                     .AddServiceEndpoint<'S, 'I>(new BasicHttpBinding(), "/" + i.httpServiceName)
                     .AddServiceEndpoint<'S, 'I>(new NetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
-            | None -> failwith "Service access information is missing."
+            | Error e ->
+                // TODO kk:20201006 - Log error and then don't throw???
+                failwith (sprintf "Service access information is missing: %A." e)
 
-        /// The name must match required signature.
+        /// The name must match required signature in CoreWCF.
         member _.ConfigureServices(services : IServiceCollection) =
             do services.AddServiceModelServices() |> ignore
 
-        /// The name must match required signature.
+        /// The name must match required signature in CoreWCF.
         member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
@@ -136,8 +136,8 @@ module Service =
         static let tryCreateWebHostBuilder (proxy :  WcfServiceProxy) : WcfResult<WcfService> =
             let logger = proxy.loggerOpt |> Option.defaultValue WcfLogger.defaultValue
 
-            match proxy.wcfServiceAccessInfoOpt with
-            | Some info ->
+            match proxy.wcfServiceAccessInfoRes with
+            | Ok info ->
                 try
                     logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
                     let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
@@ -153,7 +153,7 @@ module Service =
                     (logger, host) |> WcfService |> Ok
                 with
                 | e -> WcfExn e |> Error
-            | None -> WcfServiceNotInitializedErr |> Error
+            | Error e -> e |> WcfServiceCannotInitializeErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
             new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceProxy<'S>.proxy)

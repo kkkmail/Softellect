@@ -29,6 +29,7 @@ module Common =
     let getNetTcpBinding() =
         let binding = new NetTcpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
         binding.OpenTimeout <- connectionTimeOut
         binding.CloseTimeout <- connectionTimeOut
@@ -42,6 +43,7 @@ module Common =
     let getBasicHttpBinding() =
         let binding = new BasicHttpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
         binding.OpenTimeout <- connectionTimeOut
         binding.CloseTimeout <- connectionTimeOut
