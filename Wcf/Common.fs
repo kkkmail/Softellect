@@ -1,11 +1,11 @@
 ﻿namespace Softellect.Wcf
 
 open System
-open System.ServiceModel
 
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
+open System.Xml
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
 module Common =
@@ -25,35 +25,14 @@ module Common =
         "net.tcp://" + serviceAddress + ":" + (servicePort.ToString()) + "/" + serviceName
 
 
-    /// Gets net tcp binding suitable for sending very large data objects.
-    let getNetTcpBinding() =
-        let binding = new NetTcpBinding()
-        binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
-        binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
-        binding.MaxBufferSize <- Int32.MaxValue
-        binding.OpenTimeout <- connectionTimeOut
-        binding.CloseTimeout <- connectionTimeOut
-        binding.SendTimeout <- dataTimeOut
-        binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- SecurityMode.Transport
-        binding
-
-
-    /// Gets basic http binding suitable for sending very large data objects.
-    let getBasicHttpBinding() =
-        let binding = new BasicHttpBinding()
-        binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
-        binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
-        binding.MaxBufferSize <- Int32.MaxValue
-        binding.OpenTimeout <- connectionTimeOut
-        binding.CloseTimeout <- connectionTimeOut
-        binding.SendTimeout <- dataTimeOut
-        binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- BasicHttpSecurityMode.None
-        binding
-
-
-    let getBinding() = getNetTcpBinding()
+    /// https://stackoverflow.com/questions/5459697/the-maximum-message-size-quota-for-incoming-messages-65536-has-been-exceeded
+    let getQuotas() =
+        let readerQuotas = new XmlDictionaryReaderQuotas()
+        readerQuotas.MaxArrayLength <- Int32.MaxValue
+        readerQuotas.MaxStringContentLength <- Int32.MaxValue
+        readerQuotas.MaxDepth <- 512
+        readerQuotas.MaxBytesPerRead <- Int32.MaxValue
+        readerQuotas
 
 
     let toWcfError f e = e |> WcfExn |> f |> Error
@@ -73,4 +52,3 @@ module Common =
         member i.httpUrl = "http://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
         member i.httpsUrl = "https://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
         member i.netTcpUrl = getNetTcpServiceUrl i.serviceAddress i.netTcpServicePort i.netTcpServiceName
-        

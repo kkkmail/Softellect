@@ -1,5 +1,6 @@
 ﻿namespace Softellect.Wcf
 
+open System
 open System.Net
 open CoreWCF
 open CoreWCF.Configuration
@@ -29,6 +30,36 @@ module Service =
         match trySerialize wcfSerializationFormat reply with
         | Ok r -> r
         | Error _ -> [||]
+
+
+    /// Gets net tcp binding suitable for sending very large data objects.
+    let getNetTcpBinding() =
+        let binding = new NetTcpBinding()
+        binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferSize <- Int32.MaxValue
+        binding.OpenTimeout <- connectionTimeOut
+        binding.CloseTimeout <- connectionTimeOut
+        binding.SendTimeout <- dataTimeOut
+        binding.ReceiveTimeout <- dataTimeOut
+        binding.Security.Mode <- SecurityMode.Transport
+        binding.ReaderQuotas <- getQuotas()
+        binding
+
+
+    /// Gets basic http binding suitable for sending very large data objects.
+    let getBasicHttpBinding() =
+        let binding = new BasicHttpBinding()
+        binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
+        //binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
+        binding.MaxBufferSize <- Int32.MaxValue
+        binding.OpenTimeout <- connectionTimeOut
+        binding.CloseTimeout <- connectionTimeOut
+        binding.SendTimeout <- dataTimeOut
+        binding.ReceiveTimeout <- dataTimeOut
+        //binding.Security.Mode <- BasicHttpSecurityMode.None
+        binding.ReaderQuotas <- getQuotas()
+        binding
 
 
     type WcfServiceAccessInfo =
@@ -92,8 +123,8 @@ module Service =
             | Ok i ->
                 builder
                     .AddService<'S>()
-                    .AddServiceEndpoint<'S, 'I>(new BasicHttpBinding(), "/" + i.httpServiceName)
-                    .AddServiceEndpoint<'S, 'I>(new NetTcpBinding(), "/" + i.netTcpServiceName)
+                    .AddServiceEndpoint<'S, 'I>(getBasicHttpBinding(), "/" + i.httpServiceName)
+                    .AddServiceEndpoint<'S, 'I>(getNetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
             | Error e ->
                 // TODO kk:20201006 - Log error and then don't throw???
@@ -141,13 +172,21 @@ module Service =
                 try
                     logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
                     let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
-                    let applyOptions (options : KestrelServerOptions) = options.Listen(endPoint)
+
+                    let applyOptions (options : KestrelServerOptions) =
+                        options.Listen(endPoint)
+                        options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        //options.Limits.MaxRequestLineSize <- Int32.MaxValue
+                        //options.Limits.MaxRequestHeadersTotalSize <- Int32.MaxValue
+                        options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))
+                        //options.Limits.MaxRequestHeaderCount <- 500
 
                     let host =
                         WebHost
                             .CreateDefaultBuilder()
                             .UseKestrel(fun options -> applyOptions options)
-                            .UseNetTcp(info.netTcpPort)
+                            //.UseNetTcp(info.netTcpPort)
                             .UseStartup<WcfStartup<'S, 'I>>()
                             .Build()
                     (logger, host) |> WcfService |> Ok

@@ -10,7 +10,7 @@ module EchoClient =
     type EchoMessage() =
 
         [<DataMember>]
-        member val text = "" with get, set        
+        member val text = "" with get, set
 
 
     [<ServiceContract>]
