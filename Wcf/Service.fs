@@ -20,6 +20,10 @@ open Softellect.Sys.Logging
 
 module Service =
 
+    let private toError e = e |> SingleErr |> Error
+    let private addError e f = (SingleErr e) + f
+
+
     /// Service reply.
     let tryReply p f a =
         let reply =
@@ -72,7 +76,7 @@ module Service =
         }
 
         static member tryCreate (i : ServiceAccessInfo) =
-            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
+            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> SingleErr |> Error
 
             match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
             | (true, ipAddress), false ->
@@ -101,7 +105,7 @@ module Service =
 
         static member defaultValue =
             {
-                wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> Error
+                wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> SingleErr |> Error
                 loggerOpt = None
             }
 
@@ -147,7 +151,7 @@ module Service =
 
         let logErr e =
             let err = e |> WcfExn
-            err |> WcfErr |> logger.logErrData
+            err |> SingleErr |> logger.logErrData
             Error err
 
         let tryExecute g = tryExecute (fun () -> g() |> Ok) logErr
@@ -191,15 +195,15 @@ module Service =
                             .Build()
                     (logger, host) |> WcfService |> Ok
                 with
-                | e -> WcfExn e |> Error
-            | Error e -> e |> WcfServiceCannotInitializeErr |> Error
+                | e -> WcfExn e |> toError
+            | Error e -> e + (SingleErr WcfServiceCannotInitializeErr) |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
             new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceProxy<'S>.proxy)
             
         static member setProxy proxy = WcfServiceProxy<'S>.setProxy proxy
-        static member getService() = service.Value
+        static member tryGetService() = service.Value
 
-        static member getService proxy =
+        static member tryGetService proxy =
              WcfService<'S, 'I>.setProxy proxy
-             WcfService<'S, 'I>.getService()
+             service.Value

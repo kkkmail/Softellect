@@ -1,23 +1,22 @@
 ﻿namespace Softellect.Messaging
 
-open System
 open System.ServiceModel
 
-open Softellect.Sys.Errors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
-open Softellect.Wcf.Client
 
 module ServiceInfo =
 
-    type IMessagingService<'M, 'E> =
-        abstract getVersion : unit -> StlResult<MessagingDataVersion, 'E>
-        abstract sendMessage : Message<'M> -> UnitResult<'E>
-        abstract tryPeekMessage : MessagingClientId -> StlResult<Message<'M> option, 'E>
-        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> UnitResult<'E>
+    /// Client part of messaging service.
+    type IMessagingService<'D> =
+        abstract getVersion : unit -> MsgResult<MessagingDataVersion>
+        abstract sendMessage : Message<'D> -> MsgUnitResult
+        abstract tryPeekMessage : MessagingClientId -> MsgResult<Message<'D> option>
+        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MsgUnitResult
 
 
+    /// WCF part of messaging service.
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = MessagingWcfServiceName)>]
     type IMessagingWcfService =
@@ -40,10 +39,6 @@ module ServiceInfo =
             messagingServiceAccessInfo : ServiceAccessInfo
             messagingDataVersion : MessagingDataVersion
         }
-
-        //member private s.serviceName = s.messagingServiceName.value.value
-        //member s.wcfServiceName = toValidServiceName s.serviceName
-        //member s.wcfServiceUrl = getNetTcpServiceUrl s.messagingServiceAddress.value s.messagingServicePort.value s.wcfServiceName
 
 
     type MessagingClientAccessInfo =

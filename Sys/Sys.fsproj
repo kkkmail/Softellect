@@ -26,8 +26,7 @@
     <Compile Include="MessagingPrimitives.fs" />
     <Compile Include="GeneralErrors.fs" />
     <Compile Include="WcfErrors.fs" />
-    <Compile Include="MessagingClientErrors.fs" />
-    <Compile Include="MessagingServiceErrors.fs" />
+    <Compile Include="MessagingErrors.fs" />
     <Compile Include="TimerErrors.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Logging.fs" />

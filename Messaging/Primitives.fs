@@ -2,6 +2,9 @@
 
 open System
 open Softellect.Sys.Primitives
+open Softellect.Sys.Errors
+open Softellect.Sys.Logging
+open Softellect.Sys.MessagingErrors
 open Softellect.Sys.MessagingPrimitives
 
 module Primitives =
@@ -10,29 +13,15 @@ module Primitives =
     let MessagingWcfServiceName = "MessagingWcfService"
 
 
+    type MsgResult<'T> = Result<'T, MessagingError>
+    type MsgUnitResult = UnitResult<MessagingError>
+    type MsgLogger = Logger<MessagingError>
+
+
     type MessagingClientName =
         | MessagingClientName of string
 
         member this.value = let (MessagingClientName v) = this in v
-
-
-    //type ServiceName
-    //    with
-    //    member n.messagingClientName = MessagingClientName n.originalValue
-
-
-    //type MessagingServiceAddress =
-    //    | MessagingServiceAddress of ServiceAddress
-
-    //    member this.value = let (MessagingServiceAddress v) = this in v
-    //    //static member defaultValue = DefaultMessagingServiceAddress |> ServiceAddress |> MessagingServiceAddress
-
-
-    //type MessagingServicePort =
-    //    | MessagingServicePort of ServicePort
-
-    //    member this.value = let (MessagingServicePort v) = this in v
-    //    //static member defaultValue = DefaultMessagingServicePort |> ServicePort |> MessagingServicePort
 
 
     type MessagingServiceName =

@@ -13,28 +13,28 @@ open Softellect.Messaging.Primitives
 module Proxy =
 
     /// Provides IO proxy for messaging client.
-    type MessagingClientProxy<'D, 'E> =
+    type MessagingClientProxy<'D> =
         {
-            tryPickIncomingMessage : unit -> StlResult<Message<'D> option, 'E>
-            tryPickOutgoingMessage : unit -> StlResult<Message<'D> option, 'E>
-            saveMessage : Message<'D> -> UnitResult<'E>
-            tryDeleteMessage : MessageId -> UnitResult<'E>
-            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
+            tryPickIncomingMessage : unit -> MsgResult<Message<'D> option>
+            tryPickOutgoingMessage : unit -> MsgResult<Message<'D> option>
+            saveMessage : Message<'D> -> MsgUnitResult
+            tryDeleteMessage : MessageId -> MsgUnitResult
+            deleteExpiredMessages : TimeSpan -> MsgUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
         }
 
 
     /// Provides IO proxy for messaging service.
-    type MessagingServiceProxy<'D, 'E> =
+    type MessagingServiceProxy<'D> =
         {
-            tryPickMessage : MessagingClientId -> StlResult<Message<'D> option, 'E>
-            saveMessage : Message<'D> -> UnitResult<'E>
-            deleteMessage : MessageId -> UnitResult<'E>
-            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
+            tryPickMessage : MessagingClientId -> MsgResult<Message<'D> option>
+            saveMessage : Message<'D> -> MsgUnitResult
+            deleteMessage : MessageId -> MsgUnitResult
+            deleteExpiredMessages : TimeSpan -> MsgUnitResult
         }
 
 
-    type MessageProcessorResult<'T, 'E> =
+    type MessageProcessorResult<'T> =
         | ProcessedSuccessfully of 'T
         | ProcessedWithError of ('T * Err<'E>)
         | ProcessedWithFailedToRemove of ('T * Err<'E>)
@@ -43,32 +43,32 @@ module Proxy =
         | BusyProcessing
 
 
-    type MessageProcessorProxy<'D, 'E> =
+    type MessageProcessorProxy<'D> =
         {
-            start : unit -> UnitResult<'E>
-            tryPeekReceivedMessage : unit -> StlResult<Message<'D> option, 'E>
-            tryRemoveReceivedMessage : MessageId -> UnitResult<'E>
-            sendMessage : MessageInfo<'D> -> UnitResult<'E>
-            tryReceiveMessages : unit -> UnitResult<'E>
-            trySendMessages : unit -> UnitResult<'E>
-            removeExpiredMessages : unit -> UnitResult<'E>
+            start : unit -> MsgUnitResult
+            tryPeekReceivedMessage : unit -> MsgResult<Message<'D> option>
+            tryRemoveReceivedMessage : MessageId -> MsgUnitResult
+            sendMessage : MessageInfo<'D> -> MsgUnitResult
+            tryReceiveMessages : unit -> MsgUnitResult
+            trySendMessages : unit -> MsgUnitResult
+            removeExpiredMessages : unit -> MsgUnitResult
         }
 
 
-    type OnProcessMessageType<'S, 'D, 'E> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
-    type MessageResult<'S, 'E> = MessageProcessorResult<'S * UnitResult<'E>, 'E>
+    type OnProcessMessageType<'S, 'D> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
+    type MessageResult<'S> = MessageProcessorResult<'S * UnitResult<'E>>
 
 
-    type OnGetMessagesProxy<'S, 'D, 'E> =
+    type OnGetMessagesProxy<'S, 'D> =
         {
-            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D, 'E> -> MessageResult<'S, 'E>
+            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D> -> MessageResult<'S>
             onProcessMessage : 'S -> Message<'D> -> StateWithResult<'S, 'E>
             maxMessages : list<unit>
             onError : OnGetMessagesError -> Err<'E>
         }
 
 
-    let onGetMessages<'S, 'D, 'E> (proxy : OnGetMessagesProxy<'S, 'D, 'E>) (s : 'S) =
+    let onGetMessages<'S, 'D> (proxy : OnGetMessagesProxy<'S, 'D>) (s : 'S) =
         let addError f e = ((proxy.onError f) + e) |> Error
         let toError e = e |> proxy.onError |> Error
 

@@ -7,6 +7,7 @@ open Softellect.Sys.Errors
 open Softellect.Sys.TimerErrors
 open Softellect.Sys.Core
 open Softellect.Sys.Logging
+open Softellect.Sys.TimerErrors
 
 module TimerEvents =
 
@@ -19,14 +20,18 @@ module TimerEvents =
     let OneHourRefreshInterval = 3_600_000
 
 
-    type TimerEventInfo<'E> =
+    type TimerUnitResult = UnitResult<TimerEventError>
+    type TimerLogger = Logger<TimerEventError>
+
+
+    type TimerEventInfo =
         {
             handlerId : Guid option
             handlerName : string
-            eventHandler : unit -> UnitResult<'E>
+            eventHandler : unit -> TimerUnitResult
             refreshInterval : int option
             firstDelay : int option
-            logger : Logger<'E>
+            logger : TimerLogger
         }
 
         static member defaultValue logger h n =
@@ -50,13 +55,13 @@ module TimerEvents =
             }
 
 
-    type TimerEventHandler<'E> (i : TimerEventInfo<'E>) =
+    type TimerEventHandler<'E> (i : TimerEventInfo) =
         let mutable counter = -1
         let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
         let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> TimerEventErr |> i.logger.logErrData
-        let logWarn e = e |> TimerEventErr |> i.logger.logWarnData
+        let logError e = e |> SingleErr |> i.logger.logErrData
+        let logWarn e = e |> SingleErr |> i.logger.logWarnData
         let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
 
         let g() =

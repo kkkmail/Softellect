@@ -1,9 +1,58 @@
 ﻿namespace Softellect.Sys
 
 open System
-
-open MessagingPrimitives
 open WcfErrors
+open MessagingPrimitives
+
+module MessagingClientErrors =
+
+    type GetVersionError =
+        | GetVersionWcfErr
+        | VersionMismatchErr of VersionMismatchInfo
+
+
+    type OnGetMessagesError =
+        | ProcessedSuccessfullyWithInnerErr
+        | ProcessedWithErr
+        | ProcessedWithFailedToRemoveErr
+        | FailedToProcessErr
+        | BusyProcessingErr
+
+
+    type SendMessageError =
+        | SendMessageFailedErr
+        | CannotDeleteMessageErr of MessageId
+
+
+    type TryReceiveSingleMessageError =
+        | TryPeekMessageErr
+        | SaveMessageErr
+        | TryDeleteFromServerErr
+
+
+    type MessageDeliveryError =
+        | ServiceNotStartedErr
+        | ServerIsShuttingDownErr
+        | DataVersionMismatchErr of MessagingDataVersion
+        | MsgWcfErr of WcfError
+
+
+    type OnTryRemoveReceivedMessageError =
+        | MessageNotFoundErr of MessageId
+
+
+    type OnTryProcessMessageError =
+        | OnTryProcessMessageExn of exn
+
+
+    type MessagingClientError =
+        | GetVersionErr of GetVersionError
+        | SendMessageErr of SendMessageError
+        | TryReceiveSingleMessageErr of TryReceiveSingleMessageError
+        | MessageDeliveryErr of MessageDeliveryError
+        | OnTryRemoveReceivedMessageErr of OnTryRemoveReceivedMessageError
+        | OnTryProcessMessageErr of OnTryProcessMessageError
+
 
 module MessagingServiceErrors =
 
@@ -65,3 +114,13 @@ module MessagingServiceErrors =
         | TryPeekMessageErr of TryPeekMessageError
         | TryDeleteFromServerErr of TryDeleteFromServerError
         | MsgSettingsErr of MsgSettingsError
+
+
+open MessagingClientErrors
+open MessagingServiceErrors
+
+
+module MessagingErrors =
+    type MessagingError =
+        | MessagingClientErr of MessagingClientError
+        | MessagingServiceErr of MessagingServiceError

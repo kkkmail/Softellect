@@ -7,6 +7,6 @@ module WcfErrors =
     type WcfError =
         | WcfServiceNotInitializedErr
         | WcfExn of exn
-        | WcfServiceCannotInitializeErr of WcfError
+        | WcfServiceCannotInitializeErr
         | WcfSerializationErr of SerializationError
         | WcfCriticalErr of string

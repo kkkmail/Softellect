@@ -11,13 +11,13 @@ module Errors =
     /// All errors known in the system.
     type Err<'E> =
         | AggregateErr of Err<'E> * List<Err<'E>>
-        | TimerEventErr of TimerEventError
-        | WcfErr of WcfError
-        | MessagingServiceErr of MessagingServiceError
-        | MessagingClientErr of MessagingClientError
+        //| TimerEventErr of TimerEventError
+        //| WcfErr of WcfError
+        //| MessagingErr of MessagingError
 
-        | OtherErr of 'E
+        | SingleErr of 'E
 
+        /// b is the most recent error.
         static member (+) (a, b) =
             match a, b with
             | AggregateErr (x, w), AggregateErr (y, z) -> AggregateErr (x, w @ (y :: z))
@@ -25,12 +25,13 @@ module Errors =
             | _, AggregateErr (y, z) -> AggregateErr (a, y :: z)
             | _ -> AggregateErr (a, [b])
 
+        /// b is the most recent error.
         member a.add b = a + b
 
 
-    type StlResult<'T, 'E> = Result<'T, Err<'E>>
-    type UnitResult<'E> = StlResult<unit, 'E>
-    type ListResult<'T, 'E> = StlResult<list<StlResult<'T, 'E>>, 'E>
+    type ResultWithErr<'T, 'E> = Result<'T, Err<'E>>
+    type UnitResult<'E> = ResultWithErr<unit, 'E>
+    type ListResult<'T, 'E> = ResultWithErr<list<ResultWithErr<'T, 'E>>, 'E>
     type StateWithResult<'T, 'E> = 'T * UnitResult<'E>
 
 
