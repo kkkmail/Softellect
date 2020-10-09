@@ -8,6 +8,11 @@ module Logging =
         | SimpleLogData of string
         | ErrLogData of Err<'E>
 
+        member data.map f =
+            match data with
+            | SimpleLogData s -> SimpleLogData s
+            | ErrLogData d -> f d |> ErrLogData
+
 
     type Logger<'E> =
         {
@@ -29,11 +34,18 @@ module Logging =
 
             v
 
-
         static member defaultValue : Logger<'E> =
             {
                 logCrit = printfn "CRIT: %A"
                 logError = printfn "ERROR: %A"
                 logWarn = printfn "WARN: %A"
                 logInfo = printfn "INFO: %A"
+            }
+
+        member log.map f =
+            {
+                logCrit = fun e -> e.map f |> log.logCrit
+                logError = fun e -> e.map f |> log.logError
+                logWarn = fun e -> e.map f |> log.logWarn
+                logInfo = fun e -> e.map f |> log.logInfo
             }

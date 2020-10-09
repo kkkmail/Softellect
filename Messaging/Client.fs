@@ -4,6 +4,7 @@ open System
 
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.MessagingClientErrors
+open Softellect.Sys.MessagingErrors
 open Softellect.Sys.Errors
 open Softellect.Sys.TimerEvents
 
@@ -22,8 +23,8 @@ module Client =
     let maxNumberOfMediumMessages = 500
     let maxNumberOfLargeMessages = 100
 
-    //let private toError e = e |> MessagingClientErr |> Error
-    let private addError g f e = ((f |> g |> MessagingClientErr) + e) |> Error
+    //let private toError e = e |> MessagingClientErr |> SingleErr |> Error
+    //let private addError g f e = ((f |> g |> MessagingClientErr) + e) |> SingleErr |> Error
 
     type MessageCount =
         {
@@ -57,29 +58,32 @@ module Client =
         member t.onLargeMessage() = { t with largeMessages = t.largeMessages + 1 }
 
 
-    type MessagingClientData<'D> =
+    type MessagingClientData<'D, 'E> =
         {
             msgAccessInfo : MessagingClientAccessInfo
-            messagingService : IMessagingService<'D>
-            msgClientProxy : MessagingClientProxy<'D>
+            messagingService : IMessagingService<'D, 'E>
+            msgClientProxy : MessagingClientProxy<'D, 'E>
             expirationTime : TimeSpan
         }
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
 
-    type TryReceiveSingleMessageProxy<'D> =
+    type TryReceiveSingleMessageProxy<'D, 'E> =
         {
-            saveMessage : Message<'D> -> MsgUnitResult
-            tryDeleteMessage : MessageId -> MsgUnitResult
-            tryPeekMessage : unit -> MsgResult<Message<'D> option>
-            tryDeleteFromServer : MessageId -> MsgUnitResult
+            saveMessage : Message<'D> -> UnitResult<'E>
+            tryDeleteMessage : MessageId -> UnitResult<'E>
+            tryPeekMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryDeleteFromServer : MessageId -> UnitResult<'E>
             getMessageSize : MessageData<'D> -> MessageSize
+            toErr : MessagingClientError -> Err<'E>
         }
 
 
-    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D>) =
-        let addError = addError TryReceiveSingleMessageErr
+    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : ResultWithErr<MessageSize option, 'E> =
+        //let a e = proxy.toErr (TryReceiveSingleMessageErr e)
+        //let addError = addError (proxy.toErr TryReceiveSingleMessageErr)
+        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> = failwith ""
 
         let result =
             match proxy.tryPeekMessage () with
@@ -146,16 +150,16 @@ module Client =
     let onSendMessage saveMessage msgClientId m = createMessage msgClientId m |> saveMessage
 
 
-    type TrySendSingleMessageProxy<'D> =
+    type TrySendSingleMessageProxy<'D, 'E> =
         {
-            tryPickOutgoingMessage : unit -> MsgResult<Message<'D> option>
-            tryDeleteMessage : MessageId -> MsgUnitResult
-            sendMessage : Message<'D> -> MsgUnitResult
+            tryPickOutgoingMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryDeleteMessage : MessageId -> UnitResult<'E>
+            sendMessage : Message<'D> -> UnitResult<'E>
             getMessageSize : MessageData<'D> -> MessageSize
         }
 
 
-    let trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D>) =
+    let trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
         match proxy.tryPickOutgoingMessage() with
         | Ok None -> Ok None
         | Ok (Some m) ->
@@ -171,7 +175,7 @@ module Client =
     let trySendMessages proxy = tryTransmitMessages (fun () -> trySendSingleMessage proxy)
 
 
-    type MessagingClient<'D>(d : MessagingClientData<'D>) =
+    type MessagingClient<'D, 'E>(d : MessagingClientData<'D, 'E>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
 
@@ -182,6 +186,7 @@ module Client =
                 tryPeekMessage = fun () -> d.messagingService.tryPeekMessage msgClientId
                 tryDeleteFromServer = fun m -> d.messagingService.tryDeleteFromServer (msgClientId, m)
                 getMessageSize = d.msgClientProxy.getMessageSize
+                toErr = failwith ""
             }
 
         let sendProxy =
@@ -195,18 +200,18 @@ module Client =
         /// Verifies that we have access to the relevant database and removes all expired messages.
         member m.start() = m.removeExpiredMessages()
 
-        member _.sendMessage (m : MessageInfo<'D>) : MsgUnitResult =
+        member _.sendMessage (m : MessageInfo<'D>) : UnitResult<'E> =
             createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
             |> proxy.saveMessage
 
-        member _.tryPeekReceivedMessage() : MsgResult<Message<'D> option> = proxy.tryPickIncomingMessage()
-        member _.tryRemoveReceivedMessage (m : MessageId) : MsgUnitResult = proxy.tryDeleteMessage m
-        member _.tryReceiveMessages() : MsgUnitResult = tryReceiveMessages receiveProxy
-        member _.trySendMessages() : MsgUnitResult = trySendMessages sendProxy
-        member m.removeExpiredMessages() : MsgUnitResult = proxy.deleteExpiredMessages d.expirationTime
+        member _.tryPeekReceivedMessage() : ResultWithErr<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
+        member _.tryRemoveReceivedMessage (m : MessageId) : UnitResult<'E> = proxy.tryDeleteMessage m
+        member _.tryReceiveMessages() : UnitResult<'E> = tryReceiveMessages receiveProxy
+        member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
+        member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
 
 
-        member m.messageProcessorProxy : MessageProcessorProxy<'D> =
+        member m.messageProcessorProxy : MessageProcessorProxy<'D, 'E> =
             {
                 start = m.start
                 tryPeekReceivedMessage = m.tryPeekReceivedMessage
@@ -215,16 +220,19 @@ module Client =
                 tryReceiveMessages = m.tryReceiveMessages
                 trySendMessages = m.trySendMessages
                 removeExpiredMessages = m.removeExpiredMessages
+                logger = proxy.logger
+                toErr = proxy.toErr
             }
 
 
-        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'M, 'E> =
+        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
             {
                 saveMessage = d.msgClientProxy.saveMessage
                 tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
                 tryPeekMessage = fun () -> d.messagingService.tryPeekMessage d.msgAccessInfo.msgClientId
                 tryDeleteFromServer = fun x -> d.messagingService.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
+                toErr = proxy.toErr
             }
 
 
@@ -244,7 +252,7 @@ module Client =
                         | Ok() -> ProcessedSuccessfully r
                         | Error e -> ProcessedWithFailedToRemove (r, e)
                     with
-                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> MessagingClientErr |> FailedToProcess
+                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> w.toErr |> FailedToProcess
                 | Ok None -> NothingToDo
                 | Error e -> FailedToProcess e
             else BusyProcessing
@@ -255,21 +263,27 @@ module Client =
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
-    let createMessagingClientEventHandlers logger (w : MessageProcessorProxy<'M, 'E>) =
+    let createMessagingClientEventHandlers (w : MessageProcessorProxy<'M, 'E>) =
         let eventHandler _ = w.tryReceiveMessages()
-        let h = TimerEventInfo<'E>.defaultValue logger eventHandler "MessagingClient - tryReceiveMessages" |> TimerEventHandler
+        let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages" 
+
+        let proxy =
+            {
+                eventHandler = eventHandler
+                logger = w.logger
+                toErr = fun e -> e |> TimerEventErr |> w.toErr
+            }
+
+        let h = TimerEventHandler (i, proxy)
         do h.start()
 
         let eventHandler1 _ = w.trySendMessages()
-        let h1 =
-             { TimerEventInfo<'E>.defaultValue logger eventHandler1 "MessagingClient - trySendMessages" with firstDelay = RefreshInterval / 3 |> Some }
-             |> TimerEventHandler
+        let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = RefreshInterval / 3 |> Some }
+        let h1 = TimerEventHandler (i1, { proxy with eventHandler = eventHandler1 })
 
         do h1.start()
 
         let eventHandler2 _ = w.removeExpiredMessages()
-        let h2 =
-            { TimerEventInfo<'E>.oneHourValue logger eventHandler2 "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
-            |> TimerEventHandler
-
+        let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
+        let h2 = TimerEventHandler (i2, { proxy with eventHandler = eventHandler2 })
         do h2.start()

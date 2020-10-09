@@ -3,6 +3,7 @@
 open System
 
 open Softellect.Sys.Primitives
+open Softellect.Sys.Logging
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.Errors
 open Softellect.Sys.MessagingClientErrors
@@ -13,28 +14,32 @@ open Softellect.Messaging.Primitives
 module Proxy =
 
     /// Provides IO proxy for messaging client.
-    type MessagingClientProxy<'D> =
+    type MessagingClientProxy<'D, 'E> =
         {
-            tryPickIncomingMessage : unit -> MsgResult<Message<'D> option>
-            tryPickOutgoingMessage : unit -> MsgResult<Message<'D> option>
-            saveMessage : Message<'D> -> MsgUnitResult
-            tryDeleteMessage : MessageId -> MsgUnitResult
-            deleteExpiredMessages : TimeSpan -> MsgUnitResult
+            tryPickIncomingMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryPickOutgoingMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            saveMessage : Message<'D> -> UnitResult<'E>
+            tryDeleteMessage : MessageId -> UnitResult<'E>
+            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
             getMessageSize : MessageData<'D> -> MessageSize
+            logger : Logger<'E>
+            toErr : MessagingClientError -> Err<'E>
         }
 
 
     /// Provides IO proxy for messaging service.
-    type MessagingServiceProxy<'D> =
+    type MessagingServiceProxy<'D, 'E> =
         {
-            tryPickMessage : MessagingClientId -> MsgResult<Message<'D> option>
-            saveMessage : Message<'D> -> MsgUnitResult
-            deleteMessage : MessageId -> MsgUnitResult
-            deleteExpiredMessages : TimeSpan -> MsgUnitResult
+            tryPickMessage : MessagingClientId -> ResultWithErr<Message<'D> option, 'E>
+            saveMessage : Message<'D> -> UnitResult<'E>
+            deleteMessage : MessageId -> UnitResult<'E>
+            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
+            logger : Logger<'E>
+            toErr : MessagingServiceError -> Err<'E>
         }
 
 
-    type MessageProcessorResult<'T> =
+    type MessageProcessorResult<'T, 'E> =
         | ProcessedSuccessfully of 'T
         | ProcessedWithError of ('T * Err<'E>)
         | ProcessedWithFailedToRemove of ('T * Err<'E>)
@@ -43,32 +48,34 @@ module Proxy =
         | BusyProcessing
 
 
-    type MessageProcessorProxy<'D> =
+    type MessageProcessorProxy<'D, 'E> =
         {
-            start : unit -> MsgUnitResult
-            tryPeekReceivedMessage : unit -> MsgResult<Message<'D> option>
-            tryRemoveReceivedMessage : MessageId -> MsgUnitResult
-            sendMessage : MessageInfo<'D> -> MsgUnitResult
-            tryReceiveMessages : unit -> MsgUnitResult
-            trySendMessages : unit -> MsgUnitResult
-            removeExpiredMessages : unit -> MsgUnitResult
+            start : unit -> UnitResult<'E>
+            tryPeekReceivedMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryRemoveReceivedMessage : MessageId -> UnitResult<'E>
+            sendMessage : MessageInfo<'D> -> UnitResult<'E>
+            tryReceiveMessages : unit -> UnitResult<'E>
+            trySendMessages : unit -> UnitResult<'E>
+            removeExpiredMessages : unit -> UnitResult<'E>
+            logger : Logger<'E>
+            toErr : MessagingClientError -> Err<'E>
         }
 
 
-    type OnProcessMessageType<'S, 'D> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
-    type MessageResult<'S> = MessageProcessorResult<'S * UnitResult<'E>>
+    type OnProcessMessageType<'S, 'D, 'E> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
+    type MessageResult<'S, 'E> = MessageProcessorResult<'S * UnitResult<'E>, 'E>
 
 
-    type OnGetMessagesProxy<'S, 'D> =
+    type OnGetMessagesProxy<'S, 'D, 'E> =
         {
-            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D> -> MessageResult<'S>
+            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D, 'E> -> MessageResult<'S, 'E>
             onProcessMessage : 'S -> Message<'D> -> StateWithResult<'S, 'E>
             maxMessages : list<unit>
             onError : OnGetMessagesError -> Err<'E>
         }
 
 
-    let onGetMessages<'S, 'D> (proxy : OnGetMessagesProxy<'S, 'D>) (s : 'S) =
+    let onGetMessages<'S, 'D, 'E> (proxy : OnGetMessagesProxy<'S, 'D, 'E>) (s : 'S) =
         let addError f e = ((proxy.onError f) + e) |> Error
         let toError e = e |> proxy.onError |> Error
 

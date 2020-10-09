@@ -10,7 +10,7 @@ module Program =
 
     [<EntryPoint>]
     let main _ =
-        match EchoWcfServiceImpl.getService echoWcfServiceProxy with
+        match EchoWcfServiceImpl.tryGetService echoWcfServiceProxy with
         | Ok host ->
             let result = host.run()
             printfn "result = %A" result

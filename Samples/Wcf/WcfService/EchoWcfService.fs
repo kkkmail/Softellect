@@ -33,8 +33,8 @@ module EchoWcfService =
 
     type EchoWcfService() =
         let service = EchoService() :> IEchoService
-        let toEchoError f = WcfErr f
-        let toComplexEchoError f = WcfErr f
+        let toEchoError f = f |> EchoWcfErr |> SingleErr
+        let toComplexEchoError f = f |> EchoWcfErr |> SingleErr
 
         interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m

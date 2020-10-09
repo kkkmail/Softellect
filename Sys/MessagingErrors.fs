@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open TimerErrors
 open WcfErrors
 open MessagingPrimitives
 
@@ -46,6 +47,7 @@ module MessagingClientErrors =
 
 
     type MessagingClientError =
+        | TimerEventErr of TimerEventError
         | GetVersionErr of GetVersionError
         | SendMessageErr of SendMessageError
         | TryReceiveSingleMessageErr of TryReceiveSingleMessageError
@@ -107,6 +109,7 @@ module MessagingServiceErrors =
 
 
     type MessagingServiceError =
+        | TimerEventErr of TimerEventError
         | MsgSvcDbErr of MsgSvcDbError
         | GetVersionSvcErr of GetVersionSvcError
         | MessageDeliveryErr of MessageDeliveryError

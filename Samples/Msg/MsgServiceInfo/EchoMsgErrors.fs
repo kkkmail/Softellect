@@ -9,4 +9,4 @@ module EchoMsgErrors =
 
 
     type UnitResult = UnitResult<EchoMsgError>
-    type EchoMsgResult<'T> = StlResult<'T, EchoMsgError>
+    type EchoMsgResult<'T> = ResultWithErr<'T, EchoMsgError>

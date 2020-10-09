@@ -85,58 +85,58 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    let private getClientProxy clientData clientId : MessagingClientProxy<EchoMessageData, EchoMsgError> =
-        {
-            tryPickIncomingMessage =
-                fun() ->
-                    tryFind
-                        clientData
-                        (fun e -> e.messageDataInfo.createdOn)
-                        (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
+    //let private getClientProxy clientData clientId : MessagingClientProxy<EchoMessageData, EchoMsgError> =
+    //    {
+    //        tryPickIncomingMessage =
+    //            fun() ->
+    //                tryFind
+    //                    clientData
+    //                    (fun e -> e.messageDataInfo.createdOn)
+    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
 
-            tryPickOutgoingMessage =
-                fun() ->
-                    tryFind
-                        clientData
-                        (fun e -> e.messageDataInfo.createdOn)
-                        (fun e -> e.messageDataInfo.recipientInfo.recipient = serviceId)
+    //        tryPickOutgoingMessage =
+    //            fun() ->
+    //                tryFind
+    //                    clientData
+    //                    (fun e -> e.messageDataInfo.createdOn)
+    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = serviceId)
 
-            saveMessage = fun m ->save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
-            tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
-            deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
-            getMessageSize = fun _ -> MediumSize
-        }
-
-
-    let serviceProxy : MessagingServiceProxy<EchoMessageData, EchoMsgError> =
-        {
-            tryPickMessage =
-                fun clientId ->
-                    tryFind
-                        serverData
-                        (fun e -> e.messageDataInfo.createdOn)
-                        (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
-
-            saveMessage =
-                fun m ->
-                    save serverData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
-                    Ok()
-
-            deleteMessage = fun i -> tryDelete serverData (fun e -> e.messageDataInfo.messageId = i)
-            deleteExpiredMessages = fun i -> tryDelete serverData (isExpired i)
-        }
+    //        saveMessage = fun m ->save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
+    //        tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
+    //        deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
+    //        getMessageSize = fun _ -> MediumSize
+    //    }
 
 
-    let clientOneProxy = getClientProxy clientOneData clientOneId
-    let clientTwoProxy = getClientProxy clientTwoData clientTwoId
+    //let serviceProxy : MessagingServiceProxy<EchoMessageData, EchoMsgError> =
+    //    {
+    //        tryPickMessage =
+    //            fun clientId ->
+    //                tryFind
+    //                    serverData
+    //                    (fun e -> e.messageDataInfo.createdOn)
+    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
+
+    //        saveMessage =
+    //            fun m ->
+    //                save serverData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
+    //                Ok()
+
+    //        deleteMessage = fun i -> tryDelete serverData (fun e -> e.messageDataInfo.messageId = i)
+    //        deleteExpiredMessages = fun i -> tryDelete serverData (isExpired i)
+    //    }
 
 
-    let serviceData =
-        {
-            messagingServiceProxy = serviceProxy
-            expirationTime = TimeSpan.FromSeconds 10.0
-            messagingDataVersion  = MessagingDataVersion 0
-        }
+    //let clientOneProxy = getClientProxy clientOneData clientOneId
+    //let clientTwoProxy = getClientProxy clientTwoData clientTwoId
+
+
+    //let serviceData =
+    //    {
+    //        messagingServiceProxy = serviceProxy
+    //        expirationTime = TimeSpan.FromSeconds 10.0
+    //        messagingDataVersion  = MessagingDataVersion 0
+    //    }
 
 
     let logger = Logger<EchoMsgError>.defaultValue

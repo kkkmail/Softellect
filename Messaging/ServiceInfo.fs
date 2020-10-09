@@ -1,22 +1,31 @@
 ﻿namespace Softellect.Messaging
 
+open System
 open System.ServiceModel
 
+open Softellect.Sys.Errors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
+open Softellect.Wcf.Client
 
 module ServiceInfo =
 
-    /// Client part of messaging service.
-    type IMessagingService<'D> =
-        abstract getVersion : unit -> MsgResult<MessagingDataVersion>
-        abstract sendMessage : Message<'D> -> MsgUnitResult
-        abstract tryPeekMessage : MessagingClientId -> MsgResult<Message<'D> option>
-        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MsgUnitResult
+    /// Client part of messaging service
+    type IMessagingClient<'D, 'E> =
+        abstract getVersion : unit -> ResultWithErr<MessagingDataVersion, 'E>
+        abstract sendMessage : Message<'D> -> UnitResult<'E>
+        abstract tryPeekMessage : MessagingClientId -> ResultWithErr<Message<'D> option, 'E>
+        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> UnitResult<'E>
 
 
-    /// WCF part of messaging service.
+    type IMessagingService<'D, 'E> =
+        abstract getVersion : unit -> ResultWithErr<MessagingDataVersion, 'E>
+        abstract sendMessage : Message<'D> -> UnitResult<'E>
+        abstract tryPeekMessage : MessagingClientId -> ResultWithErr<Message<'D> option, 'E>
+        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> UnitResult<'E>
+
+
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = MessagingWcfServiceName)>]
     type IMessagingWcfService =
