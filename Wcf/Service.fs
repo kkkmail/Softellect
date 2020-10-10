@@ -96,6 +96,15 @@ module Service =
             | (false, _), true ->
                 fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" i.serviceAddress.value i.httpServicePort i.netTcpServicePort)
 
+        static member defaultValue =
+            {
+                ipAddress = IPAddress.None
+                httpPort = -1
+                httpServiceName = String.Empty
+                netTcpPort = - 1
+                netTcpServiceName  = String.Empty
+            }
+
 
     type WcfServiceProxy =
         {

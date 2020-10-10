@@ -1,17 +1,22 @@
 ﻿namespace Softellect.Messaging
 
 open System
+open System.Threading
 
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.MessagingClientErrors
+//open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingErrors
 open Softellect.Sys.Errors
 open Softellect.Sys.TimerEvents
 
+open Softellect.Wcf.Common
+open Softellect.Wcf.Client
+
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
-open System.Threading
+open Softellect.Sys.WcfErrors
 
 module Client =
 
@@ -25,6 +30,7 @@ module Client =
 
     //let private toError e = e |> MessagingClientErr |> SingleErr |> Error
     //let private addError g f e = ((f |> g |> MessagingClientErr) + e) |> SingleErr |> Error
+
 
     type MessageCount =
         {
@@ -58,13 +64,26 @@ module Client =
         member t.onLargeMessage() = { t with largeMessages = t.largeMessages + 1 }
 
 
+    type MsgResponseHandlerData<'D, 'E> =
+        {
+            msgAccessInfo : MessagingClientAccessInfo
+            toErr : MessagingClientError -> Err<'E>
+        }
+
+
     type MessagingClientData<'D, 'E> =
         {
             msgAccessInfo : MessagingClientAccessInfo
-            messagingService : IMessagingService<'D, 'E>
+            //messagingService : IMessagingClient<'D, 'E>
             msgClientProxy : MessagingClientProxy<'D, 'E>
             expirationTime : TimeSpan
         }
+
+        member d.msgResponseHandlerData : MsgResponseHandlerData<'D, 'E> =
+            {
+                msgAccessInfo = d.msgAccessInfo
+                toErr = d.msgClientProxy.toErr
+            }
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
@@ -83,7 +102,7 @@ module Client =
     let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : ResultWithErr<MessageSize option, 'E> =
         //let a e = proxy.toErr (TryReceiveSingleMessageErr e)
         //let addError = addError (proxy.toErr TryReceiveSingleMessageErr)
-        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> = failwith ""
+        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> = failwith "..."
 
         let result =
             match proxy.tryPeekMessage () with
@@ -103,7 +122,7 @@ module Client =
         result
 
 
-    let mapper transmitter (c : MessageCount) =
+    let private mapper transmitter (c : MessageCount) =
         match c.canProcess with
         | true ->
             match transmitter() with
@@ -175,25 +194,58 @@ module Client =
     let trySendMessages proxy = tryTransmitMessages (fun () -> trySendSingleMessage proxy)
 
 
+    /// Low level WCF messaging client.
+    //type MsgResponseHandler<'D, 'E> private (url) =
+    type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
+        let url = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl
+
+        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> url
+
+        //let getVersionWcfErr e = e |> GetVersionSvcWcfErr |> GetVersionSvcErr |> MessagingServiceErr
+        //let msgWcfErr e = e |> MsgWcfErr |> MessageDeliveryErr |> MessagingServiceErr
+        //let tryPeekMsgWcfErr e = e |> TryPeekMsgWcfErr |> TryPeekMessageErr |> MessagingServiceErr
+        //let tryDeleteMsgWcfErr e = e |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> MessagingServiceErr
+
+        let getVersionWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        let msgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        let tryPeekMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        let tryDeleteMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+
+        let getVersionImpl() = tryCommunicate tryGetWcfService (fun service -> service.getVersion) getVersionWcfErr ()
+        let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) msgWcfErr m
+        let tryPeekMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPeekMsgWcfErr n
+        let tryDeleteFromServerImpl x = tryCommunicate tryGetWcfService (fun service -> service.tryDeleteFromServer) tryDeleteMsgWcfErr x
+
+        interface IMessagingClient<'D, 'E> with
+            member _.getVersion() = getVersionImpl()
+            member _.sendMessage m = sendMessageImpl m
+            member _.tryPeekMessage n = tryPeekMessageImpl n
+            member _.tryDeleteFromServer x = tryDeleteFromServerImpl x
+
+        //new (i : MessagingClientAccessInfo) = MsgResponseHandler<'D, 'E>(i.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl)
+        //new (i : MessagingServiceAccessInfo) = MsgResponseHandler<'D, 'E>(i.wcfServiceUrl)
+
+
     type MessagingClient<'D, 'E>(d : MessagingClientData<'D, 'E>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
+        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D, 'E>
 
         let receiveProxy =
             {
                 saveMessage = proxy.saveMessage
                 tryDeleteMessage = proxy.tryDeleteMessage
-                tryPeekMessage = fun () -> d.messagingService.tryPeekMessage msgClientId
-                tryDeleteFromServer = fun m -> d.messagingService.tryDeleteFromServer (msgClientId, m)
+                tryPeekMessage = fun () -> responseHandler.tryPeekMessage msgClientId
+                tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
                 getMessageSize = d.msgClientProxy.getMessageSize
-                toErr = failwith ""
+                toErr = d.msgClientProxy.toErr
             }
 
         let sendProxy =
             {
                 tryPickOutgoingMessage = proxy.tryPickOutgoingMessage
                 tryDeleteMessage = proxy.tryDeleteMessage
-                sendMessage = d.messagingService.sendMessage
+                sendMessage = responseHandler.sendMessage
                 getMessageSize = d.msgClientProxy.getMessageSize
             }
 
@@ -210,7 +262,6 @@ module Client =
         member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
         member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
 
-
         member m.messageProcessorProxy : MessageProcessorProxy<'D, 'E> =
             {
                 start = m.start
@@ -224,22 +275,19 @@ module Client =
                 toErr = proxy.toErr
             }
 
-
         member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
             {
                 saveMessage = d.msgClientProxy.saveMessage
                 tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
-                tryPeekMessage = fun () -> d.messagingService.tryPeekMessage d.msgAccessInfo.msgClientId
-                tryDeleteFromServer = fun x -> d.messagingService.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
+                tryPeekMessage = fun () -> responseHandler.tryPeekMessage d.msgAccessInfo.msgClientId
+                tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
                 toErr = proxy.toErr
             }
 
-
     let mutable private callCount = -1
 
-
-    let onTryProcessMessage (w : MessageProcessorProxy<'M, 'E>) x f =
+    let onTryProcessMessage (w : MessageProcessorProxy<'D, 'E>) x f =
         let retVal =
             if Interlocked.Increment(&callCount) = 0
             then

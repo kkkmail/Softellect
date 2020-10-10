@@ -33,12 +33,24 @@ module Service =
                 messagingDataVersion = v
             }
 
+        static member defaultValue() =
+            {
+                expirationTime = MessagingServiceInfo.defaultExpirationTime
+                messagingDataVersion = MessagingDataVersion 0
+            }
+
 
     type MessagingServiceData<'D, 'E> =
         {
             messagingServiceInfo : MessagingServiceInfo
             messagingServiceProxy : MessagingServiceProxy<'D, 'E>
         }
+
+        static member defaultValue : MessagingServiceData<'D, 'E> =
+            {
+                messagingServiceInfo = MessagingServiceInfo.defaultValue()
+                messagingServiceProxy = MessagingServiceProxy.defaultValue
+            }
 
 
     type private MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
@@ -143,10 +155,25 @@ module Service =
             messagingWcfServiceProxy : MessagingWcfServiceProxy<'D, 'E>
         }
 
+        static member defaultValue : MessagingWcfServiceData<'D, 'E> =
+            {
+                messagingServiceData = MessagingServiceData.defaultValue
+                msgWcfServiceAccessInfo = WcfServiceAccessInfo.defaultValue
+                messagingWcfServiceProxy =
+                    {
+                        logger = Logger.defaultValue
+                        toErr = fun e -> failwith (sprintf "%A" e)
+                    }
+            }
+
 
     //[<ServiceBehavior(IncludeExceptionDetailInFaults = true, InstanceContextMode = InstanceContextMode.PerSession)>]
-    type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E> option) =
-        static let getData() = WcfServiceData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>>.dataOpt
+    type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E>) =
+        static let tryGetData() =
+            WcfServiceData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>>.dataOpt
+
+        static let tryCreateService() : MessagingWcfService<'D, 'E> option = failwith ""
+
         let proxy = d.messagingWcfServiceProxy
         let messagingService = MessagingService<'D, 'E>.service
         //do messagingService.createEventHandlers()
@@ -196,7 +223,9 @@ module Service =
         //    MessagingWcfService<'D, 'E>.setProxy proxy
         //    service.Value
 
-        new() = MessagingWcfService<'D, 'E> (getData() |> Option.bind (fun e -> Some e.serviceData))
+        new() = MessagingWcfService<'D, 'E> (tryGetData()
+                                                |> Option.bind (fun e -> Some e.serviceData)
+                                                |> Option.defaultValue MessagingWcfServiceData<'D, 'E>.defaultValue)
 
-        member x.run() =
-            ignore()
+        //member x.run() =
+        //    ignore()

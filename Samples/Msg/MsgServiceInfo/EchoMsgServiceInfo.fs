@@ -20,6 +20,9 @@ open Softellect.Samples.Msg.ServiceInfo.EchoMsgErrors
 
 module EchoMsgServiceInfo =
 
+    let dataVersion = MessagingDataVersion 1
+
+
     type EchoMsgType =
         | A
         | B
@@ -44,10 +47,12 @@ module EchoMsgServiceInfo =
 
 
     type EchoMsgClient = MessagingClient<EchoMessageData, EchoMsgError>
+    type EchoMsgClientData = MessagingClientData<EchoMessageData, EchoMsgError>
     type EchoMsgServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
     //type EchoMsgService = MessagingService<EchoMessageData, EchoMsgError>
     type EchoMsgWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
-    type Message = Message<EchoMessageData>
+    type EchoMessage = Message<EchoMessageData>
+    type EchoMessageInfo = MessageInfo<EchoMessageData>
 
 
     let echoWcfServiceAccessInfo =
@@ -67,9 +72,9 @@ module EchoMsgServiceInfo =
 
     /// Using simple mutable lists to mock client and service data sources.
     type MutableList<'T> = System.Collections.Generic.List<'T>
-    let private clientOneData = new MutableList<Message>()
-    let private clientTwoData = new MutableList<Message>()
-    let private serverData = new MutableList<Message>()
+    let private clientOneMessageData = new MutableList<EchoMessage>()
+    let private clientTwoMessageData = new MutableList<EchoMessage>()
+    let private serverMessageData = new MutableList<EchoMessage>()
 
 
     let private tryFind (source : MutableList<'T>) sorter finder = source |> Seq.sortBy sorter |> Seq.tryFind finder |> Ok
@@ -80,7 +85,7 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    let private isExpired (i : TimeSpan) (m : Message) =
+    let private isExpired (i : TimeSpan) (m : EchoMessage) =
         m.messageDataInfo.createdOn.Add(i) < DateTime.Now
 
 
@@ -123,32 +128,49 @@ module EchoMsgServiceInfo =
             tryPickMessage =
                 fun clientId ->
                     tryFind
-                        serverData
+                        serverMessageData
                         (fun e -> e.messageDataInfo.createdOn)
                         (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
 
             saveMessage =
                 fun m ->
-                    save serverData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
+                    save serverMessageData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
                     Ok()
 
-            deleteMessage = fun i -> tryDelete serverData (fun e -> e.messageDataInfo.messageId = i)
-            deleteExpiredMessages = fun i -> tryDelete serverData (isExpired i)
+            deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
+            deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
             logger = echoLogger
             toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr |> SingleErr
         }
 
 
-    let clientOneProxy = getClientProxy clientOneData clientOneId
-    let clientTwoProxy = getClientProxy clientTwoData clientTwoId
+    let clientOneProxy = getClientProxy clientOneMessageData clientOneId
+    let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId
 
+
+    let clientOneData : EchoMsgClientData =
+        {
+            msgAccessInfo =
+                {
+                    msgClientId = clientOneId
+
+                    msgSvcAccessInfo =
+                        {
+                            messagingServiceAccessInfo = echoWcfServiceAccessInfo
+                            messagingDataVersion = dataVersion
+                        }
+                }
+
+            msgClientProxy = clientOneProxy
+            expirationTime = TimeSpan.FromSeconds 10.0
+        }
 
     let private serviceData =
         {
             messagingServiceInfo =
                 {
                     expirationTime = TimeSpan.FromSeconds 10.0
-                    messagingDataVersion  = MessagingDataVersion 0
+                    messagingDataVersion = dataVersion
                 }
 
             messagingServiceProxy = serviceProxy

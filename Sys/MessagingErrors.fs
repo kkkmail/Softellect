@@ -47,6 +47,7 @@ module MessagingClientErrors =
 
 
     type MessagingClientError =
+        | GeneralMessagingClientErr
         | TimerEventErr of TimerEventError
         | GetVersionErr of GetVersionError
         | SendMessageErr of SendMessageError

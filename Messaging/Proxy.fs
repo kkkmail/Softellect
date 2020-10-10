@@ -38,6 +38,16 @@ module Proxy =
             toErr : MessagingServiceError -> Err<'E>
         }
 
+        static member defaultValue : MessagingServiceProxy<'D, 'E> =
+            {
+                tryPickMessage = fun _ -> failwith ""
+                saveMessage = fun _ -> failwith ""
+                deleteMessage = fun _ -> failwith ""
+                deleteExpiredMessages = fun _ -> failwith ""
+                logger = Logger.defaultValue
+                toErr = fun _ -> failwith ""
+            }
+
 
     type MessageProcessorResult<'T, 'E> =
         | ProcessedSuccessfully of 'T
