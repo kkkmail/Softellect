@@ -99,40 +99,53 @@ module Service =
 
     type WcfServiceProxy =
         {
-            wcfServiceAccessInfoRes : WcfResult<WcfServiceAccessInfo>
-            loggerOpt : WcfLogger option
+            wcfLogger : WcfLogger
         }
 
-        static member defaultValue =
-            {
-                wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> SingleErr |> Error
-                loggerOpt = None
-            }
+
+    //type WcfServiceProxy =
+    //    {
+    //        wcfServiceAccessInfoRes : WcfResult<WcfServiceAccessInfo>
+    //        loggerOpt : WcfLogger option
+    //    }
+
+        //static member defaultValue =
+        //    {
+        //        wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> SingleErr |> Error
+        //        loggerOpt = None
+        //    }
 
 
-    type WcfServiceProxy<'S>() =
-        static let mutable serviceProxy = WcfServiceProxy.defaultValue
-        static member setProxy proxy = serviceProxy <- proxy
-        static member proxy = serviceProxy
+    type WcfServiceData<'P> =
+        {
+            wcfServiceAccessInfo : WcfServiceAccessInfo
+            wcfServiceProxy : WcfServiceProxy
+            serviceData : 'P
+        }
+
+
+    type WcfServiceData<'S, 'P>() =
+        static let mutable serviceDataOpt :  WcfServiceData<'P> option = None
+        static member setData data = serviceDataOpt <- Some data
+        static member dataOpt = serviceDataOpt
 
         /// It is not really needed but we want to "use" the generic type to make the compliler happy.
         member _.serviceType = typeof<'S>
 
 
-    type WcfStartup<'S, 'I when 'I : not struct and 'S : not struct>() =
-        let a = WcfServiceProxy<'S>.proxy.wcfServiceAccessInfoRes
+    type WcfStartup<'S, 'I, 'P when 'I : not struct and 'S : not struct>() =
+        let data = WcfServiceData<'S, 'P>.dataOpt
 
         let createServiceModel (builder : IServiceBuilder) =
-            match a with
-            | Ok i ->
+            match data with
+            | Some d ->
+                let i = d.wcfServiceAccessInfo
                 builder
                     .AddService<'S>()
                     .AddServiceEndpoint<'S, 'I>(getBasicHttpBinding(), "/" + i.httpServiceName)
                     .AddServiceEndpoint<'S, 'I>(getNetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
-            | Error e ->
-                // TODO kk:20201006 - Log error and then don't throw???
-                failwith (sprintf "Service access information is missing: %A." e)
+            | None -> failwith (sprintf "Service data is missing.")
 
         /// The name must match required signature in CoreWCF.
         member _.ConfigureServices(services : IServiceCollection) =
@@ -167,12 +180,12 @@ module Service =
         member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
 
 
-    type WcfService<'S, 'I when 'I : not struct and 'S : not struct>() =
-        static let tryCreateWebHostBuilder (proxy :  WcfServiceProxy) : WcfResult<WcfService> =
-            let logger = proxy.loggerOpt |> Option.defaultValue WcfLogger.defaultValue
-
-            match proxy.wcfServiceAccessInfoRes with
-            | Ok info ->
+    type WcfService<'S, 'I, 'P when 'I : not struct and 'S : not struct>() =
+        static let tryCreateWebHostBuilder (data : WcfServiceData<'P> option) : WcfResult<WcfService> =
+            match data with
+            | Some d ->
+                let info = d.wcfServiceAccessInfo
+                let logger = d.wcfServiceProxy.wcfLogger
                 try
                     logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
                     let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
@@ -190,20 +203,20 @@ module Service =
                         WebHost
                             .CreateDefaultBuilder()
                             .UseKestrel(fun options -> applyOptions options)
-                            //.UseNetTcp(info.netTcpPort)
-                            .UseStartup<WcfStartup<'S, 'I>>()
+                            .UseNetTcp(info.netTcpPort)
+                            .UseStartup<WcfStartup<'S, 'I, 'P>>()
                             .Build()
                     (logger, host) |> WcfService |> Ok
                 with
                 | e -> WcfExn e |> toError
-            | Error e -> e + (SingleErr WcfServiceCannotInitializeErr) |> Error
+            | None -> SingleErr WcfServiceCannotInitializeErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
-            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceProxy<'S>.proxy)
+            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceData<'S, 'P>.dataOpt)
             
-        static member setProxy proxy = WcfServiceProxy<'S>.setProxy proxy
+        static member setData data = WcfServiceData<'S, 'P>.setData data
         static member tryGetService() = service.Value
 
-        static member tryGetService proxy =
-             WcfService<'S, 'I>.setProxy proxy
+        static member tryGetService data =
+             WcfService<'S, 'I, 'P>.setData data
              service.Value

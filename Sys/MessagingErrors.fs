@@ -109,6 +109,7 @@ module MessagingServiceErrors =
 
 
     type MessagingServiceError =
+        | InitializeErr of WcfError
         | TimerEventErr of TimerEventError
         | MsgSvcDbErr of MsgSvcDbError
         | GetVersionSvcErr of GetVersionSvcError

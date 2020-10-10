@@ -63,8 +63,18 @@ module EchoWcfServiceInfo =
     let echoLogger = Logger.defaultValue
 
 
-    let echoWcfServiceProxy =
-        {
-            wcfServiceAccessInfoRes = WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo
-            loggerOpt = Some echoLogger
-        }
+    let echoWcfServiceDataRes =
+        match WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo with
+        | Ok i ->
+            {
+                wcfServiceAccessInfo = i
+
+                wcfServiceProxy =
+                    {
+                        wcfLogger = echoLogger
+                    }
+
+                serviceData = ()
+            }
+            |> Ok
+        | Error e -> Error e

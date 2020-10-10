@@ -5,7 +5,11 @@ open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.Logging
+open Softellect.Sys.Errors
+open Softellect.Sys.MessagingServiceErrors
+open Softellect.Sys.MessagingErrors
 open Softellect.Wcf.Common
+open Softellect.Wcf.Service
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
@@ -41,7 +45,8 @@ module EchoMsgServiceInfo =
 
     type EchoMsgClient = MessagingClient<EchoMessageData, EchoMsgError>
     type EchoMsgServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
-    type EchoMsgService = MessagingService<EchoMessageData, EchoMsgError>
+    //type EchoMsgService = MessagingService<EchoMessageData, EchoMsgError>
+    type EchoMsgWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
     type Message = Message<EchoMessageData>
 
 
@@ -85,58 +90,87 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    //let private getClientProxy clientData clientId : MessagingClientProxy<EchoMessageData, EchoMsgError> =
-    //    {
-    //        tryPickIncomingMessage =
-    //            fun() ->
-    //                tryFind
-    //                    clientData
-    //                    (fun e -> e.messageDataInfo.createdOn)
-    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
-
-    //        tryPickOutgoingMessage =
-    //            fun() ->
-    //                tryFind
-    //                    clientData
-    //                    (fun e -> e.messageDataInfo.createdOn)
-    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = serviceId)
-
-    //        saveMessage = fun m ->save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
-    //        tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
-    //        deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
-    //        getMessageSize = fun _ -> MediumSize
-    //    }
+    let echoLogger = Logger.defaultValue
 
 
-    //let serviceProxy : MessagingServiceProxy<EchoMessageData, EchoMsgError> =
-    //    {
-    //        tryPickMessage =
-    //            fun clientId ->
-    //                tryFind
-    //                    serverData
-    //                    (fun e -> e.messageDataInfo.createdOn)
-    //                    (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
+    let private getClientProxy clientData clientId : MessagingClientProxy<EchoMessageData, EchoMsgError> =
+        {
+            tryPickIncomingMessage =
+                fun() ->
+                    tryFind
+                        clientData
+                        (fun e -> e.messageDataInfo.createdOn)
+                        (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
 
-    //        saveMessage =
-    //            fun m ->
-    //                save serverData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
-    //                Ok()
+            tryPickOutgoingMessage =
+                fun() ->
+                    tryFind
+                        clientData
+                        (fun e -> e.messageDataInfo.createdOn)
+                        (fun e -> e.messageDataInfo.recipientInfo.recipient = serviceId)
 
-    //        deleteMessage = fun i -> tryDelete serverData (fun e -> e.messageDataInfo.messageId = i)
-    //        deleteExpiredMessages = fun i -> tryDelete serverData (isExpired i)
-    //    }
-
-
-    //let clientOneProxy = getClientProxy clientOneData clientOneId
-    //let clientTwoProxy = getClientProxy clientTwoData clientTwoId
-
-
-    //let serviceData =
-    //    {
-    //        messagingServiceProxy = serviceProxy
-    //        expirationTime = TimeSpan.FromSeconds 10.0
-    //        messagingDataVersion  = MessagingDataVersion 0
-    //    }
+            saveMessage = fun m ->save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
+            tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
+            deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
+            getMessageSize = fun _ -> MediumSize
+            logger = echoLogger
+            toErr = fun e -> e |> MessagingClientErr |> EchoMsgErr |> SingleErr
+        }
 
 
-    let logger = Logger<EchoMsgError>.defaultValue
+    let serviceProxy : MessagingServiceProxy<EchoMessageData, EchoMsgError> =
+        {
+            tryPickMessage =
+                fun clientId ->
+                    tryFind
+                        serverData
+                        (fun e -> e.messageDataInfo.createdOn)
+                        (fun e -> e.messageDataInfo.recipientInfo.recipient = clientId)
+
+            saveMessage =
+                fun m ->
+                    save serverData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m |> ignore
+                    Ok()
+
+            deleteMessage = fun i -> tryDelete serverData (fun e -> e.messageDataInfo.messageId = i)
+            deleteExpiredMessages = fun i -> tryDelete serverData (isExpired i)
+            logger = echoLogger
+            toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr |> SingleErr
+        }
+
+
+    let clientOneProxy = getClientProxy clientOneData clientOneId
+    let clientTwoProxy = getClientProxy clientTwoData clientTwoId
+
+
+    let private serviceData =
+        {
+            messagingServiceInfo =
+                {
+                    expirationTime = TimeSpan.FromSeconds 10.0
+                    messagingDataVersion  = MessagingDataVersion 0
+                }
+
+            messagingServiceProxy = serviceProxy
+        }
+
+
+    let echoWcfServiceDataRes  =
+        match WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo with
+        | Ok i ->
+            {
+                wcfServiceAccessInfo = i
+
+                wcfServiceProxy =
+                    {
+                        wcfLogger = Logger.defaultValue
+                    }
+
+                serviceData = serviceData
+            }
+            |> Ok
+        | Error e -> Error e
+
+
+    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
+    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMsgServiceData>

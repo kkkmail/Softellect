@@ -41,4 +41,4 @@ module EchoWcfService =
             member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
 
 
-    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService>
+    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, unit>
