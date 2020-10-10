@@ -102,7 +102,9 @@ module Client =
     let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : ResultWithErr<MessageSize option, 'E> =
         //let a e = proxy.toErr (TryReceiveSingleMessageErr e)
         //let addError = addError (proxy.toErr TryReceiveSingleMessageErr)
-        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> = failwith "..."
+        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> =
+            let b = proxy.toErr (TryReceiveSingleMessageErr a) + e
+            Error b
 
         let result =
             match proxy.tryPeekMessage () with
@@ -313,7 +315,8 @@ module Client =
     /// If you don't call it, then you have to operate MessagingClient by hands.
     let createMessagingClientEventHandlers (w : MessageProcessorProxy<'M, 'E>) =
         let eventHandler _ = w.tryReceiveMessages()
-        let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages" 
+        let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
+        printfn "%A" i
 
         let proxy =
             {

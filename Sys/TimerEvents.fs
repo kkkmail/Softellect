@@ -12,7 +12,8 @@ module TimerEvents =
 
 
     [<Literal>]
-    let RefreshInterval = 30_000
+    //let RefreshInterval = 30_000
+    let RefreshInterval = 10_000
 
 
     [<Literal>]
@@ -60,17 +61,23 @@ module TimerEvents =
         let logError e = e |> proxy.toErr |> proxy.logger.logErrData
         let logWarn e = e |> proxy.toErr |> proxy.logger.logWarnData
         let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
+        do printfn "TimerEventHandler: %A" i
 
         let g() =
             try
                 match proxy.eventHandler() with
-                | Ok() -> ignore()
-                | Error e -> proxy.logger.logErrData e
+                | Ok() ->
+                    printfn "proxy.eventHandler() - succeeded."
+                    ignore()
+                | Error e ->
+                    printfn "proxy.eventHandler() - Error: %A" e
+                    proxy.logger.logErrData e
             with
             | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
+                printfn "eventHandler: %A" i
                 proxy.logger.logInfoString info
                 if Interlocked.Increment(&counter) = 0
                 then timedImplementation false proxy.logger info g
