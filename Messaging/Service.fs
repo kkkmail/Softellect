@@ -57,9 +57,6 @@ module Service =
         static let mutable getData : unit -> MessagingServiceData<'D, 'E> option =
             fun () -> None
 
-        //static let mutable serviceDataOpt : MessagingServiceData<'D, 'E> option = None
-        //static let serviceOpt : Lazy<MessagingService<'D, 'E> option> = failwith ""
-
         static let createService() : ResultWithErr<MessagingService<'D, 'E>, 'E> =
             match getData() with
             | Some data ->
@@ -68,7 +65,7 @@ module Service =
                 Ok service
             | None ->
                 printfn "Data is unavailable."
-                failwith ""
+                failwith "Data is unavailable."
 
         let proxy = d.messagingServiceProxy
 
@@ -188,39 +185,15 @@ module Service =
             }
 
 
-    //[<ServiceBehavior(IncludeExceptionDetailInFaults = true, InstanceContextMode = InstanceContextMode.PerSession)>]
     type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E>) =
         static let tryGetData() =
             WcfServiceData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>>.dataOpt
 
-        static let tryCreateService() : MessagingWcfService<'D, 'E> option = failwith ""
+        //static let tryCreateService() : MessagingWcfService<'D, 'E> option = failwith ""
 
         let proxy = d.messagingWcfServiceProxy
         let messagingService =
             MessagingService<'D, 'E>.service
-        //do messagingService.createEventHandlers()
-
-
-        //static let tryCreateMessagingWcfService (proxy : MessagingWcfServiceProxy<'D, 'E>) : MessagingWcfService<'D, 'E> =
-        //    failwith ""
-
-        //static let tryCreateMessagingService(i : MessagingWcfServiceProxy<'D, 'E>) : ResultWithErr<MessagingService<'D, 'E>, 'E> =
-        //    match i.tryGetWcfServiceProxy() with
-        //    | Ok r ->
-        //        match 
-        //        WcfServiceProxy<'D>.setProxy r
-        //        let wcfService = WcfService<MessagingWcfService<'D, 'E>, IMessagingWcfService>
-        //        failwith ""
-
-        //    | Error e -> Error e
-
-        //static let messagingService : Lazy<StlResult<MessagingService<'D, 'E>, 'E>> =
-        //    new Lazy<StlResult<MessagingService<'D, 'E>, 'E>>(fun () -> tryCreateMessagingService MessagingWcfServiceProxy<'D, 'E>.proxy)
-        ////    //tryCreateWebHostBuilder WcfServiceAccessInfo<'S>.serviceAccessInfo)
-
-        //let messagingService : MessagingService<'D, 'E> = failwith "" // MessagingService<'D, 'E>()
-
-        //static let service : Lazy<ResultWithErr<MessagingWcfService<'D, 'E>, 'E>> = failwith ""
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr |> proxy.toErr
         let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr |> proxy.toErr
@@ -234,28 +207,18 @@ module Service =
 
         interface IMessagingWcfService with
             member _.getVersion b =
-                printfn "getVersion called with : %A" b
+                //printfn "getVersion called with : %A" b
                 tryReply getVersion toGetVersionError b
             member _.sendMessage b =
-                printfn "sendMessage called with : %A" b
+                //printfn "sendMessage called with : %A" b
                 tryReply sendMessage toSendMessageError b
             member _.tryPeekMessage b =
-                printfn "getVersion called with : %A" b
+                //printfn "getVersion called with : %A" b
                 tryReply tryPeekMessage toTryPickMessageError b
             member _.tryDeleteFromServer b =
-                printfn "tryDeleteFromServer called with : %A" b
+                //printfn "tryDeleteFromServer called with : %A" b
                 tryReply tryDeleteFromServer toTryDeleteFromServerError b
-
-        //static member setProxy proxy = MessagingWcfServiceProxy<'D, 'E>.setProxy proxy
-        //static member tryGetService() = service.Value
-
-        //static member tryGetService proxy =
-        //    MessagingWcfService<'D, 'E>.setProxy proxy
-        //    service.Value
 
         new() = MessagingWcfService<'D, 'E> (tryGetData()
                                                 |> Option.bind (fun e -> Some e.serviceData)
                                                 |> Option.defaultValue MessagingWcfServiceData<'D, 'E>.defaultValue)
-
-        //member x.run() =
-        //    ignore()

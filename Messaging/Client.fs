@@ -137,6 +137,7 @@ module Client =
 
 
     let tryTransmitMessages transmitter =
+        printfn "tryTransmitMessages: starting..."
         let rec doTryTransmit x c =
             match x with
             | [] -> Ok()
@@ -181,6 +182,7 @@ module Client =
 
 
     let trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
+        printfn "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
         | Ok None -> Ok None
         | Ok (Some m) ->
@@ -314,6 +316,7 @@ module Client =
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
     let createMessagingClientEventHandlers (w : MessageProcessorProxy<'M, 'E>) =
+        printfn "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
         printfn "%A" i

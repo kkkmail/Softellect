@@ -84,7 +84,9 @@ module EchoMsgServiceInfo =
 
 
     let private tryDelete (source : MutableList<'T>) finder =
+        printfn "tryDelete: source had %A elements." source.Count
         source.RemoveAll(fun e -> finder e) |> ignore
+        printfn "tryDelete: source now has %A elements." source.Count
         Ok()
 
 
@@ -94,6 +96,7 @@ module EchoMsgServiceInfo =
 
     let private save (source : MutableList<'T>) finder e =
         tryDelete source finder |> ignore
+        printfn "save: adding element %A to source." e
         source.Add e
         Ok()
 
@@ -101,7 +104,7 @@ module EchoMsgServiceInfo =
     let echoLogger = Logger.defaultValue
 
 
-    let private getClientProxy clientData clientId : MessagingClientProxy<EchoMessageData, EchoMsgError> =
+    let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData, EchoMsgError> =
         {
             tryPickIncomingMessage =
                 fun() ->
@@ -115,9 +118,9 @@ module EchoMsgServiceInfo =
                     tryFind
                         clientData
                         (fun e -> e.messageDataInfo.createdOn)
-                        (fun e -> e.messageDataInfo.recipientInfo.recipient = serviceId)
+                        (fun e -> e.messageDataInfo.recipientInfo.recipient = recipient)
 
-            saveMessage = fun m ->save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
+            saveMessage = fun m -> save clientData (fun e -> e.messageDataInfo.messageId = m.messageDataInfo.messageId) m
             tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
@@ -147,8 +150,8 @@ module EchoMsgServiceInfo =
         }
 
 
-    let clientOneProxy = getClientProxy clientOneMessageData clientOneId
-    let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId
+    let clientOneProxy = getClientProxy clientOneMessageData clientOneId clientTwoId
+    let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
 
 
     let getClientData clientId proxy : EchoMsgClientData =
