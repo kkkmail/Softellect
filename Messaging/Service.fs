@@ -8,6 +8,7 @@ open Softellect.Sys.Errors
 open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.TimerEvents
+open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
@@ -38,12 +39,14 @@ module Service =
     type MessagingServiceData<'D, 'E> =
         {
             messagingServiceInfo : MessagingServiceInfo
+            communicationType : WcfCommunicationType
             messagingServiceProxy : MessagingServiceProxy<'D, 'E>
         }
 
         static member defaultValue : MessagingServiceData<'D, 'E> =
             {
                 messagingServiceInfo = MessagingServiceInfo.getDefaultValue()
+                communicationType = HttpCommunication
                 messagingServiceProxy = MessagingServiceProxy.defaultValue
             }
 
@@ -69,25 +72,25 @@ module Service =
 
         interface IMessagingService<'D, 'E> with
             member _.getVersion() =
-                printfn "getVersion was called."
+                //printfn "getVersion was called."
                 Ok d.messagingServiceInfo.messagingDataVersion
 
             member _.sendMessage m =
-                printfn "sendMessage was called with message: %A." m
+                //printfn "sendMessage was called with message: %A." m
                 proxy.saveMessage m
 
             member _.tryPeekMessage n =
-                printfn "tryPeekMessage was called with MessagingClientId: %A." n
+                //printfn "tryPeekMessage was called with MessagingClientId: %A." n
                 let result = proxy.tryPickMessage n
-                printfn "tryPeekMessage - result: %A." result
+                //printfn "tryPeekMessage - result: %A." result
                 result
 
             member _.tryDeleteFromServer (n, m) =
-                printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
+                //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
                 proxy.deleteMessage m
 
             member _.removeExpiredMessages() =
-                printfn "removeExpiredMessages was called."
+                //printfn "removeExpiredMessages was called."
                 proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
 
         member private w.createEventHandlers () =

@@ -5,8 +5,6 @@ open System.Threading
 
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.MessagingClientErrors
-//open Softellect.Sys.MessagingServiceErrors
-open Softellect.Sys.MessagingErrors
 open Softellect.Sys.Errors
 open Softellect.Sys.TimerEvents
 
@@ -16,7 +14,6 @@ open Softellect.Wcf.Client
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
-open Softellect.Sys.WcfErrors
 
 module Client =
 
@@ -67,6 +64,7 @@ module Client =
     type MsgResponseHandlerData<'D, 'E> =
         {
             msgAccessInfo : MessagingClientAccessInfo
+            communicationType : WcfCommunicationType
             toErr : MessagingClientError -> Err<'E>
         }
 
@@ -74,6 +72,7 @@ module Client =
     type MessagingClientData<'D, 'E> =
         {
             msgAccessInfo : MessagingClientAccessInfo
+            communicationType : WcfCommunicationType
             msgClientProxy : MessagingClientProxy<'D, 'E>
             expirationTime : TimeSpan
         }
@@ -81,6 +80,7 @@ module Client =
         member d.msgResponseHandlerData : MsgResponseHandlerData<'D, 'E> =
             {
                 msgAccessInfo = d.msgAccessInfo
+                communicationType = d.communicationType
                 toErr = d.msgClientProxy.toErr
             }
 
@@ -181,7 +181,7 @@ module Client =
 
 
     let trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
-        printfn "trySendSingleMessage: starting..."
+        //printfn "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
         | Ok None -> Ok None
         | Ok (Some m) ->
@@ -199,9 +199,12 @@ module Client =
 
     /// Low level WCF messaging client.
     type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
-        let url = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl
+        let url =
+            match d.communicationType with
+            | HttpCommunication -> d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl
+            | NetTcpCommunication -> d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.netTcpUrl
 
-        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> url
+        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType url
 
         let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr |> d.toErr
         let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr |> d.toErr

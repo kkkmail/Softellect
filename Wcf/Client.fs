@@ -9,6 +9,11 @@ open Softellect.Wcf.Common
 
 module Client =
 
+    type ClientWcfBinding =
+        | BasicHttpBinding of BasicHttpBinding
+        | NetTcpBinding of NetTcpBinding
+
+
     /// Gets net tcp binding suitable for sending very large data objects.
     let getNetTcpBinding() =
         let binding = new NetTcpBinding()
@@ -40,15 +45,23 @@ module Client =
 
 
     //let getBinding() = getNetTcpBinding()
-    let getBinding() = getBasicHttpBinding()
+    let getBinding t =
+        match t with
+        | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding
+        | NetTcpCommunication -> getNetTcpBinding() |> NetTcpBinding
 
 
     /// Tries getting a Wcf Client.
-    let tryGetWcfService<'T> url =
+    let tryGetWcfService<'T> t url =
         try
-            let binding = getBinding()
+            let binding = getBinding t
             let address = new EndpointAddress(url)
-            let channelFactory = new ChannelFactory<'T>(binding, address)
+
+            let channelFactory =
+                match binding with
+                | BasicHttpBinding b -> new ChannelFactory<'T>(b, address)
+                | NetTcpBinding b -> new ChannelFactory<'T>(b, address)
+
             let service = channelFactory.CreateChannel()
             Ok (service, fun () -> channelFactory.Close())
         with
@@ -56,9 +69,6 @@ module Client =
 
 
     /// Client communication with the server.
-    /// Note that this is a generic with 4 implicit parameters.
-    /// We can bake in the first one into t at the caller.
-    /// However, to do that here requires assigning and using all 4.
     let tryCommunicate t c f a =
         try
             match t() with

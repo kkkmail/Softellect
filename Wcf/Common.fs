@@ -18,6 +18,11 @@ module Common =
     type WcfLogger = Logger<WcfError>
 
 
+    type WcfCommunicationType =
+        | HttpCommunication
+        | NetTcpCommunication
+
+
     let toValidServiceName (serviceName : string) =
         serviceName.Replace(" ", "").Replace("-", "").Replace(".", "") |> ServiceName
 

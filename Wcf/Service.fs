@@ -16,7 +16,6 @@ open Softellect.Sys.WcfErrors
 open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
-open Softellect.Sys.Logging
 
 module Service =
 
@@ -224,37 +223,3 @@ module Service =
         WcfServiceData<'Service, 'Data>.tryGetData()
         |> Option.bind (fun e -> Some e.serviceData)
         |> Option.defaultValue defaultValue
-
-
-    //let createService g c =
-    //    match g() with
-    //    | Some data -> c data
-    //    | None ->
-    //        let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
-    //        printfn "%s" errMessage
-    //        failwith errMessage
-
-
-
-
-    //type ServiceBidnerData<'Service, 'Data, 'E> =
-    //    {
-    //        data : 'Data
-    //        creator: 'Data -> ResultWithErr<'Service, 'E>
-    //    }
-
-
-    //[<AbstractClass>]
-    //type ServiceBider<'Service, 'Data, 'E> (data : 'Data, creator: 'Data -> ResultWithErr<'Service, 'E>) =
-    //    static let mutable getData : unit -> 'Data option = fun () -> None
-
-    //    static let createService() : ResultWithErr<'Service, 'E> =
-    //        match getData() with
-    //        | Some data -> creator data
-    //        | None ->
-    //            let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
-    //            printfn "%s" errMessage
-    //            failwith errMessage
-
-
-    //    member _.x = 0

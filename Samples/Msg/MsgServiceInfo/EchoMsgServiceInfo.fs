@@ -22,6 +22,8 @@ module EchoMsgServiceInfo =
 
     let dataVersion = MessagingDataVersion 123456
     let echoLogger = Logger.defaultValue
+    //let communicationType = HttpCommunication
+    let communicationType = NetTcpCommunication
 
 
     type EchoMsgType =
@@ -163,6 +165,7 @@ module EchoMsgServiceInfo =
                         }
                 }
 
+            communicationType = communicationType
             msgClientProxy = proxy
             expirationTime = TimeSpan.FromSeconds 10.0
         }
@@ -180,6 +183,7 @@ module EchoMsgServiceInfo =
                     messagingDataVersion = dataVersion
                 }
 
+            communicationType = communicationType
             messagingServiceProxy = serviceProxy
         }
 
