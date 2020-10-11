@@ -208,11 +208,6 @@ module Client =
         let tryPeekMessageWcfErr e = e |> TryPeekMessageWcfErr |> TryPeekMessageErr |> d.toErr
         let tryDeleteFromServerWcfErr e = e |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr |> d.toErr
 
-        //let getVersionWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        //let msgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        //let tryPeekMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        //let tryDeleteMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-
         let getVersionImpl() = tryCommunicate tryGetWcfService (fun service -> service.getVersion) getVersionWcfErr ()
         let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) sendMessageWcfErr m
         let tryPeekMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPeekMessageWcfErr n
@@ -224,97 +219,10 @@ module Client =
             member _.tryPeekMessage n = tryPeekMessageImpl n
             member _.tryDeleteFromServer x = tryDeleteFromServerImpl x
 
-        //new (i : MessagingClientAccessInfo) = MsgResponseHandler<'D, 'E>(i.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl)
-        //new (i : MessagingServiceAccessInfo) = MsgResponseHandler<'D, 'E>(i.wcfServiceUrl)
-
-
-    type MessagingClient<'D, 'E>(d : MessagingClientData<'D, 'E>) =
-        let proxy = d.msgClientProxy
-        let msgClientId = d.msgAccessInfo.msgClientId
-        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D, 'E>
-
-        let receiveProxy =
-            {
-                saveMessage = proxy.saveMessage
-                tryDeleteMessage = proxy.tryDeleteMessage
-                tryPeekMessage = fun () -> responseHandler.tryPeekMessage msgClientId
-                tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
-                getMessageSize = d.msgClientProxy.getMessageSize
-                toErr = d.msgClientProxy.toErr
-            }
-
-        let sendProxy =
-            {
-                tryPickOutgoingMessage = proxy.tryPickOutgoingMessage
-                tryDeleteMessage = proxy.tryDeleteMessage
-                sendMessage = responseHandler.sendMessage
-                getMessageSize = d.msgClientProxy.getMessageSize
-            }
-
-        /// Verifies that we have access to the relevant database and removes all expired messages.
-        member m.start() = m.removeExpiredMessages()
-
-        member _.sendMessage (m : MessageInfo<'D>) : UnitResult<'E> =
-            createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
-            |> proxy.saveMessage
-
-        member _.tryPeekReceivedMessage() : ResultWithErr<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
-        member _.tryRemoveReceivedMessage (m : MessageId) : UnitResult<'E> = proxy.tryDeleteMessage m
-        member _.tryReceiveMessages() : UnitResult<'E> = tryReceiveMessages receiveProxy
-        member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
-        member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
-
-        member m.messageProcessorProxy : MessageProcessorProxy<'D, 'E> =
-            {
-                start = m.start
-                tryPeekReceivedMessage = m.tryPeekReceivedMessage
-                tryRemoveReceivedMessage = m.tryRemoveReceivedMessage
-                sendMessage = m.sendMessage
-                tryReceiveMessages = m.tryReceiveMessages
-                trySendMessages = m.trySendMessages
-                removeExpiredMessages = m.removeExpiredMessages
-                logger = proxy.logger
-                toErr = proxy.toErr
-            }
-
-        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
-            {
-                saveMessage = d.msgClientProxy.saveMessage
-                tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
-                tryPeekMessage = fun () -> responseHandler.tryPeekMessage d.msgAccessInfo.msgClientId
-                tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
-                getMessageSize = d.msgClientProxy.getMessageSize
-                toErr = proxy.toErr
-            }
-
-    let mutable private callCount = -1
-
-
-    let onTryProcessMessage (w : MessageProcessorProxy<'D, 'E>) x f =
-        let retVal =
-            if Interlocked.Increment(&callCount) = 0
-            then
-                match w.tryPeekReceivedMessage() with
-                | Ok (Some m) ->
-                    try
-                        let r = f x m
-
-                        match w.tryRemoveReceivedMessage m.messageDataInfo.messageId with
-                        | Ok() -> ProcessedSuccessfully r
-                        | Error e -> ProcessedWithFailedToRemove (r, e)
-                    with
-                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> w.toErr |> FailedToProcess
-                | Ok None -> NothingToDo
-                | Error e -> FailedToProcess e
-            else BusyProcessing
-
-        Interlocked.Decrement(&callCount) |> ignore
-        retVal
-
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
-    let createMessagingClientEventHandlers (w : MessageProcessorProxy<'M, 'E>) =
+    let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D, 'E>) =
         printfn "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
@@ -340,3 +248,101 @@ module Client =
         let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
         let h2 = TimerEventHandler (i2, { proxy with eventHandler = eventHandler2 })
         do h2.start()
+
+
+    type MessagingClient<'D, 'E>(d : MessagingClientData<'D, 'E>) =
+        let proxy = d.msgClientProxy
+        let msgClientId = d.msgAccessInfo.msgClientId
+        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D, 'E>
+        let mutable callCount = -1
+        let mutable started = false
+
+        let incrementCount() = Interlocked.Increment(&callCount)
+        let decrementCount() = Interlocked.Decrement(&callCount)
+
+        let receiveProxy =
+            {
+                saveMessage = proxy.saveMessage
+                tryDeleteMessage = proxy.tryDeleteMessage
+                tryPeekMessage = fun () -> responseHandler.tryPeekMessage msgClientId
+                tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
+                getMessageSize = d.msgClientProxy.getMessageSize
+                toErr = d.msgClientProxy.toErr
+            }
+
+        let sendProxy =
+            {
+                tryPickOutgoingMessage = proxy.tryPickOutgoingMessage
+                tryDeleteMessage = proxy.tryDeleteMessage
+                sendMessage = responseHandler.sendMessage
+                getMessageSize = d.msgClientProxy.getMessageSize
+            }
+
+        /// Verifies that we have access to the relevant data storage, starts the timers and removes all expired messages.
+        member m.start() =
+            if not started
+            then
+                match m.removeExpiredMessages() with
+                | Ok() ->
+                    started <- true
+                    createMessagingClientEventHandlers m.messageProcessorProxy
+                    Ok()
+                | Error e -> Error e
+            else Ok()
+
+        member _.sendMessage (m : MessageInfo<'D>) : UnitResult<'E> =
+            createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
+            |> proxy.saveMessage
+
+        member _.tryPeekReceivedMessage() : ResultWithErr<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
+        member _.tryRemoveReceivedMessage (m : MessageId) : UnitResult<'E> = proxy.tryDeleteMessage m
+        member _.tryReceiveMessages() : UnitResult<'E> = tryReceiveMessages receiveProxy
+        member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
+        member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
+
+        member m.messageProcessorProxy : MessageProcessorProxy<'D, 'E> =
+            {
+                start = m.start
+                tryPeekReceivedMessage = m.tryPeekReceivedMessage
+                tryRemoveReceivedMessage = m.tryRemoveReceivedMessage
+                sendMessage = m.sendMessage
+                tryReceiveMessages = m.tryReceiveMessages
+                trySendMessages = m.trySendMessages
+                removeExpiredMessages = m.removeExpiredMessages
+                logger = proxy.logger
+                toErr = proxy.toErr
+                incrementCount = incrementCount
+                decrementCount = decrementCount
+            }
+
+        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
+            {
+                saveMessage = d.msgClientProxy.saveMessage
+                tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
+                tryPeekMessage = fun () -> responseHandler.tryPeekMessage d.msgAccessInfo.msgClientId
+                tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
+                getMessageSize = d.msgClientProxy.getMessageSize
+                toErr = proxy.toErr
+            }
+
+
+    let onTryProcessMessage (w : MessageProcessorProxy<'D, 'E>) x f =
+        let retVal =
+            if w.incrementCount() = 0
+            then
+                match w.tryPeekReceivedMessage() with
+                | Ok (Some m) ->
+                    try
+                        let r = f x m
+
+                        match w.tryRemoveReceivedMessage m.messageDataInfo.messageId with
+                        | Ok() -> ProcessedSuccessfully r
+                        | Error e -> ProcessedWithFailedToRemove (r, e)
+                    with
+                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> w.toErr |> FailedToProcess
+                | Ok None -> NothingToDo
+                | Error e -> FailedToProcess e
+            else BusyProcessing
+
+        w.decrementCount() |> ignore
+        retVal

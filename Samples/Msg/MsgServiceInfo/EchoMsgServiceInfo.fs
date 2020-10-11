@@ -7,7 +7,6 @@ open Softellect.Sys.Primitives
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.Logging
 open Softellect.Sys.Errors
-open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingErrors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
@@ -48,15 +47,14 @@ module EchoMsgServiceInfo =
             }
 
 
-    type EchoMsgClient = MessagingClient<EchoMessageData, EchoMsgError>
-    type EchoMsgClientData = MessagingClientData<EchoMessageData, EchoMsgError>
-    type EchoMsgServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
-    type EchoMsgWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
+    type EchoMessagingClient = MessagingClient<EchoMessageData, EchoMsgError>
+    type EchoMessagingClientData = MessagingClientData<EchoMessageData, EchoMsgError>
+    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
     type EchoMessage = Message<EchoMessageData>
     type EchoMessageInfo = MessageInfo<EchoMessageData>
     type EchoMessagingService = MessagingService<EchoMessageData, EchoMsgError>
     type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
-    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMsgServiceData>
+    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
     let echoWcfServiceAccessInfo =
@@ -102,8 +100,6 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-
-
     let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData, EchoMsgError> =
         {
             tryPickIncomingMessage =
@@ -129,7 +125,7 @@ module EchoMsgServiceInfo =
         }
 
 
-    let serviceProxy : MessagingServiceProxy<EchoMessageData, EchoMsgError> =
+    let serviceProxy =
         {
             tryPickMessage =
                 fun clientId ->
@@ -154,7 +150,7 @@ module EchoMsgServiceInfo =
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
 
 
-    let getClientData clientId proxy : EchoMsgClientData =
+    let getClientData clientId proxy =
         {
             msgAccessInfo =
                 {
@@ -207,40 +203,41 @@ module EchoMsgServiceInfo =
 
 
     let runClient clientData recipient =
-        let client = EchoMsgClient clientData
-        do client.start() |> ignore
+        let client = EchoMessagingClient clientData
         let tryProcessMessage = onTryProcessMessage client.messageProcessorProxy
-        createMessagingClientEventHandlers client.messageProcessorProxy
 
-        while true do
-            printfn "Sending message to %A" recipient
+        match client.start() with
+        | Ok() ->
+            while true do
+                printfn "Sending message to %A" recipient
 
-            let m : EchoMessageInfo =
-                {
-                    recipientInfo =
-                        {
-                            recipient = recipient
-                            deliveryType = GuaranteedDelivery
-                        }
+                let m : EchoMessageInfo =
+                    {
+                        recipientInfo =
+                            {
+                                recipient = recipient
+                                deliveryType = GuaranteedDelivery
+                            }
 
-                    messageData = EchoMessageData.create() |> UserMsg
-                }
+                        messageData = EchoMessageData.create() |> UserMsg
+                    }
 
-            let sendResult = client.sendMessage m
-            printfn "Send with: %A" sendResult
+                let sendResult = client.sendMessage m
+                printfn "Send with: %A" sendResult
 
-            printfn "Checking messages."
+                printfn "Checking messages."
 
-            let checkMessage() =
-                match tryProcessMessage () (fun _ m -> m) with
-                | ProcessedSuccessfully m -> printfn "    Received message: %A" m
-                | ProcessedWithError (m, e) -> printfn "    Received message: %A with error e: %A" m e
-                | ProcessedWithFailedToRemove (m, e) -> printfn "    Received message: %A with error e: %A" m e
-                | FailedToProcess e -> printfn "    Error e: %A" e
-                | NothingToDo -> printfn "Nothing to do..."
-                | BusyProcessing -> printfn "Busy processing..."
+                let checkMessage() =
+                    match tryProcessMessage () (fun _ m -> m) with
+                    | ProcessedSuccessfully m -> printfn "    Received message: %A" m
+                    | ProcessedWithError (m, e) -> printfn "    Received message: %A with error e: %A" m e
+                    | ProcessedWithFailedToRemove (m, e) -> printfn "    Received message: %A with error e: %A" m e
+                    | FailedToProcess e -> printfn "    Error e: %A" e
+                    | NothingToDo -> printfn "Nothing to do..."
+                    | BusyProcessing -> printfn "Busy processing..."
 
-            //let _ = [for _ in 1..20 -> ()] |> List.map checkMessage
+                //let _ = [for _ in 1..20 -> ()] |> List.map checkMessage
 
-            checkMessage()
-            Thread.Sleep 5_000
+                checkMessage()
+                Thread.Sleep 5_000
+        | Error e -> printfn "Error: %A" e

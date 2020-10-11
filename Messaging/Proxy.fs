@@ -69,6 +69,8 @@ module Proxy =
             removeExpiredMessages : unit -> UnitResult<'E>
             logger : Logger<'E>
             toErr : MessagingClientError -> Err<'E>
+            incrementCount : unit -> int
+            decrementCount : unit -> int
         }
 
 
