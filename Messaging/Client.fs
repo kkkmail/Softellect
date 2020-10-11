@@ -74,7 +74,6 @@ module Client =
     type MessagingClientData<'D, 'E> =
         {
             msgAccessInfo : MessagingClientAccessInfo
-            //messagingService : IMessagingClient<'D, 'E>
             msgClientProxy : MessagingClientProxy<'D, 'E>
             expirationTime : TimeSpan
         }
@@ -115,11 +114,11 @@ module Client =
                     | Ok() -> m.messageData |> proxy.getMessageSize |> Some |> Ok
                     | Error e ->
                         match proxy.tryDeleteMessage m.messageDataInfo.messageId with
-                        | Ok() -> addError TryDeleteFromServerErr e
-                        | Error e1 -> addError TryDeleteFromServerErr (e1 + e)
+                        | Ok() -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr e
+                        | Error e1 -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr (e1 + e)
                 | Error e -> addError SaveMessageErr e
             | Ok None -> Ok None
-            | Error e -> addError TryPeekMessageErr e
+            | Error e -> addError TryReceiveSingleMessageError.TryPeekMessageErr e
 
         result
 
@@ -199,26 +198,25 @@ module Client =
 
 
     /// Low level WCF messaging client.
-    //type MsgResponseHandler<'D, 'E> private (url) =
     type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
         let url = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl
 
         let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> url
 
-        //let getVersionWcfErr e = e |> GetVersionSvcWcfErr |> GetVersionSvcErr |> MessagingServiceErr
-        //let msgWcfErr e = e |> MsgWcfErr |> MessageDeliveryErr |> MessagingServiceErr
-        //let tryPeekMsgWcfErr e = e |> TryPeekMsgWcfErr |> TryPeekMessageErr |> MessagingServiceErr
-        //let tryDeleteMsgWcfErr e = e |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> MessagingServiceErr
+        let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr |> d.toErr
+        let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr |> d.toErr
+        let tryPeekMessageWcfErr e = e |> TryPeekMessageWcfErr |> TryPeekMessageErr |> d.toErr
+        let tryDeleteFromServerWcfErr e = e |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr |> d.toErr
 
-        let getVersionWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        let msgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        let tryPeekMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
-        let tryDeleteMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        //let getVersionWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        //let msgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        //let tryPeekMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
+        //let tryDeleteMsgWcfErr (e : WcfError) : Err<'E> = GeneralMessagingClientErr |> d.toErr
 
         let getVersionImpl() = tryCommunicate tryGetWcfService (fun service -> service.getVersion) getVersionWcfErr ()
-        let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) msgWcfErr m
-        let tryPeekMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPeekMsgWcfErr n
-        let tryDeleteFromServerImpl x = tryCommunicate tryGetWcfService (fun service -> service.tryDeleteFromServer) tryDeleteMsgWcfErr x
+        let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) sendMessageWcfErr m
+        let tryPeekMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPeekMessageWcfErr n
+        let tryDeleteFromServerImpl x = tryCommunicate tryGetWcfService (fun service -> service.tryDeleteFromServer) tryDeleteFromServerWcfErr x
 
         interface IMessagingClient<'D, 'E> with
             member _.getVersion() = getVersionImpl()
@@ -290,6 +288,7 @@ module Client =
             }
 
     let mutable private callCount = -1
+
 
     let onTryProcessMessage (w : MessageProcessorProxy<'D, 'E>) x f =
         let retVal =

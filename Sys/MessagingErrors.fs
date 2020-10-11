@@ -8,8 +8,8 @@ open MessagingPrimitives
 module MessagingClientErrors =
 
     type GetVersionError =
-        | GetVersionWcfErr
-        | VersionMismatchErr of VersionMismatchInfo
+        | GetVersionWcfErr of WcfError
+        //| VersionMismatchErr of VersionMismatchInfo
 
 
     type OnGetMessagesError =
@@ -20,9 +20,9 @@ module MessagingClientErrors =
         | BusyProcessingErr
 
 
-    type SendMessageError =
-        | SendMessageFailedErr
-        | CannotDeleteMessageErr of MessageId
+    //type SendMessageError =
+    //    | SendMessageFailedErr
+    //    | CannotDeleteMessageErr of MessageId
 
 
     type TryReceiveSingleMessageError =
@@ -31,15 +31,27 @@ module MessagingClientErrors =
         | TryDeleteFromServerErr
 
 
-    type MessageDeliveryError =
-        | ServiceNotStartedErr
-        | ServerIsShuttingDownErr
-        | DataVersionMismatchErr of MessagingDataVersion
-        | MsgWcfErr of WcfError
+    type SendMessageError =
+        | SendMessageWcfErr of WcfError
 
 
-    type OnTryRemoveReceivedMessageError =
-        | MessageNotFoundErr of MessageId
+    type TryPeekMessageError =
+        | TryPeekMessageWcfErr of WcfError
+
+
+    type TryDeleteFromServerError =
+        | TryDeleteFromServerWcfErr of WcfError
+
+
+    //type MessageDeliveryError =
+    //    | ServiceNotStartedErr
+    //    | ServerIsShuttingDownErr
+    //    | DataVersionMismatchErr of MessagingDataVersion
+    //    | MsgWcfErr of WcfError
+
+
+    //type OnTryRemoveReceivedMessageError =
+    //    | MessageNotFoundErr of MessageId
 
 
     type OnTryProcessMessageError =
@@ -47,13 +59,16 @@ module MessagingClientErrors =
 
 
     type MessagingClientError =
-        | GeneralMessagingClientErr
+        //| GeneralMessagingClientErr
         | TimerEventErr of TimerEventError
         | GetVersionErr of GetVersionError
         | SendMessageErr of SendMessageError
+        | TryPeekMessageErr of TryPeekMessageError
+        | TryDeleteFromServerErr of TryDeleteFromServerError
+        //| SendMessageErr of SendMessageError
         | TryReceiveSingleMessageErr of TryReceiveSingleMessageError
-        | MessageDeliveryErr of MessageDeliveryError
-        | OnTryRemoveReceivedMessageErr of OnTryRemoveReceivedMessageError
+        //| MessageDeliveryErr of MessageDeliveryError
+        //| OnTryRemoveReceivedMessageErr of OnTryRemoveReceivedMessageError
         | OnTryProcessMessageErr of OnTryProcessMessageError
 
 

@@ -22,6 +22,7 @@ open Softellect.Samples.Msg.ServiceInfo.EchoMsgErrors
 module EchoMsgServiceInfo =
 
     let dataVersion = MessagingDataVersion 123456
+    let echoLogger = Logger.defaultValue
 
 
     type EchoMsgType =
@@ -101,7 +102,6 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    let echoLogger = Logger.defaultValue
 
 
     let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData, EchoMsgError> =

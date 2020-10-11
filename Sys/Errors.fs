@@ -88,4 +88,3 @@ module Errors =
             | h :: t -> fold (combineUnitResults h acc) t
 
         fold (Ok()) r
-
