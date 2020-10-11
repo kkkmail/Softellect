@@ -23,17 +23,19 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NetCoreClient", "Samples\Wc
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NetCoreService", "Samples\Wcf\NetCoreService\NetCoreService.fsproj", "{FF4622E7-B18D-4A85-B4BD-532398DE1241}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Messaging", "Messaging\Messaging.fsproj", "{1252B389-8912-4BDB-A05A-4C85456880CD}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Messaging", "Messaging\Messaging.fsproj", "{1252B389-8912-4BDB-A05A-4C85456880CD}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MessagingData", "MessagingData\MessagingData.fsproj", "{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MessagingData", "MessagingData\MessagingData.fsproj", "{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Data", "Data\Data.fsproj", "{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Data", "Data\Data.fsproj", "{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgServiceInfo", "Samples\Msg\MsgServiceInfo\MsgServiceInfo.fsproj", "{DA5F569B-8CD3-49D2-BEFE-D1AC90780178}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgService", "Samples\Msg\MsgService\MsgService.fsproj", "{436391F3-974B-4BC1-8ECC-70FE64F60C64}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgClientOne", "Samples\Msg\MsgClientOne\MsgClientOne.fsproj", "{90DC5C7B-47C0-4A4C-8747-497883C353DB}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgClientTwo", "Samples\Msg\MsgClientTwo\MsgClientTwo.fsproj", "{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,6 +165,14 @@ Global
 		{90DC5C7B-47C0-4A4C-8747-497883C353DB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{90DC5C7B-47C0-4A4C-8747-497883C353DB}.Release|x64.ActiveCfg = Release|x64
 		{90DC5C7B-47C0-4A4C-8747-497883C353DB}.Release|x64.Build.0 = Release|x64
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Debug|x64.ActiveCfg = Debug|x64
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Debug|x64.Build.0 = Debug|x64
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Release|x64.ActiveCfg = Release|x64
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,6 +186,7 @@ Global
 		{DA5F569B-8CD3-49D2-BEFE-D1AC90780178} = {542467DC-07AD-4B8E-93D4-D8E674874C89}
 		{436391F3-974B-4BC1-8ECC-70FE64F60C64} = {542467DC-07AD-4B8E-93D4-D8E674874C89}
 		{90DC5C7B-47C0-4A4C-8747-497883C353DB} = {542467DC-07AD-4B8E-93D4-D8E674874C89}
+		{B3D4389F-CF71-4703-A5F3-C0FD2C711DCB} = {542467DC-07AD-4B8E-93D4-D8E674874C89}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7A2921D5-1F3D-48DF-A77D-B0C8D846BDB8}

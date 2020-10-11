@@ -6,5 +6,5 @@ module Program =
 
     [<EntryPoint>]
     let main _ =
-        runClient clientOneData clientTwoId
+        runClient clientTwoData clientOneId
         0

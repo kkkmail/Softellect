@@ -72,11 +72,27 @@ module Service =
 
         let proxy = d.messagingServiceProxy
 
-        member _.getVersion() : ResultWithErr<MessagingDataVersion, 'E> = Ok d.messagingServiceInfo.messagingDataVersion
-        member _.sendMessage (m : Message<'D>) : UnitResult<'E> = proxy.saveMessage m
-        member _.tryPeekMessage (n : MessagingClientId) : ResultWithErr<Message<'D> option, 'E> = proxy.tryPickMessage n
-        member _.tryDeleteFromServer (n : MessagingClientId, m : MessageId) : UnitResult<'E> = proxy.deleteMessage m
-        member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
+        member _.getVersion() : ResultWithErr<MessagingDataVersion, 'E> =
+            printfn "getVersion was called."
+            Ok d.messagingServiceInfo.messagingDataVersion
+
+        member _.sendMessage (m : Message<'D>) : UnitResult<'E> =
+            printfn "sendMessage was called with message: %A." m
+            proxy.saveMessage m
+
+        member _.tryPeekMessage (n : MessagingClientId) : ResultWithErr<Message<'D> option, 'E> =
+            printfn "tryPeekMessage was called with MessagingClientId: %A." n
+            let result = proxy.tryPickMessage n
+            printfn "tryPeekMessage - result: %A." result
+            result
+
+        member _.tryDeleteFromServer (n : MessagingClientId, m : MessageId) : UnitResult<'E> =
+            printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
+            proxy.deleteMessage m
+
+        member _.removeExpiredMessages() : UnitResult<'E> =
+            printfn "removeExpiredMessages was called."
+            proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
 
         /// Call this function to create timer events necessary for automatic Messaging Service operation.
         /// If you don't call it, then you have to operate Messaging Service by hands.
@@ -218,12 +234,16 @@ module Service =
 
         interface IMessagingWcfService with
             member _.getVersion b =
+                printfn "getVersion called with : %A" b
                 tryReply getVersion toGetVersionError b
             member _.sendMessage b =
+                printfn "sendMessage called with : %A" b
                 tryReply sendMessage toSendMessageError b
             member _.tryPeekMessage b =
+                printfn "getVersion called with : %A" b
                 tryReply tryPeekMessage toTryPickMessageError b
             member _.tryDeleteFromServer b =
+                printfn "tryDeleteFromServer called with : %A" b
                 tryReply tryDeleteFromServer toTryDeleteFromServerError b
 
         //static member setProxy proxy = MessagingWcfServiceProxy<'D, 'E>.setProxy proxy
