@@ -112,19 +112,6 @@ module Service =
         }
 
 
-    //type WcfServiceProxy =
-    //    {
-    //        wcfServiceAccessInfoRes : WcfResult<WcfServiceAccessInfo>
-    //        loggerOpt : WcfLogger option
-    //    }
-
-        //static member defaultValue =
-        //    {
-        //        wcfServiceAccessInfoRes = WcfServiceNotInitializedErr |> SingleErr |> Error
-        //        loggerOpt = None
-        //    }
-
-
     type WcfServiceData<'P> =
         {
             wcfServiceAccessInfo : WcfServiceAccessInfo
@@ -141,14 +128,14 @@ module Service =
             serviceDataOpt <- Some data
             data.setData data.serviceData
 
-        static member dataOpt = serviceDataOpt
+        static member tryGetData() = serviceDataOpt
 
         /// It is not really needed but we want to "use" the generic type to make the compliler happy.
         member _.serviceType = typeof<'S>
 
 
     type WcfStartup<'S, 'I, 'P when 'I : not struct and 'S : not struct>() =
-        let data = WcfServiceData<'S, 'P>.dataOpt
+        let data = WcfServiceData<'S, 'P>.tryGetData()
 
         let createServiceModel (builder : IServiceBuilder) =
             match data with
@@ -208,10 +195,7 @@ module Service =
                         options.Listen(endPoint)
                         options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
                         options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                        //options.Limits.MaxRequestLineSize <- Int32.MaxValue
-                        //options.Limits.MaxRequestHeadersTotalSize <- Int32.MaxValue
                         options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))
-                        //options.Limits.MaxRequestHeaderCount <- 500
 
                     let host =
                         WebHost
@@ -226,7 +210,7 @@ module Service =
             | None -> SingleErr WcfServiceCannotInitializeErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
-            new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder WcfServiceData<'S, 'P>.dataOpt)
+            new Lazy<WcfResult<WcfService>>(fun () -> WcfServiceData<'S, 'P>.tryGetData() |> tryCreateWebHostBuilder)
             
         static member setData data = WcfServiceData<'S, 'P>.setData data
         static member tryGetService() = service.Value
@@ -234,3 +218,43 @@ module Service =
         static member tryGetService data =
              WcfService<'S, 'I, 'P>.setData data
              service.Value
+
+
+    let getData<'Service, 'Data> defaultValue =
+        WcfServiceData<'Service, 'Data>.tryGetData()
+        |> Option.bind (fun e -> Some e.serviceData)
+        |> Option.defaultValue defaultValue
+
+
+    //let createService g c =
+    //    match g() with
+    //    | Some data -> c data
+    //    | None ->
+    //        let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
+    //        printfn "%s" errMessage
+    //        failwith errMessage
+
+
+
+
+    //type ServiceBidnerData<'Service, 'Data, 'E> =
+    //    {
+    //        data : 'Data
+    //        creator: 'Data -> ResultWithErr<'Service, 'E>
+    //    }
+
+
+    //[<AbstractClass>]
+    //type ServiceBider<'Service, 'Data, 'E> (data : 'Data, creator: 'Data -> ResultWithErr<'Service, 'E>) =
+    //    static let mutable getData : unit -> 'Data option = fun () -> None
+
+    //    static let createService() : ResultWithErr<'Service, 'E> =
+    //        match getData() with
+    //        | Some data -> creator data
+    //        | None ->
+    //            let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
+    //            printfn "%s" errMessage
+    //            failwith errMessage
+
+
+    //    member _.x = 0
