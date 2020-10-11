@@ -75,6 +75,7 @@ module EchoWcfServiceInfo =
                     }
 
                 serviceData = ()
+                setData = fun _ -> ignore()
             }
             |> Ok
         | Error e -> Error e

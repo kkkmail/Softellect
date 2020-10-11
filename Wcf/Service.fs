@@ -130,12 +130,17 @@ module Service =
             wcfServiceAccessInfo : WcfServiceAccessInfo
             wcfServiceProxy : WcfServiceProxy
             serviceData : 'P
+            setData : 'P -> unit
         }
 
 
     type WcfServiceData<'S, 'P>() =
         static let mutable serviceDataOpt :  WcfServiceData<'P> option = None
-        static member setData data = serviceDataOpt <- Some data
+
+        static member setData data =
+            serviceDataOpt <- Some data
+            data.setData data.serviceData
+
         static member dataOpt = serviceDataOpt
 
         /// It is not really needed but we want to "use" the generic type to make the compliler happy.

@@ -53,6 +53,9 @@ module EchoMsgServiceInfo =
     type EchoMsgWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
     type EchoMessage = Message<EchoMessageData>
     type EchoMessageInfo = MessageInfo<EchoMessageData>
+    type EchoMessagingService = MessagingService<EchoMessageData, EchoMsgError>
+    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
+    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMsgServiceData>
 
 
     let echoWcfServiceAccessInfo =
@@ -189,10 +192,7 @@ module EchoMsgServiceInfo =
                     }
 
                 serviceData = serviceData
+                setData = fun e -> EchoMessagingService.setGetData (fun () -> Some e)
             }
             |> Ok
         | Error e -> Error e
-
-
-    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
-    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMsgServiceData>

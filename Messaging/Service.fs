@@ -53,8 +53,9 @@ module Service =
             }
 
 
-    type private MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
-        static let mutable getData : unit -> MessagingServiceData<'D, 'E> option = fun () -> None
+    type MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
+        static let mutable getData : unit -> MessagingServiceData<'D, 'E> option =
+            fun () -> None
 
         //static let mutable serviceDataOpt : MessagingServiceData<'D, 'E> option = None
         //static let serviceOpt : Lazy<MessagingService<'D, 'E> option> = failwith ""
@@ -65,7 +66,9 @@ module Service =
                 let service = MessagingService<'D, 'E>(data)
                 service.createEventHandlers()
                 Ok service
-            | None -> failwith ""
+            | None ->
+                printfn "Data is unavailable."
+                failwith ""
 
         let proxy = d.messagingServiceProxy
 
@@ -91,7 +94,9 @@ module Service =
             let h = TimerEventHandler(info, proxy)
             do h.start()
 
-        static member service = new Lazy<ResultWithErr<MessagingService<'D, 'E>, 'E>>(createService)
+        static member service =
+            new Lazy<ResultWithErr<MessagingService<'D, 'E>, 'E>>(createService)
+
         static member setGetData g = getData <- g
 
 
@@ -175,7 +180,8 @@ module Service =
         static let tryCreateService() : MessagingWcfService<'D, 'E> option = failwith ""
 
         let proxy = d.messagingWcfServiceProxy
-        let messagingService = MessagingService<'D, 'E>.service
+        let messagingService =
+            MessagingService<'D, 'E>.service
         //do messagingService.createEventHandlers()
 
 
@@ -211,10 +217,14 @@ module Service =
         let tryDeleteFromServer b = messagingService.Value |> Rop.bind (fun e -> e.tryDeleteFromServer b)
 
         interface IMessagingWcfService with
-            member _.getVersion b = tryReply getVersion toGetVersionError b
-            member _.sendMessage b = tryReply sendMessage toSendMessageError b
-            member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
-            member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
+            member _.getVersion b =
+                tryReply getVersion toGetVersionError b
+            member _.sendMessage b =
+                tryReply sendMessage toSendMessageError b
+            member _.tryPeekMessage b =
+                tryReply tryPeekMessage toTryPickMessageError b
+            member _.tryDeleteFromServer b =
+                tryReply tryDeleteFromServer toTryDeleteFromServerError b
 
         //static member setProxy proxy = MessagingWcfServiceProxy<'D, 'E>.setProxy proxy
         //static member tryGetService() = service.Value
