@@ -53,7 +53,6 @@ module EchoMsgServiceInfo =
     type EchoMessagingClientData = MessagingClientData<EchoMessageData, EchoMsgError>
     type EchoMessagingServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
     type EchoMessage = Message<EchoMessageData>
-    type EchoMessageInfo = MessageInfo<EchoMessageData>
     type EchoMessagingService = MessagingService<EchoMessageData, EchoMsgError>
     type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
@@ -213,9 +212,9 @@ module EchoMsgServiceInfo =
         match client.start() with
         | Ok() ->
             while true do
-                printfn "Sending message to %A" recipient
+                printfn "Sending message to: %A." recipient
 
-                let m : EchoMessageInfo =
+                let m =
                     {
                         recipientInfo =
                             {
@@ -227,21 +226,20 @@ module EchoMsgServiceInfo =
                     }
 
                 let sendResult = client.sendMessage m
-                printfn "Send with: %A" sendResult
+                printfn "Sent with: %A." sendResult
 
                 printfn "Checking messages."
 
                 let checkMessage() =
                     match tryProcessMessage () (fun _ m -> m) with
-                    | ProcessedSuccessfully m -> printfn "    Received message: %A" m
-                    | ProcessedWithError (m, e) -> printfn "    Received message: %A with error e: %A" m e
-                    | ProcessedWithFailedToRemove (m, e) -> printfn "    Received message: %A with error e: %A" m e
+                    | ProcessedSuccessfully m -> printfn "    Received message: %A." m
+                    | ProcessedWithError (m, e) -> printfn "    Received message: %A with error e: %A." m e
+                    | ProcessedWithFailedToRemove (m, e) -> printfn "    Received message: %A with error: %A." m e
                     | FailedToProcess e -> printfn "    Error e: %A" e
-                    | NothingToDo -> printfn "Nothing to do..."
-                    | BusyProcessing -> printfn "Busy processing..."
+                    | NothingToDo -> printfn "    Nothing to do..."
+                    | BusyProcessing -> printfn "    Busy processing..."
 
-                //let _ = [for _ in 1..20 -> ()] |> List.map checkMessage
+                let _ = [for _ in 1..5 -> ()] |> List.map checkMessage
 
-                checkMessage()
-                Thread.Sleep 5_000
+                Thread.Sleep 10_000
         | Error e -> printfn "Error: %A" e
