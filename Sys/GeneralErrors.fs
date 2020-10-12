@@ -34,11 +34,11 @@ module GeneralErrors =
         | DeserializationExn of exn
 
 
-    //type ServiceInstallerError =
-    //    | InstallServiceErr of exn
-    //    | UninstallServiceErr of exn
-    //    | StartServiceErr of exn
-    //    | StopServiceErr of exn
+    type ServiceInstallerError =
+        | InstallServiceErr of exn
+        | UninstallServiceErr of exn
+        | StartServiceErr of exn
+        | StopServiceErr of exn
 
 
     type GeneralError =

@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>Softellect.Platform</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Windows.fs" />
+    <Compile Include="Interop.fs" />
+  </ItemGroup>
+
+</Project>
