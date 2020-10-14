@@ -7,12 +7,27 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace WebAppMvc
 {
     public class Startup
     {
+        /// <summary>
+        /// https://weblog.west-wind.com/posts/2018/Apr/12/Getting-the-NET-Core-Runtime-Version-in-a-Running-Application
+        /// </summary>
+        public static string GetNetVersion()
+        {
+            var framework = Assembly
+                .GetEntryAssembly()?
+                .GetCustomAttribute<TargetFrameworkAttribute>()?
+                .FrameworkName;
+
+            return framework;
+        }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;

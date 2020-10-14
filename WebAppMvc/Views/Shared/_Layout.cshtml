@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using WebAppMvc;
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -38,6 +39,7 @@
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2020 - WebAppMvc - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                                      <a> - @Startup.GetNetVersion() </a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
