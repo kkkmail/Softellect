@@ -17,16 +17,16 @@ module ServiceInstaller =
     let ServiceTmeOut = 10_000.0
 
 
-    type private Logger = Logger<ServiceInstallerError>
+    type ServiceInstallerLogger = Logger<ServiceInstallerError>
 
 
     type ServiceInfo<'R, 'C> =
         {
             serviceName : ServiceName
-            runService : Logger -> 'R -> 'C option
-            cleanup : Logger -> 'C -> unit
+            runService : ServiceInstallerLogger -> 'R -> 'C option
+            cleanup : ServiceInstallerLogger -> 'C -> unit
             timeoutMilliseconds : int option
-            logger : Logger
+            logger : ServiceInstallerLogger
         }
 
         member this.timeout =
@@ -51,7 +51,7 @@ module ServiceInstaller =
 
 
     let private toError logError e =
-        e |> ServiceInstallerErr |> logError
+        e |> SingleErr |> ErrLogData |> logError
         false
 
 
@@ -62,7 +62,7 @@ module ServiceInstaller =
         installer
 
 
-    let private installService<'T> (l : Logger) (ServiceName serviceName) =
+    let private installService<'T> (l : ServiceInstallerLogger) (ServiceName serviceName) =
         try
             l.logInfoString (sprintf "Attempting to install service %s ..." serviceName)
             let i = getInstaller<'T> ()
@@ -75,7 +75,7 @@ module ServiceInstaller =
         | e -> e |> InstallServiceErr |> toError l.logError
 
 
-    let private uninstallService<'T> (l : Logger) (ServiceName serviceName) =
+    let private uninstallService<'T> (l : ServiceInstallerLogger) (ServiceName serviceName) =
         try
             l.logInfoString (sprintf "Attempting to uninstall service %s ..." serviceName)
             let i = getInstaller<'T> ()
