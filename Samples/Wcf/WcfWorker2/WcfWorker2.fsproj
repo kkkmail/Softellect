@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker;Microsoft.NET.Sdk.Publish">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>dotnet-WcfWorker-42B7797B-10C0-4875-B86B-A635EEE2C57E</UserSecretsId>
+    <AssemblyName>Softellect.Samples.Wcf.WcfWorker</AssemblyName>
+    <Platforms>AnyCPU;x64</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WeatherForecast.fs" />
+    <Compile Include="Controllers\WeatherForecastController.fs" />
+    <Compile Include="EchoWcfService.fs" />
+    <Compile Include="Worker.fs" />
+    <Compile Include="Startup.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Settings.job">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-rc.2.20475.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.0-rc.2.20478.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Platform\Platform.fsproj" />
+    <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
+    <ProjectReference Include="..\WcfServiceInfo\WcfServiceInfo.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+</Project>

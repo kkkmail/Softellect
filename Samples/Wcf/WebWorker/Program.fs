@@ -1,5 +1,9 @@
-namespace Softellect.Samples.Wcf.WcfWorker
+namespace WebWorker
 
+open System
+open System.Collections.Generic
+open System.Linq
+open System.Threading.Tasks
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 
@@ -9,7 +13,6 @@ module Program =
             .UseWindowsService()
             .ConfigureServices(fun hostContext services ->
                 services.AddHostedService<Worker>() |> ignore)
-
 
     [<EntryPoint>]
     let main args =
