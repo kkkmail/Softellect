@@ -12,6 +12,11 @@ open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
 
 module EchoWcfServiceInfo =
 
+    //let serviceAddress = ServiceAddress "127.0.0.1"
+    //let serviceAddress = ServiceAddress "13.85.24.220"
+    let serviceAddress = ServiceAddress "wcfworker20201014095213.azurewebsites.net"
+
+
     type EchoType =
         | A
         | B
@@ -52,7 +57,7 @@ module EchoWcfServiceInfo =
 
     let echoWcfServiceAccessInfo =
         {
-            serviceAddress = ServiceAddress "127.0.0.1"
+            serviceAddress = serviceAddress
             httpServicePort = ServicePort 8080
             httpServiceName = ServiceName "EchoHttpService"
             netTcpServicePort =  ServicePort 8808

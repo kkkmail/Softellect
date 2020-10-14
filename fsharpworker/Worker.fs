@@ -32,4 +32,4 @@ type Worker(logger: ILogger<Worker>) =
                 do! Async.Sleep(1000)
         }
         |> Async.StartAsTask
-        :> Task // need to convert into the parameter-less task
+        :> Task
