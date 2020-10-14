@@ -3,6 +3,7 @@
 open System
 open System.Threading
 
+open Softellect.Wcf.Common
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 open Softellect.Samples.Wcf.Client.EchoWcfClient
 
@@ -17,7 +18,7 @@ module Program =
             x = 1
             y = DateTime.Now
             echoType = C 2
-            hugeData = [ for i in 0..MaxSize -> Random().Next() ]
+            hugeData = [ for _ in 0..MaxSize -> Random().Next() ]
         }
 
 
@@ -26,7 +27,10 @@ module Program =
 
         while true do
             try
-                printfn "Connecting using: %s" echoWcfServiceAccessInfo.netTcpUrl
+                match communicationType with
+                | HttpCommunication -> printfn  "Connecting using: %s" echoWcfServiceAccessInfo.httpUrl
+                | NetTcpCommunication -> printfn  "Connecting using: %s" echoWcfServiceAccessInfo.netTcpUrl
+
                 "Abcd" |> service.echo |> printfn "%A"
                 createEchoMessage() |> service.complexEcho |> printfn "%A"
             with

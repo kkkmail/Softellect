@@ -51,7 +51,7 @@ module ServiceInstaller =
 
 
     let private toError logError e =
-        e |> SingleErr |> ErrLogData |> logError
+        e |> SingleErr |> logError
         false
 
 
@@ -72,7 +72,7 @@ module ServiceInstaller =
             l.logInfoString "... services installed successfully.\n"
             true
         with
-        | e -> e |> InstallServiceErr |> toError l.logError
+        | e -> e |> InstallServiceErr |> toError l.logErrData
 
 
     let private uninstallService<'T> (l : ServiceInstallerLogger) (ServiceName serviceName) =
@@ -84,7 +84,7 @@ module ServiceInstaller =
             l.logInfoString "... services uninstalled successfully.\n"
             true
         with
-        | e -> e |> UninstallServiceErr |> toError l.logError
+        | e -> e |> UninstallServiceErr |> toError l.logErrData
 
 
     let private startService (i : ServiceInfo<'R, 'C>) =
@@ -96,7 +96,7 @@ module ServiceInstaller =
             i.logger.logInfoString (sprintf "... service %s started successfully.\n" i.serviceName.value)
             true
         with
-        | e -> e |> StartServiceErr |> toError i.logger.logError
+        | e -> e |> StartServiceErr |> toError i.logger.logErrData
 
 
     let private stopService (i : ServiceInfo<'R, 'C>) =
@@ -108,7 +108,7 @@ module ServiceInstaller =
             i.logger.logInfoString (sprintf "... service %s stopped successfully.\n" i.serviceName.value)
             true
         with
-        | e -> e |> StopServiceErr |> toError i.logger.logError
+        | e -> e |> StopServiceErr |> toError i.logger.logErrData
 
 
     let private runService (i : ServiceInfo<'R, 'C>) r =
