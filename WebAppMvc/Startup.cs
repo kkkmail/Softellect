@@ -20,10 +20,15 @@ namespace WebAppMvc
         /// </summary>
         public static string GetNetVersion()
         {
-            var framework = Assembly
-                .GetEntryAssembly()?
-                .GetCustomAttribute<TargetFrameworkAttribute>()?
-                .FrameworkName;
+            var framework =
+                //Environment.Version.ToString();
+
+                System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+                //Assembly
+                //    .GetEntryAssembly()?
+                //    .GetCustomAttribute<TargetFrameworkAttribute>()?
+                //    .FrameworkName;
 
             return framework;
         }
