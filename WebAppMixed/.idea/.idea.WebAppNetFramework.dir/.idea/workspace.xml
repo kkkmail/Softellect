@@ -22,11 +22,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2c77a03a-aedc-4fc9-aa58-7b1abaddcddc" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/Views/Home/Index.cshtml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/Home/Index.cshtml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Web.config" beforeDir="false" afterPath="$PROJECT_DIR$/Web.config" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppMixed_Net5.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppMixed_Net5.csproj" afterDir="false" />
-    </list>
+    <list default="true" id="2c77a03a-aedc-4fc9-aa58-7b1abaddcddc" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -75,7 +71,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1602863203100</updated>
-      <workItem from="1602863208495" duration="899000" />
+      <workItem from="1602863208495" duration="1297000" />
     </task>
     <servers />
   </component>
