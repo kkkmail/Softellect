@@ -8,11 +8,33 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="App_Start\**" />
+    <Compile Remove="Content\**" />
+    <Compile Remove="fonts\**" />
+    <Compile Remove="Scripts\**" />
+    <Content Remove="App_Start\**" />
+    <Content Remove="Content\**" />
+    <Content Remove="fonts\**" />
+    <Content Remove="Scripts\**" />
+    <EmbeddedResource Remove="App_Start\**" />
+    <EmbeddedResource Remove="Content\**" />
+    <EmbeddedResource Remove="fonts\**" />
+    <EmbeddedResource Remove="Scripts\**" />
+    <None Remove="App_Start\**" />
+    <None Remove="Content\**" />
+    <None Remove="fonts\**" />
+    <None Remove="Scripts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Global.asax.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Remove="packages.config" />
+    <Content Remove="Views\Home\About.cshtml" />
+    <Content Remove="Views\Home\Contact.cshtml" />
+    <Content Remove="Views\Web.config" />
     <Content Remove="Web.config" />
     <Content Remove="Web.Debug.config" />
     <Content Remove="Web.Release.config" />
