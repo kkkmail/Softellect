@@ -11,18 +11,22 @@
     <Compile Remove="App_Start\**" />
     <Compile Remove="Content\**" />
     <Compile Remove="fonts\**" />
+    <Compile Remove="packages\**" />
     <Compile Remove="Scripts\**" />
     <Content Remove="App_Start\**" />
     <Content Remove="Content\**" />
     <Content Remove="fonts\**" />
+    <Content Remove="packages\**" />
     <Content Remove="Scripts\**" />
     <EmbeddedResource Remove="App_Start\**" />
     <EmbeddedResource Remove="Content\**" />
     <EmbeddedResource Remove="fonts\**" />
+    <EmbeddedResource Remove="packages\**" />
     <EmbeddedResource Remove="Scripts\**" />
     <None Remove="App_Start\**" />
     <None Remove="Content\**" />
     <None Remove="fonts\**" />
+    <None Remove="packages\**" />
     <None Remove="Scripts\**" />
   </ItemGroup>
 
