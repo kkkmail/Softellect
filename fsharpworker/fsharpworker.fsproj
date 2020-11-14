@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MassTransit" Version="7.0.5-develop.2983" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="7.0.5-develop.2983" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-rc.2.20475.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.0-rc.2.20478.4" />
+    <PackageReference Include="MassTransit" Version="7.0.6" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="7.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.0" />
     <PackageReference Include="RabbitMQ.Client" Version="6.2.1" />
     <PackageReference Include="Topshelf" Version="4.2.1.218-develop" />
   </ItemGroup>
