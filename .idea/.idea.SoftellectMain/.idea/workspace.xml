@@ -22,48 +22,7 @@
   <component name="ChangeListManager">
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Platform/Platform.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Platform/Platform.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/NetCoreClient/NetCoreClient.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/NetCoreClient/NetCoreClient.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/NetCoreService/NetCoreService.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/NetCoreService/NetCoreService.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfClient/WcfClient.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfClient/WcfClient.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfService/WcfService.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfService/WcfService.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/WcfWorker.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/WcfWorker.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WebWorker/WebWorker.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WebWorker/WebWorker.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sys/Sys.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Sys.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Wcf/Wcf.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Wcf/Wcf.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap-theme.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap-theme.css.map" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap-theme.min.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap-theme.min.css.map" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.css" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.min.css" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.min.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.min.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Content/bootstrap.min.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/bootstrap.js" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Scripts/bootstrap.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/bootstrap.min.js" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Scripts/bootstrap.min.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.min.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.min.map" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.slim.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.slim.min.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery-3.4.1.slim.min.map" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate-vsdoc.js" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate-vsdoc.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate.js" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate.min.js" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Scripts/jquery.validate.min.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/Web.config" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/Web.config" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/WebAppNetFramework.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/WebAppNetFramework.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/fonts/glyphicons-halflings-regular.eot" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/fonts/glyphicons-halflings-regular.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/fonts/glyphicons-halflings-regular.ttf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/fonts/glyphicons-halflings-regular.woff" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/fonts/glyphicons-halflings-regular.woff2" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebAppNetFramework/packages.config" beforeDir="false" afterPath="$PROJECT_DIR$/WebAppNetFramework/packages.config" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WebTestWorker/WebTestWorker.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/WebTestWorker/WebTestWorker.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WorkerService1/WorkerService1.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/WorkerService1/WorkerService1.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fsharpworker/fsharpworker.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/fsharpworker/fsharpworker.fsproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -453,7 +412,7 @@
       <updated>1600636429518</updated>
       <workItem from="1600636433149" duration="62000" />
       <workItem from="1600637256910" duration="40000" />
-      <workItem from="1605383828579" duration="413000" />
+      <workItem from="1605383828579" duration="1033000" />
     </task>
     <servers />
   </component>
