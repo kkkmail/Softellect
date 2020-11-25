@@ -20,10 +20,7 @@
     <projectFile>WebAppNetFramework/WebAppNetFramework.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -413,6 +410,7 @@
       <workItem from="1600636433149" duration="62000" />
       <workItem from="1600637256910" duration="40000" />
       <workItem from="1605383828579" duration="1033000" />
+      <workItem from="1606342384393" duration="474000" />
     </task>
     <servers />
   </component>
