@@ -15,16 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.210" />
+    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.214" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />
     <ProjectReference Include="..\Wcf\Wcf.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20513.4" />
   </ItemGroup>
 
 </Project>
