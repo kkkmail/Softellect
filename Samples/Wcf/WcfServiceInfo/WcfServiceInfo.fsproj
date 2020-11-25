@@ -43,8 +43,4 @@
     <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="5.0.0-beta.20513.4" />
-  </ItemGroup>
-
 </Project>
