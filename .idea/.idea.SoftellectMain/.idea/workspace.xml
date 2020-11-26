@@ -20,7 +20,9 @@
     <projectFile>WebAppNetFramework/WebAppNetFramework.csproj</projectFile>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="" />
+    <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -28,6 +30,11 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <changedPaths>
+      <option value="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" />
+    </changedPaths>
   </component>
   <component name="ProjectId" id="1hnALjbXHxFjY6HqvLIwLNIcyVR" />
   <component name="ProjectViewState">
@@ -38,6 +45,12 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
   <component name="RunManager" selected=".NET Project.Client">
@@ -411,6 +424,7 @@
       <workItem from="1600637256910" duration="40000" />
       <workItem from="1605383828579" duration="1033000" />
       <workItem from="1606342384393" duration="474000" />
+      <workItem from="1606345699715" duration="765000" />
     </task>
     <servers />
   </component>

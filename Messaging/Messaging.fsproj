@@ -4,6 +4,11 @@
     <TargetFramework>net5.0</TargetFramework>
     <AssemblyName>Softellect.Messaging</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>0.0.1-alpha.100</Version>
   </PropertyGroup>
 
   <ItemGroup>

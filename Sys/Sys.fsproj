@@ -4,6 +4,11 @@
     <TargetFramework>net5.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyName>Softellect.Sys</AssemblyName>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>0.0.1-alpha.100</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
