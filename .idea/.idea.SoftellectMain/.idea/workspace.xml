@@ -21,7 +21,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sys/Sys.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Sys.fsproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -425,6 +425,7 @@
       <workItem from="1605383828579" duration="1033000" />
       <workItem from="1606342384393" duration="474000" />
       <workItem from="1606345699715" duration="765000" />
+      <workItem from="1606597637937" duration="808000" />
     </task>
     <servers />
   </component>

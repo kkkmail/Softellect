@@ -45,6 +45,7 @@
 
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.1.1" />
+    <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
     <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.214" />
     <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.214" />
     <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.214" />
@@ -55,10 +56,7 @@
     <PackageReference Include="System.ServiceModel.Http" Version="4.8.0" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.8.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Platform\Platform.fsproj" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="5.0.0" />
   </ItemGroup>
 
 </Project>
