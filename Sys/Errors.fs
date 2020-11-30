@@ -11,10 +11,6 @@ module Errors =
     /// All errors known in the system.
     type Err<'E> =
         | AggregateErr of Err<'E> * List<Err<'E>>
-        //| TimerEventErr of TimerEventError
-        //| WcfErr of WcfError
-        //| MessagingErr of MessagingError
-
         | SingleErr of 'E
 
         /// b is the most recent error.

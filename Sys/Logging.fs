@@ -15,12 +15,29 @@ module Logging =
             | ErrLogData (t, d) -> ErrLogData (t, f d)
 
 
+    type LogLevel =
+        | CritLog
+        | ErrLog
+        | WarnLog
+        | InfoLog
+        | DebugLog
+
+
+    type LogMessage<'E> =
+        {
+            logLevel : LogLevel
+            logData : LogData<'E>
+        }
+
+
+
     type Logger<'E> =
         {
             logCrit : LogData<'E> -> unit
             logError : LogData<'E> -> unit
             logWarn : LogData<'E> -> unit
             logInfo : LogData<'E> -> unit
+            logDebug : LogData<'E> -> unit
         }
 
         member this.logInfoString (s : string) = (DateTime.Now, s) |> SimpleLogData |> this.logInfo
@@ -41,6 +58,16 @@ module Logging =
                 logError = printfn "ERROR: %A, %A" DateTime.Now
                 logWarn = printfn "WARN: %A, %A" DateTime.Now
                 logInfo = printfn "INFO: %A, %A" DateTime.Now
+                logDebug = printfn "DEBUG: %A, %A" DateTime.Now
+            }
+
+        static member releaseValue : Logger<'E> =
+            {
+                logCrit = printfn "CRIT: %A, %A" DateTime.Now
+                logError = printfn "ERROR: %A, %A" DateTime.Now
+                logWarn = printfn "WARN: %A, %A" DateTime.Now
+                logInfo = printfn "INFO: %A, %A" DateTime.Now
+                logDebug = fun _ -> ignore()
             }
 
         member log.map f =
@@ -49,4 +76,5 @@ module Logging =
                 logError = fun e -> e.map f |> log.logError
                 logWarn = fun e -> e.map f |> log.logWarn
                 logInfo = fun e -> e.map f |> log.logInfo
+                logDebug = fun e -> e.map f |> log.logInfo
             }
