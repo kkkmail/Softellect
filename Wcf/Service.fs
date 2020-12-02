@@ -164,7 +164,7 @@ module Service =
 
         let logErr e =
             let err = e |> WcfExn
-            err |> SingleErr |> logger.logErrData
+            err |> SingleErr |> logger.logErrorData
             Error err
 
         let tryExecute g = tryExecute (fun () -> g() |> Ok) logErr

@@ -187,7 +187,7 @@ module EchoMsgServiceInfo =
         }
 
 
-    let echoWcfServiceDataRes  =
+    let echoWcfServiceDataRes =
         match WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo with
         | Ok i ->
             {

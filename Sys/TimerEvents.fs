@@ -57,27 +57,28 @@ module TimerEvents =
         let mutable counter = -1
         let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
+        let logger = proxy.logger
         let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> proxy.toErr |> proxy.logger.logErrData
-        let logWarn e = e |> proxy.toErr |> proxy.logger.logWarnData
+        let logError e = e |> proxy.toErr |> logger.logErrorData
+        let logWarn e = e |> proxy.toErr |> logger.logWarnData
         let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
-        do printfn "TimerEventHandler: %A" i
+        do sprintf "TimerEventHandler: %A" i |> logger.logDebugString
 
         let g() =
             try
                 match proxy.eventHandler() with
                 | Ok() ->
-                    printfn "proxy.eventHandler() - succeeded."
+                    logger.logDebugString "proxy.eventHandler() - succeeded."
                     ignore()
                 | Error e ->
-                    printfn "proxy.eventHandler() - Error: %A" e
-                    proxy.logger.logErrData e
+                    sprintf "proxy.eventHandler() - Error: %A" e |> logger.logDebugString
+                    proxy.logger.logErrorData e
             with
             | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
-                printfn "eventHandler: %A" i
+                sprintf "eventHandler: %A" i |> logger.logDebugString
                 proxy.logger.logInfoString info
                 if Interlocked.Increment(&counter) = 0
                 then timedImplementation false proxy.logger info g
