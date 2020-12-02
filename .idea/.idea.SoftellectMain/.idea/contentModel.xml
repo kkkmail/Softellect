@@ -120,7 +120,6 @@
       <e p="Sys" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
         <e p="Core.fs" t="Include" />
-        <e p="Errors.fs" t="Include" />
         <e p="GeneralErrors.fs" t="Include" />
         <e p="Logging.fs" t="Include" />
         <e p="MessagingErrors.fs" t="Include" />

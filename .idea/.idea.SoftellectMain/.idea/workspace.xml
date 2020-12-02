@@ -21,6 +21,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sys/Logging.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Logging.fs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sys/Sys.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Sys.fsproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -31,9 +34,13 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Sys/Errors.fs" root0="SKIP_HIGHLIGHTING" />
+  </component>
   <component name="IdeDocumentHistory">
     <changedPaths>
       <option value="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" />
+      <option value="$PROJECT_DIR$/Sys/Logging.fs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="1hnALjbXHxFjY6HqvLIwLNIcyVR" />
@@ -426,6 +433,7 @@
       <workItem from="1606342384393" duration="474000" />
       <workItem from="1606345699715" duration="765000" />
       <workItem from="1606597637937" duration="808000" />
+      <workItem from="1606919620236" duration="1298000" />
     </task>
     <servers />
   </component>

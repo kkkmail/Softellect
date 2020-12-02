@@ -19,6 +19,8 @@ if ((!$msb) -and (!$vbcsc) -and (!$w3wp)) { echo "No known orphanded processes f
 
 echo "Deleting all bin and obj content..."
 
+Remove-Item -path .\NugetPackages\*.nupkg -force -ea silentlycontinue
+
 Remove-Item -path .\Data\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Interop\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Messaging\bin -recurse -force -ea silentlycontinue

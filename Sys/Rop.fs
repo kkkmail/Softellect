@@ -3,6 +3,11 @@
 /// https://fsharpforfunandprofit.com/posts/recipe-part2/
 module Rop =
 
+    type UnitResult<'E> = Result<unit, 'E>
+    type ListResult<'T, 'E> = Result<list<Result<'T, 'E>>, 'E>
+    type StateWithResult<'T, 'E> = 'T * UnitResult<'E>
+
+
     /// convert a single value into a two-track result
     let succeed x = Ok x
 
@@ -199,3 +204,58 @@ module Rop =
                 | w1, Error e -> w1, Error e
 
         inner a s
+
+
+    /// Folds list of errors: list<'E> into a single 'E.
+    /// The head should contain the latest error.
+    let foldErrors adder a =
+        match a with
+        | [] -> None
+        | h :: t -> t |> List.fold (fun acc r -> adder r acc) h |> Some
+
+
+    /// Converts an error option into a unit result.
+    let toUnitResult eo : UnitResult<'E> =
+        match eo with
+        | None -> Ok()
+        | Some e -> Error e
+
+
+    /// Folds list of errors: list<'E> into a single 'E, then converts it into UnitResult<'E>.
+    let foldToUnitResult adder x = (foldErrors adder >> toUnitResult) x
+
+
+    /// Adds error f if the result is (Error e).
+    /// Otherwise returns then same (Ok r).
+    let addError adder v f =
+        match v with
+        | Ok r -> Ok r
+        | Error e -> Error (adder f e)
+
+
+    /// The first result r1 is an earlier result and the second result r2 is a later result,
+    /// so that we can partially apply the first result.
+    /// And we want to sum up errors as (e2 + e1), in order to keep
+    /// the latest error at the beginning.
+    let combineUnitResults adder r1 r2 =
+        match r1, r2 with
+        | Ok(), Ok() -> Ok()
+        | Error e1, Ok() -> Error e1
+        | Ok(), Error e2 -> Error e2
+        | Error e1, Error e2 -> Error (adder e2 e1)
+
+
+    let toErrorOption adder f g r =
+        match r with
+        | Ok() -> None
+        | Error e -> Some (adder (f g) e)
+
+
+    /// The head should contain the latest result.
+    let foldUnitResults adder r =
+        let rec fold acc w =
+            match w with
+            | [] -> acc
+            | h :: t -> fold (combineUnitResults adder h acc) t
+
+        fold (Ok()) r

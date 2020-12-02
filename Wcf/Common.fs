@@ -2,7 +2,6 @@
 
 open System
 
-open Softellect.Sys.Errors
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
@@ -14,7 +13,7 @@ module Common =
     let connectionTimeOut = TimeSpan(0, 10, 0)
     let dataTimeOut = TimeSpan(1, 0, 0)
     let wcfSerializationFormat = BinaryZippedFormat
-    type WcfResult<'T> = ResultWithErr<'T, WcfError>
+    type WcfResult<'T> = Result<'T, WcfError>
     type WcfLogger = Logger<WcfError>
 
 

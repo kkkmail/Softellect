@@ -1,13 +1,12 @@
 ﻿namespace Softellect.Sys
 
 open System
-open Softellect.Sys.Errors
 
 module Logging =
 
     type LogData<'E> =
         | SimpleLogData of string
-        | ErrLogData of Err<'E>
+        | ErrLogData of 'E
 
 
     type LogLevel =

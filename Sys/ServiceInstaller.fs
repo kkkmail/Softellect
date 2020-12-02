@@ -8,7 +8,6 @@ open Argu
 
 open Softellect.Sys.Logging
 open Softellect.Sys.GeneralErrors
-open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 
 module ServiceInstaller =
@@ -51,7 +50,7 @@ module ServiceInstaller =
 
 
     let private toError logError e =
-        e |> SingleErr |> logError
+        e |> logError
         false
 
 

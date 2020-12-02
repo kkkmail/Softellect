@@ -2,7 +2,7 @@
 
 open System
 open Softellect.Sys.Primitives
-open Softellect.Sys.Errors
+open Softellect.Sys.Rop
 open Softellect.Sys.Logging
 open Softellect.Sys.MessagingErrors
 open Softellect.Sys.MessagingPrimitives

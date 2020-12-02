@@ -2,7 +2,7 @@
 
 open System.ServiceModel
 
-open Softellect.Sys.Errors
+open Softellect.Sys.Rop
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
@@ -11,17 +11,17 @@ module ServiceInfo =
 
     /// Client part of messaging service.
     type IMessagingClient<'D, 'E> =
-        abstract getVersion : unit -> ResultWithErr<MessagingDataVersion, 'E>
+        abstract getVersion : unit -> Result<MessagingDataVersion, 'E>
         abstract sendMessage : Message<'D> -> UnitResult<'E>
-        abstract tryPeekMessage : MessagingClientId -> ResultWithErr<Message<'D> option, 'E>
+        abstract tryPeekMessage : MessagingClientId -> Result<Message<'D> option, 'E>
         abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> UnitResult<'E>
 
 
     /// Server part of messaging service.
     type IMessagingService<'D, 'E> =
-        abstract getVersion : unit -> ResultWithErr<MessagingDataVersion, 'E>
+        abstract getVersion : unit -> Result<MessagingDataVersion, 'E>
         abstract sendMessage : Message<'D> -> UnitResult<'E>
-        abstract tryPeekMessage : MessagingClientId -> ResultWithErr<Message<'D> option, 'E>
+        abstract tryPeekMessage : MessagingClientId -> Result<Message<'D> option, 'E>
         abstract tryDeleteFromServer : MessagingClientId * MessageId -> UnitResult<'E>
         abstract removeExpiredMessages : unit -> UnitResult<'E>
 

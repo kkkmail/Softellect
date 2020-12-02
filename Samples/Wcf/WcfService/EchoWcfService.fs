@@ -2,7 +2,6 @@
 
 open System
 
-open Softellect.Sys.Errors
 open Softellect.Wcf.Service
 
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
@@ -33,8 +32,8 @@ module EchoWcfService =
 
     type EchoWcfService() =
         let service = EchoService() :> IEchoService
-        let toEchoError f = f |> EchoWcfErr |> SingleErr
-        let toComplexEchoError f = f |> EchoWcfErr |> SingleErr
+        let toEchoError f = f |> EchoWcfErr
+        let toComplexEchoError f = f |> EchoWcfErr
 
         interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m

@@ -3,7 +3,7 @@
 open System.Threading
 open System
 
-open Softellect.Sys.Errors
+open Softellect.Sys.Rop
 open Softellect.Sys.TimerErrors
 open Softellect.Sys.Core
 open Softellect.Sys.Logging
@@ -49,7 +49,7 @@ module TimerEvents =
         {
             eventHandler : unit -> UnitResult<'E>
             logger : Logger<'E>
-            toErr : TimerEventError -> Err<'E>
+            toErr : TimerEventError -> 'E
         }
 
 

@@ -5,7 +5,7 @@ open System.Threading
 
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.MessagingClientErrors
-open Softellect.Sys.Errors
+open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 
 open Softellect.Wcf.Common
@@ -24,9 +24,6 @@ module Client =
     let maxNumberOfSmallMessages = 5_000
     let maxNumberOfMediumMessages = 500
     let maxNumberOfLargeMessages = 100
-
-    //let private toError e = e |> MessagingClientErr |> SingleErr |> Error
-    //let private addError g f e = ((f |> g |> MessagingClientErr) + e) |> SingleErr |> Error
 
 
     type MessageCount =
@@ -65,7 +62,7 @@ module Client =
         {
             msgAccessInfo : MessagingClientAccessInfo
             communicationType : WcfCommunicationType
-            toErr : MessagingClientError -> Err<'E>
+            toErr : MessagingClientError -> 'E
         }
 
 
@@ -91,18 +88,17 @@ module Client =
         {
             saveMessage : Message<'D> -> UnitResult<'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
-            tryPeekMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryPeekMessage : unit -> Result<Message<'D> option, 'E>
             tryDeleteFromServer : MessageId -> UnitResult<'E>
             getMessageSize : MessageData<'D> -> MessageSize
-            toErr : MessagingClientError -> Err<'E>
+            toErr : MessagingClientError -> 'E
+            addError : 'E -> 'E -> 'E
         }
 
 
-    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : ResultWithErr<MessageSize option, 'E> =
-        //let a e = proxy.toErr (TryReceiveSingleMessageErr e)
-        //let addError = addError (proxy.toErr TryReceiveSingleMessageErr)
-        let addError (a : TryReceiveSingleMessageError) (e : Err<'E>) : ResultWithErr<MessageSize option, 'E> =
-            let b = proxy.toErr (TryReceiveSingleMessageErr a) + e
+    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : Result<MessageSize option, 'E> =
+        let addError (a : TryReceiveSingleMessageError) (e : 'E) : Result<MessageSize option, 'E> =
+            let b = proxy.addError (proxy.toErr (TryReceiveSingleMessageErr a)) e
             Error b
 
         let result =
@@ -115,7 +111,7 @@ module Client =
                     | Error e ->
                         match proxy.tryDeleteMessage m.messageDataInfo.messageId with
                         | Ok() -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr e
-                        | Error e1 -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr (e1 + e)
+                        | Error e1 -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr (proxy.addError e1 e)
                 | Error e -> addError SaveMessageErr e
             | Ok None -> Ok None
             | Error e -> addError TryReceiveSingleMessageError.TryPeekMessageErr e
@@ -173,7 +169,7 @@ module Client =
 
     type TrySendSingleMessageProxy<'D, 'E> =
         {
-            tryPickOutgoingMessage : unit -> ResultWithErr<Message<'D> option, 'E>
+            tryPickOutgoingMessage : unit -> Result<Message<'D> option, 'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
             sendMessage : Message<'D> -> UnitResult<'E>
             getMessageSize : MessageData<'D> -> MessageSize
@@ -271,6 +267,7 @@ module Client =
                 tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
                 getMessageSize = d.msgClientProxy.getMessageSize
                 toErr = d.msgClientProxy.toErr
+                addError = proxy.addError
             }
 
         let sendProxy =
@@ -297,7 +294,7 @@ module Client =
             createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
             |> proxy.saveMessage
 
-        member _.tryPeekReceivedMessage() : ResultWithErr<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
+        member _.tryPeekReceivedMessage() : Result<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
         member _.tryRemoveReceivedMessage (m : MessageId) : UnitResult<'E> = proxy.tryDeleteMessage m
         member _.tryReceiveMessages() : UnitResult<'E> = tryReceiveMessages receiveProxy
         member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
@@ -326,6 +323,7 @@ module Client =
                 tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
                 toErr = proxy.toErr
+                addError = failwith ""
             }
 
 

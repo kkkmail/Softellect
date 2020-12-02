@@ -13,14 +13,12 @@ open System.Threading
 open Microsoft.FSharp.Core.Operators
 
 open Softellect.Sys.WcfErrors
-open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
 
 module Service =
 
-    let private toError e = e |> SingleErr |> Error
-    let private addError e f = (SingleErr e) + f
+    let private toError e = e |> Error
 
 
     /// Service reply.
@@ -75,7 +73,7 @@ module Service =
         }
 
         static member tryCreate (i : ServiceAccessInfo) =
-            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> SingleErr |> Error
+            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
 
             match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
             | (true, ipAddress), false ->
@@ -164,7 +162,7 @@ module Service =
 
         let logErr e =
             let err = e |> WcfExn
-            err |> SingleErr |> logger.logErrorData
+            err |> logger.logErrorData
             Error err
 
         let tryExecute g = tryExecute (fun () -> g() |> Ok) logErr
@@ -206,7 +204,7 @@ module Service =
                     (logger, host) |> WcfService |> Ok
                 with
                 | e -> WcfExn e |> toError
-            | None -> SingleErr WcfServiceCannotInitializeErr |> Error
+            | None -> WcfServiceCannotInitializeErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
             new Lazy<WcfResult<WcfService>>(fun () -> WcfServiceData<'S, 'P>.tryGetData() |> tryCreateWebHostBuilder)

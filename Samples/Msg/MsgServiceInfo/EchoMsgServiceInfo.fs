@@ -6,7 +6,6 @@ open System.Threading
 open Softellect.Sys.Primitives
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.Logging
-open Softellect.Sys.Errors
 open Softellect.Sys.MessagingErrors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
@@ -122,7 +121,8 @@ module EchoMsgServiceInfo =
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
             logger = echoLogger
-            toErr = fun e -> e |> MessagingClientErr |> EchoMsgErr |> SingleErr
+            toErr = fun e -> e |> MessagingClientErr |> EchoMsgErr
+            addError = EchoMsgError.addError
         }
 
 
@@ -143,7 +143,7 @@ module EchoMsgServiceInfo =
             deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
             logger = echoLogger
-            toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr |> SingleErr
+            toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr
         }
 
 

@@ -4,7 +4,6 @@ open System
 
 open Softellect.Sys
 open Softellect.Sys.Logging
-open Softellect.Sys.Errors
 open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.TimerEvents
@@ -54,7 +53,7 @@ module Service =
     type MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
         static let mutable getData : unit -> MessagingServiceData<'D, 'E> option = fun () -> None
 
-        static let createService() : ResultWithErr<IMessagingService<'D, 'E>, 'E> =
+        static let createService() : Result<IMessagingService<'D, 'E>, 'E> =
             match getData() with
             | Some data ->
                 let service = MessagingService<'D, 'E>(data)
@@ -67,7 +66,7 @@ module Service =
 
         let proxy = d.messagingServiceProxy
 
-        static member service = new Lazy<ResultWithErr<IMessagingService<'D, 'E>, 'E>>(createService)
+        static member service = new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
         static member setGetData g = getData <- g
 
         interface IMessagingService<'D, 'E> with
@@ -111,7 +110,7 @@ module Service =
     type MessagingWcfServiceProxy<'D, 'E> =
         {
             logger : Logger<'E>
-            toErr : MessagingServiceError -> Err<'E>
+            toErr : MessagingServiceError -> 'E
         }
 
 

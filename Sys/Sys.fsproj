@@ -34,7 +34,6 @@
     <Compile Include="TimerErrors.fs" />
     <Compile Include="WcfErrors.fs" />
     <Compile Include="MessagingErrors.fs" />
-    <Compile Include="Errors.fs" />
     <Compile Include="Logging.fs" />
     <Compile Include="Core.fs" />
     <Compile Include="Rop.fs" />
