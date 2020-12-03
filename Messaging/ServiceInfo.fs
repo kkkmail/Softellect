@@ -2,6 +2,7 @@
 
 open System.ServiceModel
 
+open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives

@@ -74,6 +74,8 @@ module EchoMsgServiceInfo =
 
     /// Using simple mutable lists to mock client and service data sources.
     type MutableList<'T> = System.Collections.Generic.List<'T>
+
+
     let private clientOneMessageData = new MutableList<EchoMessage>()
     let private clientTwoMessageData = new MutableList<EchoMessage>()
     let private serverMessageData = new MutableList<EchoMessage>()
