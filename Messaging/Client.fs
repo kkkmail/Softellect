@@ -323,7 +323,7 @@ module Client =
                 tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
                 toErr = proxy.toErr
-                addError = failwith ""
+                addError = proxy.addError
             }
 
 

@@ -9,7 +9,7 @@ module MessagingClientErrors =
 
     type GetVersionError =
         | GetVersionWcfErr of WcfError
-        //| VersionMismatchErr of VersionMismatchInfo
+        | VersionMismatchErr of VersionMismatchInfo
 
 
     type OnGetMessagesError =
@@ -33,6 +33,7 @@ module MessagingClientErrors =
 
     type SendMessageError =
         | SendMessageWcfErr of WcfError
+        | CannotDeleteMessageErr of MessageId
 
 
     type TryPeekMessageError =

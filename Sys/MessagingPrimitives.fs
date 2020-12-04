@@ -24,6 +24,7 @@ module MessagingPrimitives =
             remoteVersion : MessagingDataVersion
         }
 
+
     type MessagingClientId =
         | MessagingClientId of Guid
 
