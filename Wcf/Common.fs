@@ -26,6 +26,10 @@ module Common =
         serviceName.Replace(" ", "").Replace("-", "").Replace(".", "") |> ServiceName
 
 
+    let getHttpServiceUrl (ServiceAddress serviceAddress) (ServicePort servicePort) (ServiceName serviceName) =
+        "http://" + serviceAddress + ":" + servicePort.ToString() + "/" + serviceName
+
+
     let getNetTcpServiceUrl (ServiceAddress serviceAddress) (ServicePort servicePort) (ServiceName serviceName) =
         "net.tcp://" + serviceAddress + ":" + (servicePort.ToString()) + "/" + serviceName
 
@@ -44,16 +48,54 @@ module Common =
     let toWcfSerializationError f e = e |> WcfSerializationErr |> f |> Error
 
 
-    /// Higher level (not yet parsed) service info.
-    type ServiceAccessInfo =
+    type HttpServiceAccessInfo =
         {
-            serviceAddress : ServiceAddress
+            httpServiceAddress : ServiceAddress
             httpServicePort : ServicePort
             httpServiceName : ServiceName
+        }
+
+        static member create address port name =
+            {
+                httpServiceAddress = address
+                httpServicePort = port
+                httpServiceName = name
+            }
+
+
+    type NetTcpServiceAccessInfo =
+        {
+            netTcpServiceAddress : ServiceAddress
             netTcpServicePort : ServicePort
             netTcpServiceName : ServiceName
         }
 
-        member i.httpUrl = "http://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
-        member i.httpsUrl = "https://" + i.serviceAddress.value + ":" + i.httpServicePort.value.ToString() + "/" + i.httpServiceName.value
-        member i.netTcpUrl = getNetTcpServiceUrl i.serviceAddress i.netTcpServicePort i.netTcpServiceName
+        static member create address port name =
+            {
+                netTcpServiceAddress = address
+                netTcpServicePort = port
+                netTcpServiceName = name
+            }
+
+
+    /// Higher level (not yet parsed) service info.
+    /// Note that the IP address currently should be the same but this may change.
+    type ServiceAccessInfo =
+        {
+            httpServiceInfo : HttpServiceAccessInfo
+            netTcpServiceInfo : NetTcpServiceAccessInfo
+        }
+
+        static member create httpServiceInfo netTcpServiceInfo =
+            {
+                httpServiceInfo = httpServiceInfo
+                netTcpServiceInfo = netTcpServiceInfo
+            }
+
+        member private i.httpUrl = getHttpServiceUrl i.httpServiceInfo.httpServiceAddress i.httpServiceInfo.httpServicePort i.httpServiceInfo.httpServiceName
+        member private i.netTcpUrl = getNetTcpServiceUrl i.netTcpServiceInfo.netTcpServiceAddress i.netTcpServiceInfo.netTcpServicePort i.netTcpServiceInfo.netTcpServiceName
+
+        member i.getUrl communicationType =
+            match communicationType with
+            | HttpCommunication -> i.httpUrl
+            | NetTcpCommunication -> i.netTcpUrl

@@ -45,9 +45,6 @@ module Primitives =
 
         member this.value = let (ServiceName v) = this in v
 
-        //member this.value = let (ServiceName v) = this in (v + " - " + versionNumberValue.value + "." + messagingDataVersion.value.ToString())
-        //member this.originalValue = let (ServiceName v) = this in v
-
 
     type ConnectionString =
         | ConnectionString of string

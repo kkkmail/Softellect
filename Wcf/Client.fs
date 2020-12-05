@@ -44,7 +44,6 @@ module Client =
         binding
 
 
-    //let getBinding() = getNetTcpBinding()
     let getBinding t =
         match t with
         | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding

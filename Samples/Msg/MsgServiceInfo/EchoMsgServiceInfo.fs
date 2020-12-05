@@ -57,15 +57,15 @@ module EchoMsgServiceInfo =
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
-    let echoMsgServiceAccessInfo =
-        {
-            serviceAddress = ServiceAddress "127.0.0.1"
-            httpServicePort = ServicePort 8081
-            httpServiceName = ServiceName "EchoMessagingHttpService"
-            netTcpServicePort =  ServicePort 8809
-            netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
-        }
+    let serviceAddress = ServiceAddress "127.0.0.1"
+    let httpServicePort = ServicePort 8081
+    let httpServiceName = ServiceName "EchoMessagingHttpService"
+    let netTcpServicePort = ServicePort 8809
+    let netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
 
+    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName
+    let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
 
     let clientOneId = new Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = new Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -151,25 +151,13 @@ module EchoMsgServiceInfo =
 
     let clientOneProxy = getClientProxy clientOneMessageData clientOneId clientTwoId
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
+    let expirationTime = TimeSpan.FromSeconds 10.0
 
+    let createClientAccessInfo clientId = MessagingClientAccessInfo.create dataVersion echoMsgServiceAccessInfo clientId
 
     let getClientData clientId proxy =
-        {
-            msgAccessInfo =
-                {
-                    msgClientId = clientId
-
-                    msgSvcAccessInfo =
-                        {
-                            messagingServiceAccessInfo = echoMsgServiceAccessInfo
-                            messagingDataVersion = dataVersion
-                        }
-                }
-
-            communicationType = communicationType
-            msgClientProxy = proxy
-            expirationTime = TimeSpan.FromSeconds 10.0
-        }
+        createClientAccessInfo clientId
+        |> MessagingClientData.create proxy expirationTime communicationType
 
 
     let clientOneData = getClientData clientOneId clientOneProxy

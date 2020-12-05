@@ -74,24 +74,28 @@ module Service =
 
         static member tryCreate (i : ServiceAccessInfo) =
             let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
+            let h = i.httpServiceInfo
+            let n = i.netTcpServiceInfo
 
-            match IPAddress.TryParse i.serviceAddress.value, i.httpServicePort = i.netTcpServicePort with
-            | (true, ipAddress), false ->
+            match IPAddress.TryParse h.httpServiceAddress.value, h.httpServicePort = n.netTcpServicePort, h.httpServiceAddress = n.netTcpServiceAddress with
+            | (true, ipAddress), false, true ->
                 {
                     ipAddress = ipAddress
-                    httpPort = i.httpServicePort.value
-                    httpServiceName = i.httpServiceName.value
-                    netTcpPort = i.netTcpServicePort.value
-                    netTcpServiceName = i.netTcpServiceName.value
+                    httpPort = h.httpServicePort.value
+                    httpServiceName = h.httpServiceName.value
+                    netTcpPort = n.netTcpServicePort.value
+                    netTcpServiceName = n.netTcpServiceName.value
                 }
                 |> Ok
 
-            | (true, _), true ->
-                fail (sprintf "http service port: %A must be different from nettcp service port: %A" i.httpServicePort i.netTcpServicePort)
-            | (false, _), false ->
-                fail (sprintf "invalid IP address: %s" i.serviceAddress.value)
-            | (false, _), true ->
-                fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" i.serviceAddress.value i.httpServicePort i.netTcpServicePort)
+            | (true, _), true, _ ->
+                fail (sprintf "http service port: %A must be different from nettcp service port: %A" h.httpServicePort n.netTcpServicePort)
+            | (false, _), false, _ ->
+                fail (sprintf "invalid IP address: %s" h.httpServiceAddress.value)
+            | (false, _), true, _ ->
+                fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" h.httpServiceAddress.value h.httpServicePort n.netTcpServicePort)
+            | _, _, false ->
+                fail (sprintf "http IP address: %s and net tcp IP address: %s must be the same" h.httpServiceAddress.value n.netTcpServiceAddress.value)
 
         static member defaultValue =
             {

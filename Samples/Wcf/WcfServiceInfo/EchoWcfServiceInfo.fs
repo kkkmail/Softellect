@@ -14,16 +14,15 @@ module EchoWcfServiceInfo =
 
     let communicationType = HttpCommunication
 
-    //let serviceAddress = ServiceAddress "127.0.0.1"
-    //let httpPort = ServicePort 8080
-    //httpServiceName = ServiceName "EchoHttpService"
-    //let netTcpServicePort = ServicePort 8088
-
-    let serviceAddress = ServiceAddress "13.85.24.220"
-    //let serviceAddress = ServiceAddress "wcfworker20201014095213.azurewebsites.net"
+    let serviceAddress = ServiceAddress "127.0.0.1"
     let httpServicePort = ServicePort 80
     let httpServiceName = ServiceName ""
     let netTcpServicePort = ServicePort 88
+    let netTcpServiceName = ServiceName "EchoNetTcpService"
+    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName
+    let echoWcfServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    let echoLogger = Logger.defaultValue
 
 
     type EchoType =
@@ -62,19 +61,6 @@ module EchoWcfServiceInfo =
     type IEchoService =
         abstract echo : string -> UnitResult
         abstract complexEcho : EchoMessage -> EchoWcfResult<EchoReply>
-
-
-    let echoWcfServiceAccessInfo =
-        {
-            serviceAddress = serviceAddress
-            httpServicePort = httpServicePort
-            httpServiceName = httpServiceName
-            netTcpServicePort = netTcpServicePort
-            netTcpServiceName = ServiceName "EchoNetTcpService"
-        }
-
-
-    let echoLogger = Logger.defaultValue
 
 
     let echoWcfServiceDataRes =

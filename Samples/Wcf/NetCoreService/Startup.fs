@@ -25,4 +25,3 @@ module Startup =
 
         member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
-

@@ -83,6 +83,14 @@ module Client =
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
+        static member create (proxy : MessagingClientProxy<'D, 'E>) expiration communicationType info =
+            {
+                msgAccessInfo = info
+                communicationType = communicationType
+                msgClientProxy = proxy
+                expirationTime = expiration
+            }
+
 
     type TryReceiveSingleMessageProxy<'D, 'E> =
         {
@@ -195,11 +203,8 @@ module Client =
 
     /// Low level WCF messaging client.
     type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
-        let url =
-            match d.communicationType with
-            | HttpCommunication -> d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.httpUrl
-            | NetTcpCommunication -> d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo.netTcpUrl
-
+        let i = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo
+        let url = i.getUrl d.communicationType
         let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType url
 
         let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr |> d.toErr

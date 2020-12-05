@@ -58,3 +58,14 @@ module ServiceInfo =
             msgClientId : MessagingClientId
             msgSvcAccessInfo : MessagingServiceAccessInfo
         }
+
+        static member create dataVersion info clientId =
+            {
+                msgClientId = clientId
+
+                msgSvcAccessInfo =
+                    {
+                        messagingServiceAccessInfo = info
+                        messagingDataVersion = dataVersion
+                    }
+            }

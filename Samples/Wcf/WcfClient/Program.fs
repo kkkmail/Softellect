@@ -24,13 +24,11 @@ module Program =
 
     let callUsingWcf() =
         let service = EchoWcfResponseHandler echoWcfServiceAccessInfo :> IEchoService
+        let url = echoWcfServiceAccessInfo.getUrl communicationType
 
         while true do
             try
-                match communicationType with
-                | HttpCommunication -> printfn  "Connecting using: %s" echoWcfServiceAccessInfo.httpUrl
-                | NetTcpCommunication -> printfn  "Connecting using: %s" echoWcfServiceAccessInfo.netTcpUrl
-
+                printfn "Connecting using: %s" url
                 "Abcd" |> service.echo |> printfn "%A"
                 createEchoMessage() |> service.complexEcho |> printfn "%A"
             with
