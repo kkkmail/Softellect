@@ -159,3 +159,22 @@ module Service =
             member _.sendMessage b = tryReply sendMessage toSendMessageError b
             member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
             member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
+
+
+    /// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
+    let tryGetMsgServiceData<'D, 'E> serviceAccessInfo wcfLogger messagingServiceData =
+        match WcfServiceAccessInfo.tryCreate serviceAccessInfo  with
+        | Ok i ->
+            {
+                wcfServiceAccessInfo = i
+
+                wcfServiceProxy =
+                    {
+                        wcfLogger = wcfLogger
+                    }
+
+                serviceData = messagingServiceData
+                setData = fun e -> MessagingService<'D, 'E>.setGetData (fun () -> Some e)
+            }
+            |> Ok
+        | Error e -> Error e

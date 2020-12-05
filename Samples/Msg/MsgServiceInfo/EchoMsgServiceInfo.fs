@@ -189,22 +189,7 @@ module EchoMsgServiceInfo =
         }
 
 
-    let echoWcfServiceDataRes =
-        match WcfServiceAccessInfo.tryCreate echoMsgServiceAccessInfo with
-        | Ok i ->
-            {
-                wcfServiceAccessInfo = i
-
-                wcfServiceProxy =
-                    {
-                        wcfLogger = Logger.defaultValue
-                    }
-
-                serviceData = serviceData
-                setData = fun e -> EchoMessagingService.setGetData (fun () -> Some e)
-            }
-            |> Ok
-        | Error e -> Error e
+    let echoMsgServiceDataRes = tryGetMsgServiceData echoMsgServiceAccessInfo Logger.defaultValue serviceData
 
 
     let runClient clientData recipient =

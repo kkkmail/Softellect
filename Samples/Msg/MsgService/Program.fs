@@ -8,7 +8,7 @@ module Program =
 
     [<EntryPoint>]
     let main _ =
-        match echoWcfServiceDataRes with
+        match echoMsgServiceDataRes with
         | Ok data ->
             match EchoMessagingWcfServiceImpl.tryGetService data with
             | Ok host ->
