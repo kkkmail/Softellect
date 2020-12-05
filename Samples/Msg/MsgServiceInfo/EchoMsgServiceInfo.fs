@@ -57,7 +57,7 @@ module EchoMsgServiceInfo =
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
-    let echoWcfServiceAccessInfo =
+    let echoMsgServiceAccessInfo =
         {
             serviceAddress = ServiceAddress "127.0.0.1"
             httpServicePort = ServicePort 8081
@@ -161,7 +161,7 @@ module EchoMsgServiceInfo =
 
                     msgSvcAccessInfo =
                         {
-                            messagingServiceAccessInfo = echoWcfServiceAccessInfo
+                            messagingServiceAccessInfo = echoMsgServiceAccessInfo
                             messagingDataVersion = dataVersion
                         }
                 }
@@ -190,7 +190,7 @@ module EchoMsgServiceInfo =
 
 
     let echoWcfServiceDataRes =
-        match WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo with
+        match WcfServiceAccessInfo.tryCreate echoMsgServiceAccessInfo with
         | Ok i ->
             {
                 wcfServiceAccessInfo = i
