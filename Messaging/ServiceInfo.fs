@@ -52,6 +52,12 @@ module ServiceInfo =
             messagingDataVersion : MessagingDataVersion
         }
 
+        static member create dataVersion info =
+            {
+                messagingServiceAccessInfo = info
+                messagingDataVersion = dataVersion
+            }
+
 
     type MessagingClientAccessInfo =
         {
@@ -62,10 +68,5 @@ module ServiceInfo =
         static member create dataVersion info clientId =
             {
                 msgClientId = clientId
-
-                msgSvcAccessInfo =
-                    {
-                        messagingServiceAccessInfo = info
-                        messagingDataVersion = dataVersion
-                    }
+                msgSvcAccessInfo = MessagingServiceAccessInfo.create dataVersion info
             }
