@@ -15,6 +15,7 @@ open Microsoft.FSharp.Core.Operators
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
+open System.Threading.Tasks
 
 module Service =
 
@@ -161,7 +162,7 @@ module Service =
     /// Wrapper around IWebHost to abstract it away and convert C# async methods into F# flavor.
     type WcfService(logger : WcfLogger, host : IWebHost) =
         let runTokenSource = new CancellationTokenSource()
-        let stopTokenSoruce = new CancellationTokenSource()
+        let stopTokenSource = new CancellationTokenSource()
         let shutDownTokenSource = new CancellationTokenSource()
 
         let logErr e =
@@ -173,12 +174,13 @@ module Service =
 
         member _.run() = tryExecute host.Run
         member _.runAsync() = async { do! host.RunAsync runTokenSource.Token |> Async.AwaitTask }
-        member _.stopAsync() = async { do! host.StopAsync stopTokenSoruce.Token |> Async.AwaitTask }
+        member _.stop() = Task.Run(fun () -> host.StopAsync stopTokenSource.Token).Wait()
+        member _.stopAsync() = async { do! host.StopAsync stopTokenSource.Token |> Async.AwaitTask }
         member _.waitForShutdown() = host.WaitForShutdown()
         member _.waitForShutdownAsync() = async { do! host.WaitForShutdownAsync shutDownTokenSource.Token |> Async.AwaitTask }
 
         member _.cancelRunAsync() = tryExecute runTokenSource.Cancel
-        member _.cancelStopAsync() = tryExecute stopTokenSoruce.Cancel
+        member _.cancelStopAsync() = tryExecute stopTokenSource.Cancel
         member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
 
 

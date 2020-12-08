@@ -21,6 +21,14 @@ module Common =
         | HttpCommunication
         | NetTcpCommunication
 
+        static member tryCreate s =
+            match s with
+            | nameof(HttpCommunication) -> Some HttpCommunication
+            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
+            | _ -> None
+
+        member c.value = c.ToString()
+
 
     let toValidServiceName (serviceName : string) =
         serviceName.Replace(" ", "").Replace("-", "").Replace(".", "") |> ServiceName
