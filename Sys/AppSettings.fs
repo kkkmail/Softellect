@@ -5,8 +5,6 @@ open System.IO
 open Newtonsoft.Json
 open FSharp.Interop.Dynamic
 
-open Softellect.Sys
-
 module AppSettings =
 
     type ConfigSection =
@@ -18,12 +16,6 @@ module AppSettings =
 
     type ConfigKey =
         | ConfigKey of string
-
-
-    type ConfigValueType =
-        | StringValue
-        | IntValue
-        | DecimalValue
 
 
     let tryOpenJson fileName =
@@ -44,7 +36,7 @@ module AppSettings =
         | e -> Error e
 
 
-    let tryGet jsonObj (ConfigSection section) (ConfigKey key) =
+    let tryGetString jsonObj (ConfigSection section) (ConfigKey key) =
         try
             let value = (jsonObj?(section)?(key))
             match box value with
@@ -54,50 +46,49 @@ module AppSettings =
         | e -> Error e
 
 
-    let trySet jsonObj (ConfigSection section) (ConfigKey key) (value : string) =
+    let tryGetInt jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                Int32.Parse s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+
+        | Error e -> Error e
+
+    let tryGetDecimal jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                Decimal.Parse s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
+    let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
-            jsonObj?(section)?(key) <- value
+            jsonObj?(section)?(key) <- $"{value}"
             Ok()
         with
         | e -> Error e
 
 
-    type ConfigValue =
-        | StringConfigValue of string
-        | IntConfigValue of int
-        | DecimalConfigValue of decimal
-
-        member cv.jsonValue =
-            match cv with
-            | StringConfigValue v -> v
-            | IntConfigValue v -> $"%i{v}"
-            | DecimalConfigValue v -> $"{v}"
-
-        member cv.trySetValue jsonObj section key = trySet jsonObj section key cv.jsonValue
-
-        static member tryGetValue jsonObj valueType section key =
-            try
-                match valueType, tryGet jsonObj section key with
-                | StringValue, Ok v -> v |> Option.bind (fun x -> x |> StringConfigValue |> Some) |> Ok
-                | IntValue, Ok v -> v |> Option.bind (fun x -> Int32.Parse x |> IntConfigValue |> Some) |> Ok
-                | DecimalValue, Ok v -> v |> Option.bind (fun x -> Decimal.Parse x |> DecimalConfigValue |> Some) |> Ok
-                | _, Error e -> Error e
-            with
-            | e -> Error e
-
-
-    /// A thin get / set wrapper around appsettings.json or similarly structured JSON file.
+    /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then you need to parse the output string yourself.
     type AppSettingsProvider private (fileName, jsonObj) =
-        member a.tryGetString key = ConfigValue.tryGetValue StringValue jsonObj ConfigSection.appSettings key
-        member a.tryGetInt key = ConfigValue.tryGetValue IntValue jsonObj ConfigSection.appSettings key
-        member a.tryGetDecimal key = ConfigValue.tryGetValue StringValue jsonObj ConfigSection.appSettings key
+        member a.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
+        member a.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
+        member a.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
 
-        member a.trySetAppSetting key value = trySet jsonObj ConfigSection.appSettings key value
+        member a.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
-        member a.tryGetConnectionString key = tryGet jsonObj ConfigSection.connectionStrings key
+        member a.tryGetConnectionString key = tryGetString jsonObj ConfigSection.connectionStrings key
         member a.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
+
         member a.trySave() = trySaveJson fileName jsonObj
         member a.trySaveAs newFileName = trySaveJson newFileName jsonObj
 
@@ -105,4 +96,3 @@ module AppSettings =
             match tryOpenJson fileName with
             | Ok jsonObj -> (fileName, jsonObj) |> AppSettingsProvider |> Ok
             | Error e -> Error e
-
