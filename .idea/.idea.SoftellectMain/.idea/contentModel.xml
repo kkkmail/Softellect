@@ -118,6 +118,7 @@
       </e>
       <e p="SoftellectMain.sln" t="IncludeFlat" />
       <e p="Sys" t="IncludeRecursive">
+        <e p="AppSettings.fs" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
         <e p="Core.fs" t="Include" />
         <e p="GeneralErrors.fs" t="Include" />
@@ -134,6 +135,27 @@
         <e p="TimerErrors.fs" t="Include" />
         <e p="TimerEvents.fs" t="Include" />
         <e p="WcfErrors.fs" t="Include" />
+      </e>
+      <e p="TestUpdateJson" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="obj" t="ExcludeRecursive">
+          <e p="Release" t="Include">
+            <e p="net5.0" t="Include">
+              <e p="TestUpdateJson.AssemblyInfo.cs" t="Include" />
+            </e>
+          </e>
+        </e>
+        <e p="Program.cs" t="Include" />
+        <e p="TestSettings.json" t="Include" />
+        <e p="TestUpdateJson.csproj" t="IncludeRecursive" />
+      </e>
+      <e p="TestUpdateJson2" t="IncludeRecursive">
+        <e p="AppSettings.fs" t="Include" />
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="Program.fs" t="Include" />
+        <e p="TestSettings.json" t="Include" />
+        <e p="TestUpdateJson2.fsproj" t="IncludeRecursive" />
       </e>
       <e p="Wcf" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
