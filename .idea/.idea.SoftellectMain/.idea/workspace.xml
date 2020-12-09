@@ -31,9 +31,6 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/Sys/Errors.fs" root0="SKIP_HIGHLIGHTING" />
-  </component>
   <component name="IdeDocumentHistory">
     <changedPaths>
       <option value="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" />
@@ -431,6 +428,7 @@
       <workItem from="1606345699715" duration="765000" />
       <workItem from="1606597637937" duration="808000" />
       <workItem from="1606919620236" duration="1897000" />
+      <workItem from="1607429592077" duration="599000" />
     </task>
     <servers />
   </component>
