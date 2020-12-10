@@ -23,7 +23,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Messaging/Messaging.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Messaging/Messaging.fsproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sys/AppSettings.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/AppSettings.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sys/Sys.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Sys.fsproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Wcf/Wcf.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Wcf/Wcf.fsproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -470,7 +474,7 @@
       <workItem from="1606597637937" duration="808000" />
       <workItem from="1606919620236" duration="1897000" />
       <workItem from="1607429592077" duration="599000" />
-      <workItem from="1607548411635" duration="4829000" />
+      <workItem from="1607548411635" duration="6330000" />
     </task>
     <servers />
   </component>

@@ -57,6 +57,7 @@ module AppSettings =
 
         | Error e -> Error e
 
+
     let tryGetDecimal jsonObj section key =
         match tryGetString jsonObj section key with
         | Ok (Some s) ->
@@ -68,6 +69,17 @@ module AppSettings =
         | Error e -> Error e
 
 
+    let tryGetGuid jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                Guid.Parse s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+
+        | Error e -> Error e
+
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
             jsonObj?(section)?(key) <- $"{value}"
@@ -78,11 +90,12 @@ module AppSettings =
 
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently it supports only simple key value pairs.
-    /// If you need anything more advanced, then you need to parse the output string yourself.
+    /// If you need anything more advanced, then get the string and parse it yourself.
     type AppSettingsProvider private (fileName, jsonObj) =
         member a.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
         member a.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
         member a.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
+        member a.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
 
         member a.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
