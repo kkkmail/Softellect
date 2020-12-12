@@ -106,6 +106,7 @@ module AppSettings =
         member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
         member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
+        member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
