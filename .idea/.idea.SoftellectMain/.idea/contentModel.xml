@@ -151,6 +151,7 @@
       </e>
       <e p="TestUpdateJson2" t="IncludeRecursive">
         <e p="AppSettings.fs" t="Include" />
+        <e p="appsettings.json" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
         <e p="obj" t="ExcludeRecursive" />
         <e p="Program.fs" t="Include" />

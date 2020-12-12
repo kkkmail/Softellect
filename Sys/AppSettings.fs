@@ -54,7 +54,6 @@ module AppSettings =
             with
             | e -> Error e
         | Ok None -> Ok None
-
         | Error e -> Error e
 
 
@@ -77,8 +76,19 @@ module AppSettings =
             with
             | e -> Error e
         | Ok None -> Ok None
-
         | Error e -> Error e
+
+
+    let tryGetBool jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                bool.Parse s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
 
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
@@ -92,18 +102,18 @@ module AppSettings =
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
     type AppSettingsProvider private (fileName, jsonObj) =
-        member a.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
-        member a.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
-        member a.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
-        member a.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
+        member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
+        member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
+        member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
+        member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
 
-        member a.trySet key value = trySet jsonObj ConfigSection.appSettings key value
+        member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
-        member a.tryGetConnectionString key = tryGetString jsonObj ConfigSection.connectionStrings key
-        member a.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
+        member _.tryGetConnectionString key = tryGetString jsonObj ConfigSection.connectionStrings key
+        member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
 
-        member a.trySave() = trySaveJson fileName jsonObj
-        member a.trySaveAs newFileName = trySaveJson newFileName jsonObj
+        member _.trySave() = trySaveJson fileName jsonObj
+        member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
 
         static member tryCreate fileName =
             match tryOpenJson fileName with
