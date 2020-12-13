@@ -21,7 +21,6 @@ module EchoMsgServiceInfo =
 
     let dataVersion = MessagingDataVersion 123456
     let echoLogger = Logger.defaultValue
-    //let communicationType = HttpCommunication
     let communicationType = NetTcpCommunication
 
 

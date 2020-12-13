@@ -114,17 +114,20 @@ module Service =
         }
 
 
-    type WcfServiceData<'P> =
+    /// 'Data - is a type of initialization data that the service needs to operate.
+    type WcfServiceData<'Data> =
         {
             wcfServiceAccessInfo : WcfServiceAccessInfo
             wcfServiceProxy : WcfServiceProxy
-            serviceData : 'P
-            setData : 'P -> unit
+            serviceData : 'Data
+            setData : 'Data -> unit
         }
 
 
-    type WcfServiceData<'S, 'P>() =
-        static let mutable serviceDataOpt :  WcfServiceData<'P> option = None
+    /// 'Service - is a type of the service itself.
+    /// 'Data - is a type of initialization data that the service needs to operate.
+    type WcfServiceData<'Service, 'Data>() =
+        static let mutable serviceDataOpt :  WcfServiceData<'Data> option = None
 
         static member setData data =
             serviceDataOpt <- Some data
@@ -133,20 +136,23 @@ module Service =
         static member tryGetData() = serviceDataOpt
 
         /// It is not really needed but we want to "use" the generic type to make the compliler happy.
-        member _.serviceType = typeof<'S>
+        member _.serviceType = typeof<'Service>
 
 
-    type WcfStartup<'S, 'I, 'P when 'I : not struct and 'S : not struct>() =
-        let data = WcfServiceData<'S, 'P>.tryGetData()
+    /// 'Service - is a type of the WCF service itself.
+    /// 'IWcfService - is a WCF interface that the service implements.
+    /// 'Data - is a type of initialization data that the service needs to operate.
+    type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>() =
+        let data = WcfServiceData<'Service, 'Data>.tryGetData()
 
         let createServiceModel (builder : IServiceBuilder) =
             match data with
             | Some d ->
                 let i = d.wcfServiceAccessInfo
                 builder
-                    .AddService<'S>()
-                    .AddServiceEndpoint<'S, 'I>(getBasicHttpBinding(), "/" + i.httpServiceName)
-                    .AddServiceEndpoint<'S, 'I>(getNetTcpBinding(), "/" + i.netTcpServiceName)
+                    .AddService<'Service>()
+                    .AddServiceEndpoint<'Service, 'IWcfService>(getBasicHttpBinding(), "/" + i.httpServiceName)
+                    .AddServiceEndpoint<'Service, 'IWcfService>(getNetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
             | None -> failwith (sprintf "Service data is missing.")
 
@@ -184,8 +190,11 @@ module Service =
         member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
 
 
-    type WcfService<'S, 'I, 'P when 'I : not struct and 'S : not struct>() =
-        static let tryCreateWebHostBuilder (data : WcfServiceData<'P> option) : WcfResult<WcfService> =
+    /// 'Service - is a type of the WCF service itself.
+    /// 'IWcfService - is a WCF interface that the service implements.
+    /// 'Data - is a type of initialization data that the service needs to operate.
+    type WcfService<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>() =
+        static let tryCreateWebHostBuilder (data : WcfServiceData<'Data> option) : WcfResult<WcfService> =
             match data with
             | Some d ->
                 let info = d.wcfServiceAccessInfo
@@ -205,7 +214,7 @@ module Service =
                             .CreateDefaultBuilder()
                             .UseKestrel(fun options -> applyOptions options)
                             .UseNetTcp(info.netTcpPort)
-                            .UseStartup<WcfStartup<'S, 'I, 'P>>()
+                            .UseStartup<WcfStartup<'Service, 'IWcfService, 'Data>>()
                             .Build()
                     (logger, host) |> WcfService |> Ok
                 with
@@ -213,16 +222,17 @@ module Service =
             | None -> WcfServiceCannotInitializeErr |> Error
 
         static let service : Lazy<WcfResult<WcfService>> =
-            new Lazy<WcfResult<WcfService>>(fun () -> WcfServiceData<'S, 'P>.tryGetData() |> tryCreateWebHostBuilder)
-            
-        static member setData data = WcfServiceData<'S, 'P>.setData data
+            new Lazy<WcfResult<WcfService>>(fun () -> WcfServiceData<'Service, 'Data>.tryGetData() |> tryCreateWebHostBuilder)
+
+        static member setData data = WcfServiceData<'Service, 'Data>.setData data
         static member tryGetService() = service.Value
 
         static member tryGetService data =
-             WcfService<'S, 'I, 'P>.setData data
+             WcfService<'Service, 'IWcfService, 'Data>.setData data
              service.Value
 
 
+    /// Tries to get a singleton data out of WcfServiceData and if failed, then uses a provided default value.
     let getData<'Service, 'Data> defaultValue =
         WcfServiceData<'Service, 'Data>.tryGetData()
         |> Option.bind (fun e -> Some e.serviceData)
