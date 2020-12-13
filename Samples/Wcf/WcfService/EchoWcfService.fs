@@ -9,10 +9,10 @@ open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 
 module EchoWcfService =
 
-    type EchoService() =
+    type EchoService (data : EchoServiceData) =
         let getReply m =
             {
-                a = m.x
+                a = m.x + data.data
                 b = [ DateTime.Now.Hour; DateTime.Now.Minute; DateTime.Now.Second ]
                 echoType = A
             }
@@ -30,14 +30,17 @@ module EchoWcfService =
             member _.complexEcho m = complexEchoImpl m
 
 
-    type EchoWcfService() =
-        let service = EchoService() :> IEchoService
+    type EchoWcfService private (data : EchoServiceData) =
+        static let getData() = EchoServiceData.create()
+        let service = EchoService(data) :> IEchoService
         let toEchoError f = f |> EchoWcfErr
         let toComplexEchoError f = f |> EchoWcfErr
+
+        new() = EchoWcfService(getData())
 
         interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m
             member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
 
 
-    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, unit>
+    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, EchoServiceData>

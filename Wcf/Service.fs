@@ -139,6 +139,13 @@ module Service =
         member _.serviceType = typeof<'Service>
 
 
+    /// Tries to get a singleton data out of WcfServiceData and if failed, then uses a provided default value.
+    let getData<'Service, 'Data> defaultValue =
+        WcfServiceData<'Service, 'Data>.tryGetData()
+        |> Option.bind (fun e -> Some e.serviceData)
+        |> Option.defaultValue defaultValue
+
+
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
@@ -154,7 +161,7 @@ module Service =
                     .AddServiceEndpoint<'Service, 'IWcfService>(getBasicHttpBinding(), "/" + i.httpServiceName)
                     .AddServiceEndpoint<'Service, 'IWcfService>(getNetTcpBinding(), "/" + i.netTcpServiceName)
                 |> ignore
-            | None -> failwith (sprintf "Service data is missing.")
+            | None -> invalidArg (nameof(data)) "Service data is missing."
 
         /// The name must match required signature in CoreWCF.
         member _.ConfigureServices(services : IServiceCollection) =
@@ -201,7 +208,7 @@ module Service =
                 let logger = d.wcfServiceProxy.wcfLogger
                 try
                     logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
-                    let endPoint : IPEndPoint = new IPEndPoint(info.ipAddress, info.httpPort)
+                    let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
                     let applyOptions (options : KestrelServerOptions) =
                         options.Listen(endPoint)
@@ -230,10 +237,3 @@ module Service =
         static member tryGetService data =
              WcfService<'Service, 'IWcfService, 'Data>.setData data
              service.Value
-
-
-    /// Tries to get a singleton data out of WcfServiceData and if failed, then uses a provided default value.
-    let getData<'Service, 'Data> defaultValue =
-        WcfServiceData<'Service, 'Data>.tryGetData()
-        |> Option.bind (fun e -> Some e.serviceData)
-        |> Option.defaultValue defaultValue

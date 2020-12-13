@@ -25,6 +25,11 @@
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfService/EchoWcfService.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfService/EchoWcfService.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/EchoWcfServiceInfo.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/EchoWcfServiceInfo.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/EchoWcfService.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/EchoWcfService.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SoftellectMain.sln.DotSettings" beforeDir="false" afterPath="$PROJECT_DIR$/SoftellectMain.sln.DotSettings" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Wcf/Service.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Wcf/Service.fs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +44,8 @@
       <option value="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj" />
       <option value="$PROJECT_DIR$/Sys/Logging.fs" />
       <option value="$PROJECT_DIR$/Sys/AppSettings.fs" />
+      <option value="$PROJECT_DIR$/Samples/Wcf/WcfService/EchoWcfService.fs" />
+      <option value="$PROJECT_DIR$/Wcf/Service.fs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="1hnALjbXHxFjY6HqvLIwLNIcyVR" />
@@ -472,6 +479,7 @@
       <workItem from="1606919620236" duration="1897000" />
       <workItem from="1607429592077" duration="599000" />
       <workItem from="1607548411635" duration="7538000" />
+      <workItem from="1607857183816" duration="5035000" />
     </task>
     <servers />
   </component>

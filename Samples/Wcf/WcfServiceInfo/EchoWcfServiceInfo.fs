@@ -25,6 +25,17 @@ module EchoWcfServiceInfo =
     let echoLogger = Logger.defaultValue
 
 
+    type EchoServiceData =
+        {
+            data : int
+        }
+
+        static member create() =
+            {
+                data = 123
+            }
+
+
     type EchoType =
         | A
         | B
@@ -74,7 +85,7 @@ module EchoWcfServiceInfo =
                         wcfLogger = echoLogger
                     }
 
-                serviceData = ()
+                serviceData = EchoServiceData.create()
                 setData = fun _ -> ignore()
             }
             |> Ok
