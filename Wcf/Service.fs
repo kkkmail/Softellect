@@ -237,3 +237,21 @@ module Service =
         static member tryGetService data =
              WcfService<'Service, 'IWcfService, 'Data>.setData data
              service.Value
+
+
+    let tryGetServiceData serviceAccessInfo wcfLogger serviceData =
+        match WcfServiceAccessInfo.tryCreate serviceAccessInfo  with
+        | Ok i ->
+            {
+                wcfServiceAccessInfo = i
+
+                wcfServiceProxy =
+                    {
+                        wcfLogger = wcfLogger
+                    }
+
+                serviceData = serviceData
+                setData = fun _ -> ()
+            }
+            |> Ok
+        | Error e -> Error e
