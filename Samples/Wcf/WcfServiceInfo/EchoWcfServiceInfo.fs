@@ -15,9 +15,9 @@ module EchoWcfServiceInfo =
     let communicationType = HttpCommunication
 
     let serviceAddress = ServiceAddress "127.0.0.1"
-    let httpServicePort = ServicePort 80
+    let httpServicePort = ServicePort 1080
     let httpServiceName = ServiceName "EchoHttpService"
-    let netTcpServicePort = ServicePort 88
+    let netTcpServicePort = ServicePort 1088
     let netTcpServiceName = ServiceName "EchoNetTcpService"
     let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
     let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName

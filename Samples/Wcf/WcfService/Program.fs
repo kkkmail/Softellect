@@ -5,7 +5,6 @@ open System
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 open Softellect.Samples.Wcf.Service.EchoWcfService
 
-
 module Program =
 
     [<EntryPoint>]
