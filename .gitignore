@@ -349,8 +349,5 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 
+# Rider folder
 .idea/
-.idea/.idea.SoftellectMain/.idea/workspace.xml
-.idea/.idea.SoftellectMain/.idea/workspace.xml
-.idea/.idea.SoftellectMain/.idea/workspace.xml
-.idea/.idea.SoftellectMain/.idea/workspace.xml
