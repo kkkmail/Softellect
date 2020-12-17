@@ -12,7 +12,12 @@ type Worker(logger: ILogger<Worker>) =
 
     static let hostRes =
         match echoMsgServiceDataRes with
-        | Ok data -> EchoMessagingWcfServiceImpl.tryGetService data
+        | Ok data ->
+            let service = EchoMessagingWcfServiceImpl.tryGetService data
+
+            // Comment this line to make the service instantiated on first request.
+            EchoMessagingService.tryStart() |> ignore
+            service
         | Error e -> Error e
 
     override _.ExecuteAsync(_: CancellationToken) =
