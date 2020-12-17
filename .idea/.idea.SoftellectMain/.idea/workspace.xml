@@ -21,17 +21,20 @@
     <projectFile>TestUpdateJson/TestUpdateJson.csproj</projectFile>
     <projectFile>TestUpdateJson2/TestUpdateJson2.fsproj</projectFile>
     <projectFile>Samples/MsgWorker/MsgWorker.fsproj</projectFile>
+    <projectFile>Samples/Msg/MsgWorker/MsgWorker.fsproj</projectFile>
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5bee8c20-190f-4c6e-ba08-fd4e748a3e29" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/contentModel.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.SoftellectMain/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Messaging/Messaging.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Messaging/Messaging.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfService/Program.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfService/Program.fs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/EchoWcfServiceInfo.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/EchoWcfServiceInfo.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/MsgWorker.fsproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/Program.fs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/Properties/launchSettings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/Worker.fs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/appsettings.Development.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/MsgWorker/appsettings.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/Program.fs" beforeDir="false" afterPath="$PROJECT_DIR$/Samples/Wcf/WcfWorker/Program.fs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SoftellectMain.sln" beforeDir="false" afterPath="$PROJECT_DIR$/SoftellectMain.sln" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sys/Sys.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Sys/Sys.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Wcf/Wcf.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/Wcf/Wcf.fsproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +55,8 @@
       <option value="$PROJECT_DIR$/Samples/Wcf/WcfServiceInfo/EchoWcfServiceInfo.fs" />
       <option value="$PROJECT_DIR$/Samples/MsgWorker/Properties/launchSettings.json" />
       <option value="$PROJECT_DIR$/Samples/MsgWorker/Worker.fs" />
+      <option value="$PROJECT_DIR$/Samples/Wcf/WcfWorker/Program.fs" />
+      <option value="$PROJECT_DIR$/Samples/Msg/MsgWorker/Program.fs" />
     </changedPaths>
   </component>
   <component name="ProjectId" id="1hnALjbXHxFjY6HqvLIwLNIcyVR" />
@@ -339,6 +344,21 @@
         <option name="Build" />
       </method>
     </configuration>
+    <configuration name="MsgWorker" type="LaunchSettings" factoryName=".NET Launch Settings Profile">
+      <option name="LAUNCH_PROFILE_PROJECT_FILE_PATH" value="$PROJECT_DIR$/Samples/Msg/MsgWorker/MsgWorker.fsproj" />
+      <option name="LAUNCH_PROFILE_TFM" value="net5.0" />
+      <option name="LAUNCH_PROFILE_NAME" value="MsgWorker" />
+      <option name="USE_EXTERNAL_CONSOLE" value="0" />
+      <option name="USE_MONO" value="0" />
+      <option name="RUNTIME_ARGUMENTS" value="" />
+      <option name="GENERATE_APPLICATIONHOST_CONFIG" value="1" />
+      <option name="SHOW_IIS_EXPRESS_OUTPUT" value="0" />
+      <option name="SEND_DEBUG_REQUEST" value="1" />
+      <option name="ADDITIONAL_IIS_EXPRESS_ARGUMENTS" value="" />
+      <method v="2">
+        <option name="Build" />
+      </method>
+    </configuration>
     <configuration name="WcfWorker" type="LaunchSettings" factoryName=".NET Launch Settings Profile">
       <option name="LAUNCH_PROFILE_PROJECT_FILE_PATH" value="$PROJECT_DIR$/Samples/Wcf/WcfWorker/WcfWorker.fsproj" />
       <option name="LAUNCH_PROFILE_TFM" value="net5.0" />
@@ -511,7 +531,7 @@
       <workItem from="1607879166928" duration="2153000" />
       <workItem from="1607898020165" duration="1358000" />
       <workItem from="1608125602349" duration="618000" />
-      <workItem from="1608160070126" duration="2161000" />
+      <workItem from="1608160070126" duration="2907000" />
     </task>
     <servers />
   </component>

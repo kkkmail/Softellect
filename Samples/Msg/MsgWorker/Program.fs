@@ -1,7 +1,9 @@
-namespace Softellect.Samples.Wcf.WcfWorker
+﻿namespace Softellect.Samples.Msg.WcfWorker
 
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+
+open System
 
 module Program =
 

@@ -35,97 +35,101 @@
         <e p="Windows.fs" t="Include" />
       </e>
       <e p="Samples" t="Include">
-        <e p="Msg\MsgClientOne" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="MsgClientOne.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-        </e>
-        <e p="Msg\MsgClientTwo" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="MsgClientTwo.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-        </e>
-        <e p="Msg\MsgService" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="MsgService.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-        </e>
-        <e p="Msg\MsgServiceInfo" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoMsgErrors.fs" t="Include" />
-          <e p="EchoMsgServiceInfo.fs" t="Include" />
-          <e p="MsgServiceInfo.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-        </e>
-        <e p="MsgWorker" t="IncludeRecursive">
-          <e p="appsettings.Development.json" t="Include" />
-          <e p="appsettings.json" t="Include" />
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="MsgWorker.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-          <e p="Properties" t="Include">
-            <e p="launchSettings.json" t="Include" />
+        <e p="Msg" t="Include">
+          <e p="MsgClientOne" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="MsgClientOne.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
           </e>
-          <e p="Worker.fs" t="Include" />
+          <e p="MsgClientTwo" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="MsgClientTwo.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+          </e>
+          <e p="MsgService" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="MsgService.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+          </e>
+          <e p="MsgServiceInfo" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoMsgErrors.fs" t="Include" />
+            <e p="EchoMsgServiceInfo.fs" t="Include" />
+            <e p="MsgServiceInfo.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+          </e>
+          <e p="MsgWorker" t="IncludeRecursive">
+            <e p="appsettings.Development.json" t="Include" />
+            <e p="appsettings.json" t="Include" />
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="MsgWorker.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+            <e p="Properties" t="Include">
+              <e p="launchSettings.json" t="Include" />
+            </e>
+            <e p="Worker.fs" t="Include" />
+          </e>
         </e>
-        <e p="Wcf\NetCoreClient" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoClient.fs" t="Include" />
-          <e p="NetCoreClient.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-        </e>
-        <e p="Wcf\NetCoreService" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoService.fs" t="Include" />
-          <e p="NetCoreService.fsproj" t="IncludeRecursive" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-          <e p="Startup.fs" t="Include" />
-        </e>
-        <e p="Wcf\WcfClient" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoWcfClient.fs" t="Include" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-          <e p="WcfClient.fsproj" t="IncludeRecursive" />
-        </e>
-        <e p="Wcf\WcfService" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoWcfService.fs" t="Include" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-          <e p="WcfService.fsproj" t="IncludeRecursive" />
-        </e>
-        <e p="Wcf\WcfServiceInfo" t="IncludeRecursive">
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoWcfErrors.fs" t="Include" />
-          <e p="EchoWcfServiceInfo.fs" t="Include" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="WcfServiceInfo.fsproj" t="IncludeRecursive" />
-        </e>
-        <e p="Wcf\WcfWorker" t="IncludeRecursive">
-          <e p="appsettings.Development.json" t="Include" />
-          <e p="appsettings.json" t="Include" />
-          <e p="bin" t="ExcludeRecursive" />
-          <e p="EchoWcfService.fs" t="Include" />
-          <e p="obj" t="ExcludeRecursive" />
-          <e p="Program.fs" t="Include" />
-          <e p="Properties" t="Include">
-            <e p="launchSettings.json" t="Include" />
-            <e p="ServiceDependencies" t="Include">
-              <e p="WcfWorker20201014095213 - Web Deploy" t="Include">
-                <e p="profile.arm.json" t="Include" />
+        <e p="Wcf" t="Include">
+          <e p="NetCoreClient" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoClient.fs" t="Include" />
+            <e p="NetCoreClient.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+          </e>
+          <e p="NetCoreService" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoService.fs" t="Include" />
+            <e p="NetCoreService.fsproj" t="IncludeRecursive" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+            <e p="Startup.fs" t="Include" />
+          </e>
+          <e p="WcfClient" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoWcfClient.fs" t="Include" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+            <e p="WcfClient.fsproj" t="IncludeRecursive" />
+          </e>
+          <e p="WcfService" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoWcfService.fs" t="Include" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+            <e p="WcfService.fsproj" t="IncludeRecursive" />
+          </e>
+          <e p="WcfServiceInfo" t="IncludeRecursive">
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoWcfErrors.fs" t="Include" />
+            <e p="EchoWcfServiceInfo.fs" t="Include" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="WcfServiceInfo.fsproj" t="IncludeRecursive" />
+          </e>
+          <e p="WcfWorker" t="IncludeRecursive">
+            <e p="appsettings.Development.json" t="Include" />
+            <e p="appsettings.json" t="Include" />
+            <e p="bin" t="ExcludeRecursive" />
+            <e p="EchoWcfService.fs" t="Include" />
+            <e p="obj" t="ExcludeRecursive" />
+            <e p="Program.fs" t="Include" />
+            <e p="Properties" t="Include">
+              <e p="launchSettings.json" t="Include" />
+              <e p="ServiceDependencies" t="Include">
+                <e p="WcfWorker20201014095213 - Web Deploy" t="Include">
+                  <e p="profile.arm.json" t="Include" />
+                </e>
               </e>
             </e>
+            <e p="Settings.job" t="Include" />
+            <e p="WcfWorker.fsproj" t="IncludeRecursive" />
+            <e p="Worker.fs" t="Include" />
           </e>
-          <e p="Settings.job" t="Include" />
-          <e p="WcfWorker.fsproj" t="IncludeRecursive" />
-          <e p="Worker.fs" t="Include" />
         </e>
       </e>
       <e p="SoftellectMain.sln" t="IncludeFlat" />
