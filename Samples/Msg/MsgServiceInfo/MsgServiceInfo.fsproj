@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>Softellect.Samples.Msg.ServiceInfo</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="EchoMsgErrors.fs" />
+    <Compile Include="EchoMsgServiceInfo.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Messaging\Messaging.fsproj" />
+    <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
+  </ItemGroup>
+
+</Project>
