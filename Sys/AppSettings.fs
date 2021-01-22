@@ -90,6 +90,19 @@ module AppSettings =
         | Error e -> Error e
 
 
+    let tryGet<'T> tryCreate jsonObj section key : Result<'T option, exn> =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                match tryCreate s with
+                | Ok v -> Ok (Some v)
+                | Error e -> $"{e}" |> InvalidDataException :> exn |> Error
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
             jsonObj?(section)?(key) <- $"{value}"
@@ -107,6 +120,7 @@ module AppSettings =
         member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
         member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
+        member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
