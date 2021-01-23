@@ -96,7 +96,7 @@ module AppSettings =
             try
                 match tryCreate s with
                 | Ok v -> Ok (Some v)
-                | Error e -> $"{e}" |> InvalidDataException :> exn |> Error
+                | Error e -> e |> InvalidDataException :> exn |> Error
             with
             | e -> Error e
         | Ok None -> Ok None
