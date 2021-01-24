@@ -7,6 +7,29 @@ open FSharp.Interop.Dynamic
 
 module AppSettings =
 
+    [<Literal>]
+    let ValueSeparator = ":"
+
+
+    [<Literal>]
+    let ListSeparator = ","
+
+
+    /// Expects a string in the form:
+    ///     someField1:SomeValue1,someField2:SomeValue2
+    let parseSimpleSetting (s : string) =
+        let p =
+            s.Split ListSeparator
+            |> List.ofArray
+            |> List.map (fun e -> e.Split ValueSeparator)
+            |> List.map (fun e -> e |> Array.map (fun a -> a.Trim()))
+            |> List.map (fun e -> if e.Length = 2 then Some (e.[0], e.[1]) else None)
+            |> List.choose id
+            |> Map.ofList
+
+        p
+
+
     type ConfigSection =
         | ConfigSection of string
 
@@ -103,6 +126,14 @@ module AppSettings =
         | Error e -> Error e
 
 
+    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
+    /// and returns provided default value instead.
+    let tryGetOrDefault<'T> defaultValue tryCreate jsonObj section key : 'T =
+        match tryGet<'T> tryCreate jsonObj section key with
+        | Ok (Some v) -> v
+        | _ -> defaultValue
+
+
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
             jsonObj?(section)?(key) <- $"{value}"
@@ -121,6 +152,7 @@ module AppSettings =
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
         member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
         member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
+        member _.tryGetOrDefault<'T> defaultValue tryCreate key = tryGetOrDefault<'T> defaultValue tryCreate jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
