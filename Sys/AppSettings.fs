@@ -128,7 +128,7 @@ module AppSettings =
 
     /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
     /// and returns provided default value instead.
-    let tryGetOrDefault<'T> defaultValue tryCreate jsonObj section key : 'T =
+    let tryGetOrDefault<'T> (defaultValue : 'T) tryCreate jsonObj section key : 'T =
         match tryGet<'T> tryCreate jsonObj section key with
         | Ok (Some v) -> v
         | _ -> defaultValue
@@ -152,7 +152,9 @@ module AppSettings =
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
         member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
         member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
-        member _.tryGetOrDefault<'T> defaultValue tryCreate key = tryGetOrDefault<'T> defaultValue tryCreate jsonObj ConfigSection.appSettings key
+
+        member _.tryGetOrDefault<'T> (defaultValue : 'T) tryCreate key =
+            tryGetOrDefault<'T> defaultValue tryCreate jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
