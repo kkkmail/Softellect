@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.0.1-alpha.116</Version>
-    <PackageVersion>0.0.1-alpha.117</PackageVersion>
+    <Version>0.0.1-alpha.124</Version>
+    <PackageVersion>0.0.1-alpha.124</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -47,9 +47,9 @@
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.1.1" />
     <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
-    <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.214" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.214" />
-    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.214" />
+    <PackageReference Include="CoreWCF.Http" Version="0.1.0-alpha.218" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="0.1.0-alpha.218" />
+    <PackageReference Include="CoreWCF.Primitives" Version="0.1.0-alpha.218" />
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />

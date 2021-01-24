@@ -135,7 +135,7 @@ module Service =
 
         static member tryGetData() = serviceDataOpt
 
-        /// It is not really needed but we want to "use" the generic type to make the compliler happy.
+        /// It is not really needed but we want to "use" the generic type to make the compiler happy.
         member _.serviceType = typeof<'Service>
 
 
@@ -200,6 +200,9 @@ module Service =
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
+    ///
+    /// Note that 'Service should have a constraint when 'Service : 'IWcfService.
+    /// However, F# does not support this yet.
     type WcfService<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>() =
         static let tryCreateWebHostBuilder (data : WcfServiceData<'Data> option) : WcfResult<WcfService> =
             match data with

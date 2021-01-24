@@ -69,6 +69,8 @@ module Service =
         static member service = new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
         static member setGetData g = getData <- g
 
+        static member tryStart() = MessagingService<'D, 'E>.service.Value |> Rop.bind (fun _ -> Ok())
+
         interface IMessagingService<'D, 'E> with
             member _.getVersion() =
                 //printfn "getVersion was called."
@@ -84,7 +86,7 @@ module Service =
                 //printfn "tryPeekMessage - result: %A." result
                 result
 
-            member _.tryDeleteFromServer (n, m) =
+            member _.tryDeleteFromServer (_, m) =
                 //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
                 proxy.deleteMessage m
 
