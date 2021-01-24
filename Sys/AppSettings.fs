@@ -15,6 +15,10 @@ module AppSettings =
     let ListSeparator = ","
 
 
+    [<Literal>]
+    let DiscriminatedUnionSeparator = "|"
+
+
     /// Expects a string in the form:
     ///     someField1:SomeValue1,someField2:SomeValue2
     let parseSimpleSetting (s : string) =
