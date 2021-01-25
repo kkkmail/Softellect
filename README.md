@@ -1,6 +1,6 @@
 # Softellect.Wcf
 
-`Softellect.Wcf` is a thin `NET5` wrapper around [CoreWcf](https://github.com/CoreWCF/CoreWCF) to simplify writing WCF client / server application in a natural F# way. Under the hood it is using [FsPicler](https://mbraceproject.github.io/FsPickler/) to serialize arbitrary native F# object into a binary object, then zips it and sends as an array of bytes. Similarly, native F# response, e.g. `Result<'A, 'B>` is sent the say way back. Projects `.\Samples\Wcf\WcfClient` and `.\Samples\Wcf\WcfServer` contain examples of how it works and folders `.\Samples\Wcf\NetCoreClient` and `.\Samples\Wcf\NetCoreServer` contain F# ports of .net Core from `CoreWcf`.
+`Softellect.Wcf` is a thin `NET5` wrapper around [CoreWcf](https://github.com/CoreWCF/CoreWCF) to simplify writing WCF client / server application in a natural F# way. Under the hood it is using [FsPicler](https://mbraceproject.github.io/FsPickler/) to serialize arbitrary native F# object into a binary object, then zips it and sends as an array of bytes. Similarly, native F# response, e.g. `Result<'A, 'B>` is sent the say way back. Projects `.\Samples\Wcf\WcfClient` and `.\Samples\Wcf\WcfServer` contain examples of how it works and folders `.\Samples\Wcf\NetCoreClient` and `.\Samples\Wcf\NetCoreServer` contain F# ports of .net Core examples from `CoreWcf`.
 
 
 # Softellect.Messaging
