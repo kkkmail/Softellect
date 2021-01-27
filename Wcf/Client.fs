@@ -14,6 +14,14 @@ module Client =
         | NetTcpBinding of NetTcpBinding
 
 
+    /// There seems to be a security negotiation issue with using SecurityMode.Transport and remote WCF service.
+    /// The service fails to accept connection with:
+    ///     CoreWCF.Security.SecurityNegotiationException: Authentication failed on the remote side
+    /// The client has a slightly different error:
+    ///     System.ServiceModel.Security.SecurityNegotiationException: Authentication failed, see inner exception.
+    ///     System.ComponentModel.Win32Exception (0x8009030E): No credentials are available in the security package
+    /// See: https://stackoverflow.com/questions/15605688/wcf-net-tcp-with-sspi-fails-unless-client-and-server-using-same-windows-identity
+    ///
     /// Gets net tcp binding suitable for sending very large data objects.
     let getNetTcpBinding() =
         let binding = new NetTcpBinding()
@@ -24,7 +32,10 @@ module Client =
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- SecurityMode.Transport
+
+//        binding.Security.Mode <- SecurityMode.Transport
+        binding.Security.Mode <- SecurityMode.None
+
         binding.ReaderQuotas <- getQuotas()
         binding
 
