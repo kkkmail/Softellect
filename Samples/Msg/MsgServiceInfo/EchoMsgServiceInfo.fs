@@ -63,21 +63,21 @@ module EchoMsgServiceInfo =
     let netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
 
     let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
     let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
 
-    let clientOneId = new Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
-    let clientTwoId = new Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
-    let serviceId = new Guid("20E280F8-FAE3-49FA-933A-53BB7EABB8A9") |> MessagingClientId
+    let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
+    let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
+    let serviceId = Guid("20E280F8-FAE3-49FA-933A-53BB7EABB8A9") |> MessagingClientId
 
 
     /// Using simple mutable lists to mock client and service data sources.
     type MutableList<'T> = System.Collections.Generic.List<'T>
 
 
-    let private clientOneMessageData = new MutableList<EchoMessage>()
-    let private clientTwoMessageData = new MutableList<EchoMessage>()
-    let private serverMessageData = new MutableList<EchoMessage>()
+    let private clientOneMessageData = MutableList<EchoMessage>()
+    let private clientTwoMessageData = MutableList<EchoMessage>()
+    let private serverMessageData = MutableList<EchoMessage>()
 
 
     let private tryFind (source : MutableList<'T>) sorter finder = source |> Seq.sortBy sorter |> Seq.tryFind finder |> Ok

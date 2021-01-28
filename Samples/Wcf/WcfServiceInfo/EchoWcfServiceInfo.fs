@@ -20,7 +20,7 @@ module EchoWcfServiceInfo =
     let netTcpServicePort = ServicePort 1088
     let netTcpServiceName = ServiceName "EchoNetTcpService"
     let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
     let echoWcfServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
     let echoLogger = Logger.defaultValue
 

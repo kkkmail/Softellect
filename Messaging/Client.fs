@@ -204,8 +204,9 @@ module Client =
     /// Low level WCF messaging client.
     type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
         let i = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo
+        let n = i.netTcpServiceInfo
         let url = i.getUrl d.communicationType
-        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType url
+        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType n.netTcpSecurityMode url
 
         let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr |> d.toErr
         let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr |> d.toErr

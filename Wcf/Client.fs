@@ -9,6 +9,16 @@ open Softellect.Wcf.Common
 
 module Client =
 
+    type WcfSecurityMode
+        with
+        member s.securityMode =
+            match s with
+            | NoSecurity -> SecurityMode.None
+            | TransportSecurity -> SecurityMode.Transport
+            | MessageSecurity -> SecurityMode.Message
+            | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
+
+
     type ClientWcfBinding =
         | BasicHttpBinding of BasicHttpBinding
         | NetTcpBinding of NetTcpBinding
@@ -23,7 +33,7 @@ module Client =
     /// See: https://stackoverflow.com/questions/15605688/wcf-net-tcp-with-sspi-fails-unless-client-and-server-using-same-windows-identity
     ///
     /// Gets net tcp binding suitable for sending very large data objects.
-    let getNetTcpBinding() =
+    let getNetTcpBinding (security : WcfSecurityMode) =
         let binding = new NetTcpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
         binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
@@ -32,9 +42,7 @@ module Client =
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-
-//        binding.Security.Mode <- SecurityMode.Transport
-        binding.Security.Mode <- SecurityMode.None
+        binding.Security.Mode <- security.securityMode
 
         binding.ReaderQuotas <- getQuotas()
         binding
@@ -55,17 +63,17 @@ module Client =
         binding
 
 
-    let getBinding t =
+    let getBinding t s =
         match t with
         | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding
-        | NetTcpCommunication -> getNetTcpBinding() |> NetTcpBinding
+        | NetTcpCommunication -> getNetTcpBinding s |> NetTcpBinding
 
 
     /// Tries getting a Wcf Client.
-    let tryGetWcfService<'T> t url =
+    let tryGetWcfService<'T> t s url =
         try
-            let binding = getBinding t
-            let address = new EndpointAddress(url)
+            let binding = getBinding t s
+            let address = EndpointAddress(url)
 
             let channelFactory =
                 match binding with
@@ -108,7 +116,7 @@ module Client =
                         channel.Abort()
                         factoryCloser()
                     with
-                    | _ -> ignore()
+                    | _ -> ()
 
                     toWcfError f e // We want the outer "real" error.
             | Error e -> e |> f |> Error

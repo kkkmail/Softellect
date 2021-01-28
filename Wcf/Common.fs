@@ -17,6 +17,18 @@ module Common =
     type WcfLogger = Logger<WcfError>
 
 
+    /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.
+    /// Since they live in different namespaces wrapper is required to make security negotiation simpler.
+    type WcfSecurityMode =
+        | NoSecurity
+        | TransportSecurity
+        | MessageSecurity
+        | TransportWithMessageCredentialSecurity
+
+
+        static member defaultValue = NoSecurity
+
+
     type WcfCommunicationType =
         | HttpCommunication
         | NetTcpCommunication
@@ -44,7 +56,7 @@ module Common =
 
     /// https://stackoverflow.com/questions/5459697/the-maximum-message-size-quota-for-incoming-messages-65536-has-been-exceeded
     let getQuotas() =
-        let readerQuotas = new XmlDictionaryReaderQuotas()
+        let readerQuotas = XmlDictionaryReaderQuotas()
         readerQuotas.MaxArrayLength <- Int32.MaxValue
         readerQuotas.MaxStringContentLength <- Int32.MaxValue
         readerQuotas.MaxDepth <- 512
@@ -76,13 +88,15 @@ module Common =
             netTcpServiceAddress : ServiceAddress
             netTcpServicePort : ServicePort
             netTcpServiceName : ServiceName
+            netTcpSecurityMode : WcfSecurityMode
         }
 
-        static member create address port name =
+        static member create address port name securityMode =
             {
                 netTcpServiceAddress = address
                 netTcpServicePort = port
                 netTcpServiceName = name
+                netTcpSecurityMode = securityMode
             }
 
 
