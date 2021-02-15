@@ -22,6 +22,16 @@ module Service =
     let private toError e = e |> Error
 
 
+    type WcfSecurityMode
+        with
+        member s.securityMode =
+            match s with
+            | NoSecurity -> SecurityMode.None
+            | TransportSecurity -> SecurityMode.Transport
+            | MessageSecurity -> SecurityMode.Message
+            | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
+
+
     /// Service reply.
     let tryReply p f a =
         let reply =
@@ -35,8 +45,8 @@ module Service =
 
 
     /// Gets net tcp binding suitable for sending very large data objects.
-    let getNetTcpBinding() =
-        let binding = new NetTcpBinding()
+    let getNetTcpBinding (security : WcfSecurityMode) =
+        let binding = NetTcpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
         binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
@@ -44,14 +54,14 @@ module Service =
         binding.CloseTimeout <- connectionTimeOut
         binding.SendTimeout <- dataTimeOut
         binding.ReceiveTimeout <- dataTimeOut
-        binding.Security.Mode <- SecurityMode.Transport
+        binding.Security.Mode <- security.securityMode
         binding.ReaderQuotas <- getQuotas()
         binding
 
 
     /// Gets basic http binding suitable for sending very large data objects.
     let getBasicHttpBinding() =
-        let binding = new BasicHttpBinding()
+        let binding = BasicHttpBinding()
         binding.MaxReceivedMessageSize <- (int64 Int32.MaxValue)
         //binding.MaxBufferPoolSize <- (int64 Int32.MaxValue)
         binding.MaxBufferSize <- Int32.MaxValue
@@ -71,6 +81,7 @@ module Service =
             httpServiceName : string
             netTcpPort : int
             netTcpServiceName : string
+            netTcpSecurityMode : WcfSecurityMode
         }
 
         static member tryCreate (i : ServiceAccessInfo) =
@@ -86,6 +97,7 @@ module Service =
                     httpServiceName = h.httpServiceName.value
                     netTcpPort = n.netTcpServicePort.value
                     netTcpServiceName = n.netTcpServiceName.value
+                    netTcpSecurityMode = n.netTcpSecurityMode
                 }
                 |> Ok
 
@@ -105,6 +117,7 @@ module Service =
                 httpServiceName = String.Empty
                 netTcpPort = - 1
                 netTcpServiceName  = String.Empty
+                netTcpSecurityMode = WcfSecurityMode.defaultValue
             }
 
 
@@ -159,7 +172,7 @@ module Service =
                 builder
                     .AddService<'Service>()
                     .AddServiceEndpoint<'Service, 'IWcfService>(getBasicHttpBinding(), "/" + i.httpServiceName)
-                    .AddServiceEndpoint<'Service, 'IWcfService>(getNetTcpBinding(), "/" + i.netTcpServiceName)
+                    .AddServiceEndpoint<'Service, 'IWcfService>(getNetTcpBinding i.netTcpSecurityMode, "/" + i.netTcpServiceName)
                 |> ignore
             | None -> invalidArg (nameof(data)) "Service data is missing."
 

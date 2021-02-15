@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>0.0.1-alpha.124</Version>
-    <PackageVersion>0.0.1-alpha.124</PackageVersion>
+    <Version>0.0.1-alpha.127</Version>
+    <PackageVersion>0.0.1-alpha.127</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
