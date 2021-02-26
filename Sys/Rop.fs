@@ -158,7 +158,7 @@ module Rop =
         | Error f -> failureFunc state f
 
 
-    /// Updates the state if success and calls falure function (logger) in case of failure.
+    /// Updates the state if success and calls failure function (logger) in case of failure.
     let y successFunc failureFunc state twoTrackInput =
         match twoTrackInput with
         | Ok v -> successFunc state v
@@ -231,6 +231,13 @@ module Rop =
         match v with
         | Ok r -> Ok r
         | Error e -> Error (adder f e)
+
+
+    /// Converts Result into Option type.
+    let toOption v =
+        match v with
+        | Ok r -> Some r
+        | Error _ -> None
 
 
     /// The first result r1 is an earlier result and the second result r2 is a later result,
