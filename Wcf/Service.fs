@@ -102,13 +102,13 @@ module Service =
                 |> Ok
 
             | (true, _), true, _ ->
-                fail (sprintf "http service port: %A must be different from nettcp service port: %A" h.httpServicePort n.netTcpServicePort)
+                fail $"http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
             | (false, _), false, _ ->
-                fail (sprintf "invalid IP address: %s" h.httpServiceAddress.value)
+                fail $"invalid IP address: %s{h.httpServiceAddress.value}"
             | (false, _), true, _ ->
-                fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" h.httpServiceAddress.value h.httpServicePort n.netTcpServicePort)
+                fail $"invalid IP address: %s{h.httpServiceAddress.value} and http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
             | _, _, false ->
-                fail (sprintf "http IP address: %s and net tcp IP address: %s must be the same" h.httpServiceAddress.value n.netTcpServiceAddress.value)
+                fail $"http IP address: %s{h.httpServiceAddress.value} and net tcp IP address: %s{n.netTcpServiceAddress.value} must be the same"
 
         static member defaultValue =
             {
@@ -223,7 +223,7 @@ module Service =
                 let info = d.wcfServiceAccessInfo
                 let logger = d.wcfServiceProxy.wcfLogger
                 try
-                    logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
+                    logger.logInfoString $"ipAddress = %A{info.ipAddress}, httpPort = %A{info.httpPort}, netTcpPort = %A{info.netTcpPort}"
                     let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
                     let applyOptions (options : KestrelServerOptions) =

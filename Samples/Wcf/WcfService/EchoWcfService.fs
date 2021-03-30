@@ -18,11 +18,11 @@ module EchoWcfService =
             }
 
         let echoImpl (m : string) : UnitResult =
-            printfn "Simple message: %A" m
+            printfn $"Simple message: %A{m}"
             Ok()
 
         let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
-            printfn "Complex message: %A" m
+            printfn $"Complex message: %A{m}"
             m |> getReply |> Ok
 
         interface IEchoService with

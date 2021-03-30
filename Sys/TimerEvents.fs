@@ -61,32 +61,28 @@ module TimerEvents =
         let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
         let logError e = e |> proxy.toErr |> logger.logErrorData
         let logWarn e = e |> proxy.toErr |> logger.logWarnData
-        let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
-        do sprintf "TimerEventHandler: %A" i |> logger.logDebugString
+        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.handlerName}"
+        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
 
         let g() =
             try
                 match proxy.eventHandler() with
-                | Ok() ->
-                    logger.logDebugString "proxy.eventHandler() - succeeded."
-                    ignore()
-                | Error e ->
-                    sprintf "proxy.eventHandler() - Error: %A" e |> logger.logDebugString
-                    proxy.logger.logErrorData e
+                | Ok() -> logger.logDebugString "proxy.eventHandler() - succeeded."
+                | Error e -> logger.logErrorData e
             with
             | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
-                sprintf "eventHandler: %A" i |> logger.logDebugString
-                proxy.logger.logInfoString info
+                $"eventHandler: %A{i}" |> logger.logDebugString
+                logger.logInfoString info
                 if Interlocked.Increment(&counter) = 0
-                then timedImplementation false proxy.logger info g
+                then timedImplementation false logger info g
                 else (i.handlerName, handlerId, DateTime.Now) |> StillRunningEventHandlerErr |> logWarn
             finally Interlocked.Decrement(&counter) |> ignore
 
 
-        let timer = new System.Threading.Timer(TimerCallback(eventHandler), null, Timeout.Infinite, refreshInterval)
+        let timer = new Timer(TimerCallback(eventHandler), null, Timeout.Infinite, refreshInterval)
 
         member _.start() =
             try

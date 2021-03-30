@@ -47,7 +47,7 @@ module Logging =
 
         member this.logIfError v =
             match v with
-            | Ok _ -> ignore()
+            | Ok _ -> ()
             | Error e -> this.logErrorData e
 
             v
@@ -67,5 +67,5 @@ module Logging =
                 logError = printfn "ERROR: %A, %A" DateTime.Now
                 logWarn = printfn "WARN: %A, %A" DateTime.Now
                 logInfo = printfn "INFO: %A, %A" DateTime.Now
-                logDebug = fun _ -> ignore()
+                logDebug = fun _ -> ()
             }

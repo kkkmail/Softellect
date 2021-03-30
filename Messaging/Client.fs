@@ -231,7 +231,7 @@ module Client =
         printfn "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        printfn "%A" i
+        printfn $"%A{i}"
 
         let proxy =
             {

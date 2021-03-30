@@ -60,8 +60,8 @@ module Service =
                 service.createEventHandlers()
                 service :> IMessagingService<'D, 'E> |> Ok
             | None ->
-                let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
-                printfn "%s" errMessage
+                let errMessage = $"MessagingService<%s{typedefof<'D>.Name}, %s{typedefof<'E>.Name}>: Data is unavailable."
+                printfn $"%s{errMessage}"
                 failwith errMessage
 
         let proxy = d.messagingServiceProxy
@@ -132,7 +132,7 @@ module Service =
                     {
                         logger = Logger.defaultValue
                         toErr =
-                            fun e -> failwith (sprintf "MessagingWcfServiceData<%s, %s>: Error occurred: %A." typedefof<'D>.Name typedefof<'E>.Name e)
+                            fun e -> failwith $"MessagingWcfServiceData<%s{typedefof<'D>.Name}, %s{typedefof<'E>.Name}>: Error occurred: %A{e}."
                     }
             }
 
