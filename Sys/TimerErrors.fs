@@ -4,6 +4,22 @@ open System
 
 module TimerErrors =
 
+    type UnhandledEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            unhandledException: exn
+        }
+
+
+    type LongRunningEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            runTime : TimeSpan
+        }
+
+
     type TimerEventError =
-        | UnhandledEventHandlerExn of string * Guid * exn
-        | StillRunningEventHandlerErr of string * Guid * DateTime
+        | UnhandledEventHandlerExn of UnhandledEventInfo
+        | StillRunningEventHandlerErr of LongRunningEventInfo

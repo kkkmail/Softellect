@@ -55,6 +55,7 @@ module TimerEvents =
 
     type TimerEventHandler<'E> (i : TimerEventInfo, proxy : TimerEventProxy<'E>) =
         let mutable counter = -1
+        let mutable lastStartedAt = DateTime.Now
         let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
         let logger = proxy.logger
@@ -70,15 +71,29 @@ module TimerEvents =
                 | Ok() -> logger.logDebugString "proxy.eventHandler() - succeeded."
                 | Error e -> logger.logErrorData e
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
-                $"eventHandler: %A{i}" |> logger.logDebugString
-                logger.logInfoString info
+                logger.logDebugString $"eventHandler: %A{i}"
+
                 if Interlocked.Increment(&counter) = 0
-                then timedImplementation false logger info g
-                else (i.handlerName, handlerId, DateTime.Now) |> StillRunningEventHandlerErr |> logWarn
+                then
+                    lastStartedAt <- DateTime.Now
+                    timedImplementation false logger info g
+                else
+                    {
+                        handlerName = i.handlerName
+                        handlerId = handlerId
+                        runTime = DateTime.Now - lastStartedAt
+                    }
+                    |> StillRunningEventHandlerErr |> logWarn
             finally Interlocked.Decrement(&counter) |> ignore
 
 
@@ -88,10 +103,22 @@ module TimerEvents =
             try
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError
 
         member _.stop() =
             try
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError

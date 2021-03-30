@@ -210,6 +210,9 @@ module Service =
         member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
 
 
+    /// See: https://github.com/CoreWCF/CoreWCF/issues/56 for how to implement
+    ///     [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)]
+    ///
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
