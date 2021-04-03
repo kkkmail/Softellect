@@ -63,12 +63,14 @@ module TimerEvents =
         let logError e = e |> proxy.toErr |> logger.logErrorData
         let logWarn e = e |> proxy.toErr |> logger.logWarnData
         let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.handlerName}"
-        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
+//        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
 
         let g() =
             try
                 match proxy.eventHandler() with
-                | Ok() -> logger.logDebugString "proxy.eventHandler() - succeeded."
+                | Ok() ->
+//                    logger.logDebugString "proxy.eventHandler() - succeeded."
+                    ()
                 | Error e -> logger.logErrorData e
             with
             | e ->
@@ -81,7 +83,7 @@ module TimerEvents =
 
         let eventHandler _ =
             try
-                logger.logDebugString $"eventHandler: %A{i}"
+//                logger.logDebugString $"eventHandler: %A{i}"
 
                 if Interlocked.Increment(&counter) = 0
                 then
