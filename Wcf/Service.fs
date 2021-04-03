@@ -32,16 +32,28 @@ module Service =
             | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
 
 
+    let mutable private serviceCount = 0L
+
+
     /// Service reply.
     let tryReply p f a =
+        let count = Interlocked.Increment(&serviceCount)
+        printfn $"tryReply - {count}: Starting..."
+
         let reply =
             match tryDeserialize wcfSerializationFormat a with
             | Ok m -> p m
-            | Error e -> toWcfSerializationError f e
+            | Error e ->
+                printfn $"tryReply - {count}: Error: '{e}'."
+                toWcfSerializationError f e
 
-        match trySerialize wcfSerializationFormat reply with
-        | Ok r -> r
-        | Error _ -> [||]
+        let retVal =
+            match trySerialize wcfSerializationFormat reply with
+            | Ok r -> r
+            | Error _ -> [||]
+
+        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
+        retVal
 
 
     /// Gets net tcp binding suitable for sending very large data objects.
@@ -159,9 +171,14 @@ module Service =
         |> Option.defaultValue defaultValue
 
 
+    /// See: https://github.com/CoreWCF/CoreWCF/issues/56
+    ///
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
+    ///
+    /// Note that 'Service should have a constraint when 'Service : 'IWcfService.
+    /// However, F# does not support this yet.
     type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>() =
         let data = WcfServiceData<'Service, 'Data>.tryGetData()
 
@@ -177,8 +194,15 @@ module Service =
             | None -> invalidArg (nameof(data)) "Service data is missing."
 
         /// The name must match required signature in CoreWCF.
+// V1
+//        member _.ConfigureServices(services : IServiceCollection) =
+//            do services.AddServiceModelServices() |> ignore
+
+// V2
         member _.ConfigureServices(services : IServiceCollection) =
-            do services.AddServiceModelServices() |> ignore
+            do
+                services.AddServiceModelServices() |> ignore
+                services.AddTransient<'Service>() |> ignore
 
         /// The name must match required signature in CoreWCF.
         member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =

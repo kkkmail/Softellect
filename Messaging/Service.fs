@@ -2,6 +2,8 @@
 
 open System
 
+open System.Threading
+open CoreWCF
 open Softellect.Sys
 open Softellect.Sys.Logging
 open Softellect.Sys.MessagingServiceErrors
@@ -137,7 +139,14 @@ module Service =
             }
 
 
+    let mutable private serviceCount = 0L
+
+
+    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
     type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E>) =
+        let count = Interlocked.Increment(&serviceCount)
+        do printfn $"MessagingWcfService: count = {count}."
+
         static let getServiceData() =
             getData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>> MessagingWcfServiceData<'D, 'E>.defaultValue
 
