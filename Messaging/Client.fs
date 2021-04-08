@@ -140,7 +140,7 @@ module Client =
 
 
     let tryTransmitMessages transmitter =
-        printfn "tryTransmitMessages: starting..."
+//        printfn "tryTransmitMessages: starting..."
         let rec doTryTransmit x c =
             match x with
             | [] -> Ok()
