@@ -55,13 +55,13 @@ let main argv =
         printfn "Created AppSettingsProvider..."
 
         let result1 = provider.trySet messagingServiceAddress "new.address"
-        printfn "result1 = %A" result1
+        printfn $"result1 = %A{result1}"
 
         let result2 = provider.trySet messagingHttpServicePort 123456
-        printfn "result2 = %A" result2
+        printfn $"result2 = %A{result2}"
 
         let result = provider.trySave()
-        printfn "result = %A" result
-    | Error e -> printfn "Error: %A" e
+        printfn $"result = %A{result}"
+    | Error e -> printfn $"Error: %A{e}"
 
     0

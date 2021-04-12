@@ -2,6 +2,8 @@
 
 open System
 
+open System.Threading
+open CoreWCF
 open Softellect.Sys
 open Softellect.Sys.Logging
 open Softellect.Sys.MessagingServiceErrors
@@ -50,7 +52,12 @@ module Service =
             }
 
 
+//    let mutable private messagingServiceCount = 0L
+
+
     type MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
+//        let count = Interlocked.Increment(&messagingServiceCount)
+//        do printfn $"MessagingService: count = {count}."
         static let mutable getData : unit -> MessagingServiceData<'D, 'E> option = fun () -> None
 
         static let createService() : Result<IMessagingService<'D, 'E>, 'E> =
@@ -60,16 +67,17 @@ module Service =
                 service.createEventHandlers()
                 service :> IMessagingService<'D, 'E> |> Ok
             | None ->
-                let errMessage = sprintf "MessagingService<%s, %s>: Data is unavailable." typedefof<'D>.Name typedefof<'E>.Name
-                printfn "%s" errMessage
+                let errMessage = $"MessagingService<%s{typedefof<'D>.Name}, %s{typedefof<'E>.Name}>: Data is unavailable."
+                printfn $"%s{errMessage}"
                 failwith errMessage
 
+        static let serviceImpl = new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
         let proxy = d.messagingServiceProxy
 
-        static member service = new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
+        static member getService() = serviceImpl.Value // new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
         static member setGetData g = getData <- g
 
-        static member tryStart() = MessagingService<'D, 'E>.service.Value |> Rop.bind (fun _ -> Ok())
+        static member tryStart() = MessagingService<'D, 'E>.getService() |> Rop.bind (fun _ -> Ok())
 
         interface IMessagingService<'D, 'E> with
             member _.getVersion() =
@@ -132,27 +140,34 @@ module Service =
                     {
                         logger = Logger.defaultValue
                         toErr =
-                            fun e -> failwith (sprintf "MessagingWcfServiceData<%s, %s>: Error occurred: %A." typedefof<'D>.Name typedefof<'E>.Name e)
+                            fun e -> failwith $"MessagingWcfServiceData<%s{typedefof<'D>.Name}, %s{typedefof<'E>.Name}>: Error occurred: %A{e}."
                     }
             }
 
 
+//    let mutable private serviceCount = 0L
+
+
+    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
     type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E>) =
+//        let count = Interlocked.Increment(&serviceCount)
+//        do printfn $"MessagingWcfService: count = {count}."
+
         static let getServiceData() =
             getData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>> MessagingWcfServiceData<'D, 'E>.defaultValue
 
         let proxy = d.messagingWcfServiceProxy
-        let messagingService = MessagingService<'D, 'E>.service
+        let getMessagingService() = MessagingService<'D, 'E>.getService()
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr |> proxy.toErr
         let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr |> proxy.toErr
         let toTryPickMessageError f = f |> TryPeekMsgWcfErr |> TryPeekMessageErr |> proxy.toErr
         let toTryDeleteFromServerError f = f |> TryDeleteMsgWcfErr |> TryDeleteFromServerErr |> proxy.toErr
 
-        let getVersion() = messagingService.Value |> Rop.bind (fun e -> e.getVersion())
-        let sendMessage b = messagingService.Value |> Rop.bind (fun e -> e.sendMessage b)
-        let tryPeekMessage b = messagingService.Value |> Rop.bind (fun e -> e.tryPeekMessage b)
-        let tryDeleteFromServer b = messagingService.Value |> Rop.bind (fun e -> e.tryDeleteFromServer b)
+        let getVersion() = getMessagingService() |> Rop.bind (fun e -> e.getVersion())
+        let sendMessage b = getMessagingService() |> Rop.bind (fun e -> e.sendMessage b)
+        let tryPeekMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPeekMessage b)
+        let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
 
         new() = MessagingWcfService<'D, 'E> (getServiceData())
 

@@ -55,47 +55,72 @@ module TimerEvents =
 
     type TimerEventHandler<'E> (i : TimerEventInfo, proxy : TimerEventProxy<'E>) =
         let mutable counter = -1
+        let mutable lastStartedAt = DateTime.Now
         let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
         let logger = proxy.logger
         let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
         let logError e = e |> proxy.toErr |> logger.logErrorData
         let logWarn e = e |> proxy.toErr |> logger.logWarnData
-        let info = sprintf "TimerEventHandler: handlerId = %A, handlerName = %A" handlerId i.handlerName
-        do sprintf "TimerEventHandler: %A" i |> logger.logDebugString
+        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.handlerName}"
+//        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
 
         let g() =
             try
                 match proxy.eventHandler() with
                 | Ok() ->
-                    logger.logDebugString "proxy.eventHandler() - succeeded."
-                    ignore()
-                | Error e ->
-                    sprintf "proxy.eventHandler() - Error: %A" e |> logger.logDebugString
-                    proxy.logger.logErrorData e
+//                    logger.logDebugString "proxy.eventHandler() - succeeded."
+                    ()
+                | Error e -> logger.logErrorData e
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError
 
         let eventHandler _ =
             try
-                sprintf "eventHandler: %A" i |> logger.logDebugString
-                proxy.logger.logInfoString info
+//                logger.logDebugString $"eventHandler: %A{i}"
+
                 if Interlocked.Increment(&counter) = 0
-                then timedImplementation false proxy.logger info g
-                else (i.handlerName, handlerId, DateTime.Now) |> StillRunningEventHandlerErr |> logWarn
+                then
+                    lastStartedAt <- DateTime.Now
+                    timedImplementation false logger info g
+                else
+                    {
+                        handlerName = i.handlerName
+                        handlerId = handlerId
+                        runTime = DateTime.Now - lastStartedAt
+                    }
+                    |> StillRunningEventHandlerErr |> logWarn
             finally Interlocked.Decrement(&counter) |> ignore
 
 
-        let timer = new System.Threading.Timer(TimerCallback(eventHandler), null, Timeout.Infinite, refreshInterval)
+        let timer = new Timer(TimerCallback(eventHandler), null, Timeout.Infinite, refreshInterval)
 
         member _.start() =
             try
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError
 
         member _.stop() =
             try
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
-            | e -> (i.handlerName, handlerId, e) |> UnhandledEventHandlerExn |> logError
+            | e ->
+                {
+                    handlerName = i.handlerName
+                    handlerId = handlerId
+                    unhandledException = e
+                }
+                |> UnhandledEventHandlerExn |> logError

@@ -78,7 +78,7 @@ module Primitives =
             | LargeSize -> false
 
         member this.getInfo() =
-            let s = (sprintf "%A" this)
+            let s = $"%A{this}"
             s.Substring(0, min s.Length MessageData<'D>.maxInfoLength)
 
 

@@ -28,11 +28,11 @@ module Program =
 
         while true do
             try
-                printfn "Connecting using: %s" url
+                printfn $"Connecting using: %s{url}"
                 "Abcd" |> service.echo |> printfn "%A"
                 createEchoMessage() |> service.complexEcho |> printfn "%A"
             with
-            | e -> printfn "Exception: %A" e
+            | e -> printfn $"Exception: %A{e}"
 
             Thread.Sleep(2000)
         ()

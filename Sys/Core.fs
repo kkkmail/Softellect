@@ -54,11 +54,11 @@ module Core =
 
 
     let formatTimeSpan (t : TimeSpan) =
-        let x = sprintf "%i:%02i:%02i" t.Hours t.Minutes t.Seconds
+        let x = $"%i{t.Hours}:%02i{t.Minutes}:%02i{t.Seconds}"
 
         if t.Days = 0
         then x
-        else sprintf "%i day(s), %s" t.Days x
+        else $"%i{t.Days} day(s), %s{x}"
 
 
     let estimateEndTime progress (started : DateTime) =
@@ -133,7 +133,7 @@ module Core =
             Ok b
         with
         | e ->
-            printfn "trySerialize: Exception: '%A'." e
+            printfn $"trySerialize: Exception: '%A{e}'."
             e |> SerializationExn |> Error
 
 
@@ -151,7 +151,7 @@ module Core =
             Ok y
         with
         | e ->
-            printfn "tryDeserialize: Exception: '%A'." e
+//            printfn $"tryDeserialize: Exception: '%A{e}'."
             e |> DeserializationExn |> Error
 
 
@@ -194,8 +194,8 @@ module Core =
 
         if t.TotalSeconds <= 10.0
         then
-            if b then l.logInfoString (sprintf "%s: Execution time: %A" name t)
-        else l.logInfoString (sprintf "%s: !!! LARGE Execution time: %A" name t)
+            if b then l.logInfoString $"%s{name}: Execution time: %A{t}"
+        else l.logInfoString $"%s{name}: !!! LARGE Execution time: %A{t}"
 
         r
 

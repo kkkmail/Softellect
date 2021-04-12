@@ -32,16 +32,28 @@ module Service =
             | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
 
 
+//    let mutable private serviceCount = 0L
+
+
     /// Service reply.
     let tryReply p f a =
+//        let count = Interlocked.Increment(&serviceCount)
+//        printfn $"tryReply - {count}: Starting..."
+
         let reply =
             match tryDeserialize wcfSerializationFormat a with
             | Ok m -> p m
-            | Error e -> toWcfSerializationError f e
+            | Error e ->
+//                printfn $"tryReply - {count}: Error: '{e}'."
+                toWcfSerializationError f e
 
-        match trySerialize wcfSerializationFormat reply with
-        | Ok r -> r
-        | Error _ -> [||]
+        let retVal =
+            match trySerialize wcfSerializationFormat reply with
+            | Ok r -> r
+            | Error _ -> [||]
+
+//        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
+        retVal
 
 
     /// Gets net tcp binding suitable for sending very large data objects.
@@ -102,13 +114,13 @@ module Service =
                 |> Ok
 
             | (true, _), true, _ ->
-                fail (sprintf "http service port: %A must be different from nettcp service port: %A" h.httpServicePort n.netTcpServicePort)
+                fail $"http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
             | (false, _), false, _ ->
-                fail (sprintf "invalid IP address: %s" h.httpServiceAddress.value)
+                fail $"invalid IP address: %s{h.httpServiceAddress.value}"
             | (false, _), true, _ ->
-                fail (sprintf "invalid IP address: %s and http service port: %A must be different from nettcp service port: %A" h.httpServiceAddress.value h.httpServicePort n.netTcpServicePort)
+                fail $"invalid IP address: %s{h.httpServiceAddress.value} and http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
             | _, _, false ->
-                fail (sprintf "http IP address: %s and net tcp IP address: %s must be the same" h.httpServiceAddress.value n.netTcpServiceAddress.value)
+                fail $"http IP address: %s{h.httpServiceAddress.value} and net tcp IP address: %s{n.netTcpServiceAddress.value} must be the same"
 
         static member defaultValue =
             {
@@ -159,9 +171,14 @@ module Service =
         |> Option.defaultValue defaultValue
 
 
+    /// See: https://github.com/CoreWCF/CoreWCF/issues/56
+    ///
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
+    ///
+    /// Note that 'Service should have a constraint when 'Service : 'IWcfService.
+    /// However, F# does not support this yet.
     type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>() =
         let data = WcfServiceData<'Service, 'Data>.tryGetData()
 
@@ -177,8 +194,15 @@ module Service =
             | None -> invalidArg (nameof(data)) "Service data is missing."
 
         /// The name must match required signature in CoreWCF.
+// V1
+//        member _.ConfigureServices(services : IServiceCollection) =
+//            do services.AddServiceModelServices() |> ignore
+
+// V2
         member _.ConfigureServices(services : IServiceCollection) =
-            do services.AddServiceModelServices() |> ignore
+            do
+                services.AddServiceModelServices() |> ignore
+                services.AddTransient<'Service>() |> ignore
 
         /// The name must match required signature in CoreWCF.
         member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
@@ -210,6 +234,9 @@ module Service =
         member _.cancelWaitForShutdownAsync() = tryExecute shutDownTokenSource.Cancel
 
 
+    /// See: https://github.com/CoreWCF/CoreWCF/issues/56 for how to implement
+    ///     [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)]
+    ///
     /// 'Service - is a type of the WCF service itself.
     /// 'IWcfService - is a WCF interface that the service implements.
     /// 'Data - is a type of initialization data that the service needs to operate.
@@ -223,7 +250,7 @@ module Service =
                 let info = d.wcfServiceAccessInfo
                 let logger = d.wcfServiceProxy.wcfLogger
                 try
-                    logger.logInfoString (sprintf "ipAddress = %A, httpPort = %A, netTcpPort = %A" info.ipAddress info.httpPort info.netTcpPort)
+                    logger.logInfoString $"ipAddress = %A{info.ipAddress}, httpPort = %A{info.httpPort}, netTcpPort = %A{info.netTcpPort}"
                     let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
                     let applyOptions (options : KestrelServerOptions) =

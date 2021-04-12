@@ -29,4 +29,8 @@
     <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
     <ProjectReference Include="..\WcfServiceInfo\WcfServiceInfo.fsproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="5.0.1" />
+  </ItemGroup>
 </Project>

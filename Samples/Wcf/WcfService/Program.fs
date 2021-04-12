@@ -14,9 +14,9 @@ module Program =
             match EchoWcfServiceImpl.tryGetService data with
             | Ok host ->
                 let result = host.run()
-                printfn "result = %A" result
-            | Error e -> printfn "Error: %A" e
-        | Error e -> printfn "Error: %A" e
+                printfn $"result = %A{result}"
+            | Error e -> printfn $"Error: %A{e}"
+        | Error e -> printfn $"Error: %A{e}"
 
         printfn "Press any key to exit..."
         Console.ReadLine() |> ignore

@@ -28,9 +28,9 @@ module EchoService =
             with
 
             member _.echo text =
-                printfn "Received %s from client!" text
+                printfn $"Received %s{text} from client!"
                 text
 
             member _.complexEcho text =
-                printfn "Received %s from client!" text.text
+                printfn $"Received %s{text.text} from client!"
                 text.text

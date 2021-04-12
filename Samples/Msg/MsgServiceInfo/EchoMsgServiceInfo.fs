@@ -84,9 +84,9 @@ module EchoMsgServiceInfo =
 
 
     let private tryDelete (source : MutableList<'T>) finder =
-        printfn "tryDelete: source had %A elements." source.Count
+        printfn $"tryDelete: source had %A{source.Count} elements."
         source.RemoveAll(fun e -> finder e) |> ignore
-        printfn "tryDelete: source now has %A elements." source.Count
+        printfn $"tryDelete: source now has %A{source.Count} elements."
         Ok()
 
 
@@ -96,7 +96,7 @@ module EchoMsgServiceInfo =
 
     let private save (source : MutableList<'T>) finder e =
         tryDelete source finder |> ignore
-        printfn "save: adding element %A to source." e
+        printfn $"save: adding element %A{e} to source."
         source.Add e
         Ok()
 
@@ -186,7 +186,7 @@ module EchoMsgServiceInfo =
         match client.start() with
         | Ok() ->
             while true do
-                printfn "Sending message to: %A." recipient
+                printfn $"Sending message to: %A{recipient}."
 
                 let m =
                     {
@@ -200,20 +200,20 @@ module EchoMsgServiceInfo =
                     }
 
                 let sendResult = client.sendMessage m
-                printfn "Sent with: %A." sendResult
+                printfn $"Sent with: %A{sendResult}."
 
                 printfn "Checking messages."
 
                 let checkMessage() =
                     match tryProcessMessage () (fun _ m -> m) with
-                    | ProcessedSuccessfully m -> printfn "    Received message: %A." m
-                    | ProcessedWithError (m, e) -> printfn "    Received message: %A with error e: %A." m e
-                    | ProcessedWithFailedToRemove (m, e) -> printfn "    Received message: %A with error: %A." m e
-                    | FailedToProcess e -> printfn "    Error e: %A" e
+                    | ProcessedSuccessfully m -> printfn $"    Received message: %A{m}."
+                    | ProcessedWithError (m, e) -> printfn $"    Received message: %A{m} with error e: %A{e}."
+                    | ProcessedWithFailedToRemove (m, e) -> printfn $"    Received message: %A{m} with error: %A{e}."
+                    | FailedToProcess e -> printfn $"    Error e: %A{e}"
                     | NothingToDo -> printfn "    Nothing to do..."
                     | BusyProcessing -> printfn "    Busy processing..."
 
                 let _ = [for _ in 1..5 -> ()] |> List.map checkMessage
 
                 Thread.Sleep 10_000
-        | Error e -> printfn "Error: %A" e
+        | Error e -> printfn $"Error: %A{e}"

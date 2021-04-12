@@ -63,7 +63,7 @@ module ServiceInstaller =
 
     let private installService<'T> (l : ServiceInstallerLogger) (ServiceName serviceName) =
         try
-            l.logInfoString (sprintf "Attempting to install service %s ..." serviceName)
+            l.logInfoString $"Attempting to install service %s{serviceName} ..."
             let i = getInstaller<'T> ()
             let d = System.Collections.Hashtable()
             i.Install(d)
@@ -76,7 +76,7 @@ module ServiceInstaller =
 
     let private uninstallService<'T> (l : ServiceInstallerLogger) (ServiceName serviceName) =
         try
-            l.logInfoString (sprintf "Attempting to uninstall service %s ..." serviceName)
+            l.logInfoString $"Attempting to uninstall service %s{serviceName} ..."
             let i = getInstaller<'T> ()
             let d = System.Collections.Hashtable()
             i.Uninstall(d)
@@ -88,11 +88,11 @@ module ServiceInstaller =
 
     let private startService (i : ServiceInfo<'R, 'C>) =
         try
-            i.logger.logInfoString (sprintf "Attempting to start service %s ..." i.serviceName.value)
+            i.logger.logInfoString $"Attempting to start service %s{i.serviceName.value} ..."
             let service = new ServiceController(i.serviceName.value)
             service.Start ()
             service.WaitForStatus(ServiceControllerStatus.Running, i.timeout)
-            i.logger.logInfoString (sprintf "... service %s started successfully.\n" i.serviceName.value)
+            i.logger.logInfoString $"... service %s{i.serviceName.value} started successfully.\n"
             true
         with
         | e -> e |> StartServiceErr |> toError i.logger.logErrorData
@@ -100,11 +100,11 @@ module ServiceInstaller =
 
     let private stopService (i : ServiceInfo<'R, 'C>) =
         try
-            i.logger.logInfoString (sprintf "Attempting to stop service %s ..." i.serviceName.value)
+            i.logger.logInfoString $"Attempting to stop service %s{i.serviceName.value} ..."
             let service = new ServiceController(i.serviceName.value)
             service.Stop ()
             service.WaitForStatus(ServiceControllerStatus.Stopped, i.timeout)
-            i.logger.logInfoString (sprintf "... service %s stopped successfully.\n" i.serviceName.value)
+            i.logger.logInfoString $"... service %s{i.serviceName.value} stopped successfully.\n"
             true
         with
         | e -> e |> StopServiceErr |> toError i.logger.logErrorData
@@ -118,9 +118,9 @@ module ServiceInstaller =
         let cancelHandler() =
             match c with
             | Some v ->
-                i.logger.logInfoString (sprintf "Performing cleanup for %s ..." i.serviceName.value)
+                i.logger.logInfoString $"Performing cleanup for %s{i.serviceName.value} ..."
                 i.cleanup i.logger v
-            | None -> i.logger.logInfoString (sprintf "NOT performing cleanup for %s because the service was not created..." i.serviceName.value)
+            | None -> i.logger.logInfoString $"NOT performing cleanup for %s{i.serviceName.value} because the service was not created..."
 
             waitHandle.Set() |> ignore
 
@@ -142,8 +142,8 @@ module ServiceInstaller =
             | InstallServiceTask -> installService<'T> i.logger i.serviceName
             | UninstallServiceTask ->
                 match stopService i with
-                | true -> i.logger.logInfoString (sprintf "Successfully stopped service %s." i.serviceName.value)
-                | false -> i.logger.logInfoString (sprintf "Failed to stop service %s! Proceeding with uninstall anyway." i.serviceName.value)
+                | true -> i.logger.logInfoString $"Successfully stopped service %s{i.serviceName.value}."
+                | false -> i.logger.logInfoString $"Failed to stop service %s{i.serviceName.value}! Proceeding with uninstall anyway."
 
                 uninstallService<'T> i.logger i.serviceName
             | StartServiceTask -> startService i
