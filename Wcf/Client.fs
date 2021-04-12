@@ -122,5 +122,5 @@ module Client =
             | Error e -> e |> f |> Error
         with
         | e ->
-            printfn $"tryCommunicate: At %A{DateTime.Now} got exception: %A{e}"
+//            printfn $"tryCommunicate: At %A{DateTime.Now} got exception: %A{e}"
             toWcfError f e

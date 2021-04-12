@@ -52,12 +52,12 @@ module Service =
             }
 
 
-    let mutable private messagingServiceCount = 0L
+//    let mutable private messagingServiceCount = 0L
 
 
     type MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
-        let count = Interlocked.Increment(&messagingServiceCount)
-        do printfn $"MessagingService: count = {count}."
+//        let count = Interlocked.Increment(&messagingServiceCount)
+//        do printfn $"MessagingService: count = {count}."
         static let mutable getData : unit -> MessagingServiceData<'D, 'E> option = fun () -> None
 
         static let createService() : Result<IMessagingService<'D, 'E>, 'E> =
@@ -145,13 +145,13 @@ module Service =
             }
 
 
-    let mutable private serviceCount = 0L
+//    let mutable private serviceCount = 0L
 
 
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
     type MessagingWcfService<'D, 'E> private (d : MessagingWcfServiceData<'D, 'E>) =
-        let count = Interlocked.Increment(&serviceCount)
-        do printfn $"MessagingWcfService: count = {count}."
+//        let count = Interlocked.Increment(&serviceCount)
+//        do printfn $"MessagingWcfService: count = {count}."
 
         static let getServiceData() =
             getData<MessagingWcfService<'D, 'E>, MessagingWcfServiceData<'D, 'E>> MessagingWcfServiceData<'D, 'E>.defaultValue

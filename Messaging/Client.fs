@@ -228,10 +228,10 @@ module Client =
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
     let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D, 'E>) =
-        printfn "createMessagingClientEventHandlers - starting..."
+        w.logger.logInfoString "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        printfn $"%A{i}"
+        w.logger.logInfoString $"%A{i}"
 
         let proxy =
             {

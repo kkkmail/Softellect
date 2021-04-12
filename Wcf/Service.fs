@@ -32,19 +32,19 @@ module Service =
             | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
 
 
-    let mutable private serviceCount = 0L
+//    let mutable private serviceCount = 0L
 
 
     /// Service reply.
     let tryReply p f a =
-        let count = Interlocked.Increment(&serviceCount)
-        printfn $"tryReply - {count}: Starting..."
+//        let count = Interlocked.Increment(&serviceCount)
+//        printfn $"tryReply - {count}: Starting..."
 
         let reply =
             match tryDeserialize wcfSerializationFormat a with
             | Ok m -> p m
             | Error e ->
-                printfn $"tryReply - {count}: Error: '{e}'."
+//                printfn $"tryReply - {count}: Error: '{e}'."
                 toWcfSerializationError f e
 
         let retVal =
@@ -52,7 +52,7 @@ module Service =
             | Ok r -> r
             | Error _ -> [||]
 
-        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
+//        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
         retVal
 
 
