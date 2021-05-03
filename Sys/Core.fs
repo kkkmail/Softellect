@@ -93,7 +93,7 @@ module Core =
     ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
     ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
     let getFileName fileName =
-        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase)).LocalPath
+        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase)).LocalPath
         x + @"\" + fileName
 
 

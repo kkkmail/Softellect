@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.1.5</Version>
-    <PackageVersion>0.1.5</PackageVersion>
+    <Version>0.1.6</Version>
+    <PackageVersion>0.1.6</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
