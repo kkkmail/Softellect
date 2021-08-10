@@ -70,7 +70,7 @@ module Core =
 
 
     let partition maxVal q n =
-        let (a, b) =
+        let a, b =
             q
             |> List.mapi (fun i e -> (i + n + 1, e))
             |> List.partition (fun (i, _) -> i <= maxVal)
@@ -93,7 +93,7 @@ module Core =
     ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
     ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
     let getFileName fileName =
-        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase)).LocalPath
+        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
         x + @"\" + fileName
 
 
@@ -168,7 +168,7 @@ module Core =
     let withoutReply (s, _) = s
 
 
-    let combine (b, (s: string)) (x, e) =
+    let combine (b, s: string) (x, e) =
         let r =
             match b, x with
             | false, false -> s + ", " + e
@@ -190,7 +190,7 @@ module Core =
 
 
     let timedImplementation<'E, 'A> b (l : Logger<'E>) name (f : unit -> 'A) =
-        let (r, t) = time f ()
+        let r, t = time f ()
 
         if t.TotalSeconds <= 10.0
         then
