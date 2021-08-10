@@ -95,6 +95,17 @@ module AppSettings =
         | Error e -> Error e
 
 
+    let tryGetDouble jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                Double.Parse s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
     let tryGetGuid jsonObj section key =
         match tryGetString jsonObj section key with
         | Ok (Some s) ->
@@ -153,6 +164,7 @@ module AppSettings =
         member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
         member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
         member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
+        member _.tryGetDouble key = tryGetDouble jsonObj ConfigSection.appSettings key
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
         member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
         member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key

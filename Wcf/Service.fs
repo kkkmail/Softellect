@@ -193,19 +193,12 @@ module Service =
                 |> ignore
             | None -> invalidArg (nameof(data)) "Service data is missing."
 
-        /// The name must match required signature in CoreWCF.
-// V1
-//        member _.ConfigureServices(services : IServiceCollection) =
-//            do services.AddServiceModelServices() |> ignore
-
-// V2
         member _.ConfigureServices(services : IServiceCollection) =
             do
                 services.AddServiceModelServices() |> ignore
                 services.AddTransient<'Service>() |> ignore
 
-        /// The name must match required signature in CoreWCF.
-        member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
+        member _.Configure(app : IApplicationBuilder, env : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
 
