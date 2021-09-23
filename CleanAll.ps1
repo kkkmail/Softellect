@@ -32,6 +32,7 @@ Remove-Item -path .\Samples\Msg\MsgService\bin -recurse -force -ea silentlyconti
 Remove-Item -path .\Samples\Msg\MsgServiceinfo\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\NetCoreClient\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\NetCoreService\bin -recurse -force -ea silentlycontinue
+Remove-Item -path .\Samples\Wcf\WcfClient\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfService\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfServiceInfo\bin -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfWorker\bin -recurse -force -ea silentlycontinue
@@ -52,6 +53,7 @@ Remove-Item -path .\Samples\Msg\MsgService\obj -recurse -force -ea silentlyconti
 Remove-Item -path .\Samples\Msg\MsgServiceinfo\obj -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\NetCoreClient\obj -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\NetCoreService\obj -recurse -force -ea silentlycontinue
+Remove-Item -path .\Samples\Wcf\WcfClient\obj -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfService\obj -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfServiceInfo\obj -recurse -force -ea silentlycontinue
 Remove-Item -path .\Samples\Wcf\WcfWorker\obj -recurse -force -ea silentlycontinue

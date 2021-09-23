@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <Platforms>AnyCPU;x64</Platforms>
     <AssemblyName>Softellect.Sys</AssemblyName>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.1.7</Version>
-    <PackageVersion>0.1.7</PackageVersion>
+    <Version>0.1.8</Version>
+    <PackageVersion>0.1.8</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -47,9 +47,9 @@
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.1.1" />
     <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
-    <PackageReference Include="CoreWCF.Http" Version="0.2.0" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="0.2.0" />
-    <PackageReference Include="CoreWCF.Primitives" Version="0.2.0" />
+    <PackageReference Include="CoreWCF.Http" Version="0.3.1" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="0.3.1" />
+    <PackageReference Include="CoreWCF.Primitives" Version="0.3.1" />
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
@@ -59,7 +59,7 @@
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.8.1" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.8.1" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="5.0.0" />
-    <PackageReference Update="FSharp.Core" Version="5.0.2" />
+    <PackageReference Update="FSharp.Core" Version="6.0.0" />
   </ItemGroup>
 
 </Project>
