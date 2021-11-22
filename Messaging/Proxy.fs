@@ -58,6 +58,15 @@ module Proxy =
         | NothingToDo
         | BusyProcessing
 
+        member e.errorOpt =
+            match e with
+            | ProcessedSuccessfully _ -> None
+            | ProcessedWithError (_, e) -> Some e
+            | ProcessedWithFailedToRemove (_, e) -> Some e
+            | FailedToProcess e -> Some e
+            | NothingToDo -> None
+            | BusyProcessing -> None
+
 
     type MessageProcessorProxy<'D, 'E> =
         {
@@ -72,6 +81,7 @@ module Proxy =
             toErr : MessagingClientError -> 'E
             incrementCount : unit -> int
             decrementCount : unit -> int
+            logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.
         }
 
 
