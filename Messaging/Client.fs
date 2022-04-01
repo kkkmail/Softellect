@@ -72,6 +72,7 @@ module Client =
             communicationType : WcfCommunicationType
             msgClientProxy : MessagingClientProxy<'D, 'E>
             expirationTime : TimeSpan
+            logOnError : bool
         }
 
         member d.msgResponseHandlerData : MsgResponseHandlerData<'D, 'E> =
@@ -89,6 +90,7 @@ module Client =
                 communicationType = communicationType
                 msgClientProxy = proxy
                 expirationTime = expiration
+                logOnError = true
             }
 
 
@@ -319,6 +321,7 @@ module Client =
                 toErr = proxy.toErr
                 incrementCount = incrementCount
                 decrementCount = decrementCount
+                logOnError = d.logOnError
             }
 
         member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
@@ -352,4 +355,9 @@ module Client =
             else BusyProcessing
 
         w.decrementCount() |> ignore
+
+        match retVal.errorOpt, w.logOnError with
+        | Some e, true -> w.logger.logErrorData e
+        | _ -> ignore()
+
         retVal
