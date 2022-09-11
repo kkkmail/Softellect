@@ -2,29 +2,25 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x64</Platforms>
     <AssemblyName>Softellect.Sys</AssemblyName>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>6.0.6.1</Version>
-    <PackageVersion>6.0.6.1</PackageVersion>
+    <Version>6.0.8.1</Version>
+    <PackageVersion>6.0.8.1</PackageVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
     <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>x64</PlatformTarget>
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,17 +43,17 @@
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.1.1" />
     <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
-    <PackageReference Include="CoreWCF.Http" Version="1.0.2" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="1.0.2" />
-    <PackageReference Include="CoreWCF.Primitives" Version="1.0.2" />
+    <PackageReference Include="CoreWCF.Http" Version="1.1.0" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="1.1.0" />
+    <PackageReference Include="CoreWCF.Primitives" Version="1.1.0" />
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
-    <PackageReference Include="System.ServiceModel.Http" Version="4.9.0" />
-    <PackageReference Include="System.ServiceModel.NetTcp" Version="4.9.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="4.9.0" />
+    <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
+    <PackageReference Include="System.ServiceModel.NetTcp" Version="4.10.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="6.0.0" />
     <PackageReference Update="FSharp.Core" Version="6.0.5" />
   </ItemGroup>
