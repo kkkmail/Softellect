@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AssemblyName>Softellect.Sys</AssemblyName>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>6.0.8.1</Version>
-    <PackageVersion>6.0.8.1</PackageVersion>
+    <Version>7.0.0-preview-0001</Version>
+    <PackageVersion>7.0.0-preview-0001</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -50,12 +50,12 @@
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0-rc.1.22426.10" />
     <PackageReference Include="System.ServiceModel.Http" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="4.10.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.10.0" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="6.0.0" />
-    <PackageReference Update="FSharp.Core" Version="6.0.5" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.0-rc.1.22426.10" />
+    <PackageReference Update="FSharp.Core" Version="7.0.0-beta.22427.1" />
   </ItemGroup>
 
 </Project>
