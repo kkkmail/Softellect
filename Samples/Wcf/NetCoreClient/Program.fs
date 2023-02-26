@@ -4,6 +4,7 @@ open System
 open System.ServiceModel
 open System.Text
 open System.IO
+open System.Net.Http
 
 open Softellect.Samples.Wcf.NetCoreClient.EchoClient
 
@@ -49,11 +50,30 @@ module Program =
 
     /// The following sample, creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
     let callUsingWebRequest() =
+        //// Does not seem to work yet.
+        //// https://stackoverflow.com/questions/70185058/how-to-replace-obsolete-webclient-with-httpclient-in-net-6
+        //let handler = new HttpClientHandler()
+        ////handler.AutomaticDecompression <- (DecompressionMethods.GZip ||| DecompressionMethods.Deflate)
+
+        //use httpClient = new HttpClient(handler)
+        //httpClient.BaseAddress <- new Uri(basicHttpEndPointAddress)
+        //let webRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(basicHttpEndPointAddress))
+        //do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
+        ////webRequest.ContentType <- "text/xml"
+        ////webRequest.Method <- "POST"
+        ////webRequest.ContentLength <- int64 bodyContentBytes.Length
+        //webRequest.Content <- new StringContent(soapEnvelopeContent, Encoding.UTF8, "application/json")
+
+        //let response = httpClient.Send(webRequest)
+        //let reader = new StreamReader(response.Content.ReadAsStream())
+        //let responseBody = reader.ReadToEnd()
+        //printfn "%s" ("Http SOAP Response: " + responseBody)
+
         // Prepare the raw content.
         let utf8Encoder = new UTF8Encoding()
         let bodyContentBytes = utf8Encoder.GetBytes(soapEnvelopeContent)
 
-        // Create the web request.
+         //Create the web request.
         let webRequest = System.Net.WebRequest.Create(new Uri(basicHttpEndPointAddress))
         do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
         webRequest.ContentType <- "text/xml"
@@ -66,8 +86,8 @@ module Program =
 
         // Send the request and read the response.
         use responseStream = webRequest.GetResponse().GetResponseStream()
-        use responsereader = new StreamReader(responseStream)
-        let soapResponse = responsereader.ReadToEnd()
+        use responseReader = new StreamReader(responseStream)
+        let soapResponse = responseReader.ReadToEnd()
         printfn "%s" ("Http SOAP Response: " + soapResponse)
         ()
 
