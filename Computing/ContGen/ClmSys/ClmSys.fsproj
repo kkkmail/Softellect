@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="VersionInfo.fs" />
+    <Compile Include="ExitErrorCodes.fs" />
+    <Compile Include="GeneralPrimitives.fs" />
+    <Compile Include="MessagingPrimitives.fs" />
+    <Compile Include="WorkerNodePrimitives.fs" />
+    <Compile Include="PartitionerPrimitives.fs" />
+    <Compile Include="ContGenPrimitives.fs" />
+    <Compile Include="SolverRunnerPrimitives.fs" />
+    <Compile Include="GeneralErrors.fs" />
+    <Compile Include="ContGenErrors.fs" />
+    <Compile Include="ModelGeneratorErrors.fs" />
+    <Compile Include="ModelRunnerErrors.fs" />
+    <Compile Include="WorkerNodeErrors.fs" />
+    <Compile Include="SolverRunnerErrors.fs" />
+    <Compile Include="ClmErrors.fs" />
+    <Compile Include="Logging.fs" />
+    <Compile Include="GeneralData.fs" />
+    <Compile Include="TimerEvents.fs" />
+    <Compile Include="DistributionData.fs" />
+    <Compile Include="ModelData.fs" />
+    <Compile Include="MessagingData.fs" />
+    <Compile Include="PartitionerData.fs" />
+    <Compile Include="SolverData.fs" />
+    <Compile Include="WorkerNodeData.fs" />
+    <Compile Include="ContGenData.fs" />
+    <Compile Include="ContGenAdmData.fs" />
+    <Compile Include="ClmWorker.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Data" Version="6.0.1-beta001" />
+    <PackageReference Include="log4net" Version="2.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.0" />
+    <PackageReference Include="Softellect.Messaging" Version="7.0.0.1" />
+    <PackageReference Include="Softellect.Sys" Version="7.0.0.1" />
+    <PackageReference Include="Softellect.Wcf" Version="7.0.0.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageReference Update="FSharp.Core" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>
