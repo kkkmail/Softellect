@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>7.0.3.1</Version>
-    <PackageVersion>7.0.3.1</PackageVersion>
+    <Version>7.0.5.1</Version>
+    <PackageVersion>7.0.5.1</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
