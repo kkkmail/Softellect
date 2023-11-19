@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Distributions.fs" />
+    <Compile Include="Substances.fs" />
+    <Compile Include="ReactionTypes.fs" />
+    <Compile Include="ReactionRatesBase.fs" />
+    <Compile Include="ReactionRateParams.fs" />
+    <Compile Include="ReactionRates.fs" />
+    <Compile Include="Reactions.fs" />
+    <Compile Include="ModelParams.fs" />
+    <Compile Include="ModelInit.fs" />
+    <Compile Include="CalculationData.fs" />
+    <Compile Include="ReactionRatesExt.fs" />
+    <Compile Include="ChartData.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Softellect.OdePackInterop" Version="7.0.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClmSys\ClmSys.fsproj" />
+  </ItemGroup>
+
+</Project>

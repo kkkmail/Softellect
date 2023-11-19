@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WorkerNodeService": {
+      "commandName": "Project",
+      "commandLineArgs": "r"
+    }
+  }
+}

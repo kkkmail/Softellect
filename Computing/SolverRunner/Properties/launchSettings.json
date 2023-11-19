@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SolverRunner": {
+      "commandName": "Project",
+      "commandLineArgs": "q 1E023E63-4A99-4579-A700-F5D0025A9EB1"
+    }
+  }
+}
