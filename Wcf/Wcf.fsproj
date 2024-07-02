@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>8.0.200.1</Version>
-    <PackageVersion>8.0.200.1</PackageVersion>
+    <Version>8.0.300.1</Version>
+    <PackageVersion>8.0.300.1</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -41,7 +41,7 @@
     <PackageReference Include="CoreWCF.Http" Version="1.5.2" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.5.2" />
     <PackageReference Include="CoreWCF.Primitives" Version="1.5.2" />
-    <PackageReference Update="FSharp.Core" Version="8.0.200" />
+    <PackageReference Update="FSharp.Core" Version="8.0.300" />
   </ItemGroup>
 
 </Project>
