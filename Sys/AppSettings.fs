@@ -4,6 +4,8 @@ open System
 open System.IO
 open Newtonsoft.Json
 open FSharp.Interop.Dynamic
+open Softellect.Sys.Primitives
+open Softellect.Sys
 
 module AppSettings =
 
@@ -184,3 +186,46 @@ module AppSettings =
             match tryOpenJson fileName with
             | Ok jsonObj -> (fileName, jsonObj) |> AppSettingsProvider |> Ok
             | Error e -> Error e
+
+
+    type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
+
+
+    let getServiceAddress (providerRes : AppSettingsProviderResult) n d =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetString n with
+            | Ok (Some EmptyString) -> d
+            | Ok (Some s) -> s
+            | _ -> d
+        | _ -> d
+        |> ServiceAddress
+
+
+    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n d =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetInt n with
+            | Ok (Some k) when k > 0 -> k
+            | _ -> d
+        | _ -> d
+        |> ServicePort
+
+
+    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n d =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetInt n with
+            | Ok (Some k) when k > 0 -> k
+            | _ -> d
+        | _ -> d
+        |> ServicePort
+
+
+    let getCommunicationType (providerRes : AppSettingsProviderResult) n d =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetString n with
+            | Ok (Some s) -> WcfCommunicationType.tryCreate s |> Option.defaultValue NetTcpCommunication
+            | _ -> d
+        | _ -> d

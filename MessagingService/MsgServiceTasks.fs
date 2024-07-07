@@ -1,10 +1,9 @@
-﻿namespace MessagingService
+﻿namespace Softellect.MessagingService
 
 open Argu
-open ClmSys.MessagingData
-open ClmSys.ClmWorker
-open MessagingService.SvcCommandLine
-open MessagingServiceInfo.ServiceInfo
+open Softellect.Sys.Worker
+open Softellect.Messaging.Settings
+open Softellect.MessagingService.SvcCommandLine
 
 module ServiceTasks =
 

@@ -31,6 +31,8 @@ module Primitives =
 
 
     let messagingServiceName = "MessagingService" |> ServiceName |> MessagingServiceName
+    let messagingHttpServiceName = "MessagingHttpService" |> ServiceName |> MessagingServiceName
+    let messagingNetTcpServiceName = "MessagingNetTcpService" |> ServiceName |> MessagingServiceName
 
 
     type MessageType =

@@ -381,3 +381,13 @@ module Core =
                     else
                         sc task.Result)
                 |> ignore)
+
+
+    let toValidServiceName (serviceName : string) =
+        serviceName.Replace(" ", "").Replace("-", "").Replace(".", "")
+
+
+    let bindBool b s =
+        match b with
+        | true -> b, Some s
+        | false -> b, None

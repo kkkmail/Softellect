@@ -1,4 +1,4 @@
-﻿namespace MessagingService
+﻿namespace Softellect.MessagingService
 
 open Argu
 
@@ -6,10 +6,12 @@ open Softellect.Sys.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys.Logging
 open Softellect.Messaging.Service
+open Softellect.Messaging.Settings
 open Softellect.Sys.WcfErrors
-
+open Softellect.Wcf.Service
 open Softellect.Sys.Worker
 open Softellect.Sys.VersionInfo
+
 //open ClmSys.MessagingData
 //open MessagingServiceInfo.ServiceInfo
 
@@ -76,7 +78,7 @@ module SvcCommandLine =
     let saveSettings p = getServiceSettingsImpl true p |> ignore
 
 
-    let tryGetMessagingServiceData logger : Result<MessagingWcfServiceData, WcfError> =
+    let tryGetMessagingServiceDataImpl<'D, 'E> logger proxy : WcfServiceDataResult<'D, 'E> =
         let i = getServiceSettings []
 
         let serviceData =
@@ -87,7 +89,7 @@ module SvcCommandLine =
                         messagingDataVersion = messagingDataVersion
                     }
 
-                messagingServiceProxy = createMessagingServiceProxy getMessagingConnectionString
+                messagingServiceProxy = proxy
                 communicationType = i.communicationType
             }
 
@@ -95,10 +97,10 @@ module SvcCommandLine =
         msgServiceDataRes
 
 
-    let messagingServiceData =
+    let getMessagingServiceData<'D, 'E> proxy =
 #if DEBUG
         let logger = Logger.defaultValue
 #else
         let logger = Logger.releaseValue
 #endif
-        Lazy<Result<MessagingWcfServiceData, WcfError>>(fun () -> tryGetMessagingServiceData logger)
+        Lazy<WcfServiceDataResult<'D, 'E>>(fun () -> tryGetMessagingServiceDataImpl<'D, 'E> logger proxy)

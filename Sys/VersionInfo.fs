@@ -1,5 +1,6 @@
 ﻿namespace Softellect.Sys
 
+open Softellect.Sys.Primitives
 open Softellect.Sys.MessagingPrimitives
 
 module VersionInfo =
@@ -11,7 +12,11 @@ module VersionInfo =
     ///     2. Some other updates were performed and we need to inform worker nodes that they need to upgrade.
     ///     3. Version number (below) was increased.
     ///     4. Reset to 0 as needed.
-    let messagingDataVersion = MessagingDataVersion 0
+    [<Literal>]
+    let private MessagingDataVersionValue = 0
+
+
+    let messagingDataVersion = MessagingDataVersion MessagingDataVersionValue
 
 
     /// !!! Do not forget to update versionNumber in VersionInfo.ps1 when this parameter is updated !!!
@@ -33,7 +38,8 @@ module VersionInfo =
 
 
     /// Default port on which messaging communication is performed.
-    let defaultServicePort = 5000 + messagingDataVersion.value
+    [<Literal>]
+    let MsgDefaultServicePort = 5000 + MessagingDataVersionValue
 
 
     [<Literal>]
@@ -47,3 +53,7 @@ module VersionInfo =
 
 
     let versionNumberValue = VersionNumber VersionNumberValue
+
+    let defaultMessagingNetTcpServicePort = 40000 + MsgDefaultServicePort
+    let defaultMessagingHttpServicePort = defaultMessagingNetTcpServicePort + 1
+    let defaultMessagingServiceAddress = LocalHost

@@ -5,6 +5,7 @@ open System
 open Softellect.Sys.WcfErrors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open System.Xml
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
@@ -25,21 +26,7 @@ module Common =
         | MessageSecurity
         | TransportWithMessageCredentialSecurity
 
-
         static member defaultValue = NoSecurity
-
-
-    type WcfCommunicationType =
-        | HttpCommunication
-        | NetTcpCommunication
-
-        static member tryCreate s =
-            match s with
-            | nameof(HttpCommunication) -> Some HttpCommunication
-            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
-            | _ -> None
-
-        member c.value = c.ToString()
 
 
     let toValidServiceName (serviceName : string) =

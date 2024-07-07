@@ -40,13 +40,13 @@
     <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="MsgSvcCommandLine.fs" />
     <Compile Include="MsgServiceTasks.fs" />
     <Compile Include="MsgImplementation.fs" />
     <Compile Include="MsgWorker.fs" />
-    <Content Include="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Compile Include="MsgProgram.fs" />
   </ItemGroup>
 

@@ -29,6 +29,7 @@
     <Compile Include="Proxy.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Service.fs" />
+    <Compile Include="Settings.fs" />
   </ItemGroup>
 
   <ItemGroup>

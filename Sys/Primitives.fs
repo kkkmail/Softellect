@@ -17,6 +17,14 @@ module Primitives =
     let Nl = "\r\n"
 
 
+    [<Literal>]
+    let AppSettingsFile = "appsettings.json"
+
+
+    [<Literal>]
+    let LocalHost = "127.0.0.1"
+
+
     [<Measure>] type millisecond
     [<Measure>] type second
     [<Measure>] type minute
@@ -70,3 +78,17 @@ module Primitives =
             | BinaryZippedFormat -> "binz"
             | JSonFormat -> "json"
             | XmlFormat -> "xml"
+
+
+    type WcfCommunicationType =
+        | HttpCommunication
+        | NetTcpCommunication
+
+        static member tryCreate s =
+            match s with
+            | nameof(HttpCommunication) -> Some HttpCommunication
+            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
+            | _ -> None
+
+        member c.value = c.ToString()
+

@@ -2,14 +2,15 @@
 
 open System
 
-open System.Threading
 open CoreWCF
 open Softellect.Sys
+open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Softellect.Sys.MessagingServiceErrors
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.TimerEvents
 open Softellect.Wcf.Common
+open Softellect.Sys.WcfErrors
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
@@ -52,7 +53,7 @@ module Service =
             }
 
 
-//    let mutable private messagingServiceCount = 0L
+    type WcfServiceDataResult<'D, 'E> = Result<WcfServiceData<MessagingServiceData<'D, 'E>>, WcfError>
 
 
     type MessagingService<'D, 'E> private (d : MessagingServiceData<'D, 'E>) =
