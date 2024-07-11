@@ -275,3 +275,9 @@ module Rop =
         |> Option.flatten
         |> Option.map m
         |> Option.defaultValue d
+
+
+    let (>->) s1 s2 =
+        match s1() with
+        | Ok() -> s2
+        | Error e -> fun () -> Error e

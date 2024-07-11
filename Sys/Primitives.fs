@@ -91,4 +91,3 @@ module Primitives =
             | _ -> None
 
         member c.value = c.ToString()
-
