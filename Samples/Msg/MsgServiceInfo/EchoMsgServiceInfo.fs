@@ -4,9 +4,9 @@ open System
 open System.Threading
 
 open Softellect.Sys.Primitives
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
-open Softellect.Sys.MessagingErrors
+open Softellect.Messaging.Errors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Messaging.Primitives
@@ -47,12 +47,12 @@ module EchoMsgServiceInfo =
             }
 
 
-    type EchoMessagingClient = MessagingClient<EchoMessageData, EchoMsgError>
-    type EchoMessagingClientData = MessagingClientData<EchoMessageData, EchoMsgError>
-    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
+    type EchoMessagingClient = MessagingClient<EchoMessageData>
+    type EchoMessagingClientData = MessagingClientData<EchoMessageData>
+    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
-    type EchoMessagingService = MessagingService<EchoMessageData, EchoMsgError>
-    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
+    type EchoMessagingService = MessagingService<EchoMessageData>
+    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData>
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
@@ -101,7 +101,7 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData, EchoMsgError> =
+    let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData> =
         {
             tryPickIncomingMessage =
                 fun() ->
@@ -122,8 +122,6 @@ module EchoMsgServiceInfo =
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
             logger = echoLogger
-            toErr = fun e -> e |> MessagingClientErr |> EchoMsgErr
-            addError = EchoMsgError.addError
         }
 
 
@@ -144,7 +142,6 @@ module EchoMsgServiceInfo =
             deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
             logger = echoLogger
-            toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr
         }
 
 

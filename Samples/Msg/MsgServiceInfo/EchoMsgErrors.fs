@@ -1,7 +1,7 @@
 ﻿namespace Softellect.Samples.Msg.ServiceInfo
 
 open Softellect.Sys.Rop
-open Softellect.Sys.MessagingErrors
+open Softellect.Messaging.Errors
 
 module EchoMsgErrors =
 

@@ -4,7 +4,7 @@ open System
 open System.Threading
 
 open Softellect.Messaging.Primitives
-open Softellect.Messaging.ClientErrors
+open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.Primitives
 open Softellect.Sys.TimerEvents
@@ -59,33 +59,31 @@ module Client =
         member t.onLargeMessage() = { t with largeMessages = t.largeMessages + 1 }
 
 
-    type MsgResponseHandlerData<'D, 'E> =
+    type MsgResponseHandlerData<'D> =
         {
             msgAccessInfo : MessagingClientAccessInfo
             communicationType : WcfCommunicationType
-            toErr : MessagingClientError -> 'E
         }
 
 
-    type MessagingClientData<'D, 'E> =
+    type MessagingClientData<'D> =
         {
             msgAccessInfo : MessagingClientAccessInfo
             communicationType : WcfCommunicationType
-            msgClientProxy : MessagingClientProxy<'D, 'E>
+            msgClientProxy : MessagingClientProxy<'D>
             expirationTime : TimeSpan
             logOnError : bool
         }
 
-        member d.msgResponseHandlerData : MsgResponseHandlerData<'D, 'E> =
+        member d.msgResponseHandlerData : MsgResponseHandlerData<'D> =
             {
                 msgAccessInfo = d.msgAccessInfo
                 communicationType = d.communicationType
-                toErr = d.msgClientProxy.toErr
             }
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member create (proxy : MessagingClientProxy<'D, 'E>) expiration communicationType info =
+        static member create (proxy : MessagingClientProxy<'D>) expiration communicationType info =
             {
                 msgAccessInfo = info
                 communicationType = communicationType
@@ -95,22 +93,18 @@ module Client =
             }
 
 
-    type TryReceiveSingleMessageProxy<'D, 'E> =
+    type TryReceiveSingleMessageProxy<'D> =
         {
-            saveMessage : Message<'D> -> UnitResult<'E>
-            tryDeleteMessage : MessageId -> UnitResult<'E>
-            tryPeekMessage : unit -> Result<Message<'D> option, 'E>
-            tryDeleteFromServer : MessageId -> UnitResult<'E>
+            saveMessage : Message<'D> -> MessagingUnitResult
+            tryDeleteMessage : MessageId -> MessagingUnitResult
+            tryPeekMessage : unit -> MessagingOptionalResult<'D>
+            tryDeleteFromServer : MessageId -> MessagingUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
-            toErr : MessagingClientError -> 'E
-            addError : 'E -> 'E -> 'E
         }
 
 
-    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D, 'E>) : Result<MessageSize option, 'E> =
-        let addError (a : TryReceiveSingleMessageError) (e : 'E) : Result<MessageSize option, 'E> =
-            let b = proxy.addError (proxy.toErr (TryReceiveSingleMessageErr a)) e
-            Error b
+    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D>) : Result<MessageSize option, MessagingError> =
+        let addError a e = (TryReceiveSingleMessageErr a) + e |> Error
 
         let result =
             match proxy.tryPeekMessage () with
@@ -121,11 +115,11 @@ module Client =
                     | Ok() -> m.messageData |> proxy.getMessageSize |> Some |> Ok
                     | Error e ->
                         match proxy.tryDeleteMessage m.messageDataInfo.messageId with
-                        | Ok() -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr e
-                        | Error e1 -> addError TryReceiveSingleMessageError.TryDeleteFromServerErr (proxy.addError e1 e)
-                | Error e -> addError SaveMessageErr e
+                        | Ok() -> addError TryReceiveSingleMessageDeleteErr e
+                        | Error e1 -> addError TryReceiveSingleMessageDeleteErr (e1 + e)
+                | Error e -> addError TryReceiveSingleMessageSaveErr e
             | Ok None -> Ok None
-            | Error e -> addError TryReceiveSingleMessageError.TryPeekMessageErr e
+            | Error e -> addError TryReceiveSingleMessagePickErr e
 
         result
 
@@ -205,32 +199,32 @@ module Client =
 
 
     /// Low level WCF messaging client.
-    type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D, 'E>) =
+    type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D>) =
         let i = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo
         let n = i.netTcpServiceInfo
         let url = i.getUrl d.communicationType
         let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType n.netTcpSecurityMode url
 
-        let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr |> d.toErr
-        let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr |> d.toErr
-        let tryPeekMessageWcfErr e = e |> TryPeekMessageWcfErr |> TryPeekMessageErr |> d.toErr
-        let tryDeleteFromServerWcfErr e = e |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr |> d.toErr
+        let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr
+        let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr
+        let tryPickMessageWcfErr e = e |> TryPickMsgWcfErr |> TryPickMessageWcfErr
+        let tryDeleteFromServerWcfErr e = e |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr
 
         let getVersionImpl() = tryCommunicate tryGetWcfService (fun service -> service.getVersion) getVersionWcfErr ()
         let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) sendMessageWcfErr m
-        let tryPeekMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPeekMessageWcfErr n
+        let tryPickMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPickMessageWcfErr n
         let tryDeleteFromServerImpl x = tryCommunicate tryGetWcfService (fun service -> service.tryDeleteFromServer) tryDeleteFromServerWcfErr x
 
-        interface IMessagingClient<'D, 'E> with
+        interface IMessagingClient<'D> with
             member _.getVersion() = getVersionImpl()
             member _.sendMessage m = sendMessageImpl m
-            member _.tryPeekMessage n = tryPeekMessageImpl n
+            member _.tryPickMessage n = tryPickMessageImpl n
             member _.tryDeleteFromServer x = tryDeleteFromServerImpl x
 
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
-    let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D, 'E>) =
+    let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D>) =
         w.logger.logInfoString "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
@@ -240,7 +234,7 @@ module Client =
             {
                 eventHandler = eventHandler
                 logger = w.logger
-                toErr = fun e -> e |> TimerEventErr |> w.toErr
+                toErr = fun e -> e |> TimerEventErr
             }
 
         let h = TimerEventHandler (i, proxy)
@@ -258,10 +252,10 @@ module Client =
         do h2.start()
 
 
-    type MessagingClient<'D, 'E>(d : MessagingClientData<'D, 'E>) =
+    type MessagingClient<'D>(d : MessagingClientData<'D>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
-        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D, 'E>
+        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D>
         let mutable callCount = -1
         let mutable started = false
 
@@ -272,11 +266,11 @@ module Client =
             {
                 saveMessage = proxy.saveMessage
                 tryDeleteMessage = proxy.tryDeleteMessage
-                tryPeekMessage = fun () -> responseHandler.tryPeekMessage msgClientId
+                tryPeekMessage = fun () -> responseHandler.tryPickMessage msgClientId
                 tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
                 getMessageSize = d.msgClientProxy.getMessageSize
-                toErr = d.msgClientProxy.toErr
-                addError = proxy.addError
+                //toErr = d.msgClientProxy.toErr
+                //addError = proxy.addError
             }
 
         let sendProxy =
@@ -299,17 +293,17 @@ module Client =
                 | Error e -> Error e
             else Ok()
 
-        member _.sendMessage (m : MessageInfo<'D>) : UnitResult<'E> =
+        member _.sendMessage (m : MessageInfo<'D>) : MessagingUnitResult =
             createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
             |> proxy.saveMessage
 
-        member _.tryPeekReceivedMessage() : Result<Message<'D> option, 'E> = proxy.tryPickIncomingMessage()
-        member _.tryRemoveReceivedMessage (m : MessageId) : UnitResult<'E> = proxy.tryDeleteMessage m
-        member _.tryReceiveMessages() : UnitResult<'E> = tryReceiveMessages receiveProxy
-        member _.trySendMessages() : UnitResult<'E> = trySendMessages sendProxy
-        member _.removeExpiredMessages() : UnitResult<'E> = proxy.deleteExpiredMessages d.expirationTime
+        member _.tryPeekReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
+        member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
+        member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
+        member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
+        member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.expirationTime
 
-        member m.messageProcessorProxy : MessageProcessorProxy<'D, 'E> =
+        member m.messageProcessorProxy : MessageProcessorProxy<'D> =
             {
                 start = m.start
                 tryPeekReceivedMessage = m.tryPeekReceivedMessage
@@ -319,25 +313,24 @@ module Client =
                 trySendMessages = m.trySendMessages
                 removeExpiredMessages = m.removeExpiredMessages
                 logger = proxy.logger
-                toErr = proxy.toErr
                 incrementCount = incrementCount
                 decrementCount = decrementCount
                 logOnError = d.logOnError
             }
 
-        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D, 'E> =
+        member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D> =
             {
                 saveMessage = d.msgClientProxy.saveMessage
                 tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
-                tryPeekMessage = fun () -> responseHandler.tryPeekMessage d.msgAccessInfo.msgClientId
+                tryPeekMessage = fun () -> responseHandler.tryPickMessage d.msgAccessInfo.msgClientId
                 tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
-                toErr = proxy.toErr
-                addError = proxy.addError
+                //toErr = proxy.toErr
+                //addError = proxy.addError
             }
 
 
-    let onTryProcessMessage (w : MessageProcessorProxy<'D, 'E>) x f =
+    let onTryProcessMessage (w : MessageProcessorProxy<'D>) x f =
         let retVal =
             if w.incrementCount() = 0
             then
@@ -350,7 +343,7 @@ module Client =
                         | Ok() -> ProcessedSuccessfully r
                         | Error e -> ProcessedWithFailedToRemove (r, e)
                     with
-                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> w.toErr |> FailedToProcess
+                    | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> FailedToProcess
                 | Ok None -> NothingToDo
                 | Error e -> FailedToProcess e
             else BusyProcessing

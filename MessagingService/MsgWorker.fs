@@ -7,10 +7,14 @@ open Microsoft.Extensions.Logging
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
-open Softellect.MessagingService.ServiceImplementation
 open Softellect.MessagingService.SvcCommandLine
 open Softellect.Sys.Logging
-//open MessagingServiceInfo.ServiceInfo
+open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.Service
+
+
+type MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
+
 
 type MsgWorker<'D, 'E>(logger: ILogger<MsgWorker<'D, 'E>>) =
     inherit BackgroundService()

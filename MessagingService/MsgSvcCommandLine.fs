@@ -8,10 +8,10 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Errors
 open Softellect.Messaging.Service
 open Softellect.Messaging.Settings
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Wcf.Service
 open Softellect.Sys.Worker
-open Softellect.Sys.VersionInfo
+open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy
 
@@ -95,7 +95,7 @@ module SvcCommandLine =
     type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
 
 
-    let tryGetMessagingServiceDataImpl<'D> logger proxy : WcfServiceDataResult<'D, SoftellectError> =
+    let tryGetMessagingServiceDataImpl<'D> logger proxy : WcfServiceDataResult<'D> =
         let i = getServiceSettings []
 
         let serviceData =
@@ -116,4 +116,4 @@ module SvcCommandLine =
 
     let getMessagingServiceData<'D> logger =
         let proxy = createMessagingServiceProxy getMessagingConnectionString
-        Lazy<WcfServiceDataResult<'D, SoftellectError>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)
+        Lazy<WcfServiceDataResult<'D>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)

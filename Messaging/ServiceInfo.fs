@@ -10,26 +10,28 @@ open Softellect.Messaging.Errors
 
 module ServiceInfo =
 
-    type MsgResult<'T> = Result<'T, MessagingError>
-    type MsgUnitResult = UnitResult<MessagingError>
-    type MsgLogger = Logger<MessagingError>
+    type MessagingResult<'D> = Result<'D, MessagingError>
+    type MessagingOptionalResult<'D> = Result<Message<'D> option, MessagingError>
+    type MessagingUnitResult = UnitResult<MessagingError>
+    type MessagingLogger = Logger<MessagingError>
+    type MessagingStateWithResult<'D> = 'D * MessagingUnitResult
 
 
     /// Client part of messaging service.
-    type IMessagingClient<'D, 'E> =
-        abstract getVersion : unit -> Result<MessagingDataVersion, 'E>
-        abstract sendMessage : Message<'D> -> UnitResult<'E>
-        abstract tryPeekMessage : MessagingClientId -> Result<Message<'D> option, 'E>
-        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> UnitResult<'E>
+    type IMessagingClient<'D> =
+        abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
+        abstract sendMessage : Message<'D> -> MessagingUnitResult
+        abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>
+        abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MessagingUnitResult
 
 
     /// Server part of messaging service.
-    type IMessagingService<'D, 'E> =
-        abstract getVersion : unit -> Result<MessagingDataVersion, 'E>
-        abstract sendMessage : Message<'D> -> UnitResult<'E>
-        abstract tryPeekMessage : MessagingClientId -> Result<Message<'D> option, 'E>
-        abstract tryDeleteFromServer : MessagingClientId * MessageId -> UnitResult<'E>
-        abstract removeExpiredMessages : unit -> UnitResult<'E>
+    type IMessagingService<'D> =
+        abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
+        abstract sendMessage : Message<'D> -> MessagingUnitResult
+        abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>
+        abstract tryDeleteFromServer : MessagingClientId * MessageId -> MessagingUnitResult
+        abstract removeExpiredMessages : unit -> MessagingUnitResult
 
 
     /// Server WCF part of messaging service.

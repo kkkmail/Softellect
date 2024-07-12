@@ -36,6 +36,66 @@ module Errors =
         | CannotSaveMessageErr of MessageId
 
 
+    type OnGetMessagesError =
+        | ProcessedSuccessfullyWithInnerErr
+        | ProcessedWithErr
+        | ProcessedWithFailedToRemoveErr
+        | FailedToProcessErr
+        | BusyProcessingErr
+
+
+    type GetVersionSvcError =
+        | GetVersionSvcWcfErr of WcfError
+
+
+    type MessageDeliveryError =
+        //| ServiceNotStartedErr
+        //| ServerIsShuttingDownErr
+        //| DataVersionMismatchErr of MessagingDataVersion
+        | MsgWcfErr of WcfError
+
+
+    type TryPickMessageWcfError =
+        | TryPickMsgWcfErr of WcfError
+        //| UnableToLoadMessageErr of (MessagingClientId * MessageId)
+
+
+    //type TryDeleteFromServerWcfError =
+    //    | TryDeleteFromServerWcfErr of WcfError
+
+
+    type TryDeleteFromServerError =
+        //| TryDeleteMsgWcfErr of WcfError
+        | TryDeleteFromServerWcfErr of WcfError
+//        | CannotFindClientErr of Guid
+//        | UnableToDeleteMessageErr of (MessagingClientId * MessageId)
+
+
+    type MsgSettingsError =
+        | InvalidSettings of string
+        | MsgSettingExn of exn
+
+
+    type TryReceiveSingleMessageError =
+        | TryReceiveSingleMessagePickErr
+        | TryReceiveSingleMessageSaveErr
+        | TryReceiveSingleMessageDeleteErr
+
+
+    type GetVersionError =
+        | GetVersionWcfErr of WcfError
+        //| VersionMismatchErr of VersionMismatchInfo
+
+
+    type SendMessageError =
+        | SendMessageWcfErr of WcfError
+        //| CannotDeleteMessageErr of MessageId
+
+
+    type OnTryProcessMessageError =
+        | OnTryProcessMessageExn of exn
+
+
     type MessagingError =
         | AggregateErr of MessagingError * List<MessagingError>
         | TryCreateMessageErr of TryCreateMessageError
@@ -43,6 +103,20 @@ module Errors =
         | TryPickMessageErr of TryPickMessageError
         | SaveMessageErr of SaveMessageError
         | DeleteExpiredMessagesErr of DeleteExpiredMessagesError
+        | OnGetMessagesErr of OnGetMessagesError
+        | TimerEventErr of TimerEventError
+        | GetVersionSvcErr of GetVersionSvcError
+        | MessageDeliveryErr of MessageDeliveryError
+        | TryPickMessageWcfErr of TryPickMessageWcfError
+        | TryDeleteFromServerErr of TryDeleteFromServerError
+        | MsgSettingsErr of MsgSettingsError
+        | TryReceiveSingleMessageErr of TryReceiveSingleMessageError
+        | GetVersionErr of GetVersionError
+        | SendMessageErr of SendMessageError
+        | OnTryProcessMessageErr of OnTryProcessMessageError
+
+//        | TryPeekMessageErr of TryPeekMessageError
+//        | TryDeleteFromServerErr of TryDeleteFromServerError
 
 
         static member private addError a b =
@@ -64,68 +138,17 @@ module Errors =
 
 //module ClientErrors =
 
-//    type GetVersionError =
-//        | GetVersionWcfErr of WcfError
-//        | VersionMismatchErr of VersionMismatchInfo
-
-
-//    type OnGetMessagesError =
-//        | ProcessedSuccessfullyWithInnerErr
-//        | ProcessedWithErr
-//        | ProcessedWithFailedToRemoveErr
-//        | FailedToProcessErr
-//        | BusyProcessingErr
-
-
-//    //type SendMessageError =
-//    //    | SendMessageFailedErr
-//    //    | CannotDeleteMessageErr of MessageId
-
-
-//    type TryReceiveSingleMessageError =
-//        | TryPeekMessageErr
-//        | SaveMessageErr
-//        | TryDeleteFromServerErr
-
-
-//    type SendMessageError =
-//        | SendMessageWcfErr of WcfError
-//        | CannotDeleteMessageErr of MessageId
-
-
-
-
-//    type TryDeleteFromServerError =
-//        | TryDeleteFromServerWcfErr of WcfError
-
-
-//    //type MessageDeliveryError =
-//    //    | ServiceNotStartedErr
-//    //    | ServerIsShuttingDownErr
-//    //    | DataVersionMismatchErr of MessagingDataVersion
-//    //    | MsgWcfErr of WcfError
-
 
 //    //type OnTryRemoveReceivedMessageError =
 //    //    | MessageNotFoundErr of MessageId
 
 
-//    type OnTryProcessMessageError =
-//        | OnTryProcessMessageExn of exn
-
-
 //    type MessagingClientError =
 //        //| GeneralMessagingClientErr
 //        | TimerEventErr of TimerEventError
-//        | GetVersionErr of GetVersionError
-//        | SendMessageErr of SendMessageError
-//        | TryPeekMessageErr of TryPeekMessageError
-//        | TryDeleteFromServerErr of TryDeleteFromServerError
 //        //| SendMessageErr of SendMessageError
-//        | TryReceiveSingleMessageErr of TryReceiveSingleMessageError
 //        //| MessageDeliveryErr of MessageDeliveryError
 //        //| OnTryRemoveReceivedMessageErr of OnTryRemoveReceivedMessageError
-//        | OnTryProcessMessageErr of OnTryProcessMessageError
 
 
 //module ServiceErrors =
@@ -136,17 +159,8 @@ module Errors =
 //    type MsgSvcDbError =
 
 
-//    type GetVersionSvcError =
-//        | GetVersionSvcWcfErr of WcfError
-
-
 //    type ConfigureServiceError =
 //        | CfgSvcWcfErr of WcfError
-
-
-////    type TryPeekMessageError =
-////        | TryPeekMsgWcfErr of WcfError
-////        | UnableToLoadMessageErr of (MessagingClientId * MessageId)
 
 
 //    type MessageDeliveryError =
@@ -156,27 +170,11 @@ module Errors =
 //        | MsgWcfErr of WcfError
 
 
-//    type TryDeleteFromServerError =
-//        | TryDeleteMsgWcfErr of WcfError
-//        | CannotFindClientErr of Guid
-//        | UnableToDeleteMessageErr of (MessagingClientId * MessageId)
-        
-        
-//    type MsgSettingsError =
-//        | InvalidSettings of string
-//        | MsgSettingExn of exn
-
-
 //    type MessagingServiceError =
 //        | InitializeErr of WcfError
 //        | TimerEventErr of TimerEventError
 //        | MsgSvcDbErr of MsgSvcDbError
-//        | GetVersionSvcErr of GetVersionSvcError
-//        | MessageDeliveryErr of MessageDeliveryError
 //        | MessageUpsertErr of MessageUpsertError
-//        | TryPeekMessageErr of TryPeekMessageError
-//        | TryDeleteFromServerErr of TryDeleteFromServerError
-//        | MsgSettingsErr of MsgSettingsError
 
 
 //open ClientErrors

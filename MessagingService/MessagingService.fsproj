@@ -43,7 +43,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="MsgSvcCommandLine.fs" />
-    <Compile Include="ServiceImplementation.fs" />
     <Compile Include="MsgWorker.fs" />
   </ItemGroup>
 

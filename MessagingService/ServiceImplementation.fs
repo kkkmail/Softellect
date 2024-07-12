@@ -4,7 +4,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Errors
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.MessagingService.SvcCommandLine
 open Softellect.Wcf.Service
 
@@ -16,10 +16,11 @@ open Softellect.Wcf.Service
 //open Primitives.VersionInfo
 
 module ServiceImplementation =
+    let x = 1
 
-    type MessagingService<'D> = MessagingService<'D, SoftellectError>
-    type MessagingWcfService<'D> = MessagingWcfService<'D, SoftellectError>
-    type MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D, SoftellectError>>
+    //type MessagingService<'D> = MessagingService<'D, SoftellectError>
+    //type MessagingWcfService<'D> = MessagingWcfService<'D, SoftellectError>
+    //type MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
 
 
     //let mutable serviceSettings = getServiceSettings []

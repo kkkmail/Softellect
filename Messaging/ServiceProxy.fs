@@ -38,8 +38,8 @@ module ServiceProxy =
                 deleteExpiredMessages = deleteExpiredMessages g
                 getMessageSize = getMessageSize
                 logger = Logger.defaultValue
-                toErr = fun e -> e |> MessagingClientErr
-                addError = fun a b -> a + b
+                //toErr = fun e -> e |> MessagingClientErr
+                //addError = fun a b -> a + b
             }
         //| SqliteDatabase connectionString ->
         //    {
@@ -62,5 +62,5 @@ module ServiceProxy =
             deleteMessage = deleteMessage g
             deleteExpiredMessages = deleteExpiredMessages g
             logger = Logger.defaultValue
-            toErr = fun e -> e |> MessagingServiceErr
+            //toErr = fun e -> e |> MessagingServiceErr
         }

@@ -1,6 +1,6 @@
 ﻿namespace Softellect.Samples.Wcf.ServiceInfo
 
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Sys.Rop
 
 module EchoWcfErrors =

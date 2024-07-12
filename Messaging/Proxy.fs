@@ -6,51 +6,51 @@ open Softellect.Sys.Rop
 open Softellect.Sys.Logging
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Messaging.ServiceInfo
 
 module Proxy =
 
+    let private addMessagingError f e = f + e
+
+
     /// Provides IO proxy for messaging client.
-    type MessagingClientProxy<'D, 'E> =
+    type MessagingClientProxy<'D> =
         {
-            tryPickIncomingMessage : unit -> Result<Message<'D> option, 'E>
-            tryPickOutgoingMessage : unit -> Result<Message<'D> option, 'E>
-            saveMessage : Message<'D> -> UnitResult<'E>
-            tryDeleteMessage : MessageId -> UnitResult<'E>
-            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
+            tryPickIncomingMessage : unit -> MessagingOptionalResult<'D>
+            tryPickOutgoingMessage : unit -> MessagingOptionalResult<'D>
+            saveMessage : Message<'D> -> MessagingUnitResult
+            tryDeleteMessage : MessageId -> MessagingUnitResult
+            deleteExpiredMessages : TimeSpan -> MessagingUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
-            logger : Logger<'E>
-            toErr : MessagingClientError -> 'E
-            addError : 'E -> 'E -> 'E
+            logger : MessagingLogger
         }
 
 
     /// Provides IO proxy for messaging service.
-    type MessagingServiceProxy<'D, 'E> =
+    type MessagingServiceProxy<'D> =
         {
-            tryPickMessage : MessagingClientId -> Result<Message<'D> option, 'E>
-            saveMessage : Message<'D> -> UnitResult<'E>
-            deleteMessage : MessageId -> UnitResult<'E>
-            deleteExpiredMessages : TimeSpan -> UnitResult<'E>
-            logger : Logger<'E>
-            toErr : MessagingServiceError -> 'E
+            tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>
+            saveMessage : Message<'D> -> MessagingUnitResult
+            deleteMessage : MessageId -> MessagingUnitResult
+            deleteExpiredMessages : TimeSpan -> MessagingUnitResult
+            logger : MessagingLogger
         }
 
-        static member defaultValue : MessagingServiceProxy<'D, 'E> =
+        static member defaultValue : MessagingServiceProxy<'D> =
             {
                 tryPickMessage = fun _ -> failwith ""
                 saveMessage = fun _ -> failwith ""
                 deleteMessage = fun _ -> failwith ""
                 deleteExpiredMessages = fun _ -> failwith ""
                 logger = Logger.defaultValue
-                toErr = fun _ -> failwith ""
             }
 
 
-    type MessageProcessorResult<'T, 'E> =
-        | ProcessedSuccessfully of 'T
-        | ProcessedWithError of ('T * 'E)
-        | ProcessedWithFailedToRemove of ('T * 'E)
-        | FailedToProcess of 'E
+    type MessageProcessorResult<'D> =
+        | ProcessedSuccessfully of 'D
+        | ProcessedWithError of ('D * MessagingError)
+        | ProcessedWithFailedToRemove of ('D * MessagingError)
+        | FailedToProcess of MessagingError
         | NothingToDo
         | BusyProcessing
 
@@ -64,40 +64,38 @@ module Proxy =
             | BusyProcessing -> None
 
 
-    type MessageProcessorProxy<'D, 'E> =
+    type MessageProcessorProxy<'D> =
         {
-            start : unit -> UnitResult<'E>
-            tryPeekReceivedMessage : unit -> Result<Message<'D> option, 'E>
-            tryRemoveReceivedMessage : MessageId -> UnitResult<'E>
-            sendMessage : MessageInfo<'D> -> UnitResult<'E>
-            tryReceiveMessages : unit -> UnitResult<'E>
-            trySendMessages : unit -> UnitResult<'E>
-            removeExpiredMessages : unit -> UnitResult<'E>
-            logger : Logger<'E>
-            toErr : MessagingClientError -> 'E
+            start : unit -> MessagingUnitResult
+            tryPeekReceivedMessage : unit -> MessagingOptionalResult<'D>
+            tryRemoveReceivedMessage : MessageId -> MessagingUnitResult
+            sendMessage : MessageInfo<'D> -> MessagingUnitResult
+            tryReceiveMessages : unit -> MessagingUnitResult
+            trySendMessages : unit -> MessagingUnitResult
+            removeExpiredMessages : unit -> MessagingUnitResult
+            logger : MessagingLogger
             incrementCount : unit -> int
             decrementCount : unit -> int
             logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.
         }
 
 
-    type OnProcessMessageType<'S, 'D, 'E> = 'S -> Message<'D> -> StateWithResult<'S, 'E>
-    type MessageResult<'S, 'E> = MessageProcessorResult<'S * UnitResult<'E>, 'E>
+    type OnProcessMessageType<'S, 'D> = 'S -> Message<'D> -> MessagingStateWithResult<'S>
+    type MessageResult<'S> = MessageProcessorResult<'S * MessagingUnitResult>
 
 
-    type OnGetMessagesProxy<'S, 'D, 'E> =
+    type OnGetMessagesProxy<'S, 'D> =
         {
-            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D, 'E> -> MessageResult<'S, 'E>
-            onProcessMessage : 'S -> Message<'D> -> StateWithResult<'S, 'E>
+            tryProcessMessage : 'S -> OnProcessMessageType<'S, 'D> -> MessageResult<'S>
+            onProcessMessage : 'S -> Message<'D> -> MessagingStateWithResult<'S>
             maxMessages : list<unit>
-            onError : OnGetMessagesError -> 'E
-            addError : 'E -> 'E -> 'E
         }
 
 
-    let onGetMessages<'S, 'D, 'E> (proxy : OnGetMessagesProxy<'S, 'D, 'E>) (s : 'S) =
-        let addError f e = (proxy.addError (proxy.onError f) e) |> Error
-        let toError e = e |> proxy.onError |> Error
+    let onGetMessages<'S, 'D> (proxy : OnGetMessagesProxy<'S, 'D>) (s : 'S) =
+        let elevate e = e |> OnGetMessagesErr
+        let addError f e = ((elevate f) + e) |> Error
+        let toError e = e |> elevate |> Error
 
         let rec doFold x (acc, r) =
             match x with
@@ -107,10 +105,9 @@ module Proxy =
                 | ProcessedSuccessfully (g, u) ->
                     match u with
                     | Ok() -> doFold t (g, r)
-                    | Error e ->
-                        doFold t (g, (addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults proxy.addError)
-                | ProcessedWithError ((g, u), e) -> g, [ addError ProcessedWithErr e; u; r ] |> foldUnitResults proxy.addError
-                | ProcessedWithFailedToRemove((g, u), e) -> g, [ addError ProcessedWithFailedToRemoveErr e; u; r ] |> foldUnitResults proxy.addError
+                    | Error e -> doFold t (g, (addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults addMessagingError)
+                | ProcessedWithError ((g, u), e) -> g, [ addError ProcessedWithErr e; u; r ] |> foldUnitResults addMessagingError
+                | ProcessedWithFailedToRemove((g, u), e) -> g, [ addError ProcessedWithFailedToRemoveErr e; u; r ] |> foldUnitResults addMessagingError
                 | FailedToProcess e -> acc, addError FailedToProcessErr e
                 | NothingToDo -> acc, Ok()
                 | BusyProcessing -> acc, toError BusyProcessingErr
