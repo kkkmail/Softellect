@@ -5,12 +5,16 @@ open Argu
 open Softellect.Sys.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys.Logging
+open Softellect.Sys.Errors
 open Softellect.Messaging.Service
 open Softellect.Messaging.Settings
 open Softellect.Sys.WcfErrors
 open Softellect.Wcf.Service
 open Softellect.Sys.Worker
 open Softellect.Sys.VersionInfo
+open Softellect.Messaging.DataAccess
+open Softellect.Messaging.ServiceProxy
+
 
 //open ClmSys.MessagingData
 //open MessagingServiceInfo.ServiceInfo
@@ -78,7 +82,20 @@ module SvcCommandLine =
     let saveSettings p = getServiceSettingsImpl true p |> ignore
 
 
-    let tryGetMessagingServiceDataImpl<'D, 'E> logger proxy : WcfServiceDataResult<'D, 'E> =
+    type MessagingConfigParam
+        with
+        static member fromParseResults (p : ParseResults<MessagingServiceRunArgs>) : list<MessagingConfigParam> =
+            [
+            ]
+            |> List.choose id
+
+
+    let getParams p = MessagingConfigParam.fromParseResults p, getServiceSettings (p.GetAllResults())
+    let getSaveSettings (p : ParseResults<MessagingServiceRunArgs>) () = p.GetAllResults() |> saveSettings
+    type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
+
+
+    let tryGetMessagingServiceDataImpl<'D> logger proxy : WcfServiceDataResult<'D, SoftellectError> =
         let i = getServiceSettings []
 
         let serviceData =
@@ -97,10 +114,6 @@ module SvcCommandLine =
         msgServiceDataRes
 
 
-    let getMessagingServiceData<'D, 'E> proxy =
-#if DEBUG
-        let logger = Logger.defaultValue
-#else
-        let logger = Logger.releaseValue
-#endif
-        Lazy<WcfServiceDataResult<'D, 'E>>(fun () -> tryGetMessagingServiceDataImpl<'D, 'E> logger proxy)
+    let getMessagingServiceData<'D> logger =
+        let proxy = createMessagingServiceProxy getMessagingConnectionString
+        Lazy<WcfServiceDataResult<'D, SoftellectError>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)

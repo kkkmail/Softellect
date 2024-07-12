@@ -4,7 +4,7 @@ open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.Logging
-open Softellect.Sys.MessagingErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.MessagingPrimitives
 
 module Primitives =
@@ -13,9 +13,9 @@ module Primitives =
     let MessagingWcfServiceName = "MessagingWcfService"
 
 
-    type MsgResult<'T> = Result<'T, MessagingError>
-    type MsgUnitResult = UnitResult<MessagingError>
-    type MsgLogger = Logger<MessagingError>
+    type MsgResult<'T> = Result<'T, SoftellectError>
+    type MsgUnitResult = UnitResult<SoftellectError>
+    type MsgLogger = Logger<SoftellectError>
 
 
     type MessagingClientName =

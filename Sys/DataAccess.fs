@@ -20,9 +20,6 @@ module DataAccess =
     let AppConfigFile : string = __SOURCE_DIRECTORY__ + @"\app.config"
 
 
-    let messagingConnectionStringKey = ConfigKey "MessagingService"
-
-
     let getConnectionString fileName connKey defaultValue =
         match AppSettingsProvider.tryCreate fileName with
         | Ok provider ->
@@ -32,23 +29,6 @@ module DataAccess =
             | _ -> defaultValue
         | _ -> defaultValue
         |> ConnectionString
-
-
-    [<Literal>]
-    let private MessagingDbName = MsgSvcBaseName
-
-
-    [<Literal>]
-    let private MessagingConnectionStringValue = "Server=localhost;Database=" + MessagingDbName + ";Integrated Security=SSPI"
-
-
-    let private getMessagingConnectionStringImpl() = getConnectionString AppSettingsFile messagingConnectionStringKey MessagingConnectionStringValue
-    let private messagingConnectionString = Lazy<ConnectionString>(getMessagingConnectionStringImpl)
-    let getMessagingConnectionString() = messagingConnectionString.Value
-
-
-    [<Literal>]
-    let MessagingSqlProviderName : string = "name=MessagingService"
 
 
     let buildConnectionString (key : string) : string =

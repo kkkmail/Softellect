@@ -137,11 +137,11 @@ module MessagingServiceErrors =
         | MsgSettingsErr of MsgSettingsError
 
 
-open MessagingClientErrors
-open MessagingServiceErrors
+//open MessagingClientErrors
+//open MessagingServiceErrors
 
 
-module MessagingErrors =
-    type MessagingError =
-        | MessagingClientErr of MessagingClientError
-        | MessagingServiceErr of MessagingServiceError
+//module MessagingErrors =
+//    type MessagingError =
+//        | MessagingClientErr of MessagingClientError
+//        | MessagingServiceErr of MessagingServiceError

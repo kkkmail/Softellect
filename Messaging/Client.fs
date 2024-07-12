@@ -6,6 +6,7 @@ open System.Threading
 open Softellect.Sys.MessagingPrimitives
 open Softellect.Sys.MessagingClientErrors
 open Softellect.Sys.Rop
+open Softellect.Sys.Primitives
 open Softellect.Sys.TimerEvents
 
 open Softellect.Wcf.Common

@@ -1,4 +1,4 @@
-﻿namespace MessagingService
+﻿namespace Softellect.MessagingService
 
 open System.Threading
 open System.Threading.Tasks
@@ -7,17 +7,21 @@ open Microsoft.Extensions.Logging
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
-open MessagingService.ServiceImplementation
-open MessagingServiceInfo.ServiceInfo
+open Softellect.MessagingService.ServiceImplementation
+open Softellect.MessagingService.SvcCommandLine
+open Softellect.Sys.Logging
+//open MessagingServiceInfo.ServiceInfo
 
-type MsgWorker(logger: ILogger<MsgWorker>) =
+type MsgWorker<'D, 'E>(logger: ILogger<MsgWorker<'D, 'E>>) =
     inherit BackgroundService()
+
+    static let messagingServiceData = getMessagingServiceData Logger.defaultValue
 
     static let tyGetHost() =
         match messagingServiceData.Value with
         | Ok data ->
-            let service = MessagingWcfServiceImpl.tryGetService data
-            MessagingService.tryStart() |> ignore
+            let service = MessagingWcfServiceImpl<'D>.tryGetService data
+            MessagingService<'D>.tryStart() |> ignore
             service
         | Error e -> Error e
 
