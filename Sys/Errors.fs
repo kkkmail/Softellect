@@ -1,35 +1,61 @@
 ﻿namespace Softellect.Sys
 
-open Softellect.Sys.GeneralErrors
-open Softellect.Sys.TimerErrors
-open Softellect.Sys.WcfErrors
-open Softellect.Sys.DataAccessErrors
-open Softellect.Sys.MessagingClientErrors
-open Softellect.Sys.MessagingServiceErrors
+open System
 
+/// Collection of general errors & related functionality.
 module Errors =
 
-    /// All errors known in the system.
-    /// Use when it is convenient to have a unified error type and use underlying specific errors when it is not.
-    type SoftellectError =
-        | AggregateErr of SoftellectError * List<SoftellectError>
-        | WcfErr of WcfError
-        | TimerEventErr of TimerEventError
-        | MessagingServiceErr of MessagingServiceError
-        | MessagingClientErr of MessagingClientError
-        | UnhandledExn of string * exn
-        | ServiceInstallerErr of ServiceInstallerError
-        //| RegistryErr of RegistryError
-        //| FileErr of FileError
+    type ErrorId =
+        | ErrorId of Guid
+
+        static member getNewId() = Guid.NewGuid() |> ErrorId
+        member this.value = let (ErrorId v) = this in v
+
+
+    type JsonParseError =
+        | InvalidStructureErr of string
+
+
+    type SerializationError =
+        | SerializationExn of exn
+        | DeserializationExn of exn
+
+
+    type ServiceInstallerError =
+        | InstallServiceErr of exn
+        | UninstallServiceErr of exn
+        | StartServiceErr of exn
+        | StopServiceErr of exn
+
+
+    type GeneralError =
+        | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
-        | DbErr of DbError
 
-        static member addError a b =
-            match a, b with
-            | AggregateErr (x, w), AggregateErr (y, z) -> AggregateErr (x, w @ (y :: z))
-            | AggregateErr (x, w), _ -> AggregateErr (x, w @ [b])
-            | _, AggregateErr (y, z) -> AggregateErr (a, y :: z)
-            | _ -> AggregateErr (a, [b])
 
-        static member (+) (a, b) = SoftellectError.addError a b
-        member a.add b = a + b
+    type DbError =
+        | DbExn of exn
+
+
+    // Timer Errors and related data.
+
+
+    type UnhandledEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            unhandledException: exn
+        }
+
+
+    type LongRunningEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            runTime : TimeSpan
+        }
+
+
+    type TimerEventError =
+        | UnhandledEventHandlerExn of UnhandledEventInfo
+        | StillRunningEventHandlerErr of LongRunningEventInfo

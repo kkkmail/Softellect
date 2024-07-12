@@ -1,7 +1,7 @@
-﻿namespace Softellect.Sys
+﻿namespace Softellect.Messaging
 
 open Softellect.Sys.Primitives
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.Primitives
 
 module VersionInfo =
 

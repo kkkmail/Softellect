@@ -3,7 +3,7 @@
 open System
 open System.ServiceModel
 
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
 

@@ -8,11 +8,8 @@ open System.Data.SqlClient
 
 open Softellect.Sys.Retry
 open Softellect.Sys.AppSettings
-open Softellect.Sys.DataAccessErrors
-open Softellect.Sys.AppSettings
-open Softellect.Sys.Primitives
-open Softellect.Sys.VersionInfo
 open Softellect.Sys.Errors
+open Softellect.Sys.Primitives
 
 module DataAccess =
 
@@ -56,27 +53,27 @@ module DataAccess =
         conn
 
 
-    let toError g f = f |> g |> DbErr |> Error
-    let addError g f e = ((f |> g |> DbErr) + e) |> Error
-    let mapException e = e |> DbExn |> DbErr
-    let mapExceptionToError e = e |> DbExn |> DbErr |> Error
+    let toError g f = f |> g |> Error
+    //let addError g f e = ((f |> g |> DbErr) + e) |> Error
+    let mapException f e = e |> DbExn |> f
+    let mapExceptionToError f e = e |> DbExn |> f |> Error
 
 
-    /// Maps missing value (None) to DbErr.
-    let mapDbError f i v =
-        v
-        |> Option.map Ok
-        |> Option.defaultValue (i |> f |> DbErr |> Error)
+    ///// Maps missing value (None) to DbErr.
+    //let mapDbError f i v =
+    //    v
+    //    |> Option.map Ok
+    //    |> Option.defaultValue (i |> f |> DbErr |> Error)
 
 
-    let tryDbFun g =
+    let tryDbFun f g =
         let w() =
             try
                 g()
             with
-            | e -> mapExceptionToError e
+            | e -> mapExceptionToError f e
 
-        tryRopFun mapException w
+        tryRopFun (mapException f) w
 
 
     /// Analog of ExecuteScalar - gets the first column of the first result set.
@@ -106,4 +103,4 @@ module DataAccess =
         | false -> toError f q
 
 
-    let bindIntScalar  f q r = r |> mapIntScalar |> bindOptionError f q
+    let bindIntScalar f q r = r |> mapIntScalar |> bindOptionError f q

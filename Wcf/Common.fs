@@ -2,10 +2,9 @@
 
 open System
 
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
-open Softellect.Sys.Primitives
 open System.Xml
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
@@ -14,8 +13,23 @@ module Common =
     let connectionTimeOut = TimeSpan(0, 10, 0)
     let dataTimeOut = TimeSpan(1, 0, 0)
     let wcfSerializationFormat = BinaryZippedFormat
+
+
     type WcfResult<'T> = Result<'T, WcfError>
     type WcfLogger = Logger<WcfError>
+
+
+    type WcfCommunicationType =
+        | HttpCommunication
+        | NetTcpCommunication
+
+        static member tryCreate s =
+            match s with
+            | nameof(HttpCommunication) -> Some HttpCommunication
+            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
+            | _ -> None
+
+        member c.value = c.ToString()
 
 
     /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.

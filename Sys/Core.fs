@@ -8,7 +8,7 @@ open System.Text
 open MBrace.FsPickler
 open Newtonsoft.Json
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 

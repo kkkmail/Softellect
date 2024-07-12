@@ -10,16 +10,18 @@ open System.Data.SqlClient
 
 open Softellect.Sys.Retry
 open Softellect.Sys.AppSettings
-open Softellect.Sys.DataAccessErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
-open Softellect.Sys.VersionInfo
+open Softellect.Messaging.VersionInfo
 open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Sys.DataAccess
-open Softellect.Sys.MessagingClientErrors
-open Softellect.Sys.MessagingServiceErrors
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.Errors
+//open Softellect.Messaging.DataErrors
+//open Softellect.Messaging.ClientErrors
+//open Softellect.Messaging.ServiceErrors
+open Softellect.Messaging.Errors
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Settings
 
@@ -79,42 +81,47 @@ module DataAccess =
 
 
     type private MsgSvcContext = MsgSvcDb.dataContext
-    let private getDbContext (c : unit -> ConnectionString) = c().value |> MsgSvcDb.GetDataContext
-
     type private MessageEntity = MsgSvcContext.``dbo.MessageEntity``
 
 
+    let private getDbContext (c : unit -> ConnectionString) = c().value |> MsgSvcDb.GetDataContext
+
+
     let private tryCreateMessageImpl (r : MessageEntity) =
-            let toError e = e |> MessageCreateErr |> MsgSvcDbErr |> MessagingServiceErr |> Error
+        let elevate e = e |> TryCreateMessageErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryCreateMessageDbErr |> elevate
 
-            let g() =
-                match MessageDeliveryType.tryCreate r.DeliveryTypeId, messagingDataVersion.value = r.DataVersion with
-                | Some t, true ->
-                    {
-                        messageDataInfo =
-                            {
-                                messageId = r.MessageId |> MessageId
-                                dataVersion = r.DataVersion |> MessagingDataVersion
-                                sender = r.SenderId |> MessagingClientId
+        let g() =
+            let messageId = r.MessageId |> MessageId
 
-                                recipientInfo =
-                                    {
-                                        recipient = r.RecipientId |> MessagingClientId
-                                        deliveryType = t
-                                    }
+            match MessageDeliveryType.tryCreate r.DeliveryTypeId, messagingDataVersion.value = r.DataVersion with
+            | Some t, true ->
+                {
+                    messageDataInfo =
+                        {
+                            messageId = messageId
+                            dataVersion = r.DataVersion |> MessagingDataVersion
+                            sender = r.SenderId |> MessagingClientId
 
-                                createdOn = r.CreatedOn
-                            }
+                            recipientInfo =
+                                {
+                                    recipient = r.RecipientId |> MessagingClientId
+                                    deliveryType = t
+                                }
 
-                        messageData = r.MessageData |> deserialize serializationFormat
-                    }
-                    |> Some
-                    |> Ok
-                | Some _, false -> InvalidDataVersionErr { localVersion = messagingDataVersion; remoteVersion = MessagingDataVersion r.DataVersion } |> toError
-                | None, true -> InvalidDeliveryTypeErr r.DeliveryTypeId |> toError
-                | None, false -> InvalidDeliveryTypeAndDataVersionErr (r.DeliveryTypeId, { localVersion = messagingDataVersion; remoteVersion = MessagingDataVersion r.DataVersion }) |> toError
+                            createdOn = r.CreatedOn
+                        }
 
-            tryDbFun g
+                    messageData = r.MessageData |> deserialize serializationFormat
+                }
+                |> Some
+                |> Ok
+            | Some _, false -> InvalidDataVersionErr (messageId, { localVersion = messagingDataVersion; remoteVersion = MessagingDataVersion r.DataVersion }) |> toError
+            | None, true -> InvalidDeliveryTypeErr (messageId, r.DeliveryTypeId) |> toError
+            | None, false -> InvalidDeliveryTypeAndDataVersionErr (messageId, r.DeliveryTypeId, { localVersion = messagingDataVersion; remoteVersion = MessagingDataVersion r.DataVersion }) |> toError
+
+        tryDbFun fromDbError g
 
 
     let tryCreateMessage (t : MessageEntity option) =
@@ -124,6 +131,8 @@ module DataAccess =
 
 
     let tryPickIncomingMessage c (MessagingClientId i) =
+        let fromDbError e = e |> TryPickIncomingMessageDbErr |> TryPickMessageErr
+
         let g () =
             let ctx = getDbContext c
 
@@ -138,10 +147,12 @@ module DataAccess =
 
             tryCreateMessage x
 
-        tryDbFun g
+        tryDbFun fromDbError g
 
 
     let tryPickOutgoingMessage c (MessagingClientId i) =
+        let fromDbError e = e |> TryPickOutgoingMessageDbErr |> TryPickMessageErr
+
         let g () =
             let ctx = getDbContext c
 
@@ -156,7 +167,7 @@ module DataAccess =
 
             tryCreateMessage x
 
-        tryDbFun g
+        tryDbFun fromDbError g
 
 
     /// We consider the messages are write once, so if the message is already in the database, then we just ignore it.
@@ -172,7 +183,9 @@ module DataAccess =
     ///                when matched then
     ///                    update set senderId = source.senderId, recipientId = source.recipientId, dataVersion = source.dataVersion, deliveryTypeId = source.deliveryTypeId, messageData = source.messageData, createdOn = source.createdOn;
     let saveMessage c (m : Message<'D>) =
-        let toError e = e |> CannotUpsertMessageErr |> MessageUpsertErr |> MessagingServiceErr
+        let elevate e = e |> SaveMessageErr
+        let toError e = e |> CannotSaveMessageErr |> elevate
+        let fromDbError e = e |> SaveMessageDbErr |> elevate
 
         let g() =
             let ctx = getDbContext c
@@ -185,30 +198,35 @@ module DataAccess =
                             ``@deliveryTypeId`` = m.messageDataInfo.recipientInfo.deliveryType.value,
                             ``@messageData`` = (m.messageData |> serialize serializationFormat))
 
-            r.ResultSet |> bindIntScalar MessagingSvcSaveMessageErr m.messageDataInfo.messageId
+            r.ResultSet |> bindIntScalar toError m.messageDataInfo.messageId
 
-        tryDbFun g
+        tryDbFun fromDbError g
 
 
     let deleteMessage c (messageId : MessageId) =
-        let toError e = e |> MessageDeleteErr |> MsgSvcDbErr |> MessagingServiceErr |> Error
+        let elevate e = e |> DeleteMessageErr
+        let toError e = e |> CannotDeleteMessageErr |> elevate
+        let fromDbError e = e |> DeleteMessageDbErr |> elevate
 
         let g() =
             let ctx = getDbContext c
             let r = ctx.Procedures.DeleteMessage .Invoke(``@messageId`` = messageId.value)
-            r.ResultSet |> bindIntScalar MessagingSvcCannotDeleteMessageErr messageId
+            r.ResultSet |> bindIntScalar toError messageId
 
-        tryDbFun g
+        tryDbFun fromDbError g
 
 
     let deleteExpiredMessages c (expirationTime : TimeSpan) =
+        let elevate e = e |> DeleteExpiredMessagesErr
+        let fromDbError e = e |> DeleteExpiredMessagesDbErr |> elevate
+
         let g() =
             let ctx = getDbContext c
             let r = ctx.Procedures.DeleteExpiredMessages.Invoke(``@dataVersion`` = messagingDataVersion.value, ``@createdOn`` = DateTime.Now - expirationTime)
             r.ResultSet |> ignore
             Ok()
 
-        tryDbFun g
+        tryDbFun fromDbError g
 
 
     //let private executeSqlite (connection : #DbConnection) (sql : string) (parameters : _) =

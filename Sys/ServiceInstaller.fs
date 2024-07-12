@@ -7,7 +7,7 @@ open System.ServiceProcess
 open Argu
 
 open Softellect.Sys.Logging
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 
 module ServiceInstaller =

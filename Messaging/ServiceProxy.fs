@@ -1,6 +1,6 @@
 ﻿namespace Softellect.Messaging
 
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors

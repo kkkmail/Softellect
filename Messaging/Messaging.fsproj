@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <Compile Include="Primitives.fs" />
+    <Compile Include="VersionInfo.fs" />
+    <Compile Include="Errors.fs" />
     <Compile Include="ServiceInfo.fs" />
     <Compile Include="Proxy.fs" />
     <Compile Include="Client.fs" />

@@ -3,8 +3,8 @@
 open System
 open System.Threading
 
-open Softellect.Sys.MessagingPrimitives
-open Softellect.Sys.MessagingClientErrors
+open Softellect.Messaging.Primitives
+open Softellect.Messaging.ClientErrors
 open Softellect.Sys.Rop
 open Softellect.Sys.Primitives
 open Softellect.Sys.TimerEvents

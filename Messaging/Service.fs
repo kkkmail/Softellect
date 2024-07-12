@@ -6,11 +6,11 @@ open CoreWCF
 open Softellect.Sys
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
-open Softellect.Sys.MessagingServiceErrors
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.ServiceErrors
+open Softellect.Messaging.Primitives
 open Softellect.Sys.TimerEvents
 open Softellect.Wcf.Common
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy

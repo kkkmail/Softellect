@@ -4,7 +4,7 @@ open System.Threading
 open System
 
 open Softellect.Sys.Rop
-open Softellect.Sys.TimerErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Sys.Logging
 

@@ -2,14 +2,10 @@
 
 open System
 
-open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.Logging
-open Softellect.Sys.MessagingPrimitives
-open Softellect.Sys.MessagingClientErrors
-open Softellect.Sys.MessagingServiceErrors
-
 open Softellect.Messaging.Primitives
+open Softellect.Messaging.Errors
 
 module Proxy =
 

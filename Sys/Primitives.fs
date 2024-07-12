@@ -78,16 +78,3 @@ module Primitives =
             | BinaryZippedFormat -> "binz"
             | JSonFormat -> "json"
             | XmlFormat -> "xml"
-
-
-    type WcfCommunicationType =
-        | HttpCommunication
-        | NetTcpCommunication
-
-        static member tryCreate s =
-            match s with
-            | nameof(HttpCommunication) -> Some HttpCommunication
-            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
-            | _ -> None
-
-        member c.value = c.ToString()

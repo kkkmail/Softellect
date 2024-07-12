@@ -2,13 +2,18 @@
 
 open System.ServiceModel
 
-open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
-open Softellect.Sys.MessagingPrimitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
+open Softellect.Sys.Logging
+open Softellect.Messaging.Errors
 
 module ServiceInfo =
+
+    type MsgResult<'T> = Result<'T, MessagingError>
+    type MsgUnitResult = UnitResult<MessagingError>
+    type MsgLogger = Logger<MessagingError>
+
 
     /// Client part of messaging service.
     type IMessagingClient<'D, 'E> =

@@ -1,8 +1,8 @@
-﻿namespace Softellect.Sys
+﻿namespace Softellect.Wcf
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 
-module WcfErrors =
+module Errors =
 
     type WcfError =
         | WcfServiceNotInitializedErr

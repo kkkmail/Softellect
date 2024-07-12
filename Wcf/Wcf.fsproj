@@ -24,6 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Errors.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Service.fs" />

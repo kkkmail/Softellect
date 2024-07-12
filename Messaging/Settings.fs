@@ -3,12 +3,12 @@
 open System
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
-open Softellect.Sys.MessagingServiceErrors
+open Softellect.Messaging.ServiceErrors
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Sys.Primitives
 open Softellect.Sys.AppSettings
-open Softellect.Sys.VersionInfo
+open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.Primitives
 open Softellect.Sys
 
