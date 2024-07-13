@@ -3,8 +3,6 @@
 open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
-open Softellect.Sys.Errors
-open Softellect.Messaging.Primitives
 open Softellect.Messaging.Proxy
 open Softellect.Messaging.DataAccess
 
@@ -38,8 +36,6 @@ module ServiceProxy =
                 deleteExpiredMessages = deleteExpiredMessages g
                 getMessageSize = getMessageSize
                 logger = Logger.defaultValue
-                //toErr = fun e -> e |> MessagingClientErr
-                //addError = fun a b -> a + b
             }
         //| SqliteDatabase connectionString ->
         //    {
@@ -50,8 +46,6 @@ module ServiceProxy =
         //        deleteExpiredMessages = deleteExpiredMessagesSqlite connectionString
         //        getMessageSize = getMessageSize
         //        logger = Logger.defaultValue
-        //        toErr = fun e -> e |> MessagingClientErr
-        //        addError = fun a b -> a + b
         //    }
 
 
@@ -62,5 +56,4 @@ module ServiceProxy =
             deleteMessage = deleteMessage g
             deleteExpiredMessages = deleteExpiredMessages g
             logger = Logger.defaultValue
-            //toErr = fun e -> e |> MessagingServiceErr
         }

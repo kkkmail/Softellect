@@ -1,6 +1,5 @@
 ﻿namespace Softellect.Sys
 
-open System.Diagnostics
 open System.Threading
 open System
 

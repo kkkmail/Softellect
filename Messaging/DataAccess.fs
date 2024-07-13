@@ -8,22 +8,13 @@ open FSharp.Data.Sql
 open System.Data
 open System.Data.SqlClient
 
-open Softellect.Sys.Retry
-open Softellect.Sys.AppSettings
-open Softellect.Sys.Errors
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.VersionInfo
-open Softellect.Sys.Errors
 open Softellect.Sys.Core
 open Softellect.Sys.DataAccess
 open Softellect.Messaging.Errors
-//open Softellect.Messaging.DataErrors
-//open Softellect.Messaging.ClientErrors
-//open Softellect.Messaging.ServiceErrors
-open Softellect.Messaging.Errors
 open Softellect.Messaging.Primitives
-open Softellect.Messaging.Settings
 
 module DataAccess =
 

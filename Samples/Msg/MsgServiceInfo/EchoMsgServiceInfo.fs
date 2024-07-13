@@ -6,16 +6,12 @@ open System.Threading
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
-open Softellect.Messaging.Errors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
-open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
-
-open Softellect.Samples.Msg.ServiceInfo.EchoMsgErrors
 
 module EchoMsgServiceInfo =
 

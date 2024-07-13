@@ -297,7 +297,7 @@ module Client =
             createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
             |> proxy.saveMessage
 
-        member _.tryPeekReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
+        member _.tryPickReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
         member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
         member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
         member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
@@ -306,7 +306,7 @@ module Client =
         member m.messageProcessorProxy : MessageProcessorProxy<'D> =
             {
                 start = m.start
-                tryPeekReceivedMessage = m.tryPeekReceivedMessage
+                tryPeekReceivedMessage = m.tryPickReceivedMessage
                 tryRemoveReceivedMessage = m.tryRemoveReceivedMessage
                 sendMessage = m.sendMessage
                 tryReceiveMessages = m.tryReceiveMessages

@@ -7,6 +7,14 @@ open Softellect.Sys.Primitives
 module Primitives =
 
     [<Literal>]
+    let MsgDatabase = "MsgClient.db"
+
+
+    [<Literal>]
+    let DefaultRootFolder = @"C:\GitHub\Softellect\MessagingData\"
+
+
+    [<Literal>]
     let MessagingWcfServiceName = "MessagingWcfService"
 
 

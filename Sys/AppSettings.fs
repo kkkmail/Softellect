@@ -5,7 +5,6 @@ open System.IO
 open Newtonsoft.Json
 open FSharp.Interop.Dynamic
 open Softellect.Sys.Primitives
-open Softellect.Sys
 
 module AppSettings =
 

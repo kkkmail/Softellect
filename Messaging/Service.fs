@@ -156,7 +156,6 @@ module Service =
         static let getServiceData() =
             getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
 
-        let proxy = d.messagingWcfServiceProxy
         let getMessagingService() = MessagingService<'D>.getService()
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
@@ -166,7 +165,7 @@ module Service =
 
         let getVersion() = getMessagingService() |> Rop.bind (fun e -> e.getVersion())
         let sendMessage b = getMessagingService() |> Rop.bind (fun e -> e.sendMessage b)
-        let tryPeekMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
+        let tryPickMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
         let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
 
         new() = MessagingWcfService<'D> (getServiceData())
@@ -174,7 +173,7 @@ module Service =
         interface IMessagingWcfService with
             member _.getVersion b = tryReply getVersion toGetVersionError b
             member _.sendMessage b = tryReply sendMessage toSendMessageError b
-            member _.tryPeekMessage b = tryReply tryPeekMessage toTryPickMessageError b
+            member _.tryPickMessage b = tryReply tryPickMessage toTryPickMessageError b
             member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
 
 

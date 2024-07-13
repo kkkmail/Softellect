@@ -46,8 +46,8 @@ module ServiceInfo =
         [<OperationContract(Name = "sendMessage")>]
         abstract sendMessage : m:byte[] -> byte[]
 
-        [<OperationContract(Name = "tryPeekMessage")>]
-        abstract tryPeekMessage : c:byte[] -> byte[]
+        [<OperationContract(Name = "tryPickMessage")>]
+        abstract tryPickMessage : c:byte[] -> byte[]
 
         [<OperationContract(Name = "tryDeleteFromServer")>]
         abstract tryDeleteFromServer : cm:byte[] -> byte[]

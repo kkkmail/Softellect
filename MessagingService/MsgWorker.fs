@@ -16,7 +16,7 @@ open Softellect.Messaging.Service
 type MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
 
 
-type MsgWorker<'D, 'E>(logger: ILogger<MsgWorker<'D, 'E>>) =
+type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>) =
     inherit BackgroundService()
 
     static let messagingServiceData = getMessagingServiceData Logger.defaultValue

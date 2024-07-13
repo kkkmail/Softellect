@@ -67,7 +67,7 @@ module Proxy =
     type MessageProcessorProxy<'D> =
         {
             start : unit -> MessagingUnitResult
-            tryPeekReceivedMessage : unit -> MessagingOptionalResult<'D>
+            tryPickReceivedMessage : unit -> MessagingOptionalResult<'D>
             tryRemoveReceivedMessage : MessageId -> MessagingUnitResult
             sendMessage : MessageInfo<'D> -> MessagingUnitResult
             tryReceiveMessages : unit -> MessagingUnitResult

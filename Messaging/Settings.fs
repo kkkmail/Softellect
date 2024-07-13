@@ -16,14 +16,6 @@ open Softellect.Sys
 
 module Settings =
 
-    [<Literal>]
-    let MsgDatabase = "MsgClient.db"
-
-
-    [<Literal>]
-    let DefaultRootFolder = @"C:\GitHub\Softellect\MessagingData\"
-
-
     type MessagingConfigParam =
         | DummyConfig
 
