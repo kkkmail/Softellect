@@ -7,7 +7,6 @@ open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Settings
 open Softellect.Sys.Worker
-open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Primitives
@@ -103,11 +102,6 @@ module CommandLine =
         let msgServiceDataRes = tryGetMsgServiceData i.messagingSvcInfo.messagingServiceAccessInfo logger serviceData
         printfn $"tryGetMessagingServiceDataImpl: msgServiceDataRes = %A{msgServiceDataRes}"
         msgServiceDataRes
-
-
-    //let getMessagingServiceData<'D> logger =
-    //    let proxy = createMessagingServiceProxy getMessagingConnectionString
-    //    Lazy<WcfServiceDataResult<'D>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)
 
 
     let getMessagingServiceData<'D> logger (v : MessagingDataVersion) =
