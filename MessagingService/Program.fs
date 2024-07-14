@@ -1,25 +1,22 @@
-﻿namespace MessagingService
-
-open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
+﻿namespace Softellect.MessagingService
 
 open Argu
-open MessagingServiceInfo.ServiceInfo
-open MessagingService.SvcCommandLine
-open MessagingService.ServiceTasks
-open ClmSys.ExitErrorCodes
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+open Softellect.MessagingService
+open Softellect.MessagingService.CommandLine
+open Softellect.Sys.ExitErrorCodes
 
 module Program =
 
-    let createHostBuilder() =
+    let private createHostBuilder<'D>() =
         Host.CreateDefaultBuilder()
             .UseWindowsService()
-            .ConfigureServices(fun hostContext services -> services.AddHostedService<MsgWorker>() |> ignore)
+            .ConfigureServices(fun hostContext services -> services.AddHostedService<MsgWorker<'D>>() |> ignore)
 
 
-    [<EntryPoint>]
-    let main argv =
-        let runHost() = createHostBuilder().Build().Run()
+    let main<'D> messagingProgramName argv =
+        let runHost() = createHostBuilder<'D>().Build().Run()
 
         try
             let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)

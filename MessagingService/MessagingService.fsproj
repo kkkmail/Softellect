@@ -45,8 +45,9 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Compile Include="MsgSvcCommandLine.fs" />
-    <Compile Include="MsgWorker.fs" />
+    <Compile Include="CommandLine.fs" />
+    <Compile Include="Worker.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +56,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
     <PackageReference Update="FSharp.Core" Version="8.0.301" />
   </ItemGroup>
 

@@ -4,25 +4,14 @@ open Argu
 
 open Softellect.Sys.Primitives
 open Softellect.Messaging.ServiceInfo
-open Softellect.Sys.Logging
-open Softellect.Sys.Errors
 open Softellect.Messaging.Service
 open Softellect.Messaging.Settings
-open Softellect.Wcf.Errors
-open Softellect.Wcf.Service
 open Softellect.Sys.Worker
 open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy
 
-
-//open ClmSys.MessagingData
-//open MessagingServiceInfo.ServiceInfo
-
-//open ServiceProxy.MsgServiceProxy
-//open DbData.Configuration
-
-module SvcCommandLine =
+module CommandLine =
 
     [<CliPrefix(CliPrefix.Dash)>]
     type MessagingServiceRunArgs =

@@ -22,7 +22,6 @@
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
-        <Compile Include="Worker.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

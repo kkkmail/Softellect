@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <Compile Include="NamingConventions.fs" />
+    <Compile Include="ExitErrorCodes.fs" />
     <Compile Include="Primitives.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Logging.fs" />

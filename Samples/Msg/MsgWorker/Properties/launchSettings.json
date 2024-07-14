@@ -1,11 +1,13 @@
-﻿{
+{
   "profiles": {
     "MsgWorker": {
       "commandName": "Project",
-      "dotnetRunMessages": "true",
+      "commandLineArgs": "s -save",
+      "workingDirectory": "$(OutDir)",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": "true"
     }
   }
 }

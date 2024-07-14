@@ -27,9 +27,9 @@ module EchoMsgServiceInfo =
 
     let serviceAddress = ServiceAddress defaultMessagingServiceAddress
     let httpServicePort = ServicePort defaultMessagingHttpServicePort
-    let httpServiceName = ServiceName "EchoMessagingHttpService"
+    let httpServiceName = ServiceName "MessagingHttpService"
     let netTcpServicePort = ServicePort defaultMessagingNetTcpServicePort
-    let netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
+    let netTcpServiceName = ServiceName "MessagingNetTcpService"
 
     let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
     let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
