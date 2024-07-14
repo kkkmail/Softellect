@@ -37,11 +37,11 @@ module Settings =
         provider.trySet messagingServiceCommunicationType ct.value |> ignore
 
 
-    let loadMessagingSettings providerRes =
+    let loadMessagingSettings providerRes messagingDataVersion =
         let messagingServiceCommunicationType = getCommunicationType providerRes messagingServiceCommunicationType NetTcpCommunication
         let serviceAddress = getServiceAddress providerRes messagingServiceAddress defaultMessagingServiceAddress
-        let httpServicePort = getServiceHttpPort providerRes messagingHttpServicePort defaultMessagingHttpServicePort
-        let netTcpServicePort = getServiceNetTcpPort providerRes messagingNetTcpServicePort defaultMessagingNetTcpServicePort
+        let httpServicePort = getServiceHttpPort providerRes messagingHttpServicePort (getDefaultMessagingHttpServicePort messagingDataVersion)
+        let netTcpServicePort = getServiceNetTcpPort providerRes messagingNetTcpServicePort (getDefaultMessagingNetTcpServicePort messagingDataVersion)
 
         let h = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
         let n = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
@@ -94,9 +94,9 @@ module Settings =
         }
 
 
-    let loadMsgServiceSettings() =
+    let loadMsgServiceSettings messagingDataVersion =
         let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
-        let messagingSvcInfo, messagingServiceCommunicationType = loadMessagingSettings providerRes
+        let messagingSvcInfo, messagingServiceCommunicationType = loadMessagingSettings providerRes messagingDataVersion
 
         let expirationTimeInMinutes =
             match providerRes with
@@ -121,8 +121,8 @@ module Settings =
         w
 
 
-    let loadSettingsImpl (proxy : MsgServiceSettingsProxy<'P>) p =
-        let w = loadMsgServiceSettings()
+    let loadSettingsImpl (proxy : MsgServiceSettingsProxy<'P>) messagingDataVersion p =
+        let w = loadMsgServiceSettings messagingDataVersion
         let h = w.messagingSvcInfo.messagingServiceAccessInfo.httpServiceInfo
         let n = w.messagingSvcInfo.messagingServiceAccessInfo.netTcpServiceInfo
 

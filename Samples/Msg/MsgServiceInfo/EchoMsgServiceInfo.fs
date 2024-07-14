@@ -25,14 +25,12 @@ module EchoMsgServiceInfo =
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
-    let serviceAddress = ServiceAddress defaultMessagingServiceAddress
-    let httpServicePort = ServicePort defaultMessagingHttpServicePort
-    let httpServiceName = ServiceName "MessagingHttpService"
-    let netTcpServicePort = ServicePort defaultMessagingNetTcpServicePort
-    let netTcpServiceName = ServiceName "MessagingNetTcpService"
+    let serviceAddress = defaultMessagingServiceAddress
+    let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
+    let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
 
-    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
+    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
     let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
@@ -118,7 +116,7 @@ module EchoMsgServiceInfo =
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
     let expirationTime = TimeSpan.FromSeconds 10.0
 
-    let createClientAccessInfo clientId = MessagingClientAccessInfo.create dataVersion echoMsgServiceAccessInfo clientId
+    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echoMsgServiceAccessInfo clientId
 
     let getClientData clientId proxy =
         createClientAccessInfo clientId
@@ -134,7 +132,7 @@ module EchoMsgServiceInfo =
             messagingServiceInfo =
                 {
                     expirationTime = TimeSpan.FromSeconds 10.0
-                    messagingDataVersion = dataVersion
+                    messagingDataVersion = echoDataVersion
                 }
 
             communicationType = communicationType

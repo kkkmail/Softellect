@@ -16,6 +16,7 @@ module ServiceProxy =
     type MessagingClientProxyInfo =
         {
             messagingClientName : MessagingClientName
+            messagingDataVersion : MessagingDataVersion
             storageType : MessagingClientStorageType
         }
 
@@ -28,12 +29,14 @@ module ServiceProxy =
 
         match i.storageType with
         | MsSqlDatabase g ->
+            let v = i.messagingDataVersion
+
             {
-                tryPickIncomingMessage = fun () -> tryPickIncomingMessage g c
-                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage g c
-                saveMessage = saveMessage g
+                tryPickIncomingMessage = fun () -> tryPickIncomingMessage g v c
+                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage g v c
+                saveMessage = saveMessage g v
                 tryDeleteMessage = deleteMessage g
-                deleteExpiredMessages = deleteExpiredMessages g
+                deleteExpiredMessages = deleteExpiredMessages g v
                 getMessageSize = getMessageSize
                 logger = Logger.defaultValue
             }
@@ -49,11 +52,11 @@ module ServiceProxy =
         //    }
 
 
-    let createMessagingServiceProxy (g : unit -> ConnectionString) =
+    let createMessagingServiceProxy (g : unit -> ConnectionString) (v : MessagingDataVersion) =
         {
-            tryPickMessage = tryPickIncomingMessage g
-            saveMessage = saveMessage g
+            tryPickMessage = tryPickIncomingMessage g v
+            saveMessage = saveMessage g v
             deleteMessage = deleteMessage g
-            deleteExpiredMessages = deleteExpiredMessages g
+            deleteExpiredMessages = deleteExpiredMessages g v
             logger = Logger.defaultValue
         }

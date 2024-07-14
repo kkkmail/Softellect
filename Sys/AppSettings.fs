@@ -213,7 +213,7 @@ module AppSettings =
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
 
 
-    let getServiceAddress (providerRes : AppSettingsProviderResult) n d =
+    let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
         match providerRes with
         | Ok provider ->
             match provider.tryGetString n with
@@ -224,7 +224,7 @@ module AppSettings =
         |> ServiceAddress
 
 
-    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n d =
+    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
         match providerRes with
         | Ok provider ->
             match provider.tryGetInt n with
@@ -234,7 +234,7 @@ module AppSettings =
         |> ServicePort
 
 
-    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n d =
+    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
         match providerRes with
         | Ok provider ->
             match provider.tryGetInt n with

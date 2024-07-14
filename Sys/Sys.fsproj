@@ -24,6 +24,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Functions.ps1" Link="Functions.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="NamingConventions.fs" />
     <Compile Include="ExitErrorCodes.fs" />
     <Compile Include="Primitives.fs" />

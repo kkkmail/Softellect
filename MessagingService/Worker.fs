@@ -12,35 +12,40 @@ open Softellect.MessagingService.CommandLine
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
+open Softellect.Messaging.Primitives
 
 
 type private MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
 
 
-type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>) =
+type private MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>, v : MessagingDataVersion) =
     inherit BackgroundService()
 
-    static let tyGetHost() =
-        printfn $"tyGetHost: Getting MessagingServiceData..."
-        let messagingServiceData = getMessagingServiceData Logger.defaultValue
+    static let mutable messagingDataVersion = 0
+
+    static let tryGetHost() =
+        printfn $"tryGetHost: Getting MessagingServiceData..."
+        let messagingServiceData = getMessagingServiceData<'D> Logger.defaultValue (MessagingDataVersion messagingDataVersion)
 
         match messagingServiceData with
         | Ok data ->
-            printfn $"tyGetHost: Got MessagingServiceData: '{data}'."
+            printfn $"tryGetHost: Got MessagingServiceData: '{data}'."
             let service = MessagingWcfServiceImpl<'D>.tryGetService data
             MessagingService<'D>.tryStart() |> ignore
             service
         | Error e ->
-            printfn $"tyGetHost: Error: %A{e}"
+            printfn $"tryGetHost: Error: %A{e}"
             Error e
 
-    static let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tyGetHost())
+    static let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tryGetHost())
+    static let getHost() = hostRes.Value
 
     override _.ExecuteAsync(_: CancellationToken) =
         async {
             logger.LogInformation("Executing...")
+            Interlocked.CompareExchange(&messagingDataVersion, v.value, 0) |> ignore
 
-            match hostRes.Value with
+            match getHost() with
             | Ok host -> do! host.runAsync()
             | Error e -> logger.LogCritical$"Error: %A{e}"
         }
@@ -51,7 +56,7 @@ type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>) =
         async {
             logger.LogInformation("Stopping...")
 
-            match hostRes.Value with
+            match getHost() with
             | Ok host -> do! host.stopAsync()
             | Error e -> logger.LogCritical$"Error: %A{e}"
         }

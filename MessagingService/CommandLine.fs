@@ -10,6 +10,7 @@ open Softellect.Sys.Worker
 open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy
+open Softellect.Messaging.Primitives
 
 module CommandLine =
 
@@ -61,14 +62,14 @@ module CommandLine =
     let loadSettings p = loadSettingsImpl proxy p
 
 
-    let getServiceSettingsImpl b p =
-        let load() = loadSettings p
+    let getServiceSettingsImpl b v p =
+        let load() = loadSettings v p
         let tryGetSave() = tryGetSaveSettings p
         getMsgServiceInfo (load, tryGetSave) b
 
 
     let getServiceSettings = getServiceSettingsImpl false
-    let saveSettings p = getServiceSettingsImpl true p |> ignore
+    let saveSettings v p = getServiceSettingsImpl true v p |> ignore
 
 
     type MessagingConfigParam
@@ -79,20 +80,20 @@ module CommandLine =
             |> List.choose id
 
 
-    let getParams p = MessagingConfigParam.fromParseResults p, getServiceSettings (p.GetAllResults())
-    let getSaveSettings (p : ParseResults<MessagingServiceRunArgs>) () = p.GetAllResults() |> saveSettings
+    let getParams v p = MessagingConfigParam.fromParseResults p, getServiceSettings v (p.GetAllResults())
+    let getSaveSettings v (p : ParseResults<MessagingServiceRunArgs>) () = p.GetAllResults() |> saveSettings v
     type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
 
 
-    let tryGetMessagingServiceDataImpl<'D> logger proxy : WcfServiceDataResult<'D> =
-        let i = getServiceSettings []
+    let tryGetMessagingServiceDataImpl<'D> logger proxy v : WcfServiceDataResult<'D> =
+        let i = getServiceSettings v []
 
         let serviceData =
             {
                 messagingServiceInfo =
                     {
                         expirationTime = i.messagingInfo.expirationTime
-                        messagingDataVersion = messagingDataVersion
+                        messagingDataVersion = v
                     }
 
                 messagingServiceProxy = proxy
@@ -109,6 +110,6 @@ module CommandLine =
     //    Lazy<WcfServiceDataResult<'D>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)
 
 
-    let getMessagingServiceData<'D> logger =
-        let proxy = createMessagingServiceProxy getMessagingConnectionString
-        tryGetMessagingServiceDataImpl<'D> logger proxy
+    let getMessagingServiceData<'D> logger (v : MessagingDataVersion) =
+        let proxy = createMessagingServiceProxy getMessagingConnectionString v
+        tryGetMessagingServiceDataImpl<'D> logger proxy v

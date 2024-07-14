@@ -8,7 +8,7 @@ open Softellect.Messaging.Errors
 
 module Primitives =
 
-    let dataVersion = MessagingDataVersion 123456
+    let echoDataVersion = MessagingDataVersion 2
     let echoLogger = Logger<MessagingError>.defaultValue
     let communicationType = NetTcpCommunication
 

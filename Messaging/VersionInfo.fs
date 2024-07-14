@@ -5,18 +5,18 @@ open Softellect.Messaging.Primitives
 
 module VersionInfo =
 
-    /// !!! Do not forget to update messagingDataVersion in VersionInfo.ps1 when this parameter is updated !!!
-    ///
-    /// Increment BY TWO when:
-    ///     1. Internal messaging structures change and messages can no longer be successfully transferred among components.
-    ///     2. Some other updates were performed and we need to inform worker nodes that they need to upgrade.
-    ///     3. Version number (below) was increased.
-    ///     4. Reset to 0 as needed.
-    [<Literal>]
-    let private MessagingDataVersionValue = 0
+    ///// !!! Do not forget to update messagingDataVersion in VersionInfo.ps1 when this parameter is updated !!!
+    /////
+    ///// Increment BY TWO when:
+    /////     1. Internal messaging structures change and messages can no longer be successfully transferred among components.
+    /////     2. Some other updates were performed and we need to inform worker nodes that they need to upgrade.
+    /////     3. Version number (below) was increased.
+    /////     4. Reset to 0 as needed.
+    //[<Literal>]
+    //let private MessagingDataVersionValue = 0
 
 
-    let messagingDataVersion = MessagingDataVersion MessagingDataVersionValue
+    //let messagingDataVersion = MessagingDataVersion MessagingDataVersionValue
 
 
     /// !!! Do not forget to update versionNumber in VersionInfo.ps1 when this parameter is updated !!!
@@ -38,8 +38,7 @@ module VersionInfo =
 
 
     /// Default port on which messaging communication is performed.
-    [<Literal>]
-    let MsgDefaultServicePort = 5000 + MessagingDataVersionValue
+    let getMsgDefaultServicePort (MessagingDataVersion v) = 5000 + v |> ServicePort
 
 
     [<Literal>]
@@ -54,6 +53,6 @@ module VersionInfo =
 
     let versionNumberValue = VersionNumber VersionNumberValue
 
-    let defaultMessagingNetTcpServicePort = 40000 + MsgDefaultServicePort
-    let defaultMessagingHttpServicePort = defaultMessagingNetTcpServicePort + 1
-    let defaultMessagingServiceAddress = LocalHost
+    let getDefaultMessagingNetTcpServicePort v = 40000 + (getMsgDefaultServicePort v).value |> ServicePort
+    let getDefaultMessagingHttpServicePort v = (getDefaultMessagingNetTcpServicePort v).value + 1 |> ServicePort
+    let defaultMessagingServiceAddress = LocalHost |> ServiceAddress

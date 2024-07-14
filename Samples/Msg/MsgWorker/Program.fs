@@ -24,4 +24,4 @@ module Program =
     //    0
 
     [<EntryPoint>]
-    let main args = main<EchoMessageData> "MsgWorker" args
+    let main args = main<EchoMessageData> "MsgWorker" echoDataVersion args

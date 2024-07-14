@@ -21,13 +21,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\MessagingServiceName.ps1" Link="MessagingServiceName.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\Functions.ps1" Link="Functions.ps1">
+    <None Include="..\MessagingFunctions.ps1" Link="MessagingFunctions.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\Install-MessagingService.ps1" Link="Install-MessagingService.ps1">
