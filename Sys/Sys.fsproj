@@ -10,6 +10,11 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>8.0.300.1</Version>
     <PackageVersion>8.0.300.1</PackageVersion>
+    <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
+    <PackageTags>framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Sys</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -24,6 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

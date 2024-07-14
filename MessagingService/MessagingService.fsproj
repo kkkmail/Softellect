@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Softellect.MessagingService</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -8,6 +9,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.300.1</Version>
     <PackageVersion>8.0.300.1</PackageVersion>
+    <Description>Softellect Messaging Service Library provides a Windows Service implementation of a simple general framework to exchange large messages without specific IO.</Description>
+    <PackageTags>messaging;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/MessagingService</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -21,6 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="..\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

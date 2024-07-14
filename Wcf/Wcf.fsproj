@@ -10,6 +10,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.300.1</Version>
     <PackageVersion>8.0.300.1</PackageVersion>
+    <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
+    <PackageTags>wcf;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Wcf</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -24,6 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" />
     <Compile Include="Errors.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="AppSettings.fs" />
@@ -34,6 +40,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />

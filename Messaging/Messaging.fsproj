@@ -10,6 +10,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.300.1</Version>
     <PackageVersion>8.0.300.1</PackageVersion>
+    <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
+    <PackageTags>messaging;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -24,6 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" />
     <Compile Include="Primitives.fs" />
     <Compile Include="VersionInfo.fs" />
     <Compile Include="Errors.fs" />
@@ -35,6 +41,8 @@
     <Compile Include="DataAccess.fs" />
     <Compile Include="ServiceProxy.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />
