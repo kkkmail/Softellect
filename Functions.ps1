@@ -1,9 +1,5 @@
+. ./MessagingServiceName.ps1
 . ./VersionInfo.ps1
-
-[string] $global:messagingServiceName = "MessagingService"
-[string] $global:workerNodeServiceName = "WorkerNodeService"
-[string] $global:contGenServiceName = "ContGenService"
-[string] $global:solverRunnerName = "SolverRunner"
 
 function PrintToConsole($s)
 {

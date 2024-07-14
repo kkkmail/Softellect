@@ -6,13 +6,11 @@ open System.Threading
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
-open Softellect.Sys.Primitives
 open Softellect.Sys.TimerEvents
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
 
-open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 
@@ -199,7 +197,7 @@ module Client =
 
 
     /// Low level WCF messaging client.
-    type MsgResponseHandler<'D, 'E> (d : MsgResponseHandlerData<'D>) =
+    type MsgResponseHandler<'D> (d : MsgResponseHandlerData<'D>) =
         let i = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo
         let n = i.netTcpServiceInfo
         let url = i.getUrl d.communicationType
@@ -212,7 +210,7 @@ module Client =
 
         let getVersionImpl() = tryCommunicate tryGetWcfService (fun service -> service.getVersion) getVersionWcfErr ()
         let sendMessageImpl m = tryCommunicate tryGetWcfService (fun service -> service.sendMessage) sendMessageWcfErr m
-        let tryPickMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPeekMessage) tryPickMessageWcfErr n
+        let tryPickMessageImpl n = tryCommunicate tryGetWcfService (fun service -> service.tryPickMessage) tryPickMessageWcfErr n
         let tryDeleteFromServerImpl x = tryCommunicate tryGetWcfService (fun service -> service.tryDeleteFromServer) tryDeleteFromServerWcfErr x
 
         interface IMessagingClient<'D> with
@@ -255,7 +253,7 @@ module Client =
     type MessagingClient<'D>(d : MessagingClientData<'D>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
-        let responseHandler = MsgResponseHandler<'D, 'E>(d.msgResponseHandlerData) :> IMessagingClient<'D>
+        let responseHandler = MsgResponseHandler<'D>(d.msgResponseHandlerData) :> IMessagingClient<'D>
         let mutable callCount = -1
         let mutable started = false
 
@@ -269,8 +267,6 @@ module Client =
                 tryPeekMessage = fun () -> responseHandler.tryPickMessage msgClientId
                 tryDeleteFromServer = fun m -> responseHandler.tryDeleteFromServer (msgClientId, m)
                 getMessageSize = d.msgClientProxy.getMessageSize
-                //toErr = d.msgClientProxy.toErr
-                //addError = proxy.addError
             }
 
         let sendProxy =
@@ -306,7 +302,7 @@ module Client =
         member m.messageProcessorProxy : MessageProcessorProxy<'D> =
             {
                 start = m.start
-                tryPeekReceivedMessage = m.tryPickReceivedMessage
+                tryPickReceivedMessage = m.tryPickReceivedMessage
                 tryRemoveReceivedMessage = m.tryRemoveReceivedMessage
                 sendMessage = m.sendMessage
                 tryReceiveMessages = m.tryReceiveMessages
@@ -334,7 +330,7 @@ module Client =
         let retVal =
             if w.incrementCount() = 0
             then
-                match w.tryPeekReceivedMessage() with
+                match w.tryPickReceivedMessage() with
                 | Ok (Some m) ->
                     try
                         let r = f x m

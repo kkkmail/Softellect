@@ -2,8 +2,8 @@
 
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-
-open System
+open Softellect.MessagingService
+open Softellect.Samples.Msg.ServiceInfo.Primitives
 
 module Program =
 
@@ -11,7 +11,9 @@ module Program =
         Host.CreateDefaultBuilder(args)
             .UseWindowsService()
             .ConfigureServices(fun hostContext services ->
-                services.AddHostedService<Worker>() |> ignore)
+                //services.AddHostedService<Worker>()
+                services.AddHostedService<MsgWorker<EchoMessageData>>()
+                |> ignore)
 
 
     [<EntryPoint>]

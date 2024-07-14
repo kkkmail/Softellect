@@ -140,7 +140,7 @@ module Settings =
 
     let getMsgServiceInfo (loadSettings, tryGetSaveSettings) b =
         let (w : MsgSettings) = loadSettings()
-        printfn $"getServiceAccessInfoImpl: w = %A{w}"
+        printfn $"getMsgServiceInfo: w = %A{w}"
 
         let r =
             match tryGetSaveSettings(), b with

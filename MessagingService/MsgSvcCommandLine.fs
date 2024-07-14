@@ -111,9 +111,15 @@ module SvcCommandLine =
             }
 
         let msgServiceDataRes = tryGetMsgServiceData i.messagingSvcInfo.messagingServiceAccessInfo logger serviceData
+        printfn $"tryGetMessagingServiceDataImpl: msgServiceDataRes = %A{msgServiceDataRes}"
         msgServiceDataRes
+
+
+    //let getMessagingServiceData<'D> logger =
+    //    let proxy = createMessagingServiceProxy getMessagingConnectionString
+    //    Lazy<WcfServiceDataResult<'D>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)
 
 
     let getMessagingServiceData<'D> logger =
         let proxy = createMessagingServiceProxy getMessagingConnectionString
-        Lazy<WcfServiceDataResult<'D>>(fun () -> tryGetMessagingServiceDataImpl<'D> logger proxy)
+        tryGetMessagingServiceDataImpl<'D> logger proxy

@@ -26,7 +26,7 @@ module DataAccess =
 
 
     [<Literal>]
-    let private MessagingConnectionStringValue = "Server=localhost;Database=" + MessagingDbName + ";Integrated Security=SSPI"
+    let private MessagingConnectionStringValue = "Server=localhost;Database=" + MessagingDbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
 
     let private getMessagingConnectionStringImpl() = getConnectionString AppSettingsFile messagingConnectionStringKey MessagingConnectionStringValue

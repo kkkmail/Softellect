@@ -271,8 +271,9 @@ module Service =
         static member tryGetService() = service.Value
 
         static member tryGetService data =
-             WcfService<'Service, 'IWcfService, 'Data>.setData data
-             service.Value
+            printfn $"WcfService.tryGetService: data = %A{data}"
+            WcfService<'Service, 'IWcfService, 'Data>.setData data
+            service.Value
 
 
     let tryGetServiceData serviceAccessInfo wcfLogger serviceData =
