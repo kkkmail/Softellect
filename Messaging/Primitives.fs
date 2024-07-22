@@ -2,20 +2,47 @@
 
 open System
 open Softellect.Sys.Primitives
-open Softellect.Sys.Rop
-open Softellect.Sys.Logging
-open Softellect.Sys.MessagingErrors
-open Softellect.Sys.MessagingPrimitives
 
+/// Collection of messaging service related primites used in messaging related errors.
 module Primitives =
+
+    [<Literal>]
+    let MsgDatabase = "MsgClient.db"
+
+
+    [<Literal>]
+    let DefaultRootFolder = @"C:\GitHub\Softellect\MessagingData\"
+
 
     [<Literal>]
     let MessagingWcfServiceName = "MessagingWcfService"
 
 
-    type MsgResult<'T> = Result<'T, MessagingError>
-    type MsgUnitResult = UnitResult<MessagingError>
-    type MsgLogger = Logger<MessagingError>
+    type MessagingDataVersion =
+        | MessagingDataVersion of int
+
+        member this.value = let (MessagingDataVersion v) = this in v
+
+
+    type MessageId =
+        | MessageId of Guid
+
+        member this.value = let (MessageId v) = this in v
+        static member create() = Guid.NewGuid() |> MessageId
+
+
+    type VersionMismatchInfo =
+        {
+            localVersion : MessagingDataVersion
+            remoteVersion : MessagingDataVersion
+        }
+
+
+    type MessagingClientId =
+        | MessagingClientId of Guid
+
+        member this.value = let (MessagingClientId v) = this in v
+        static member create() = Guid.NewGuid() |> MessagingClientId
 
 
     type MessagingClientName =
@@ -31,6 +58,8 @@ module Primitives =
 
 
     let messagingServiceName = "MessagingService" |> ServiceName |> MessagingServiceName
+    let messagingHttpServiceName = "MessagingHttpService" |> ServiceName |> MessagingServiceName
+    let messagingNetTcpServiceName = "MessagingNetTcpService" |> ServiceName |> MessagingServiceName
 
 
     type MessageType =

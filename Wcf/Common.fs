@@ -2,7 +2,7 @@
 
 open System
 
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open System.Xml
@@ -13,20 +13,10 @@ module Common =
     let connectionTimeOut = TimeSpan(0, 10, 0)
     let dataTimeOut = TimeSpan(1, 0, 0)
     let wcfSerializationFormat = BinaryZippedFormat
+
+
     type WcfResult<'T> = Result<'T, WcfError>
     type WcfLogger = Logger<WcfError>
-
-
-    /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.
-    /// Since they live in different namespaces wrapper is required to make security negotiation simpler.
-    type WcfSecurityMode =
-        | NoSecurity
-        | TransportSecurity
-        | MessageSecurity
-        | TransportWithMessageCredentialSecurity
-
-
-        static member defaultValue = NoSecurity
 
 
     type WcfCommunicationType =
@@ -40,6 +30,17 @@ module Common =
             | _ -> None
 
         member c.value = c.ToString()
+
+
+    /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.
+    /// Since they live in different namespaces wrapper is required to make security negotiation simpler.
+    type WcfSecurityMode =
+        | NoSecurity
+        | TransportSecurity
+        | MessageSecurity
+        | TransportWithMessageCredentialSecurity
+
+        static member defaultValue = NoSecurity
 
 
     let toValidServiceName (serviceName : string) =

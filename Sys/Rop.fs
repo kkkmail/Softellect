@@ -266,3 +266,21 @@ module Rop =
             | h :: t -> fold (combineUnitResults adder h acc) t
 
         fold (Ok()) r
+
+
+    /// Gets the value out of provider's result or default.
+    let toValueOrDefault m d v =
+        v
+        |> toOption
+        |> Option.flatten
+        |> Option.map m
+        |> Option.defaultValue d
+
+
+    let (>->) s1 s2 =
+        match s1() with
+        | Ok() -> s2
+        | Error e -> fun () -> Error e
+
+
+    let evaluate f = f()

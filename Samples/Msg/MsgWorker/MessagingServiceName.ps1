@@ -1,0 +1,1 @@
+[string] $global:messagingServiceName = "MsgWorker"

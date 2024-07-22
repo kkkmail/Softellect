@@ -8,8 +8,13 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>8.0.200.1</Version>
-    <PackageVersion>8.0.200.1</PackageVersion>
+    <Version>8.0.300.1</Version>
+    <PackageVersion>8.0.300.1</PackageVersion>
+    <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
+    <PackageTags>wcf;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Wcf</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -24,7 +29,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="Errors.fs" />
     <Compile Include="Common.fs" />
+    <Compile Include="AppSettings.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Service.fs" />
   </ItemGroup>
@@ -32,6 +42,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />
@@ -41,7 +53,7 @@
     <PackageReference Include="CoreWCF.Http" Version="1.5.2" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.5.2" />
     <PackageReference Include="CoreWCF.Primitives" Version="1.5.2" />
-    <PackageReference Update="FSharp.Core" Version="8.0.200" />
+    <PackageReference Update="FSharp.Core" Version="8.0.301" />
   </ItemGroup>
 
 </Project>

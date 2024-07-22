@@ -3,26 +3,13 @@
 open System
 
 /// Collection of general errors & related functionality.
-module GeneralErrors =
+module Errors =
 
     type ErrorId =
         | ErrorId of Guid
 
         static member getNewId() = Guid.NewGuid() |> ErrorId
         member this.value = let (ErrorId v) = this in v
-
-
-    //type FileError =
-    //    | GeneralFileExn of exn
-    //    | GetFolderNameExn of exn
-    //    | GetFileNameExn of exn
-    //    | FileNotFoundErr of string
-    //    | ReadFileExn of exn
-    //    | WriteFileExn of exn
-    //    | DeleteFileExn of exn
-    //    | GetObjectIdsExn of exn
-    //    | CreateChartsExn of exn
-    //    | SaveChartsExn of exn
 
 
     type JsonParseError =
@@ -44,3 +31,31 @@ module GeneralErrors =
     type GeneralError =
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
+
+
+    type DbError =
+        | DbExn of exn
+
+
+    // Timer Errors and related data.
+
+
+    type UnhandledEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            unhandledException: exn
+        }
+
+
+    type LongRunningEventInfo =
+        {
+            handlerName : string
+            handlerId : Guid
+            runTime : TimeSpan
+        }
+
+
+    type TimerEventError =
+        | UnhandledEventHandlerExn of UnhandledEventInfo
+        | StillRunningEventHandlerErr of LongRunningEventInfo

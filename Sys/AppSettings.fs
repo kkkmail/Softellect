@@ -1,9 +1,12 @@
 ﻿namespace Softellect.Sys
+open Newtonsoft.Json.Linq
 
 open System
 open System.IO
 open Newtonsoft.Json
 open FSharp.Interop.Dynamic
+open Softellect.Sys.Core
+open Softellect.Sys.Primitives
 
 module AppSettings =
 
@@ -65,10 +68,15 @@ module AppSettings =
 
     let tryGetString jsonObj (ConfigSection section) (ConfigKey key) =
         try
-            let value = (jsonObj?(section)?(key))
-            match box value with
-            | null -> Ok None
-            | _ -> value.ToString() |> Some |> Ok
+            let sectionObj = jsonObj?(section)
+
+            if sectionObj = null
+            then Ok None
+            else
+                let value = (sectionObj?(key))
+                match box value with
+                | null -> Ok None
+                | _ -> value.ToString() |> Some |> Ok
         with
         | e -> Error e
 
@@ -149,9 +157,24 @@ module AppSettings =
         | _ -> defaultValue
 
 
+    //let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
+    //    try
+    //        jsonObj?(section)?(key) <- $"{value}"
+    //        Ok()
+    //    with
+    //    | e -> Error e
+
+
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
-            jsonObj?(section)?(key) <- $"{value}"
+            let sectionObj =
+                if jsonObj?(section) = null then
+                    let newSection = new JObject()
+                    jsonObj?Add(section, newSection)
+                    newSection
+                else jsonObj?(section)
+
+            sectionObj?(key) <- $"{value}"
             Ok()
         with
         | e -> Error e
@@ -181,6 +204,41 @@ module AppSettings =
         member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
 
         static member tryCreate fileName =
-            match tryOpenJson fileName with
+            let fullFileName = getFileName fileName
+            match tryOpenJson fullFileName with
             | Ok jsonObj -> (fileName, jsonObj) |> AppSettingsProvider |> Ok
             | Error e -> Error e
+
+
+    type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
+
+
+    let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetString n with
+            | Ok (Some EmptyString) -> d
+            | Ok (Some s) -> s
+            | _ -> d
+        | _ -> d
+        |> ServiceAddress
+
+
+    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetInt n with
+            | Ok (Some k) when k > 0 -> k
+            | _ -> d
+        | _ -> d
+        |> ServicePort
+
+
+    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetInt n with
+            | Ok (Some k) when k > 0 -> k
+            | _ -> d
+        | _ -> d
+        |> ServicePort

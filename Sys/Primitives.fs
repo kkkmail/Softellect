@@ -17,6 +17,14 @@ module Primitives =
     let Nl = "\r\n"
 
 
+    [<Literal>]
+    let AppSettingsFile = "appsettings.json"
+
+
+    [<Literal>]
+    let LocalHost = "127.0.0.1"
+
+
     [<Measure>] type millisecond
     [<Measure>] type second
     [<Measure>] type minute

@@ -8,7 +8,7 @@ open System.Text
 open MBrace.FsPickler
 open Newtonsoft.Json
 
-open Softellect.Sys.GeneralErrors
+open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 
@@ -381,3 +381,13 @@ module Core =
                     else
                         sc task.Result)
                 |> ignore)
+
+
+    let toValidServiceName (serviceName : string) =
+        serviceName.Replace(" ", "").Replace("-", "").Replace(".", "")
+
+
+    let bindBool b s =
+        match b with
+        | true -> b, Some s
+        | false -> b, None

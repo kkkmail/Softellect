@@ -4,66 +4,33 @@ open System
 open System.Threading
 
 open Softellect.Sys.Primitives
-open Softellect.Sys.MessagingPrimitives
+open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
-open Softellect.Sys.MessagingErrors
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
-open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
-
-open Softellect.Samples.Msg.ServiceInfo.EchoMsgErrors
+open Softellect.Samples.Msg.ServiceInfo.Primitives
+open Softellect.Messaging.VersionInfo
 
 module EchoMsgServiceInfo =
-
-    let dataVersion = MessagingDataVersion 123456
-    let echoLogger = Logger.defaultValue
-    let communicationType = NetTcpCommunication
-
-
-    type EchoMsgType =
-        | A
-        | B
-        | C of int
-
-
-    type EchoMessageData =
-        {
-            messageType : EchoMsgType
-            a : int
-            b : DateTime
-            c : list<int>
-        }
-
-        static member create() =
-            {
-                messageType = Random().Next(100) |> C
-                a = Random().Next(100)
-                b = DateTime.Now
-                c = [ DateTime.Now.Day; DateTime.Now.Hour; DateTime.Now.Minute; DateTime.Now.Second ]
-            }
-
-
-    type EchoMessagingClient = MessagingClient<EchoMessageData, EchoMsgError>
-    type EchoMessagingClientData = MessagingClientData<EchoMessageData, EchoMsgError>
-    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData, EchoMsgError>
+    type EchoMessagingClient = MessagingClient<EchoMessageData>
+    type EchoMessagingClientData = MessagingClientData<EchoMessageData>
+    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
-    type EchoMessagingService = MessagingService<EchoMessageData, EchoMsgError>
-    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData, EchoMsgError>
+    type EchoMessagingService = MessagingService<EchoMessageData>
+    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData>
     type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
-    let serviceAddress = ServiceAddress "127.0.0.1"
-    let httpServicePort = ServicePort 8081
-    let httpServiceName = ServiceName "EchoMessagingHttpService"
-    let netTcpServicePort = ServicePort 8809
-    let netTcpServiceName = ServiceName "EchoMessagingNetTcpService"
+    let serviceAddress = defaultMessagingServiceAddress
+    let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
+    let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
 
-    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
+    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
+    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
     let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
@@ -101,7 +68,7 @@ module EchoMsgServiceInfo =
         Ok()
 
 
-    let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData, EchoMsgError> =
+    let private getClientProxy clientData clientId recipient : MessagingClientProxy<EchoMessageData> =
         {
             tryPickIncomingMessage =
                 fun() ->
@@ -122,8 +89,6 @@ module EchoMsgServiceInfo =
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
             logger = echoLogger
-            toErr = fun e -> e |> MessagingClientErr |> EchoMsgErr
-            addError = EchoMsgError.addError
         }
 
 
@@ -144,7 +109,6 @@ module EchoMsgServiceInfo =
             deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
             logger = echoLogger
-            toErr = fun e -> e |> MessagingServiceErr |> EchoMsgErr
         }
 
 
@@ -152,7 +116,7 @@ module EchoMsgServiceInfo =
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
     let expirationTime = TimeSpan.FromSeconds 10.0
 
-    let createClientAccessInfo clientId = MessagingClientAccessInfo.create dataVersion echoMsgServiceAccessInfo clientId
+    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echoMsgServiceAccessInfo clientId
 
     let getClientData clientId proxy =
         createClientAccessInfo clientId
@@ -168,7 +132,7 @@ module EchoMsgServiceInfo =
             messagingServiceInfo =
                 {
                     expirationTime = TimeSpan.FromSeconds 10.0
-                    messagingDataVersion = dataVersion
+                    messagingDataVersion = echoDataVersion
                 }
 
             communicationType = communicationType
@@ -181,6 +145,8 @@ module EchoMsgServiceInfo =
 
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
+        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgResponseHandlerData.msgAccessInfo}"
+
         let tryProcessMessage = onTryProcessMessage client.messageProcessorProxy
 
         match client.start() with

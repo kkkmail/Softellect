@@ -12,7 +12,7 @@ open Microsoft.Extensions.DependencyInjection
 open System.Threading
 open Microsoft.FSharp.Core.Operators
 
-open Softellect.Sys.WcfErrors
+open Softellect.Wcf.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
 open System.Threading.Tasks
@@ -271,8 +271,9 @@ module Service =
         static member tryGetService() = service.Value
 
         static member tryGetService data =
-             WcfService<'Service, 'IWcfService, 'Data>.setData data
-             service.Value
+            printfn $"WcfService.tryGetService: data = %A{data}"
+            WcfService<'Service, 'IWcfService, 'Data>.setData data
+            service.Value
 
 
     let tryGetServiceData serviceAccessInfo wcfLogger serviceData =
