@@ -79,7 +79,7 @@ module DataAccess =
     /// Analog of ExecuteScalar - gets the first column of the first result set.
     /// In contrast to ExecuteScalar it also expects it to be castable to int32.
     /// Otherwise it will return None.
-    /// This function is monsly used to get the number of updated rows.
+    /// This function is mostly used to get the number of updated rows.
     let mapIntScalar (r : Common.SqlEntity[]) =
         r
         |> Array.map(fun e -> e.ColumnValues |> List.ofSeq |> List.head)
@@ -103,4 +103,5 @@ module DataAccess =
         | false -> toError f q
 
 
+    /// Binds an unsuccessfull single row update operation to an error continuation function.
     let bindIntScalar f q r = r |> mapIntScalar |> bindOptionError f q

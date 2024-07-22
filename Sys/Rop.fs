@@ -281,3 +281,6 @@ module Rop =
         match s1() with
         | Ok() -> s2
         | Error e -> fun () -> Error e
+
+
+    let evaluate f = f()
