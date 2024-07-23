@@ -49,6 +49,10 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgWorker", "Samples\Msg\Ms
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MessagingService", "MessagingService\MessagingService.fsproj", "{FCFCE999-2363-45B2-87F7-58E05E23E412}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "WorkerNode", "WorkerNode\WorkerNode.fsproj", "{EA6A8FB2-7637-4B35-8564-A3866DB088FC}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "WorkerNodeService", "WorkerNodeService\WorkerNodeService.fsproj", "{6DFE356C-B6C2-4E7A-90F8-E599F9656A19}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -135,6 +139,14 @@ Global
 		{FCFCE999-2363-45B2-87F7-58E05E23E412}.Debug|x64.Build.0 = Debug|x64
 		{FCFCE999-2363-45B2-87F7-58E05E23E412}.Release|x64.ActiveCfg = Release|x64
 		{FCFCE999-2363-45B2-87F7-58E05E23E412}.Release|x64.Build.0 = Release|x64
+		{EA6A8FB2-7637-4B35-8564-A3866DB088FC}.Debug|x64.ActiveCfg = Debug|x64
+		{EA6A8FB2-7637-4B35-8564-A3866DB088FC}.Debug|x64.Build.0 = Debug|x64
+		{EA6A8FB2-7637-4B35-8564-A3866DB088FC}.Release|x64.ActiveCfg = Release|x64
+		{EA6A8FB2-7637-4B35-8564-A3866DB088FC}.Release|x64.Build.0 = Release|x64
+		{6DFE356C-B6C2-4E7A-90F8-E599F9656A19}.Debug|x64.ActiveCfg = Debug|x64
+		{6DFE356C-B6C2-4E7A-90F8-E599F9656A19}.Debug|x64.Build.0 = Debug|x64
+		{6DFE356C-B6C2-4E7A-90F8-E599F9656A19}.Release|x64.ActiveCfg = Release|x64
+		{6DFE356C-B6C2-4E7A-90F8-E599F9656A19}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.MessagingService</AssemblyName>
+    <AssemblyName>Softellect.WorkerNodeService</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -9,10 +9,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.300.2</Version>
     <PackageVersion>8.0.300.2</PackageVersion>
-    <Description>Softellect Messaging Service Library provides a Windows Service implementation of a simple general framework to exchange large messages without specific IO.</Description>
-    <PackageTags>messaging;client;server;framework</PackageTags>
+    <Description>Softellect WorkerNode Service ...</Description>
+    <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/MessagingService</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -30,25 +30,25 @@
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="MessagingVersionInfo.ps1">
+    <None Include="WorkerNodeVersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="MessagingServiceName.ps1">
+    <None Include="WorkerNodeServiceName.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="MessagingFunctions.ps1">
+    <None Include="WorkerNodeFunctions.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Install-MessagingService.ps1">
+    <None Include="Install-WorkerNodeService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Start-MessagingService.ps1">
+    <None Include="Start-WorkerNodeService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Stop-MessagingService.ps1">
+    <None Include="Stop-WorkerNodeService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Uninstall-MessagingService.ps1">
+    <None Include="Uninstall-WorkerNodeService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="appsettings.json">
@@ -60,7 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Messaging\Messaging.fsproj" />
+    <ProjectReference Include="..\WorkerNode\WorkerNode.fsproj" />
     <ProjectReference Include="..\Sys\Sys.fsproj" />
   </ItemGroup>
 

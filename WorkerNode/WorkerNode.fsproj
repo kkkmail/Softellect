@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.Messaging</AssemblyName>
+    <AssemblyName>Softellect.WorkerNode</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -10,10 +10,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.300.2</Version>
     <PackageVersion>8.0.300.2</PackageVersion>
-    <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
+    <Description>Softellect WorkerNode ...</Description>
     <PackageTags>messaging;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNode</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -35,20 +35,15 @@
     <Compile Include="Primitives.fs" />
     <Compile Include="VersionInfo.fs" />
     <Compile Include="Errors.fs" />
-    <Compile Include="ServiceInfo.fs" />
     <Compile Include="Proxy.fs" />
-    <Compile Include="Client.fs" />
-    <Compile Include="Service.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="DataAccess.fs" />
-    <Compile Include="ServiceProxy.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />
     <ProjectReference Include="..\Wcf\Wcf.fsproj" />
+    <ProjectReference Include="..\Messaging\Messaging.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

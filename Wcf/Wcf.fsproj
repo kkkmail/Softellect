@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>8.0.300.1</Version>
-    <PackageVersion>8.0.300.1</PackageVersion>
+    <Version>8.0.300.2</Version>
+    <PackageVersion>8.0.300.2</PackageVersion>
     <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
     <PackageTags>wcf;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
