@@ -188,7 +188,7 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    let private addRunQueueRow (ctx : WorkerNodeDbContext) (w : WorkerNodeRunModelData) =
+    let private addRunQueueRow<'D> (ctx : WorkerNodeDbContext) (w : WorkerNodeRunModelData<'D>) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = w.runningProcessData.runQueueId.value,
                             WorkerNodeRunModelData = (w |> serialize serializationFormat),

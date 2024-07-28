@@ -5,6 +5,12 @@ open System
 /// Collection of general errors & related functionality.
 module Errors =
 
+    type ErrorMessage =
+        | ErrorMessage of string
+
+        member this.value = let (ErrorMessage v) = this in v
+
+
     type ErrorId =
         | ErrorId of Guid
 

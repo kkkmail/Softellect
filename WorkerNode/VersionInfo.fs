@@ -19,7 +19,7 @@ module VersionInfo =
     /// !!! Update all non empty appsettings.json files to match this value !!!
     /// The same as above but without the dots in order to use in database and folder names.
     [<Literal>]
-    let private VersionNumberNumericalValue = "705_01"
+    let private VersionNumberNumericalValue = "803_01"
 
 
     [<Literal>]
