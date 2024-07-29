@@ -1,4 +1,4 @@
-namespace Softellect.WorkerNode
+namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading
@@ -112,17 +112,17 @@ module Primitives =
         }
 
 
-    /// 'D is the model data and 'C is the control data.
-    type WorkerNodeRunModelData<'D, 'C> =
-        {
-            runningProcessData : RunningProcessData
-            modelData : 'D
-            controlData : 'C
-        }
+    ///// 'D is the model data and 'C is the control data.
+    //type WorkerNodeRunModelData<'D, 'C> =
+    //    {
+    //        runningProcessData : RunningProcessData
+    //        modelData : 'D
+    //        controlData : 'C
+    //    }
 
 
-    type WorkerNodeMessage =
-        | RunModelWrkMsg of WorkerNodeRunModelData
+    type WorkerNodeMessage<'D> =
+        | RunModelWrkMsg of (RunQueueId * 'D)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestResultWrkMsg of (RunQueueId * ResultNotificationType)
 
@@ -133,3 +133,9 @@ module Primitives =
             | RequestResultWrkMsg _ -> SmallSize
 
 
+    /// Number of minutes for worker node errors to expire before the node can be again included in work distribution.
+    type LastAllowedNodeErr =
+        | LastAllowedNodeErr of int<minute>
+
+        member this.value = let (LastAllowedNodeErr v) = this in v
+        static member defaultValue = LastAllowedNodeErr 60<minute>

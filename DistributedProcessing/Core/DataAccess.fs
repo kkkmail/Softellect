@@ -1,6 +1,6 @@
 #nowarn "1104"
 
-namespace Softellect.WorkerNode
+namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading
@@ -21,10 +21,10 @@ open Softellect.Sys.Core
 open Softellect.Sys.Primitives
 open Softellect.Sys.Retry
 open Softellect.Sys.DataAccess
-open Softellect.WorkerNode.VersionInfo
+open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
-open Softellect.WorkerNode.Errors
-open Softellect.WorkerNode.Primitives
+open Softellect.DistributedProcessing.Errors
+open Softellect.DistributedProcessing.Primitives
 
 module DataAccess =
 
@@ -188,9 +188,9 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    let private addRunQueueRow<'D> (ctx : WorkerNodeDbContext) (w : WorkerNodeRunModelData<'D>) =
+    let private addRunQueueRow<'D> (ctx : WorkerNodeDbContext) (r : RunQueueId) (w : 'D) =
         let row = ctx.Dbo.RunQueue.Create(
-                            RunQueueId = w.runningProcessData.runQueueId.value,
+                            RunQueueId = r.value,
                             WorkerNodeRunModelData = (w |> serialize serializationFormat),
                             RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
                             CreatedOn = DateTime.Now,
@@ -199,14 +199,14 @@ module DataAccess =
         row
 
 
-    let saveRunQueue c (w : WorkerNodeRunModelData) =
+    let saveRunQueue<'D> c (r : RunQueueId) (w : 'D) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate
 
         let g() =
             let ctx = getDbContext c
-            let row = addRunQueueRow ctx w
+            let row = addRunQueueRow ctx r w
             ctx.SubmitUpdates()
 
             Ok()
@@ -396,28 +396,28 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    /// Can modify progress related information when state is InProgress or CancelRequested.
-    let tryUpdateProgress c (q : RunQueueId) (td : ClmProgressData) =
-        let elevate e = e |> TryUpdateProgressErr
-        //let toError e = e |> elevate |> Error
-        let x e = CannotUpdateProgress e |> elevate
-        let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
+    ///// Can modify progress related information when state is InProgress or CancelRequested.
+    //let tryUpdateProgress c (q : RunQueueId) (td : ClmProgressData) =
+    //    let elevate e = e |> TryUpdateProgressErr
+    //    //let toError e = e |> elevate |> Error
+    //    let x e = CannotUpdateProgress e |> elevate
+    //    let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
-        let g() =
-            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{td}."
-            let ctx = getDbContext c
-            let ee = td.eeData
+    //    let g() =
+    //        printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{td}."
+    //        let ctx = getDbContext c
+    //        let ee = td.eeData
 
-            let r = ctx.Procedures.ClmTryUpdateProgressRunQueue.Invoke(
-                                        ``@runQueueId`` = q.value,
-                                        ``@progress`` = td.progressData.progress,
-                                        ``@callCount`` = td.progressData.callCount,
-                                        ``@relativeInvariant`` = td.yRelative,
-                                        ``@maxEe`` = ee.maxEe,
-                                        ``@maxAverageEe`` = ee.maxAverageEe,
-                                        ``@maxWeightedAverageAbsEe`` = ee.maxWeightedAverageAbsEe,
-                                        ``@maxLastEe`` = ee.maxLastEe)
+    //        let r = ctx.Procedures.ClmTryUpdateProgressRunQueue.Invoke(
+    //                                    ``@runQueueId`` = q.value,
+    //                                    ``@progress`` = td.progressData.progress,
+    //                                    ``@callCount`` = td.progressData.callCount,
+    //                                    ``@relativeInvariant`` = td.yRelative,
+    //                                    ``@maxEe`` = ee.maxEe,
+    //                                    ``@maxAverageEe`` = ee.maxAverageEe,
+    //                                    ``@maxWeightedAverageAbsEe`` = ee.maxWeightedAverageAbsEe,
+    //                                    ``@maxLastEe`` = ee.maxLastEe)
 
-            r.ResultSet |> bindIntScalar x q
+    //        r.ResultSet |> bindIntScalar x q
 
-        tryDbFun fromDbError g
+    //    tryDbFun fromDbError g

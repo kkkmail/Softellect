@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.WorkerNode</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.Core</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -29,7 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="Primitives.fs" />
@@ -41,9 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sys\Sys.fsproj" />
-    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
-    <ProjectReference Include="..\Messaging\Messaging.fsproj" />
+    <ProjectReference Include="..\..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\..\Wcf\Wcf.fsproj" />
+    <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

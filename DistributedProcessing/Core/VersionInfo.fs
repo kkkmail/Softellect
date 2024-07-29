@@ -1,4 +1,4 @@
-namespace Softellect.WorkerNode
+namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading

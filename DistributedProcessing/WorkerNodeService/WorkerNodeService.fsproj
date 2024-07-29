@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.WorkerNodeService</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.WorkerNodeService</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="WorkerNodeVersionInfo.ps1">
@@ -60,8 +60,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WorkerNode\WorkerNode.fsproj" />
-    <ProjectReference Include="..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
+    <ProjectReference Include="..\Core\Core.fsproj" />
+    <ProjectReference Include="..\..\Sys\Sys.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

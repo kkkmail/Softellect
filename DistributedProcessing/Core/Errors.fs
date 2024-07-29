@@ -1,4 +1,4 @@
-namespace Softellect.WorkerNode
+namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading
@@ -16,8 +16,19 @@ open Softellect.Messaging.Proxy
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
+open Softellect.DistributedProcessing.Primitives
 
 module Errors =
+
+    type InvalidRunQueueData =
+        {
+            runQueueId : RunQueueId
+            runQueueStatusFrom : RunQueueStatus option
+            runQueueStatusTo : RunQueueStatus
+            workerNodeIdOptFrom : WorkerNodeId option
+            workerNodeIdOptTo : WorkerNodeId option
+        }
+
 
     type TryLoadSolverRunnersError =
         | TryLoadSolverRunnersDbErr of DbError
@@ -112,6 +123,48 @@ module Errors =
         | UnableToFindRunQueue of RunQueueId
 
 
+    type TryResetRunQueueError =
+        | TryResetRunQueueDbErr of DbError
+        | ResetRunQueueEntryErr of RunQueueId
+
+
+    type SaveRunQueueError =
+        | SaveRunQueueDbErr of DbError
+
+
+    type DeleteRunQueueError =
+        | DeleteRunQueueEntryErr of RunQueueId
+        | DeleteRunQueueDbErr of DbError
+
+
+    type TryUpdateRunQueueRowError =
+        | InvalidStatusTransitionErr of InvalidRunQueueData
+        | InvalidDataErr of InvalidRunQueueData
+        | TryUpdateRunQueueRowDbErr of DbError
+
+
+    type UpsertRunQueueError =
+        | UpsertRunQueueDbErr of DbError
+
+
+    type LoadWorkerNodeInfoError =
+        | LoadWorkerNodeInfoDbErr of DbError
+        | UnableToLoadWorkerNodeErr of WorkerNodeId
+
+
+    type UpsertWorkerNodeInfoError =
+        | UpsertWorkerNodeInfoDbErr of DbError
+
+
+    type UpsertWorkerNodeErrError =
+        | UpsertWorkerNodeErrDbErr of DbError
+
+
+    type TryGetAvailableWorkerNodeError =
+        | TryGetAvailableWorkerNodeDbErr of DbError
+
+
+
 //    type OnRunModelError =
 //        | CannotRunModelErr of RunQueueId
 //        | CannotDeleteRunQueueErr of RunQueueId
@@ -165,8 +218,8 @@ module Errors =
 //        | CreateServiceImplWorkerNodeErr of MessagingError
 
 
-    type WorkerNodeError =
-        | WorkerNodeAggregateErr of WorkerNodeError * List<WorkerNodeError>
+    type DistributedProcessingError =
+        | WorkerNodeAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
         | TryGetRunningSolversCountErr of TryGetRunningSolversCountError
         | TryPickRunQueueErr of TryPickRunQueueError
@@ -188,6 +241,16 @@ module Errors =
         | TryLoadFirstRunQueueErr of TryLoadFirstRunQueueError
         | TryLoadRunQueueErr of TryLoadRunQueueError
 
+        | TryResetRunQueueErr of TryResetRunQueueError
+        | SaveRunQueueErr of SaveRunQueueError
+        | DeleteRunQueueErr of DeleteRunQueueError
+        | TryUpdateRunQueueRowErr of TryUpdateRunQueueRowError
+        | UpsertRunQueueErr of UpsertRunQueueError
+        | TimerEventErr of TimerEventError
+        | LoadWorkerNodeInfoErr of LoadWorkerNodeInfoError
+        | UpsertWorkerNodeInfoErr of UpsertWorkerNodeInfoError
+        | UpsertWorkerNodeErrErr of UpsertWorkerNodeErrError
+        | TryGetAvailableWorkerNodeErr of TryGetAvailableWorkerNodeError
 
         static member private addError a b =
             match a, b with
@@ -196,5 +259,11 @@ module Errors =
             | _, WorkerNodeAggregateErr (y, z) -> WorkerNodeAggregateErr (a, y :: z)
             | _ -> WorkerNodeAggregateErr (a, [b])
 
-        static member (+) (a, b) = WorkerNodeError.addError a b
+        static member (+) (a, b) = DistributedProcessingError.addError a b
         member a.add b = a + b
+
+
+    // ==================================
+    // Partitioner errors
+
+

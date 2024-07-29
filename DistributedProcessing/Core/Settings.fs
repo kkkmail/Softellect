@@ -1,4 +1,4 @@
-namespace Softellect.WorkerNode
+namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading
@@ -14,7 +14,7 @@ open Softellect.Wcf.Client
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.Sys.Primitives
-open Softellect.WorkerNode.Primitives
+open Softellect.DistributedProcessing.Primitives
 open Softellect.Sys.Core
 
 module Settings =
