@@ -5,7 +5,7 @@ open Argu
 open Softellect.Sys.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
-open Softellect.Messaging.Settings
+open Softellect.Messaging.AppSettings
 open Softellect.Sys.Worker
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy

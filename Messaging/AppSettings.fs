@@ -14,7 +14,7 @@ open Softellect.Messaging.Primitives
 open Softellect.Sys
 
 
-module Settings =
+module AppSettings =
 
     type MessagingConfigParam =
         | DummyConfig

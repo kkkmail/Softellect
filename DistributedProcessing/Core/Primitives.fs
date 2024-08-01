@@ -25,6 +25,30 @@ module Primitives =
     let defaultNoOfProgressPoints = 100
 
 
+    let workerNodeServiceProgramName = "WorkerNodeService.exe"
+
+
+    [<Literal>]
+    let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
+
+    let defaultServicePort : int = 5000 // + messagingDataVersion.value
+
+
+    let defaultContGenNetTcpServicePort = defaultServicePort |> ServicePort
+    let defaultContGenHttpServicePort = defaultContGenNetTcpServicePort.value + 1 |> ServicePort
+    let defaultContGenServiceAddress = LocalHost |> ServiceAddress
+
+
+    let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
+    let defaultWorkerNodeHttpServicePort = defaultWorkerNodeNetTcpServicePort.value + 1 |> ServicePort
+    let defaultWorkerNodeServiceAddress = LocalHost |> ServiceAddress
+
+
+
+    type WorkerNodeConfigParam =
+        | WorkerNumberOfSores of int
+
+
     type AbsoluteTolerance =
         | AbsoluteTolerance of double
 
@@ -139,3 +163,14 @@ module Primitives =
 
         member this.value = let (LastAllowedNodeErr v) = this in v
         static member defaultValue = LastAllowedNodeErr 60<minute>
+
+
+    type WorkerNodeState =
+        | NotStartedWorkerNode
+        | StartedWorkerNode
+
+
+    type WorkerNodeRunnerState =
+        {
+            workerNodeState : WorkerNodeState
+        }

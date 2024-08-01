@@ -35,8 +35,9 @@
     <Compile Include="Primitives.fs" />
     <Compile Include="VersionInfo.fs" />
     <Compile Include="Errors.fs" />
+    <Compile Include="ServiceInfo.fs" />
     <Compile Include="Proxy.fs" />
-    <Compile Include="Settings.fs" />
+    <Compile Include="AppSettings.fs" />
     <Compile Include="DataAccess.fs" />
   </ItemGroup>
 

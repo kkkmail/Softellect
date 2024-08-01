@@ -6,6 +6,10 @@ open System
 module Primitives =
 
     [<Literal>]
+    let CopyrightInfo = "MIT License - Copyright Konstantin K. Konstantinov and Alisa F. Konstantinova © 2015 - 2024."
+
+
+    [<Literal>]
     let DefaultRootDrive = "C"
 
 
@@ -36,6 +40,12 @@ module Primitives =
     let millisecondsPerSecond = 1_000<millisecond/second>
     let secondsPerMinute = 60<second/minute>
     let minutesPerHour = 60<minute/hour>
+
+
+    type VersionNumber =
+        | VersionNumber of string
+
+        member this.value = let (VersionNumber v) = this in v
 
 
     type ServiceAddress =
