@@ -17,8 +17,11 @@ open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Primitives
 open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
+open Softellect.Wcf.AppSettings
 
 module AppSettings =
+
+    let partitionerId = ConfigKey "PartitionerId"
 
     let workerNodeName = ConfigKey "WorkerNodeName"
     let workerNodeServiceAddress = ConfigKey "WorkerNodeServiceAddress"
@@ -154,6 +157,15 @@ module AppSettings =
         | Ok provider ->
             match provider.tryGetBool n with
             | Ok (Some b) -> b
+            | _ -> d
+        | _ -> d
+
+
+    let getPartitionerId (providerRes : AppSettingsProviderResult) n d =
+        match providerRes with
+        | Ok provider ->
+            match provider.tryGetGuid n with
+            | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
             | _ -> d
         | _ -> d
 

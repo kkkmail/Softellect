@@ -267,3 +267,7 @@ module Errors =
     // Partitioner errors
 
 
+    type DistributedProcessingUnitResult = UnitResult<DistributedProcessingError>
+    type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
+    type DistributedProcessingListResult<'T> = ListResult<'T, DistributedProcessingError>
+    type DistributedProcessingStateWithResult<'T> = StateWithResult<'T, DistributedProcessingError>

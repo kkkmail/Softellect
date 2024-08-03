@@ -99,14 +99,6 @@ module Primitives =
         static member getNewId() = Guid.NewGuid() |> RunQueueId
 
 
-    type PartitionerId =
-        //| PartitionerId of MessagingClientId
-        | PartitionerId of Guid
-
-        member this.value = let (PartitionerId v) = this in v
-        //member this.messagingClientId = let (PartitionerId v) = this in v
-
-
     type RunQueueStatus =
         | NotStartedRunQueue
         | InactiveRunQueue

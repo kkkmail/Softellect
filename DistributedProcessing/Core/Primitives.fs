@@ -44,6 +44,16 @@ module Primitives =
     let defaultWorkerNodeServiceAddress = LocalHost |> ServiceAddress
 
 
+    type PartitionerId =
+        | PartitionerId of MessagingClientId
+        //| PartitionerId of Guid
+
+        member this.value = let (PartitionerId v) = this in v.value
+        member this.messagingClientId = let (PartitionerId v) = this in v
+
+
+    let defaultPartitionerId = Guid("F941F87C-BEBC-43E7-ABD3-967E377CBD57") |> MessagingClientId |> PartitionerId
+
 
     type WorkerNodeConfigParam =
         | WorkerNumberOfSores of int
@@ -84,18 +94,22 @@ module Primitives =
         else None
 
 
-    type ProgressData =
+    type ProgressData<'P> =
         {
             progress : decimal
             callCount : int64
+            relativeInvariant : double // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
+            progressData : 'P
         }
 
-        static member defaultValue =
+        static member getDefaultValue p =
             {
                 progress = 0.0m
                 callCount = 0L
+                relativeInvariant = 1.0
                 errorMessageOpt = None
+                progressData = p
             }
 
         member data.estimateEndTime (started : DateTime) = estimateEndTime data.progress started
