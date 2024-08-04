@@ -117,7 +117,13 @@ module Service =
                     toErr = fun e -> e |> TimerEventErr
                 }
 
-            let h = TimerEventHandler(info, proxy)
+            let i =
+                {
+                    timerEventInfo = info
+                    timerProxy = proxy
+                }
+
+            let h = TimerEventHandler i
             do h.start()
 
 

@@ -21,55 +21,18 @@ open Softellect.Wcf.AppSettings
 
 module AppSettings =
 
-    let partitionerId = ConfigKey "PartitionerId"
+    let partitionerIdKey = ConfigKey "PartitionerId"
 
-    let workerNodeName = ConfigKey "WorkerNodeName"
-    let workerNodeServiceAddress = ConfigKey "WorkerNodeServiceAddress"
-    let workerNodeServiceHttpPort = ConfigKey "WorkerNodeServiceHttpPort"
-    let workerNodeServiceNetTcpPort = ConfigKey "WorkerNodeServiceNetTcpPort"
-    let workerNodeServiceCommunicationType = ConfigKey "WorkerNodeServiceCommunicationType"
-    let workerNodeId = ConfigKey "WorkerNodeId"
+    let workerNodeNameKey = ConfigKey "WorkerNodeName"
+    let workerNodeServiceAddressKey = ConfigKey "WorkerNodeServiceAddress"
+    let workerNodeServiceHttpPortKey = ConfigKey "WorkerNodeServiceHttpPort"
+    let workerNodeServiceNetTcpPortKey = ConfigKey "WorkerNodeServiceNetTcpPort"
+    let workerNodeServiceCommunicationTypeKey = ConfigKey "WorkerNodeServiceCommunicationType"
+    let workerNodeIdKey = ConfigKey "WorkerNodeId"
 
-    let noOfCores = ConfigKey "NoOfCores"
-    let isInactive = ConfigKey "IsInactive"
-    let nodePriority = ConfigKey "NodePriority"
-
-
-    type WorkerNodeInfo =
-        {
-            workerNodeId : WorkerNodeId
-            workerNodeName : WorkerNodeName
-            partitionerId : PartitionerId
-            noOfCores : int
-            nodePriority : WorkerNodePriority
-            isInactive : bool
-            lastErrorDateOpt : DateTime option
-        }
-
-
-    type WorkerNodeServiceAccessInfo =
-        | WorkerNodeServiceAccessInfo of ServiceAccessInfo
-
-        member w.value = let (WorkerNodeServiceAccessInfo v) = w in v
-
-        static member create address httpPort netTcpPort securityMode =
-            let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
-            let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
-            ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
-
-
-    type WorkerNodeServiceInfo =
-        {
-            workerNodeInfo : WorkerNodeInfo
-            workerNodeServiceAccessInfo : WorkerNodeServiceAccessInfo
-            messagingServiceAccessInfo : MessagingServiceAccessInfo
-        }
-
-        member this.messagingClientAccessInfo =
-            {
-                msgClientId = this.workerNodeInfo.workerNodeId.messagingClientId
-                msgSvcAccessInfo = this.messagingServiceAccessInfo
-            }
+    let noOfCoresKey = ConfigKey "NoOfCores"
+    let isInactiveKey = ConfigKey "IsInactive"
+    let nodePriorityKey = ConfigKey "NodePriority"
 
 
     type WorkerNodeSettings =
@@ -103,10 +66,10 @@ module AppSettings =
 
 
     let loadWorkerNodeServiceSettings providerRes =
-        let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddress defaultWorkerNodeServiceAddress
-        let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPort defaultWorkerNodeHttpServicePort
-        let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPort defaultWorkerNodeNetTcpServicePort
-        let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationType NetTcpCommunication
+        let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddressKey defaultWorkerNodeServiceAddress
+        let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPortKey defaultWorkerNodeHttpServicePort
+        let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPortKey defaultWorkerNodeNetTcpServicePort
+        let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey NetTcpCommunication
 
         let workerNodeSvcInfo =
             WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue
@@ -171,8 +134,8 @@ module AppSettings =
 
 
     let tryLoadWorkerNodeInfo (providerRes : AppSettingsProviderResult) nodeIdOpt nameOpt =
-        let io = nodeIdOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeId providerRes workerNodeId)
-        let no = nameOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeName providerRes workerNodeName)
+        let io = nodeIdOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeId providerRes workerNodeIdKey)
+        let no = nameOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeName providerRes workerNodeNameKey)
 
         match io, no with
         | Some i, Some n ->
@@ -187,10 +150,10 @@ module AppSettings =
                 {
                     workerNodeId = i
                     workerNodeName  = n
-                    partitionerId = getPartitionerId providerRes partitionerId defaultPartitionerId
-                    noOfCores = getNoOfCores providerRes noOfCores defaultNoOfCores
-                    nodePriority = getNodePriority providerRes nodePriority WorkerNodePriority.defaultValue.value
-                    isInactive = getIsInactive providerRes isInactive true
+                    partitionerId = getPartitionerId providerRes partitionerIdKey defaultPartitionerId
+                    noOfCores = getNoOfCores providerRes noOfCoresKey defaultNoOfCores
+                    nodePriority = getNodePriority providerRes nodePriorityKey WorkerNodePriority.defaultValue.value
+                    isInactive = getIsInactive providerRes isInactiveKey true
                     lastErrorDateOpt = None
                 }
 

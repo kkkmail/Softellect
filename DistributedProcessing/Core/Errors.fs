@@ -170,12 +170,12 @@ module Errors =
 //        | CannotDeleteRunQueueErr of RunQueueId
 
 
-//    type OnProcessMessageError =
-//        | CannotSaveModelDataErr of MessageId * RunQueueId
-////        | OnRunModelFailedErr of MessageId * RunQueueId
-////        | ModelAlreadyRunningErr of MessageId * RunQueueId
-//        | InvalidMessageErr of (MessageId * string)
-//        | FailedToCancelErr of (MessageId * RunQueueId * exn)
+    type OnProcessMessageError =
+        | CannotSaveModelDataErr of MessageId * RunQueueId
+//        | OnRunModelFailedErr of MessageId * RunQueueId
+//        | ModelAlreadyRunningErr of MessageId * RunQueueId
+        | InvalidMessageErr of (MessageId * string)
+        | FailedToCancelErr of (MessageId * RunQueueId * exn)
 
 
 //    type OnRequestResultError =
@@ -189,7 +189,7 @@ module Errors =
 
 //    type WorkerNodeError =
 //        | OnRunModelErr of OnRunModelError
-//        | OnProcessMessageErr of OnProcessMessageError
+////        | OnProcessMessageErr of OnProcessMessageError
 //        | OnGetMessagesErr of OnGetMessagesError
 //        | OnRequestResultErr of OnRequestResultError
 //        //| WrkSettingsErr of WrkSettingsError
@@ -214,8 +214,7 @@ module Errors =
 //        // Ugly stuff
 //        // TODO kk:20240722 - WorkNode error types are now inconsistent and conflict with messaging error types.
 //        // See: https://github.com/kkkmail/CoreClm/issues/40
-//        | UnableToREgisterWorkerNodeErr of MessagingError
-//        | CreateServiceImplWorkerNodeErr of MessagingError
+//        | UnableToRegisterWorkerNodeErr of MessagingError
 
 
     type DistributedProcessingError =
@@ -252,7 +251,11 @@ module Errors =
         | UpsertWorkerNodeErrErr of UpsertWorkerNodeErrError
         | TryGetAvailableWorkerNodeErr of TryGetAvailableWorkerNodeError
 
-        static member private addError a b =
+        | OnProcessMessageErr of OnProcessMessageError
+        | UnableToRegisterWorkerNodeErr of MessagingError
+        | CreateServiceImplWorkerNodeErr of MessagingError
+
+        static member addError a b =
             match a, b with
             | WorkerNodeAggregateErr (x, w), WorkerNodeAggregateErr (y, z) -> WorkerNodeAggregateErr (x, w @ (y :: z))
             | WorkerNodeAggregateErr (x, w), _ -> WorkerNodeAggregateErr (x, w @ [b])

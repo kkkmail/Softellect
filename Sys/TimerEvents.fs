@@ -53,21 +53,53 @@ module TimerEvents =
         }
 
 
-    type TimerEventHandler<'E> (i : TimerEventInfo, proxy : TimerEventProxy<'E>) =
+    type TimerEventHandlerInfo<'E> =
+        {
+            timerEventInfo : TimerEventInfo
+            timerProxy : TimerEventProxy<'E>
+        }
+
+        member i.withFirstDelay d =
+            { i with timerEventInfo = { i.timerEventInfo with firstDelay = d } }
+
+        static member defaultValue logger e h n =
+            {
+                timerEventInfo = TimerEventInfo.defaultValue n
+                timerProxy =
+                    {
+                        eventHandler = h
+                        logger = logger
+                        toErr = e
+                    }
+            }
+
+        static member oneHourValue logger e h n =
+            {
+                timerEventInfo = TimerEventInfo.oneHourValue n
+                timerProxy =
+                    {
+                        eventHandler = h
+                        logger = logger
+                        toErr = e
+                    }
+            }
+
+
+    type TimerEventHandler<'E> (i : TimerEventHandlerInfo<'E>) =
         let mutable counter = -1
         let mutable lastStartedAt = DateTime.Now
-        let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
-        let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
-        let logger = proxy.logger
-        let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> proxy.toErr |> logger.logErrorData
-        let logWarn e = e |> proxy.toErr |> logger.logWarnData
-        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.handlerName}"
+        let handlerId = i.timerEventInfo.handlerId |> Option.defaultValue (Guid.NewGuid())
+        let refreshInterval = i.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
+        let logger = i.timerProxy.logger
+        let firstDelay = i.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
+        let logError e = e |> i.timerProxy.toErr |> logger.logErrorData
+        let logWarn e = e |> i.timerProxy.toErr |> logger.logWarnData
+        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.timerEventInfo.handlerName}"
 //        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
 
         let g() =
             try
-                match proxy.eventHandler() with
+                match i.timerProxy.eventHandler() with
                 | Ok() ->
 //                    logger.logDebugString "proxy.eventHandler() - succeeded."
                     ()
@@ -75,7 +107,7 @@ module TimerEvents =
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }
@@ -91,7 +123,7 @@ module TimerEvents =
                     timedImplementation false logger info g
                 else
                     {
-                        handlerName = i.handlerName
+                        handlerName = i.timerEventInfo.handlerName
                         handlerId = handlerId
                         runTime = DateTime.Now - lastStartedAt
                     }
@@ -107,7 +139,7 @@ module TimerEvents =
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }
@@ -119,7 +151,7 @@ module TimerEvents =
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }

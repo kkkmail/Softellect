@@ -137,3 +137,10 @@ module Primitives =
         | ProcessId of int
 
         member this.value = let (ProcessId v) = this in v
+
+
+    type HtmlChart =
+        {
+            htmlContent: string
+            fileName : string
+        }

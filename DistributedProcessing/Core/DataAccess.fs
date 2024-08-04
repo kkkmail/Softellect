@@ -199,14 +199,14 @@ module DataAccess =
         row
 
 
-    let saveRunQueue<'D> c (r : RunQueueId) (w : 'D) =
+    let saveRunQueue<'D> c (w : WorkerNodeRunModelData<'D>) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate
 
         let g() =
             let ctx = getDbContext c
-            let row = addRunQueueRow ctx r w
+            let row = addRunQueueRow ctx w.runQueueId w.modelData
             ctx.SubmitUpdates()
 
             Ok()

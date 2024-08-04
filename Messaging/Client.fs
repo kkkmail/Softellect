@@ -235,18 +235,38 @@ module Client =
                 toErr = fun e -> e |> TimerEventErr
             }
 
-        let h = TimerEventHandler (i, proxy)
+        let info =
+            {
+                timerEventInfo = i
+                timerProxy = proxy
+            }
+
+        let h = TimerEventHandler info
         do h.start()
 
         let eventHandler1 _ = w.trySendMessages()
         let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = RefreshInterval / 3 |> Some }
-        let h1 = TimerEventHandler (i1, { proxy with eventHandler = eventHandler1 })
+
+        let info1 =
+            {
+                timerEventInfo = i1
+                timerProxy = { proxy with eventHandler = eventHandler1 }
+            }
+
+        let h1 = TimerEventHandler info1
 
         do h1.start()
 
         let eventHandler2 _ = w.removeExpiredMessages()
         let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
-        let h2 = TimerEventHandler (i2, { proxy with eventHandler = eventHandler2 })
+
+        let info2 =
+            {
+                timerEventInfo = i2
+                timerProxy = { proxy with eventHandler = eventHandler2 }
+            }
+
+        let h2 = TimerEventHandler info2
         do h2.start()
 
 

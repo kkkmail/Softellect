@@ -2,18 +2,16 @@ namespace Softellect.DistributedProcessing
 
 open System
 open System.Threading
-
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.Errors
 open Softellect.Sys.TimerEvents
-
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
-
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
+open Softellect.Messaging.Client
 open Softellect.Sys.Primitives
 
 module Primitives =
@@ -157,10 +155,15 @@ module Primitives =
     //        modelData : 'D
     //        controlData : 'C
     //    }
+    type WorkerNodeRunModelData<'D> =
+        {
+            runQueueId : RunQueueId
+            modelData : 'D
+        }
 
 
     type WorkerNodeMessage<'D> =
-        | RunModelWrkMsg of (RunQueueId * 'D)
+        | RunModelWrkMsg of WorkerNodeRunModelData<'D>
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestResultWrkMsg of (RunQueueId * ResultNotificationType)
 
@@ -188,3 +191,185 @@ module Primitives =
         {
             workerNodeState : WorkerNodeState
         }
+
+        static member maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
+
+        static member defaultValue =
+            {
+                workerNodeState = NotStartedWorkerNode
+            }
+
+
+    type WorkerNodeInfo =
+        {
+            workerNodeId : WorkerNodeId
+            workerNodeName : WorkerNodeName
+            partitionerId : PartitionerId
+            noOfCores : int
+            nodePriority : WorkerNodePriority
+            isInactive : bool
+            lastErrorDateOpt : DateTime option
+        }
+
+
+    type WorkerNodeServiceAccessInfo =
+        | WorkerNodeServiceAccessInfo of ServiceAccessInfo
+
+        member w.value = let (WorkerNodeServiceAccessInfo v) = w in v
+
+        static member create address httpPort netTcpPort securityMode =
+            let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
+            let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
+            ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
+
+
+    type WorkerNodeServiceInfo =
+        {
+            workerNodeInfo : WorkerNodeInfo
+            workerNodeServiceAccessInfo : WorkerNodeServiceAccessInfo
+            messagingServiceAccessInfo : MessagingServiceAccessInfo
+        }
+
+        member this.messagingClientAccessInfo =
+            {
+                msgClientId = this.workerNodeInfo.workerNodeId.messagingClientId
+                msgSvcAccessInfo = this.messagingServiceAccessInfo
+            }
+
+
+    type ProgressUpdateInfo<'P> =
+        {
+            runQueueId : RunQueueId
+            updatedRunQueueStatus : RunQueueStatus option
+            progressData : ProgressData<'P>
+        }
+
+
+    type ChartInfo =
+        {
+            runQueueId : RunQueueId
+            //defaultValueId : ClmDefaultValueId
+            charts : list<HtmlChart>
+        }
+
+
+    type ChartGenerationResult =
+        | GeneratedCharts of ChartInfo
+        | NotGeneratedCharts
+
+
+    /// Generic type parameter 'P is the type of progress data.
+    /// It should account for intermediate progress data and final progress data.
+    type PartitionerMessage<'P> =
+        | UpdateProgressPrtMsg of ProgressUpdateInfo<'P>
+        | SaveChartsPrtMsg of ChartInfo
+        | RegisterWorkerNodePrtMsg of WorkerNodeInfo
+        | UnregisterWorkerNodePrtMsg of WorkerNodeId
+
+        member this.messageSize =
+            match this with
+            | UpdateProgressPrtMsg _ -> SmallSize
+            | SaveChartsPrtMsg _ -> MediumSize
+            | RegisterWorkerNodePrtMsg _ -> SmallSize
+            | UnregisterWorkerNodePrtMsg _ -> SmallSize
+
+
+    /// The decision was that we want strongly typed messages rather than untyped messages.
+    /// TextData is used mostly for tests but can be also used to send an arbitrary object serialized into JSON.
+    /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>) 
+    /// and WorkerNodes send messages to Partitioner (PartitionerMessage<'P>).
+    /// Single type could be used, but it seems inconvenient, as both partitioner and worker node would have to perform exhaustive pattern matching.
+    type DistributedProcessingMessageData<'D, 'P> =
+        | TextData of string
+        | PartitionerMsg of PartitionerMessage<'P>
+        | WorkerNodeMsg of WorkerNodeMessage<'D>
+
+        static member maxInfoLength = 500
+
+        member this.getMessageSize() =
+            match this with
+            | TextData s ->
+                if s.Length < 1_000 then SmallSize
+                else if s.Length < 1_000_000 then MediumSize
+                else LargeSize
+            | PartitionerMsg m -> m.messageSize
+            | WorkerNodeMsg m -> m.messageSize
+
+
+    type PartitionerMessageInfo<'P> =
+        {
+            partitionerRecipient : PartitionerId
+            deliveryType : MessageDeliveryType
+            messageData : PartitionerMessage<'P>
+        }
+
+        member this.getMessageInfo() =
+            {
+                recipientInfo =
+                    {
+                        recipient = this.partitionerRecipient.messagingClientId
+                        deliveryType = this.deliveryType
+                    }
+                messageData = this.messageData |> PartitionerMsg |> UserMsg
+            }
+
+
+    type WorkerNodeMessageInfo<'D> =
+        {
+            workerNodeRecipient : WorkerNodeId
+            deliveryType : MessageDeliveryType
+            messageData : WorkerNodeMessage<'D>
+        }
+
+        member this.getMessageInfo() =
+            {
+                recipientInfo =
+                    {
+                        recipient = this.workerNodeRecipient.messagingClientId
+                        deliveryType = this.deliveryType
+                    }
+                messageData = this.messageData |> WorkerNodeMsg |> UserMsg
+            }
+
+
+    type RunQueue<'P> =
+        {
+            runQueueId : RunQueueId
+            //info : RunQueueInfo
+            runQueueStatus : RunQueueStatus
+            workerNodeIdOpt : WorkerNodeId option
+            progressData : ProgressData<'P>
+            createdOn : DateTime
+        }
+
+        //member q.modelCommandLineParam = q.info.modelCommandLineParam
+
+        //static member fromModelCommandLineParam modelDataId defaultValueId p =
+        //    {
+        //        runQueueId = Guid.NewGuid() |> RunQueueId
+
+        //        info =
+        //            {
+        //                modelDataId = modelDataId
+        //                defaultValueId = defaultValueId
+        //                modelCommandLineParam = p
+        //            }
+
+        //        runQueueStatus = NotStartedRunQueue
+        //        workerNodeIdOpt = None
+        //        progressData = ClmProgressData.defaultValue
+        //        createdOn = DateTime.Now
+        //    }
+
+        //override r.ToString() =
+        //    let (ModelDataId modelDataId) = r.info.modelDataId
+        //    let (ClmDefaultValueId defaultValueId) = r.info.defaultValueId
+        //    let (RunQueueId runQueueId) = r.runQueueId
+        //    let s = (DateTime.Now - r.createdOn).ToString("d\.hh\:mm")
+
+        //    let estCompl =
+        //        match r.runQueueStatus, r.progressData.estimateEndTime r.createdOn with
+        //        | InProgressRunQueue, Some e -> " ETC: " + e.ToString("yyyy-MM-dd.HH:mm") + ";"
+        //        | _ -> EmptyString
+
+        //    $"{{ T: %s{s};%s{estCompl} DF: %A{defaultValueId}; MDID: %A{modelDataId}; PID: %A{runQueueId}; %A{r.progressData.progressData.progress} }}"

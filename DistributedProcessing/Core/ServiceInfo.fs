@@ -1,5 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing
 
+open Softellect.DistributedProcessing.Errors
+
 module ServiceInfo =
     let x = 1
 
