@@ -164,10 +164,9 @@ module Errors =
         | TryGetAvailableWorkerNodeDbErr of DbError
 
 
-
-//    type OnRunModelError =
-//        | CannotRunModelErr of RunQueueId
-//        | CannotDeleteRunQueueErr of RunQueueId
+    type OnRunModelError =
+        | CannotRunModelErr of RunQueueId
+        | CannotDeleteRunQueueErr of RunQueueId
 
 
     type OnProcessMessageError =
@@ -188,7 +187,7 @@ module Errors =
 
 
 //    type WorkerNodeError =
-//        | OnRunModelErr of OnRunModelError
+////        | OnRunModelErr of OnRunModelError
 ////        | OnProcessMessageErr of OnProcessMessageError
 //        | OnGetMessagesErr of OnGetMessagesError
 //        | OnRequestResultErr of OnRequestResultError
@@ -203,8 +202,8 @@ module Errors =
 
 //    type WorkerNodeServiceError =
 //        | WorkerNodeWcfErr of WorkerNodeWcfError
-//        | UnableToStartMessagingClientErr of MessagingError
-//        | UnableToCreateWorkerNodeServiceErr
+////        | UnableToStartMessagingClientErr of MessagingError
+////        | UnableToCreateWorkerNodeServiceErr
 //        | ServiceUnavailableErr
 //        | UpdateLocalProgressErr of string
 //        | ConfigureServiceErr of string
@@ -218,7 +217,7 @@ module Errors =
 
 
     type DistributedProcessingError =
-        | WorkerNodeAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
+        | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
         | TryGetRunningSolversCountErr of TryGetRunningSolversCountError
         | TryPickRunQueueErr of TryPickRunQueueError
@@ -255,12 +254,17 @@ module Errors =
         | UnableToRegisterWorkerNodeErr of MessagingError
         | CreateServiceImplWorkerNodeErr of MessagingError
 
+        | OnRunModelErr of OnRunModelError
+        | UnableToStartMessagingClientErr of MessagingError
+        | UnableToCreateWorkerNodeServiceErr
+
+
         static member addError a b =
             match a, b with
-            | WorkerNodeAggregateErr (x, w), WorkerNodeAggregateErr (y, z) -> WorkerNodeAggregateErr (x, w @ (y :: z))
-            | WorkerNodeAggregateErr (x, w), _ -> WorkerNodeAggregateErr (x, w @ [b])
-            | _, WorkerNodeAggregateErr (y, z) -> WorkerNodeAggregateErr (a, y :: z)
-            | _ -> WorkerNodeAggregateErr (a, [b])
+            | DistributedProcessingAggregateErr (x, w), DistributedProcessingAggregateErr (y, z) -> DistributedProcessingAggregateErr (x, w @ (y :: z))
+            | DistributedProcessingAggregateErr (x, w), _ -> DistributedProcessingAggregateErr (x, w @ [b])
+            | _, DistributedProcessingAggregateErr (y, z) -> DistributedProcessingAggregateErr (a, y :: z)
+            | _ -> DistributedProcessingAggregateErr (a, [b])
 
         static member (+) (a, b) = DistributedProcessingError.addError a b
         member a.add b = a + b

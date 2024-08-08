@@ -23,12 +23,12 @@ module AppSettings =
 
     let partitionerIdKey = ConfigKey "PartitionerId"
 
+    let workerNodeIdKey = ConfigKey "WorkerNodeId"
     let workerNodeNameKey = ConfigKey "WorkerNodeName"
     let workerNodeServiceAddressKey = ConfigKey "WorkerNodeServiceAddress"
     let workerNodeServiceHttpPortKey = ConfigKey "WorkerNodeServiceHttpPort"
     let workerNodeServiceNetTcpPortKey = ConfigKey "WorkerNodeServiceNetTcpPort"
     let workerNodeServiceCommunicationTypeKey = ConfigKey "WorkerNodeServiceCommunicationType"
-    let workerNodeIdKey = ConfigKey "WorkerNodeId"
 
     let noOfCoresKey = ConfigKey "NoOfCores"
     let isInactiveKey = ConfigKey "IsInactive"
@@ -77,65 +77,65 @@ module AppSettings =
         (workerNodeSvcInfo, workerNodeServiceCommunicationType)
 
 
-    let tryGetWorkerNodeId (providerRes : AppSettingsProviderResult) n =
+    let tryGetWorkerNodeId (providerRes : AppSettingsProviderResult) =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetGuid n with
+            match provider.tryGetGuid workerNodeIdKey with
             | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> WorkerNodeId |> Some
             | _ -> None
         | _ -> None
 
 
-    let tryGetWorkerNodeName (providerRes : AppSettingsProviderResult) n =
+    let tryGetWorkerNodeName (providerRes : AppSettingsProviderResult) =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetString n with
+            match provider.tryGetString workerNodeNameKey with
             | Ok (Some EmptyString) -> None
             | Ok (Some s) -> s |> WorkerNodeName |> Some
             | _ -> None
         | _ -> None
 
 
-    let getNoOfCores (providerRes : AppSettingsProviderResult) n d =
+    let getNoOfCores (providerRes : AppSettingsProviderResult) d =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetInt n with
+            match provider.tryGetInt noOfCoresKey with
             | Ok (Some k) when k >= 0 -> k
             | _ -> d
         | _ -> d
 
 
-    let getNodePriority (providerRes : AppSettingsProviderResult) n d =
+    let getNodePriority (providerRes : AppSettingsProviderResult) d =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetInt n with
+            match provider.tryGetInt nodePriorityKey with
             | Ok (Some k) when k >= 0 -> k
             | _ -> d
         | _ -> d
         |> WorkerNodePriority
 
 
-    let getIsInactive (providerRes : AppSettingsProviderResult) n d =
+    let getIsInactive (providerRes : AppSettingsProviderResult) d =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetBool n with
+            match provider.tryGetBool isInactiveKey with
             | Ok (Some b) -> b
             | _ -> d
         | _ -> d
 
 
-    let getPartitionerId (providerRes : AppSettingsProviderResult) n d =
+    let getPartitionerId (providerRes : AppSettingsProviderResult) d =
         match providerRes with
         | Ok provider ->
-            match provider.tryGetGuid n with
+            match provider.tryGetGuid partitionerIdKey with
             | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
             | _ -> d
         | _ -> d
 
 
     let tryLoadWorkerNodeInfo (providerRes : AppSettingsProviderResult) nodeIdOpt nameOpt =
-        let io = nodeIdOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeId providerRes workerNodeIdKey)
-        let no = nameOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeName providerRes workerNodeNameKey)
+        let io = nodeIdOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeId providerRes)
+        let no = nameOpt |> Option.orElseWith (fun () -> tryGetWorkerNodeName providerRes)
 
         match io, no with
         | Some i, Some n ->
@@ -150,10 +150,10 @@ module AppSettings =
                 {
                     workerNodeId = i
                     workerNodeName  = n
-                    partitionerId = getPartitionerId providerRes partitionerIdKey defaultPartitionerId
-                    noOfCores = getNoOfCores providerRes noOfCoresKey defaultNoOfCores
-                    nodePriority = getNodePriority providerRes nodePriorityKey WorkerNodePriority.defaultValue.value
-                    isInactive = getIsInactive providerRes isInactiveKey true
+                    partitionerId = getPartitionerId providerRes defaultPartitionerId
+                    noOfCores = getNoOfCores providerRes defaultNoOfCores
+                    nodePriority = getNodePriority providerRes WorkerNodePriority.defaultValue.value
+                    isInactive = getIsInactive providerRes true
                     lastErrorDateOpt = None
                 }
 

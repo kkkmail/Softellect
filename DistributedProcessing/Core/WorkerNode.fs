@@ -224,15 +224,15 @@ module WorkerNode =
 
     type WorkerNodeRunner<'D, 'P>
         with
-        static member create (j : DistributedProcessingResult<WorkerNodeServiceInfo>) =
+        static member create messagingDataVersion tryRunSolverProcess (j : DistributedProcessingResult<WorkerNodeServiceInfo>) =
             let logger = Logger.defaultValue
-            let addError f e = ((f |> WorkerNodeServiceErr) + e) |> Error
+            let addError f e = (f + e) |> Error
             let c = getWorkerNodeSvcConnectionString
 
             let sr n (q : RunQueueId) : UnitResult =
                 match tryRunSolverProcess n q with
                 | Some _ -> Ok()
-                | None -> q |> CannotRunModelErr |> OnRunModelErr |> WorkerNodeErr |> Error
+                | None -> q |> CannotRunModelErr |> OnRunModelErr |> Error
 
             match j with
             | Ok i ->
@@ -271,7 +271,7 @@ module WorkerNode =
                         match n with
                         | Ok v -> Ok v
                         | Error e -> addError UnableToCreateWorkerNodeServiceErr e
-                    | Error e -> UnableToStartMessagingClientErr e |> WorkerNodeServiceErr |> Error
+                    | Error e -> UnableToStartMessagingClientErr e |> Error
 
                 w
             | Error e -> Error e
