@@ -57,6 +57,7 @@ module ServiceInfo =
     //
     // ===================================================
 
+    /// 'D is the strongly typed data that is being sent / received by messaging service.
     type MessagingResult<'D> = Result<'D, MessagingError>
     type MessagingOptionalResult<'D> = Result<Message<'D> option, MessagingError>
     type MessagingUnitResult = UnitResult<MessagingError>
