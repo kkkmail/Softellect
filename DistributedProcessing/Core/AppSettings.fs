@@ -159,3 +159,20 @@ module AppSettings =
 
             Some w
         | _ -> None
+
+
+    /// Type parameter 'P is needed because this class is shared by WorkerNodeService and WorkerNodeAdm
+    /// and they do have different type of this 'P.
+    type WorkerNodeSettingsProxy<'P> =
+        {
+            tryGetClientId : 'P -> WorkerNodeId option
+            tryGetNodeName : 'P -> WorkerNodeName option
+            tryGetPartitioner : 'P -> PartitionerId option
+            tryGetNoOfCores : 'P -> int option
+            tryGetInactive : 'P -> bool option
+            tryGetServiceAddress : 'P -> ServiceAddress option
+            tryGetServicePort : 'P -> ServicePort option
+            tryGetMsgServiceAddress : 'P -> ServiceAddress option
+            tryGetMsgServicePort : 'P -> ServicePort option
+            tryGetForce : 'P -> bool option // TODO kk:20211123 - Not yet fully implemented.
+        }

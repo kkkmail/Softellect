@@ -275,23 +275,17 @@ module Primitives =
 
 
     /// The decision was that we want strongly typed messages rather than untyped messages.
-    /// TextData is used mostly for tests but can be also used to send an arbitrary object serialized into JSON.
     /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>) 
     /// and WorkerNodes send messages to Partitioner (PartitionerMessage<'P>).
     /// Single type could be used, but it seems inconvenient, as both partitioner and worker node would have to perform exhaustive pattern matching.
     type DistributedProcessingMessageData<'D, 'P> =
-        | TextData of string
-        | PartitionerMsg of PartitionerMessage<'P>
-        | WorkerNodeMsg of WorkerNodeMessage<'D>
+        | PartitionerMsg of PartitionerMessage<'P> // A message sent from worker node to partitioner.
+        | WorkerNodeMsg of WorkerNodeMessage<'D> // A message sent from partitioner to worker node.
 
         static member maxInfoLength = 500
 
         member this.getMessageSize() =
             match this with
-            | TextData s ->
-                if s.Length < 1_000 then SmallSize
-                else if s.Length < 1_000_000 then MediumSize
-                else LargeSize
             | PartitionerMsg m -> m.messageSize
             | WorkerNodeMsg m -> m.messageSize
 

@@ -25,6 +25,9 @@ module Client =
     let maxNumberOfLargeMessages = 100
 
 
+    let private addMessagingError f e = f + e
+
+
     type MessageCount =
         {
             smallMessages : int
@@ -332,6 +335,7 @@ module Client =
                 incrementCount = incrementCount
                 decrementCount = decrementCount
                 logOnError = d.logOnError
+                maxMessages = maxNumberOfMessages
             }
 
         member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D> =
@@ -346,14 +350,15 @@ module Client =
             }
 
 
-    let onTryProcessMessage (w : MessageProcessorProxy<'D>) x f =
+    /// Tries to process a single (first) message (if any) using a given message processor f.
+    let onTryProcessMessage (w : MessageProcessorProxy<'D>) f =
         let retVal =
             if w.incrementCount() = 0
             then
                 match w.tryPickReceivedMessage() with
                 | Ok (Some m) ->
                     try
-                        let r = f x m
+                        let r = f m
 
                         match w.tryRemoveReceivedMessage m.messageDataInfo.messageId with
                         | Ok() -> ProcessedSuccessfully r
@@ -371,3 +376,28 @@ module Client =
         | _ -> ignore()
 
         retVal
+
+
+    /// Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
+    let onGetMessages<'D> (w : MessageProcessorProxy<'D>) f =
+        let elevate e = e |> OnGetMessagesErr
+        let addError f e = ((elevate f) + e) |> Error
+        let toError e = e |> elevate |> Error
+
+        let rec doFold x r =
+            match x with
+            | [] -> Ok()
+            | _ :: t ->
+                match onTryProcessMessage w f with
+                | ProcessedSuccessfully u ->
+                    match u with
+                    | Ok() -> doFold t r
+                    | Error e -> doFold t ((addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults addMessagingError)
+                | ProcessedWithError (u, e) -> [ addError ProcessedWithErr e; u; r ] |> foldUnitResults addMessagingError
+                | ProcessedWithFailedToRemove(u, e) -> [ addError ProcessedWithFailedToRemoveErr e; u; r ] |> foldUnitResults addMessagingError
+                | FailedToProcess e -> addError FailedToProcessErr e
+                | NothingToDo -> Ok()
+                | BusyProcessing -> toError BusyProcessingErr
+
+        let result = doFold [for _ in 1..w.maxMessages -> ()] (Ok())
+        result

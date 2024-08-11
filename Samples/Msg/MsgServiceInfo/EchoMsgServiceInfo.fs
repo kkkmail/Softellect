@@ -171,7 +171,7 @@ module EchoMsgServiceInfo =
                 printfn "Checking messages."
 
                 let checkMessage() =
-                    match tryProcessMessage () (fun _ m -> m) with
+                    match tryProcessMessage (fun _ m -> m) with
                     | ProcessedSuccessfully m -> printfn $"    Received message: %A{m}."
                     | ProcessedWithError (m, e) -> printfn $"    Received message: %A{m} with error e: %A{e}."
                     | ProcessedWithFailedToRemove (m, e) -> printfn $"    Received message: %A{m} with error: %A{e}."

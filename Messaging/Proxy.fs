@@ -10,7 +10,7 @@ open Softellect.Messaging.ServiceInfo
 
 module Proxy =
 
-    let private addMessagingError f e = f + e
+    //let private addMessagingError f e = f + e
 
 
     /// Provides IO proxy for messaging client.
@@ -78,6 +78,7 @@ module Proxy =
             incrementCount : unit -> int
             decrementCount : unit -> int
             logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.
+            maxMessages : int // Max number of message to process in one batch.
         }
 
 
@@ -116,35 +117,3 @@ module Proxy =
 
     //    let w, result = doFold proxy.maxMessages (s, Ok())
     //    w, result
-
-
-    type OnGetMessagesProxy<'D> =
-        {
-            //tryProcessMessage : Message<'D> -> MessagingUnitResult
-            onProcessMessage : Message<'D> -> MessagingUnitResult
-            maxMessages : int
-        }
-
-
-    let onGetMessages<'D> m tryProcessMessage =
-        let elevate e = e |> OnGetMessagesErr
-        let addError f e = ((elevate f) + e) |> Error
-        let toError e = e |> elevate |> Error
-
-        let rec doFold x r =
-            match x with
-            | [] -> Ok()
-            | _ :: t ->
-                match tryProcessMessage () (fun _ m -> m) with
-                | ProcessedSuccessfully u ->
-                    match u with
-                    | Ok() -> doFold t r
-                    | Error e -> doFold t ((addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults addMessagingError)
-                | ProcessedWithError (u, e) -> [ addError ProcessedWithErr e; u; r ] |> foldUnitResults addMessagingError
-                | ProcessedWithFailedToRemove(u, e) -> [ addError ProcessedWithFailedToRemoveErr e; u; r ] |> foldUnitResults addMessagingError
-                | FailedToProcess e -> addError FailedToProcessErr e
-                | NothingToDo -> Ok()
-                | BusyProcessing -> toError BusyProcessingErr
-
-        let result = doFold [for _ in 1..m -> ()] (Ok())
-        result

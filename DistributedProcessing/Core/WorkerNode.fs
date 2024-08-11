@@ -22,11 +22,11 @@ open Softellect.Messaging.ServiceProxy
 
 module WorkerNode =
 
-    type private UnitResult = DistributedProcessingUnitResult
-    type private Message<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
-    type private MessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
-    type private MessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
-    type private DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
+    ////type private UnitResult = DistributedProcessingUnitResult
+    //type private DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
+    //type private DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
+    //type private DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+    //type private DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
 
     type private Logger = Logger<DistributedProcessingError>
 
@@ -42,7 +42,7 @@ module WorkerNode =
 
 
     /// The head should contain the latest error and the tail the earliest error.
-    let foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
+    let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
     let onRegister (proxy : OnRegisterProxy<'D, 'P>) =
@@ -77,7 +77,7 @@ module WorkerNode =
         | Error e -> Error e
 
 
-    let onProcessMessage (proxy : OnProcessMessageProxy<'D>) (m : Message<'D, 'P>) =
+    let onProcessMessage (proxy : OnProcessMessageProxy<'D>) (m : DistributedProcessingMessage<'D, 'P>) =
         printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}."
 
         match m.messageData with
@@ -101,8 +101,8 @@ module WorkerNode =
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
-    let onGetState (s : WorkerNodeRunnerState) =
-        failwith "onGetState is not implemented yet."
+    //let onGetState (s : WorkerNodeRunnerState) =
+    //    failwith "onGetState is not implemented yet."
 
 
     let sendMessageProxy i =
@@ -119,15 +119,22 @@ module WorkerNode =
         }
 
 
-    type WorkerNodeMessage<'D> =
-        | Start of AsyncReplyChannel<UnitResult>
-        | Register of AsyncReplyChannel<MessagingUnitResult>
-        | Unregister of AsyncReplyChannel<MessagingUnitResult>
-        | GetMessages of AsyncReplyChannel<MessagingUnitResult>
-        //| GetState of AsyncReplyChannel<WorkerNodeMonitorResponse>
+    //type WorkerNodeMessage<'D> =
+    //    | Start of AsyncReplyChannel<UnitResult>
+    //    | Register of AsyncReplyChannel<MessagingUnitResult>
+    //    | Unregister of AsyncReplyChannel<MessagingUnitResult>
+    //    | GetMessages of AsyncReplyChannel<MessagingUnitResult>
+    //    //| GetState of AsyncReplyChannel<WorkerNodeMonitorResponse>
 
 
+    /// 'D is underlying strongly typed input data, NOT A Message* data, 'P is underlying progress data.
     type WorkerNodeRunner<'D, 'P>(i : WorkerNodeRunnerData<'D, 'P>) =
+        let mutable callCount = -1
+        let mutable started = false
+
+        let incrementCount() = Interlocked.Increment(&callCount)
+        let decrementCount() = Interlocked.Decrement(&callCount)
+
         let onRegisterProxy = onRegisterProxy i
 
         let onStartProxy =
@@ -165,29 +172,38 @@ module WorkerNode =
         //        maxMessages = WorkerNodeRunnerState.maxMessages.Length
         //    }
 
-        let messageLoop =
-            MailboxProcessor.Start(fun u ->
-                let rec loop s =
-                    async
-                        {
-                            match! u.Receive() with
-                            | Start r -> return! onStart onStartProxy |> r.Reply |> loop
-                            | Register r -> return! onRegister onRegisterProxy |> r.Reply |> loop
-                            | Unregister r -> return! onUnregister onRegisterProxy |> r.Reply |> loop
-                            | GetMessages r -> return! onGetMessages onGetMessagesProxy |> r.Reply |> loop
-                            //| GetState r -> return! onGetState s |> (withReply r) |> loop
-                        }
+        //let messageLoop =
+        //    MailboxProcessor.Start(fun u ->
+        //        let rec loop s =
+        //            async
+        //                {
+        //                    match! u.Receive() with
+        //                    | Start r -> return! onStart onStartProxy |> r.Reply |> loop
+        //                    | Register r -> return! onRegister onRegisterProxy |> r.Reply |> loop
+        //                    | Unregister r -> return! onUnregister onRegisterProxy |> r.Reply |> loop
+        //                    | GetMessages r -> return! onGetMessages onGetMessagesProxy |> r.Reply |> loop
+        //                    //| GetState r -> return! onGetState s |> (withReply r) |> loop
+        //                }
 
-                WorkerNodeRunnerState.defaultValue |> loop
-                )
+        //        WorkerNodeRunnerState.defaultValue |> loop
+        //        )
 
-        member w.start() = messageLoop.PostAndReply (fun reply -> Start reply)
+        member _.start() =
+            if not started
+            then
+                let r = onStart onStartProxy
+                r
+            else Ok()
+
         member _.register() =
-            match messageLoop.PostAndReply Register with
+            match onRegister onRegisterProxy with
             | Ok v -> Ok v
             | Error e -> e |> UnableToRegisterWorkerNodeErr |> Error
-        member _.unregister() = messageLoop.PostAndReply Unregister
-        member w.getMessages() = messageLoop.PostAndReply (fun reply -> GetMessages reply)
+
+        member _.unregister() = onUnregister onRegisterProxy
+
+        member _.getMessages() = onGetMessages i.messageProcessorProxy onProcessMessage
+
         //member _.getState() = messageLoop.PostAndReply GetState
 
         //member _.onStartProxy =
@@ -215,7 +231,7 @@ module WorkerNode =
 
 
     let createServiceImpl (logger : Logger) (i : WorkerNodeRunnerData<'D, 'P>) =
-        let toError = failwith ""
+        let toError e = failwith $"Error: '{e}'."
         logger.logInfoString "createServiceImpl: Creating WorkerNodeRunner..."
         let w = WorkerNodeRunner i
 
@@ -251,12 +267,12 @@ module WorkerNode =
 
     type WorkerNodeRunner<'D, 'P>
         with
-        static member create messagingDataVersion tryRunSolverProcess (j : DistributedProcessingResult<WorkerNodeServiceInfo>) =
+        static member create messagingDataVersion (j : DistributedProcessingResult<WorkerNodeServiceInfo>) tryRunSolverProcess =
             let logger = Logger.defaultValue
             let addError f e = (f + e) |> Error
             let c = getWorkerNodeSvcConnectionString
 
-            let sr n (q : RunQueueId) : UnitResult =
+            let sr n (q : RunQueueId) =
                 match tryRunSolverProcess n q with
                 | Some _ -> Ok()
                 | None -> q |> CannotRunModelErr |> OnRunModelErr |> Error

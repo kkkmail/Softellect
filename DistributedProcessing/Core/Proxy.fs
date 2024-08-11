@@ -18,33 +18,34 @@ open Softellect.Sys.Primitives
 
 module Proxy =
 
-    type private UnitResult = DistributedProcessingUnitResult
-    type private Message<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
-    type private MessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
-    type private MessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+    //type private UnitResult = DistributedProcessingUnitResult
+    type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
+    type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
+    type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+    type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
 
 
     type SendMessageProxy<'D, 'P> =
         {
             partitionerId : PartitionerId
-            sendMessage : MessageInfo<'D, 'P> -> MessagingUnitResult
+            sendMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
         }
 
 
     type OnUpdateProgressProxy<'D, 'P> =
         {
-            tryDeleteWorkerNodeRunModelData : unit -> UnitResult
-            tryUpdateProgressData : ProgressData<'P> -> UnitResult
+            tryDeleteWorkerNodeRunModelData : unit -> DistributedProcessingUnitResult
+            tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
             sendMessageProxy : SendMessageProxy<'D, 'P>
         }
 
 
     type OnProcessMessageProxy<'D> =
         {
-            saveWorkerNodeRunModelData : WorkerNodeRunModelData<'D> -> UnitResult
-            requestCancellation : RunQueueId -> CancellationType -> UnitResult
-            notifyOfResults : RunQueueId -> ResultNotificationType -> UnitResult
-            onRunModel : RunQueueId -> UnitResult
+            saveWorkerNodeRunModelData : WorkerNodeRunModelData<'D> -> DistributedProcessingUnitResult
+            requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
+            notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
+            onRunModel : RunQueueId -> DistributedProcessingUnitResult
         }
 
 
@@ -74,7 +75,7 @@ module Proxy =
         {
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy<'D>
-            messageProcessorProxy : MessageProcessorProxy<'D, 'P>
+            messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
         }
 
 
@@ -88,5 +89,5 @@ module Proxy =
     type OnStartProxy =
         {
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-            onRunModel : RunQueueId -> UnitResult
+            onRunModel : RunQueueId -> DistributedProcessingUnitResult
         }
