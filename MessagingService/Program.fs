@@ -16,7 +16,7 @@ module Program =
             .UseWindowsService()
             .ConfigureServices(fun hostContext services ->
                 services.AddSingleton(v) |> ignore
-                services.AddHostedService<MsgWorker<'D>>() |> ignore)
+                services.AddSingleton<IHostedService, MsgWorker<'D>>() |> ignore)
 
 
     let main<'D> messagingProgramName v argv =

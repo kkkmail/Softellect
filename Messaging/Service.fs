@@ -95,7 +95,7 @@ module Service =
             member _.tryPickMessage n =
                 printfn "tryPeekMessage was called with MessagingClientId: %A." n
                 let result = proxy.tryPickMessage n
-                printfn "tryPeekMessage - result: %A." result
+                printfn "tryPickMessage - result: %A." result
                 result
 
             member _.tryDeleteFromServer (_, m) =

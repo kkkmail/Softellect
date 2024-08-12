@@ -230,7 +230,7 @@ module WorkerNode =
         //    }
 
 
-    let createServiceImpl (logger : Logger) (i : WorkerNodeRunnerData<'D, 'P>) =
+    let private createServiceImpl (logger : Logger) (i : WorkerNodeRunnerData<'D, 'P>) =
         let toError e = failwith $"Error: '{e}'."
         logger.logInfoString "createServiceImpl: Creating WorkerNodeRunner..."
         let w = WorkerNodeRunner i

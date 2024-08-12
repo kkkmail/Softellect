@@ -22,11 +22,11 @@ module Worker =
     type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>, v : MessagingDataVersion) =
         inherit BackgroundService()
 
-        static let mutable messagingDataVersion = 0
+        //static let mutable messagingDataVersion = 0
 
-        static let tryGetHost() =
+        let tryGetHost() =
             printfn $"tryGetHost: Getting MessagingServiceData..."
-            let messagingServiceData = getMessagingServiceData<'D> Logger.defaultValue (MessagingDataVersion messagingDataVersion)
+            let messagingServiceData = getMessagingServiceData<'D> Logger.defaultValue v
 
             match messagingServiceData with
             | Ok data ->
@@ -38,13 +38,13 @@ module Worker =
                 printfn $"tryGetHost: Error: %A{e}"
                 Error e
 
-        static let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tryGetHost())
-        static let getHost() = hostRes.Value
+        let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tryGetHost())
+        let getHost() = hostRes.Value
 
         override _.ExecuteAsync(_: CancellationToken) =
             async {
                 logger.LogInformation("Executing...")
-                Interlocked.CompareExchange(&messagingDataVersion, v.value, 0) |> ignore
+                //Interlocked.CompareExchange(&messagingDataVersion, v.value, 0) |> ignore
 
                 match getHost() with
                 | Ok host -> do! host.runAsync()
