@@ -10,7 +10,7 @@ open Softellect.Sys.ExitErrorCodes
 
 module Program =
 
-    //let private createHostBuilder<'D> (v : MessagingDataVersion) =
+    //let private createHostBuilder<'D, 'P> (v : MessagingDataVersion) =
     //    Host.CreateDefaultBuilder()
     //        .UseWindowsService()
     //        .ConfigureServices(fun hostContext services ->

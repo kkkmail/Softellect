@@ -267,7 +267,7 @@ module WorkerNode =
 
     type WorkerNodeRunner<'D, 'P>
         with
-        static member create messagingDataVersion (j : DistributedProcessingResult<WorkerNodeServiceInfo>) tryRunSolverProcess =
+        static member create messagingDataVersion (i : WorkerNodeServiceInfo) tryRunSolverProcess =
             let logger = Logger.defaultValue
             let addError f e = (f + e) |> Error
             let c = getWorkerNodeSvcConnectionString
@@ -277,44 +277,41 @@ module WorkerNode =
                 | Some _ -> Ok()
                 | None -> q |> CannotRunModelErr |> OnRunModelErr |> Error
 
-            match j with
-            | Ok i ->
-                let w =
-                    let messagingClientAccessInfo = i.messagingClientAccessInfo
-                    let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
+            let w =
+                let messagingClientAccessInfo = i.messagingClientAccessInfo
+                let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
 
-                    let j =
+                let j =
+                    {
+                        messagingClientName = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
+                        storageType = c |> MsSqlDatabase
+                        messagingDataVersion = messagingDataVersion
+                    }
+
+                let messagingClientData =
+                    {
+                        msgAccessInfo = messagingClientAccessInfo
+                        communicationType = NetTcpCommunication
+                        msgClientProxy = createMessagingClientProxy getMessageSize j messagingClientAccessInfo.msgClientId
+                        expirationTime = MessagingClientData<'D>.defaultExpirationTime
+                        logOnError = true
+                    }
+
+                let messagingClient = MessagingClient messagingClientData
+
+                match messagingClient.start() with
+                | Ok() ->
+                    let n =
                         {
-                            messagingClientName = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
-                            storageType = c |> MsSqlDatabase
-                            messagingDataVersion = messagingDataVersion
+                            workerNodeServiceInfo = i
+                            workerNodeProxy = WorkerNodeProxy<'D>.create c (sr i.workerNodeInfo.noOfCores)
+                            messageProcessorProxy = messagingClient.messageProcessorProxy
                         }
+                        |> createServiceImpl logger
 
-                    let messagingClientData =
-                        {
-                            msgAccessInfo = messagingClientAccessInfo
-                            communicationType = NetTcpCommunication
-                            msgClientProxy = createMessagingClientProxy getMessageSize j messagingClientAccessInfo.msgClientId
-                            expirationTime = MessagingClientData<'D>.defaultExpirationTime
-                            logOnError = true
-                        }
+                    match n with
+                    | Ok v -> Ok v
+                    | Error e -> addError UnableToCreateWorkerNodeServiceErr e
+                | Error e -> UnableToStartMessagingClientErr e |> Error
 
-                    let messagingClient = MessagingClient messagingClientData
-
-                    match messagingClient.start() with
-                    | Ok() ->
-                        let n =
-                            {
-                                workerNodeServiceInfo = i
-                                workerNodeProxy = WorkerNodeProxy<'D>.create c (sr i.workerNodeInfo.noOfCores)
-                                messageProcessorProxy = messagingClient.messageProcessorProxy
-                            }
-                            |> createServiceImpl logger
-
-                        match n with
-                        | Ok v -> Ok v
-                        | Error e -> addError UnableToCreateWorkerNodeServiceErr e
-                    | Error e -> UnableToStartMessagingClientErr e |> Error
-
-                w
-            | Error e -> Error e
+            w

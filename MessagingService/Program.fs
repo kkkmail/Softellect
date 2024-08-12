@@ -7,6 +7,7 @@ open Softellect.Messaging.Primitives
 open Softellect.MessagingService
 open Softellect.MessagingService.CommandLine
 open Softellect.Sys.ExitErrorCodes
+open Softellect.MessagingService.Worker
 
 module Program =
 
