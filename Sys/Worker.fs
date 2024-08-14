@@ -1,5 +1,11 @@
 ﻿namespace Softellect.Sys
 
+open System
+open System.Threading
+open System.Threading.Tasks
+open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
+
 open Argu
 
 module Worker =
@@ -33,3 +39,47 @@ module Worker =
                 WorkerTask.tryCreateSaveSettingsTask s
             ]
             |> List.tryPick (fun e -> e p)
+
+
+    //type Worker<'D, 'W, 'E when 'W : (member runAsync: unit -> Async<unit>)>(logger: ILogger<Worker<'D, 'W, 'E>>, v : MessagingDataVersion) =
+    //    inherit BackgroundService()
+
+    //    let tryGetHost() : Result<'W, 'E> =
+    //        printfn $"tryGetHost: Getting MessagingServiceData..."
+    //        let messagingServiceData = getMessagingServiceData<'D> Logger.defaultValue v
+
+    //        match messagingServiceData with
+    //        | Ok data ->
+    //            printfn $"tryGetHost: Got MessagingServiceData: '{data}'."
+    //            let service = MessagingWcfServiceImpl<'D>.tryGetService data
+    //            MessagingService<'D>.tryStart() |> ignore
+    //            service
+    //        | Error e ->
+    //            printfn $"tryGetHost: Error: %A{e}"
+    //            Error e
+
+    //    let hostRes = Lazy<Result<'W, 'E>>(fun () -> tryGetHost())
+    //    let getHost() = hostRes.Value
+
+    //    override _.ExecuteAsync(_: CancellationToken) =
+    //        async {
+    //            logger.LogInformation("Executing...")
+
+    //            match getHost() with
+    //            | Ok host -> do! host.runAsync()
+    //            | Error e -> logger.LogCritical$"Error: %A{e}"
+    //        }
+    //        |> Async.StartAsTask
+    //        :> Task
+
+    //    override _.StopAsync(_: CancellationToken) =
+    //        async {
+    //            logger.LogInformation("Stopping...")
+
+    //            match getHost() with
+    //            | Ok host -> do! host.stopAsync()
+    //            | Error e -> logger.LogCritical$"Error: %A{e}"
+    //        }
+    //        |> Async.StartAsTask
+    //        :> Task
+

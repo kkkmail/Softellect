@@ -127,7 +127,7 @@ module EchoMsgServiceInfo =
     let clientTwoData = getClientData clientTwoId clientTwoProxy
 
 
-    let private serviceData =
+    let serviceData =
         {
             messagingServiceInfo =
                 {

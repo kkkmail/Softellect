@@ -3,6 +3,11 @@
 open System
 
 open System.Threading
+open System
+open System.Threading.Tasks
+open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
+
 open CoreWCF
 open Softellect.Sys
 open Softellect.Sys.Logging
@@ -59,31 +64,107 @@ module Service =
     let mutable messagingServiceCount = 0L
 
 
-    type MessagingService<'D> private (d : MessagingServiceData<'D>) =
+    //type MessagingService<'D> private (d : MessagingServiceData<'D>) =
+    //    let count = Interlocked.Increment(&messagingServiceCount)
+    //    do printfn $"MessagingService: count = {count}."
+    //    static let mutable getData : unit -> MessagingServiceData<'D> option = fun () -> None
+
+    //    static let createService() : Result<IMessagingService<'D>, MessagingError> =
+    //        match getData() with
+    //        | Some data ->
+    //            let service = MessagingService<'D>(data)
+    //            service.createEventHandlers()
+    //            service :> IMessagingService<'D> |> Ok
+    //        | None ->
+    //            let errMessage = $"MessagingService<%s{typedefof<'D>.Name}>: Data is unavailable."
+    //            printfn $"%s{errMessage}"
+    //            failwith errMessage
+
+    //    static let serviceImpl = new Lazy<Result<IMessagingService<'D>, MessagingError>>(createService)
+    //    let proxy = d.messagingServiceProxy
+
+    //    static member getService() = serviceImpl.Value // new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
+    //    static member setGetData g = getData <- g
+
+    //    static member tryStart() = MessagingService<'D>.getService() |> Rop.bind (fun _ -> Ok())
+
+    //    interface IMessagingService<'D> with
+    //        member _.getVersion() =
+    //            printfn "getVersion was called."
+    //            Ok d.messagingServiceInfo.messagingDataVersion
+
+    //        member _.sendMessage m =
+    //            printfn "sendMessage was called with message: %A." m
+    //            proxy.saveMessage m
+
+    //        member _.tryPickMessage n =
+    //            printfn "tryPeekMessage was called with MessagingClientId: %A." n
+    //            let result = proxy.tryPickMessage n
+    //            printfn "tryPickMessage - result: %A." result
+    //            result
+
+    //        member _.tryDeleteFromServer (_, m) =
+    //            //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
+    //            proxy.deleteMessage m
+
+    //        member _.removeExpiredMessages() =
+    //            //printfn "removeExpiredMessages was called."
+    //            proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
+
+    //    member private w.createEventHandlers () =
+    //        let eventHandler _ = (w :> IMessagingService<'D>).removeExpiredMessages()
+    //        let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
+
+    //        let proxy =
+    //            {
+    //                eventHandler = eventHandler
+    //                logger = proxy.logger
+    //                toErr = fun e -> e |> TimerEventErr
+    //            }
+
+    //        let i =
+    //            {
+    //                timerEventInfo = info
+    //                timerProxy = proxy
+    //            }
+
+    //        let h = TimerEventHandler i
+    //        do h.start()
+
+
+    type MessagingService<'D> (d : MessagingServiceData<'D>) =
         let count = Interlocked.Increment(&messagingServiceCount)
         do printfn $"MessagingService: count = {count}."
-        static let mutable getData : unit -> MessagingServiceData<'D> option = fun () -> None
-
-        static let createService() : Result<IMessagingService<'D>, MessagingError> =
-            match getData() with
-            | Some data ->
-                let service = MessagingService<'D>(data)
-                service.createEventHandlers()
-                service :> IMessagingService<'D> |> Ok
-            | None ->
-                let errMessage = $"MessagingService<%s{typedefof<'D>.Name}>: Data is unavailable."
-                printfn $"%s{errMessage}"
-                failwith errMessage
-
-        static let serviceImpl = new Lazy<Result<IMessagingService<'D>, MessagingError>>(createService)
         let proxy = d.messagingServiceProxy
 
-        static member getService() = serviceImpl.Value // new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
-        static member setGetData g = getData <- g
+        let removeExpiredMessagesImpl () =
+            //printfn "removeExpiredMessages was called."
+            proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
 
-        static member tryStart() = MessagingService<'D>.getService() |> Rop.bind (fun _ -> Ok())
+        let createEventHandlers () =
+            let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
+
+            let proxy =
+                {
+                    eventHandler = removeExpiredMessagesImpl
+                    logger = proxy.logger
+                    toErr = fun e -> e |> TimerEventErr
+                }
+
+            let i =
+                {
+                    timerEventInfo = info
+                    timerProxy = proxy
+                }
+
+            let h = TimerEventHandler i
+            do h.start()
 
         interface IMessagingService<'D> with
+            member _.tryStart() =
+                createEventHandlers()
+                Ok()
+
             member _.getVersion() =
                 printfn "getVersion was called."
                 Ok d.messagingServiceInfo.messagingDataVersion
@@ -102,29 +183,8 @@ module Service =
                 //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
                 proxy.deleteMessage m
 
-            member _.removeExpiredMessages() =
-                //printfn "removeExpiredMessages was called."
-                proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
+            member _.removeExpiredMessages() = removeExpiredMessagesImpl()
 
-        member private w.createEventHandlers () =
-            let eventHandler _ = (w :> IMessagingService<'D>).removeExpiredMessages()
-            let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
-
-            let proxy =
-                {
-                    eventHandler = eventHandler
-                    logger = proxy.logger
-                    toErr = fun e -> e |> TimerEventErr
-                }
-
-            let i =
-                {
-                    timerEventInfo = info
-                    timerProxy = proxy
-                }
-
-            let h = TimerEventHandler i
-            do h.start()
 
 
     type MessagingWcfServiceProxy<'D> =
@@ -155,15 +215,44 @@ module Service =
     let mutable private serviceCount = 0L
 
 
+    //[<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
+    //type MessagingWcfService<'D> private (d : MessagingWcfServiceData<'D>) =
+    //    let count = Interlocked.Increment(&serviceCount)
+    //    do printfn $"MessagingWcfService: count = {count}."
+
+    //    static let getServiceData() =
+    //        getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
+
+    //    let getMessagingService() = MessagingService<'D>.getService()
+
+    //    let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
+    //    let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr
+    //    let toTryPickMessageError f = f |> TryPickMsgWcfErr |> TryPickMessageWcfErr
+    //    let toTryDeleteFromServerError f = f |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr
+
+    //    let getVersion() = getMessagingService() |> Rop.bind (fun e -> e.getVersion())
+    //    let sendMessage b = getMessagingService() |> Rop.bind (fun e -> e.sendMessage b)
+    //    let tryPickMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
+    //    let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
+
+    //    new() = MessagingWcfService<'D> (getServiceData())
+
+    //    interface IMessagingWcfService with
+    //        member _.getVersion b = tryReply getVersion toGetVersionError b
+    //        member _.sendMessage b = tryReply sendMessage toSendMessageError b
+    //        member _.tryPickMessage b = tryReply tryPickMessage toTryPickMessageError b
+    //        member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
+
+
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
-    type MessagingWcfService<'D> private (d : MessagingWcfServiceData<'D>) =
+    type MessagingWcfService<'D> (m : MessagingService<'D>) =
         let count = Interlocked.Increment(&serviceCount)
         do printfn $"MessagingWcfService: count = {count}."
 
-        static let getServiceData() =
-            getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
+        //static let getServiceData() =
+        //    getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
 
-        let getMessagingService() = MessagingService<'D>.getService()
+        let getMessagingService() = m :> IMessagingService<'D> |> Ok
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
         let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr
@@ -175,7 +264,7 @@ module Service =
         let tryPickMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
         let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
 
-        new() = MessagingWcfService<'D> (getServiceData())
+        //new() = MessagingWcfService<'D> (getServiceData())
 
         interface IMessagingWcfService with
             member _.getVersion b = tryReply getVersion toGetVersionError b
@@ -185,7 +274,7 @@ module Service =
 
 
     /// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
-    let tryGetMsgServiceData<'D> serviceAccessInfo wcfLogger messagingServiceData =
+    let tryGetMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
         let retVal =
             match WcfServiceAccessInfo.tryCreate serviceAccessInfo with
             | Ok i ->
@@ -198,7 +287,7 @@ module Service =
                         }
 
                     serviceData = messagingServiceData
-                    setData = fun e -> MessagingService<'D>.setGetData (fun () -> Some e)
+                    //setData = fun e -> failwith "" // MessagingService<'D>.setGetData (fun () -> Some e)
                 }
                 |> Ok
             | Error e -> Error e

@@ -75,6 +75,7 @@ module ServiceInfo =
 
     // Server part of messaging service.
     type IMessagingService<'D> =
+        abstract tryStart : unit -> MessagingUnitResult
         abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
         abstract sendMessage : Message<'D> -> MessagingUnitResult
         abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>

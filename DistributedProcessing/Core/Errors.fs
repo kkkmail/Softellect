@@ -194,14 +194,14 @@ module Errors =
 //        //| WrkSettingsErr of WrkSettingsError
 
 
-//    type WorkerNodeWcfError =
-//        | ConfigureWcfErr of WcfError
-//        | MonitorWcfErr of WcfError
-//        | PingWcfErr of WcfError
+    type WorkerNodeWcfError =
+        | ConfigureWcfErr of WcfError
+        | MonitorWcfErr of WcfError
+        | PingWcfErr of WcfError
 
 
 //    type WorkerNodeServiceError =
-//        | WorkerNodeWcfErr of WorkerNodeWcfError
+////        | WorkerNodeWcfErr of WorkerNodeWcfError
 ////        | UnableToStartMessagingClientErr of MessagingError
 ////        | UnableToCreateWorkerNodeServiceErr
 //        | ServiceUnavailableErr
@@ -351,6 +351,7 @@ module Errors =
         | ProcessMessageRunnerErr of ProcessMessageRunnerError
         | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
 
+        | WorkerNodeWcfErr of WorkerNodeWcfError
 
 
         static member addError a b =

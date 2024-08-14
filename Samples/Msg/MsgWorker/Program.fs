@@ -2,8 +2,23 @@
 
 open Softellect.MessagingService.Program
 open Softellect.Samples.Msg.ServiceInfo.Primitives
+open Softellect.Samples.Msg.ServiceInfo.EchoMsgServiceInfo
+open Softellect.Sys.ExitErrorCodes
 
 module Program =
 
     [<EntryPoint>]
-    let main args = main<EchoMessageData> "MsgWorker" echoDataVersion args
+    let main args =
+        match echoMsgServiceDataRes with
+        | Ok r ->
+            let data =
+                {
+                    messagingDataVersion = echoDataVersion
+                    messagingServiceData = serviceData
+                    wcfServiceData = r
+                }
+
+            main<EchoMessageData> "MsgWorker" data args
+        | Error e ->
+            printfn $"Error: '{e}'."
+            CriticalError

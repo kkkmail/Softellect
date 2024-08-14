@@ -8,21 +8,19 @@ open Microsoft.Extensions.Logging
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
-open Softellect.MessagingService.CommandLine
 open Softellect.Sys.Logging
+open Softellect.MessagingService.CommandLine
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Primitives
 
 module Worker =
 
-    type private MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
+    type MessagingWcfServiceImpl<'D> = WcfService<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>
 
 
-    type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>, v : MessagingDataVersion) =
+    type MsgWorker<'D>(logger: ILogger<MsgWorker<'D>>, v : MessagingDataVersion, m : MessagingService<'D>, w : MessagingWcfServiceImpl<'D>) =
         inherit BackgroundService()
-
-        //static let mutable messagingDataVersion = 0
 
         let tryGetHost() =
             printfn $"tryGetHost: Getting MessagingServiceData..."
@@ -31,8 +29,8 @@ module Worker =
             match messagingServiceData with
             | Ok data ->
                 printfn $"tryGetHost: Got MessagingServiceData: '{data}'."
-                let service = MessagingWcfServiceImpl<'D>.tryGetService data
-                MessagingService<'D>.tryStart() |> ignore
+                let service = w.tryGetService ()
+                (m :> IMessagingService<'D>).tryStart() |> ignore
                 service
             | Error e ->
                 printfn $"tryGetHost: Error: %A{e}"
@@ -44,7 +42,6 @@ module Worker =
         override _.ExecuteAsync(_: CancellationToken) =
             async {
                 logger.LogInformation("Executing...")
-                //Interlocked.CompareExchange(&messagingDataVersion, v.value, 0) |> ignore
 
                 match getHost() with
                 | Ok host -> do! host.runAsync()

@@ -84,7 +84,7 @@ module CommandLine =
     type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
 
 
-    let tryGetMessagingServiceDataImpl<'D> logger proxy v : WcfServiceDataResult<'D> =
+    let tryGetMessagingServiceDataImpl<'D> logger proxy v = // : WcfServiceDataResult<'D> =
         let i = getServiceSettings v []
 
         let serviceData =
