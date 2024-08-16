@@ -22,7 +22,7 @@ module EchoMsgServiceInfo =
     type EchoMessage = Message<EchoMessageData>
     type EchoMessagingService = MessagingService<EchoMessageData>
     type EchoMessagingWcfService = MessagingWcfService<EchoMessageData>
-    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
+    //type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
     let serviceAddress = defaultMessagingServiceAddress

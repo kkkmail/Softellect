@@ -223,6 +223,7 @@ module Service =
         member _.Configure(app : IApplicationBuilder, env : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
+
     /// Wrapper around IWebHost to abstract it away and convert C# async methods into F# flavor.
     type WcfService(logger : WcfLogger, host : IWebHost) =
         let runTokenSource = new CancellationTokenSource()
@@ -296,39 +297,78 @@ module Service =
     //        WcfService<'Service, 'IWcfService, 'Data>.setData data
     //        service.Value
 
-    type WcfService<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
-        let tryCreateWebHostBuilder () : WcfResult<WcfService> =
-            let info = d.wcfServiceAccessInfo
-            let logger = d.wcfServiceProxy.wcfLogger
-            try
-                let message = $"ipAddress = '%A{info.ipAddress}', httpPort = '%A{info.httpPort}', netTcpPort = '%A{info.netTcpPort}'."
-                printfn $"tryCreateWebHostBuilder - {message}"
-                logger.logInfoString message
-                let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
-                let applyOptions (options : KestrelServerOptions) =
-                    options.Listen(endPoint)
-                    options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))
+    //type WcfService<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
+    //    let tryCreateWebHostBuilder () : WcfResult<WcfService> =
+    //        let info = d.wcfServiceAccessInfo
+    //        let logger = d.wcfServiceProxy.wcfLogger
+    //        try
+    //            let message = $"ipAddress = '%A{info.ipAddress}', httpPort = '%A{info.httpPort}', netTcpPort = '%A{info.netTcpPort}'."
+    //            printfn $"tryCreateWebHostBuilder - {message}"
+    //            logger.logInfoString message
+    //            let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
-                let host =
-                    WebHost
-                        .CreateDefaultBuilder()
-                        .UseKestrel(fun options -> applyOptions options)
-                        .UseNetTcp(info.netTcpPort)
-                        //.UseStartup<WcfStartup<'Service, 'IWcfService, 'Data>>()
-                        .UseStartup(fun services -> WcfStartup<'Service, 'IWcfService, 'Data>(d))
-                        .Build()
-                (logger, host) |> WcfService |> Ok
-            with
-            | e ->
-                printfn $"tryCreateWebHostBuilder - exception: '{e}'."
-                WcfExn e |> toError
+    //            let applyOptions (options : KestrelServerOptions) =
+    //                options.Listen(endPoint)
+    //                options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+    //                options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+    //                options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))
 
-        let service = new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder ())
+    //            let host =
+    //                WebHost
+    //                    .CreateDefaultBuilder()
+    //                    .UseKestrel(fun options -> applyOptions options)
+    //                    .UseNetTcp(info.netTcpPort)
+    //                    //.UseStartup<WcfStartup<'Service, 'IWcfService, 'Data>>()
+    //                    .UseStartup(fun services -> WcfStartup<'Service, 'IWcfService, 'Data>(d))
+    //                    .Build()
+    //            (logger, host) |> WcfService |> Ok
+    //        with
+    //        | e ->
+    //            printfn $"tryCreateWebHostBuilder - exception: '{e}'."
+    //            WcfExn e |> toError
 
-        member _.tryGetService() = service.Value
+    //    let service = new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder ())
+
+    //    member _.tryGetService() = service.Value
+
+
+    //type WcfService<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct> (d : WcfServiceData<'Data>, serviceProvider: IServiceProvider) =
+
+    //    let tryCreateWebHostBuilder () : WcfResult<WcfService> =
+    //        let info = d.wcfServiceAccessInfo
+    //        let logger = d.wcfServiceProxy.wcfLogger
+    //        try
+    //            let message = $"ipAddress = '%A{info.ipAddress}', httpPort = '%A{info.httpPort}', netTcpPort = '%A{info.netTcpPort}'."
+    //            printfn $"tryCreateWebHostBuilder - {message}"
+    //            logger.logInfoString message
+    //            let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
+
+    //            let applyOptions (options : KestrelServerOptions) =
+    //                options.Listen(endPoint)
+    //                options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+    //                options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+    //                options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))
+
+    //            let host =
+    //                WebHost
+    //                    .CreateDefaultBuilder()
+    //                    .UseKestrel(fun options -> applyOptions options)
+    //                    .UseNetTcp(info.netTcpPort)
+    //                    .ConfigureServices(fun services -> services.AddSingleton(d)) // Register WcfServiceData
+    //                    .UseStartup(fun _ -> WcfStartup<'Service, 'IWcfService, 'Data>(d)) // Pass the WcfServiceData
+    //                    .UseSetting(WebHostDefaults.ApplicationKey, serviceProvider.GetService<IHost>().ToString()) // Use the same service provider
+    //                    .Build()
+
+    //            (logger, host) |> WcfService |> Ok
+    //        with
+    //        | e ->
+    //            printfn $"tryCreateWebHostBuilder - exception: '{e}'."
+    //            WcfExn e |> toError
+
+    //    let service = new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder ())
+
+    //    member _.tryGetService() = service.Value
 
 
     let tryGetServiceData serviceAccessInfo wcfLogger serviceData =
