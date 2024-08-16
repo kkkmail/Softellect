@@ -244,7 +244,7 @@ module Service =
     //        member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
 
 
-    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
+    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type MessagingWcfService<'D> (m : MessagingService<'D>) =
         let count = Interlocked.Increment(&serviceCount)
         do printfn $"MessagingWcfService: count = {count}."

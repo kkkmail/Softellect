@@ -74,6 +74,7 @@ module Client =
         try
             let binding = getBinding t s
             let address = EndpointAddress(url)
+            printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'." 
 
             let channelFactory =
                 match binding with
@@ -92,13 +93,13 @@ module Client =
             match t() with
             | Ok (service, factoryCloser) ->
                 try
-                    //printfn "tryCommunicate: Checking channel state..."
+                    printfn "tryCommunicate: Checking channel state..."
                     let channel = (box service) :?> IClientChannel
-                    //printfn "tryCommunicate: Channel State: %A, Via: %A, RemoteAddress: %A." channel.State channel.Via channel.RemoteAddress
+                    printfn $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'."
 
                     match trySerialize wcfSerializationFormat a with
                     | Ok b ->
-                        //printfn "tryCommunicate: Calling service at %A..." DateTime.Now
+                        printfn $"tryCommunicate: Calling service at %A{DateTime.Now}..." 
                         let d = c service b
                         channel.Close()
                         factoryCloser()
@@ -111,6 +112,7 @@ module Client =
                     | Error e -> toWcfSerializationError f e
                 with
                 | e ->
+                    printfn $"tryCommunicate: At %A{DateTime.Now} got inner exception:' %A{e}'."
                     try
                         let channel = (box service) :?> IClientChannel
                         channel.Abort()
@@ -122,5 +124,5 @@ module Client =
             | Error e -> e |> f |> Error
         with
         | e ->
-//            printfn $"tryCommunicate: At %A{DateTime.Now} got exception: %A{e}"
+            printfn $"tryCommunicate: At %A{DateTime.Now} got outer exception: '%A{e}'."
             toWcfError f e

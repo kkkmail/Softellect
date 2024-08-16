@@ -206,10 +206,13 @@ module Service =
     type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
         let createServiceModel (builder : IServiceBuilder) =
             let i = d.wcfServiceAccessInfo
+            let httpBinding = getBasicHttpBinding()
+            let netTcpBinding = getNetTcpBinding i.netTcpSecurityMode
+            printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}', netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
             builder
                 .AddService<'Service>()
-                .AddServiceEndpoint<'Service, 'IWcfService>(getBasicHttpBinding(), "/" + i.httpServiceName)
-                .AddServiceEndpoint<'Service, 'IWcfService>(getNetTcpBinding i.netTcpSecurityMode, "/" + i.netTcpServiceName)
+                .AddServiceEndpoint<'Service, 'IWcfService>(httpBinding, "/" + i.httpServiceName)
+                .AddServiceEndpoint<'Service, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName)
             |> ignore
 
         member _.ConfigureServices(services : IServiceCollection) =
@@ -298,7 +301,9 @@ module Service =
             let info = d.wcfServiceAccessInfo
             let logger = d.wcfServiceProxy.wcfLogger
             try
-                logger.logInfoString $"ipAddress = %A{info.ipAddress}, httpPort = %A{info.httpPort}, netTcpPort = %A{info.netTcpPort}"
+                let message = $"ipAddress = '%A{info.ipAddress}', httpPort = '%A{info.httpPort}', netTcpPort = '%A{info.netTcpPort}'."
+                printfn $"tryCreateWebHostBuilder - {message}"
+                logger.logInfoString message
                 let endPoint = IPEndPoint(info.ipAddress, info.httpPort)
 
                 let applyOptions (options : KestrelServerOptions) =
@@ -317,7 +322,9 @@ module Service =
                         .Build()
                 (logger, host) |> WcfService |> Ok
             with
-            | e -> WcfExn e |> toError
+            | e ->
+                printfn $"tryCreateWebHostBuilder - exception: '{e}'."
+                WcfExn e |> toError
 
         let service = new Lazy<WcfResult<WcfService>>(fun () -> tryCreateWebHostBuilder ())
 
