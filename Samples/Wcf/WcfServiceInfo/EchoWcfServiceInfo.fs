@@ -86,7 +86,6 @@ module EchoWcfServiceInfo =
                     }
 
                 serviceData = EchoServiceData.create()
-                //setData = fun _ -> ignore()
             }
             |> Ok
         | Error e -> Error e

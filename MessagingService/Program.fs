@@ -45,12 +45,8 @@ module Program =
         Host.CreateDefaultBuilder()
             .UseWindowsService()
             .ConfigureServices(fun hostContext services ->
-                //services.AddSingleton(data.messagingDataVersion) |> ignore
-                //services.AddSingleton(data.wcfServiceData.serviceData) |> ignore
-                //services.AddSingleton(data.wcfServiceData) |> ignore
-
                 let messagingService = new MessagingService<'D>(data.wcfServiceData.serviceData)
-                services.AddSingleton(messagingService) |> ignore)
+                services.AddSingleton<IMessagingService<'D>>(messagingService) |> ignore)
 
             .ConfigureWebHostDefaults(fun webBuilder ->
                 webBuilder.UseKestrel(fun options ->

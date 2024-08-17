@@ -215,62 +215,21 @@ module Service =
     let mutable private serviceCount = 0L
 
 
-    //[<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
-    //type MessagingWcfService<'D> private (d : MessagingWcfServiceData<'D>) =
-    //    let count = Interlocked.Increment(&serviceCount)
-    //    do printfn $"MessagingWcfService: count = {count}."
-
-    //    static let getServiceData() =
-    //        getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
-
-    //    let getMessagingService() = MessagingService<'D>.getService()
-
-    //    let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
-    //    let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr
-    //    let toTryPickMessageError f = f |> TryPickMsgWcfErr |> TryPickMessageWcfErr
-    //    let toTryDeleteFromServerError f = f |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr
-
-    //    let getVersion() = getMessagingService() |> Rop.bind (fun e -> e.getVersion())
-    //    let sendMessage b = getMessagingService() |> Rop.bind (fun e -> e.sendMessage b)
-    //    let tryPickMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
-    //    let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
-
-    //    new() = MessagingWcfService<'D> (getServiceData())
-
-    //    interface IMessagingWcfService with
-    //        member _.getVersion b = tryReply getVersion toGetVersionError b
-    //        member _.sendMessage b = tryReply sendMessage toSendMessageError b
-    //        member _.tryPickMessage b = tryReply tryPickMessage toTryPickMessageError b
-    //        member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
-
-
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
-    type MessagingWcfService<'D> (m : MessagingService<'D>) =
+    type MessagingWcfService<'D> (m : IMessagingService<'D>) =
         let count = Interlocked.Increment(&serviceCount)
         do printfn $"MessagingWcfService: count = {count}."
-
-        //static let getServiceData() =
-        //    getData<MessagingWcfService<'D>, MessagingWcfServiceData<'D>> MessagingWcfServiceData<'D>.defaultValue
-
-        let getMessagingService() = m :> IMessagingService<'D> |> Ok
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
         let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr
         let toTryPickMessageError f = f |> TryPickMsgWcfErr |> TryPickMessageWcfErr
         let toTryDeleteFromServerError f = f |> TryDeleteFromServerWcfErr |> TryDeleteFromServerErr
 
-        let getVersion() = getMessagingService() |> Rop.bind (fun e -> e.getVersion())
-        let sendMessage b = getMessagingService() |> Rop.bind (fun e -> e.sendMessage b)
-        let tryPickMessage b = getMessagingService() |> Rop.bind (fun e -> e.tryPickMessage b)
-        let tryDeleteFromServer b = getMessagingService() |> Rop.bind (fun e -> e.tryDeleteFromServer b)
-
-        //new() = MessagingWcfService<'D> (getServiceData())
-
         interface IMessagingWcfService with
-            member _.getVersion b = tryReply getVersion toGetVersionError b
-            member _.sendMessage b = tryReply sendMessage toSendMessageError b
-            member _.tryPickMessage b = tryReply tryPickMessage toTryPickMessageError b
-            member _.tryDeleteFromServer b = tryReply tryDeleteFromServer toTryDeleteFromServerError b
+            member _.getVersion b = tryReply m.getVersion toGetVersionError b
+            member _.sendMessage b = tryReply m.sendMessage toSendMessageError b
+            member _.tryPickMessage b = tryReply m.tryPickMessage toTryPickMessageError b
+            member _.tryDeleteFromServer b = tryReply m.tryDeleteFromServer toTryDeleteFromServerError b
 
 
     /// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
@@ -287,7 +246,6 @@ module Service =
                         }
 
                     serviceData = messagingServiceData
-                    //setData = fun e -> failwith "" // MessagingService<'D>.setGetData (fun () -> Some e)
                 }
                 |> Ok
             | Error e -> Error e
