@@ -53,7 +53,7 @@
     <PackageReference Include="CoreWCF.Http" Version="1.5.2" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.5.2" />
     <PackageReference Include="CoreWCF.Primitives" Version="1.5.2" />
-    <PackageReference Update="FSharp.Core" Version="8.0.301" />
+    <PackageReference Update="FSharp.Core" Version="8.0.400" />
   </ItemGroup>
 
 </Project>

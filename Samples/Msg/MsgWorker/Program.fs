@@ -14,7 +14,7 @@ module Program =
             let data =
                 {
                     messagingDataVersion = echoDataVersion
-                    messagingServiceData = serviceData
+                    //messagingServiceData = serviceData
                     wcfServiceData = r
                 }
 
