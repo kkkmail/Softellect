@@ -150,13 +150,6 @@ module Service =
         }
 
 
-    /// 'Service - is a type of the service itself.
-    /// 'Data - is a type of initialization data that the service needs to operate.
-    type WcfServiceData<'Service, 'Data>() =
-        /// It is not really needed but we want to "use" the generic type to make the compiler happy.
-        member _.serviceType = typeof<'Service>
-
-
     type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
         let createServiceModel (builder : IServiceBuilder) =
             let i = d.wcfServiceAccessInfo

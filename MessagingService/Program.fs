@@ -36,7 +36,6 @@ module Program =
     type MessagingProgramData<'D> =
         {
             messagingDataVersion : MessagingDataVersion
-            //messagingServiceData : MessagingServiceData<'D>
             wcfServiceData :  WcfServiceData<MessagingServiceData<'D>>
         }
 
@@ -49,14 +48,15 @@ module Program =
                 services.AddSingleton<IMessagingService<'D>>(messagingService) |> ignore)
 
             .ConfigureWebHostDefaults(fun webBuilder ->
+                let i = data.wcfServiceData.wcfServiceAccessInfo
                 webBuilder.UseKestrel(fun options ->
-                    let endPoint = IPEndPoint(data.wcfServiceData.wcfServiceAccessInfo.ipAddress, data.wcfServiceData.wcfServiceAccessInfo.httpPort)
+                    let endPoint = IPEndPoint(i.ipAddress, i.httpPort)
                     options.Listen(endPoint)
                     options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
                     options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
                     options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
 
-                webBuilder.UseNetTcp(data.wcfServiceData.wcfServiceAccessInfo.netTcpPort) |> ignore
+                webBuilder.UseNetTcp(i.netTcpPort) |> ignore
                 webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>(data.wcfServiceData)) |> ignore)
 
 
