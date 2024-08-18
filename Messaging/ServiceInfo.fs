@@ -3,10 +3,12 @@
 open System.ServiceModel
 
 open Softellect.Sys.Rop
+open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
 open Softellect.Sys.Logging
 open Softellect.Messaging.Errors
+open Softellect.Messaging.VersionInfo
 
 module ServiceInfo =
 
@@ -116,6 +118,15 @@ module ServiceInfo =
                 messagingServiceAccessInfo = info
                 messagingDataVersion = dataVersion
             }
+
+        static member defaultServiceAccessInfo v =
+            {
+                netTcpServiceAddress = ServiceAddress localHost
+                netTcpServicePort = getDefaultMessagingHttpServicePort v
+                netTcpServiceName = messagingNetTcpServiceName.value
+                netTcpSecurityMode = NoSecurity
+            }
+            |> NetTcpServiceInfo
 
 
     type MessagingClientAccessInfo =

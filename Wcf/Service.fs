@@ -88,51 +88,51 @@ module Service =
         binding
 
 
-    type WcfServiceAccessInfo =
-        {
-            ipAddress : IPAddress
-            httpPort : int
-            httpServiceName : string
-            netTcpPort : int
-            netTcpServiceName : string
-            netTcpSecurityMode : WcfSecurityMode
-        }
+    //type WcfServiceAccessInfo =
+    //    {
+    //        ipAddress : IPAddress
+    //        httpPort : int
+    //        httpServiceName : string
+    //        netTcpPort : int
+    //        netTcpServiceName : string
+    //        netTcpSecurityMode : WcfSecurityMode
+    //    }
 
-        static member tryCreate (i : ServiceAccessInfo) =
-            let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
-            let h = i.httpServiceInfo
-            let n = i.netTcpServiceInfo
+    //    static member tryCreate (i : ServiceAccessInfo) =
+    //        let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
+    //        let h = i.httpServiceInfo
+    //        let n = i.netTcpServiceInfo
 
-            match IPAddress.TryParse h.httpServiceAddress.value, h.httpServicePort = n.netTcpServicePort, h.httpServiceAddress = n.netTcpServiceAddress with
-            | (true, ipAddress), false, true ->
-                {
-                    ipAddress = ipAddress
-                    httpPort = h.httpServicePort.value
-                    httpServiceName = h.httpServiceName.value
-                    netTcpPort = n.netTcpServicePort.value
-                    netTcpServiceName = n.netTcpServiceName.value
-                    netTcpSecurityMode = n.netTcpSecurityMode
-                }
-                |> Ok
+    //        match IPAddress.TryParse h.httpServiceAddress.value, h.httpServicePort = n.netTcpServicePort, h.httpServiceAddress = n.netTcpServiceAddress with
+    //        | (true, ipAddress), false, true ->
+    //            {
+    //                ipAddress = ipAddress
+    //                httpPort = h.httpServicePort.value
+    //                httpServiceName = h.httpServiceName.value
+    //                netTcpPort = n.netTcpServicePort.value
+    //                netTcpServiceName = n.netTcpServiceName.value
+    //                netTcpSecurityMode = n.netTcpSecurityMode
+    //            }
+    //            |> Ok
 
-            | (true, _), true, _ ->
-                fail $"http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
-            | (false, _), false, _ ->
-                fail $"invalid IP address: %s{h.httpServiceAddress.value}"
-            | (false, _), true, _ ->
-                fail $"invalid IP address: %s{h.httpServiceAddress.value} and http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
-            | _, _, false ->
-                fail $"http IP address: %s{h.httpServiceAddress.value} and net tcp IP address: %s{n.netTcpServiceAddress.value} must be the same"
+    //        | (true, _), true, _ ->
+    //            fail $"http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
+    //        | (false, _), false, _ ->
+    //            fail $"invalid IP address: %s{h.httpServiceAddress.value}"
+    //        | (false, _), true, _ ->
+    //            fail $"invalid IP address: %s{h.httpServiceAddress.value} and http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
+    //        | _, _, false ->
+    //            fail $"http IP address: %s{h.httpServiceAddress.value} and net tcp IP address: %s{n.netTcpServiceAddress.value} must be the same"
 
-        static member defaultValue =
-            {
-                ipAddress = IPAddress.None
-                httpPort = -1
-                httpServiceName = String.Empty
-                netTcpPort = - 1
-                netTcpServiceName  = String.Empty
-                netTcpSecurityMode = WcfSecurityMode.defaultValue
-            }
+    //    static member defaultValue =
+    //        {
+    //            ipAddress = IPAddress.None
+    //            httpPort = -1
+    //            httpServiceName = String.Empty
+    //            netTcpPort = - 1
+    //            netTcpServiceName  = String.Empty
+    //            netTcpSecurityMode = WcfSecurityMode.defaultValue
+    //        }
 
 
     type WcfServiceProxy =
@@ -144,7 +144,7 @@ module Service =
     /// 'Data - is a type of initialization data that the service needs to operate.
     type WcfServiceData<'Data> =
         {
-            wcfServiceAccessInfo : WcfServiceAccessInfo
+            wcfServiceAccessInfo : ServiceAccessInfo
             wcfServiceProxy : WcfServiceProxy
             serviceData : 'Data
         }
@@ -152,14 +152,20 @@ module Service =
 
     type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
         let createServiceModel (builder : IServiceBuilder) =
-            let i = d.wcfServiceAccessInfo
-            let httpBinding = getBasicHttpBinding()
-            let netTcpBinding = getNetTcpBinding i.netTcpSecurityMode
-            printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}', netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
+            let w (b : IServiceBuilder) =
+                match d.wcfServiceAccessInfo with
+                | HttpServiceInfo i ->
+                    let httpBinding = getBasicHttpBinding()
+                    printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}'."
+                    b.AddServiceEndpoint<'Service, 'IWcfService>(httpBinding, "/" + i.httpServiceName.value)
+                | NetTcpServiceInfo i ->
+                    let netTcpBinding = getNetTcpBinding i.netTcpSecurityMode
+                    printfn $"createServiceModel - netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
+                    b.AddServiceEndpoint<'Service, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName.value)
+
             builder
                 .AddService<'Service>()
-                .AddServiceEndpoint<'Service, 'IWcfService>(httpBinding, "/" + i.httpServiceName)
-                .AddServiceEndpoint<'Service, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName)
+                |> w
             |> ignore
 
         member _.ConfigureServices(services : IServiceCollection) =
@@ -171,18 +177,14 @@ module Service =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
 
-    let tryGetServiceData serviceAccessInfo wcfLogger serviceData =
-        match WcfServiceAccessInfo.tryCreate serviceAccessInfo  with
-        | Ok i ->
-            {
-                wcfServiceAccessInfo = i
+    let getServiceData serviceAccessInfo wcfLogger serviceData =
+        {
+            wcfServiceAccessInfo = serviceAccessInfo
 
-                wcfServiceProxy =
-                    {
-                        wcfLogger = wcfLogger
-                    }
+            wcfServiceProxy =
+                {
+                    wcfLogger = wcfLogger
+                }
 
-                serviceData = serviceData
-            }
-            |> Ok
-        | Error e -> Error e
+            serviceData = serviceData
+        }

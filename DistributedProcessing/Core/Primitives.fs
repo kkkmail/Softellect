@@ -29,17 +29,17 @@ module Primitives =
     [<Literal>]
     let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
 
-    let defaultServicePort : int = 5000 // + messagingDataVersion.value
+    let defaultServicePort = 5000 // + messagingDataVersion.value
 
 
     let defaultContGenNetTcpServicePort = defaultServicePort |> ServicePort
     let defaultContGenHttpServicePort = defaultContGenNetTcpServicePort.value + 1 |> ServicePort
-    let defaultContGenServiceAddress = LocalHost |> ServiceAddress
+    let defaultContGenServiceAddress = localHost |> ServiceAddress
 
 
     let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
     let defaultWorkerNodeHttpServicePort = defaultWorkerNodeNetTcpServicePort.value + 1 |> ServicePort
-    let defaultWorkerNodeServiceAddress = LocalHost |> ServiceAddress
+    let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress
 
 
     type PartitionerId =
@@ -217,10 +217,20 @@ module Primitives =
 
         member w.value = let (WorkerNodeServiceAccessInfo v) = w in v
 
-        static member create address httpPort netTcpPort securityMode =
-            let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
-            let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
-            ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
+        //static member create address httpPort netTcpPort securityMode =
+        //    let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
+        //    let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
+        //    ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
+
+        static member defaultServiceAccessInfo v =
+            {
+                netTcpServiceAddress = ServiceAddress localHost
+                netTcpServicePort = defaultContGenNetTcpServicePort
+                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
+                netTcpSecurityMode = NoSecurity
+            }
+            |> NetTcpServiceInfo
+
 
 
     type WorkerNodeServiceInfo =

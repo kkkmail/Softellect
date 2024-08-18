@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Net
 
 /// Collection of various primitive abstractions.
 module Primitives =
@@ -27,10 +28,6 @@ module Primitives =
     let AppSettingsFile = "appsettings.json"
 
 
-    [<Literal>]
-    let LocalHost = "127.0.0.1"
-
-
     [<Measure>] type millisecond
     [<Measure>] type second
     [<Measure>] type minute
@@ -42,6 +39,28 @@ module Primitives =
     let minutesPerHour = 60<minute/hour>
 
 
+    /// IPAddress cannot be serialized by FsPicler.
+    /// Extend when needed.
+    type IpAddress =
+        | Ip4 of string
+        | Ip6 of string // Not really supported now.
+
+        member a.value =
+            match a with
+            | Ip4 v -> v
+            | Ip6 v -> v
+
+        member a.ipAddress = a.value |> IPAddress.Parse
+
+        static member tryCreate (s : string) =
+            match IPAddress.TryParse s with
+            | (true, ipAddress) -> ipAddress.ToString() |> Ip4 |> Some
+            | _ -> None
+
+
+    let localHost = Ip4 "127.0.0.1"
+
+
     type VersionNumber =
         | VersionNumber of string
 
@@ -49,21 +68,33 @@ module Primitives =
 
 
     type ServiceAddress =
-        | ServiceAddress of string
+        | ServiceAddress of IpAddress
 
         member this.value = let (ServiceAddress v) = this in v
+        static member tryCreate s = IpAddress.tryCreate s |> Option.map ServiceAddress
+
+        member a.serialize() = $"{a.value.value}"
+        static member tryDeserialize s = ServiceAddress.tryCreate s
 
 
     type ServicePort =
         | ServicePort of int
 
         member this.value = let (ServicePort v) = this in v
+        member a.serialize() = $"{a.value}"
+
+        static member tryDeserialize (s : string) = 
+            match Int32.TryParse s with
+            | (true, i) -> i |> ServicePort |> Some
+            | _ -> None
 
 
     type ServiceName =
         | ServiceName of string
 
         member this.value = let (ServiceName v) = this in v
+        member a.serialize() = $"{a.value}"
+        static member tryDeserialize (s : string) = ServiceName s |> Some
 
 
     type ConnectionString =

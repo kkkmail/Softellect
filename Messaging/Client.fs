@@ -60,34 +60,32 @@ module Client =
         member t.onLargeMessage() = { t with largeMessages = t.largeMessages + 1 }
 
 
-    type MsgResponseHandlerData<'D> =
-        {
-            msgAccessInfo : MessagingClientAccessInfo
-            communicationType : WcfCommunicationType
-        }
+    //type MsgResponseHandlerData<'D> =
+    //    {
+    //        msgAccessInfo : MessagingClientAccessInfo
+    //        communicationType : WcfCommunicationType
+    //    }
 
 
     type MessagingClientData<'D> =
         {
             msgAccessInfo : MessagingClientAccessInfo
-            communicationType : WcfCommunicationType
             msgClientProxy : MessagingClientProxy<'D>
             expirationTime : TimeSpan
             logOnError : bool
         }
 
-        member d.msgResponseHandlerData : MsgResponseHandlerData<'D> =
-            {
-                msgAccessInfo = d.msgAccessInfo
-                communicationType = d.communicationType
-            }
+        //member d.msgResponseHandlerData : MsgResponseHandlerData<'D> =
+        //    {
+        //        msgAccessInfo = d.msgAccessInfo
+        //        communicationType = d.communicationType
+        //    }
 
         static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member create (proxy : MessagingClientProxy<'D>) expiration communicationType info =
+        static member create (proxy : MessagingClientProxy<'D>) expiration info =
             {
                 msgAccessInfo = info
-                communicationType = communicationType
                 msgClientProxy = proxy
                 expirationTime = expiration
                 logOnError = true
@@ -200,10 +198,10 @@ module Client =
 
 
     /// Low level WCF messaging client.
-    type MsgResponseHandler<'D> (d : MsgResponseHandlerData<'D>) =
-        let i = d.msgAccessInfo.msgSvcAccessInfo.messagingServiceAccessInfo
-        let url = i.getUrl d.communicationType
-        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> d.communicationType url
+    type MsgResponseHandler<'D> (d : MessagingServiceAccessInfo) =
+        let i = d.messagingServiceAccessInfo
+        let url = i.getUrl()
+        let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> i.communicationType url
 
         let getVersionWcfErr e = e |> GetVersionWcfErr |> GetVersionErr
         let sendMessageWcfErr e = e |> SendMessageWcfErr |> SendMessageErr
@@ -275,7 +273,7 @@ module Client =
     type MessagingClient<'D>(d : MessagingClientData<'D>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
-        let responseHandler = MsgResponseHandler<'D>(d.msgResponseHandlerData) :> IMessagingClient<'D>
+        let responseHandler = MsgResponseHandler<'D>(d.msgAccessInfo.msgSvcAccessInfo) :> IMessagingClient<'D>
         let mutable callCount = -1
         let mutable started = false
 

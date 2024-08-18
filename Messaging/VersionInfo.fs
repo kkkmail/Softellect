@@ -31,4 +31,4 @@ module VersionInfo =
 
     let getDefaultMessagingNetTcpServicePort v = 40000 + (getMsgDefaultServicePort v).value |> ServicePort
     let getDefaultMessagingHttpServicePort v = (getDefaultMessagingNetTcpServicePort v).value + 1 |> ServicePort
-    let defaultMessagingServiceAddress = LocalHost |> ServiceAddress
+    let defaultMessagingServiceAddress = localHost |> ServiceAddress

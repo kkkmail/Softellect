@@ -12,16 +12,14 @@ open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
 
 module EchoWcfServiceInfo =
 
-    let communicationType = HttpCommunication
-
-    let serviceAddress = ServiceAddress "127.0.0.1"
-    let httpServicePort = ServicePort 1080
-    let httpServiceName = ServiceName "EchoHttpService"
+    let serviceAddress = ServiceAddress localHost
+    //let httpServicePort = ServicePort 1080
+    //let httpServiceName = ServiceName "EchoHttpService"
     let netTcpServicePort = ServicePort 1088
     let netTcpServiceName = ServiceName "EchoNetTcpService"
-    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
+    //let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
     let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
-    let echoWcfServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    let echoWcfServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
     let echoLogger = Logger.defaultValue
 
 
@@ -75,17 +73,13 @@ module EchoWcfServiceInfo =
 
 
     let echoWcfServiceDataRes =
-        match WcfServiceAccessInfo.tryCreate echoWcfServiceAccessInfo with
-        | Ok i ->
-            {
-                wcfServiceAccessInfo = i
+        {
+            wcfServiceAccessInfo = echoWcfServiceAccessInfo
 
-                wcfServiceProxy =
-                    {
-                        wcfLogger = echoLogger
-                    }
+            wcfServiceProxy =
+                {
+                    wcfLogger = echoLogger
+                }
 
-                serviceData = EchoServiceData.create()
-            }
-            |> Ok
-        | Error e -> Error e
+            serviceData = EchoServiceData.create()
+        }

@@ -1,6 +1,7 @@
 ﻿namespace Softellect.MessagingService
 
 open Argu
+open System.Net
 
 open Softellect.Sys.Primitives
 open Softellect.Messaging.ServiceInfo
@@ -54,7 +55,7 @@ module CommandLine =
 
     let private proxy =
         {
-            tryGetMsgServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | MsgSvcAddress s -> s |> ServiceAddress |> Some | _ -> None)
+            tryGetMsgServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | MsgSvcAddress s -> s |> ServiceAddress.tryCreate | _ -> None)
             tryGetMsgServicePort = fun p -> p |> List.tryPick (fun e -> match e with | MsgSvcPort p -> p |> ServicePort |> Some | _ -> None)
         }
 
@@ -84,26 +85,21 @@ module CommandLine =
     type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
 
 
-    let tryGetMessagingServiceDataImpl<'D> logger proxy v = // : WcfServiceDataResult<'D> =
+    let getMessagingServiceDataImpl<'D> logger proxy v =
         let i = getServiceSettings v []
 
         let serviceData =
             {
-                messagingServiceInfo =
-                    {
-                        expirationTime = i.messagingInfo.expirationTime
-                        messagingDataVersion = v
-                    }
-
+                expirationTime = i.expirationTime
+                messagingDataVersion = v
                 messagingServiceProxy = proxy
-                communicationType = i.communicationType
             }
 
-        let msgServiceDataRes = tryGetMsgServiceData i.messagingSvcInfo.messagingServiceAccessInfo logger serviceData
-        printfn $"tryGetMessagingServiceDataImpl: msgServiceDataRes = %A{msgServiceDataRes}"
-        msgServiceDataRes
+        let msgServiceData = getMsgServiceData i.messagingSvcInfo.messagingServiceAccessInfo logger serviceData
+        printfn $"tryGetMessagingServiceDataImpl: msgServiceDataRes = %A{msgServiceData}"
+        msgServiceData
 
 
     let getMessagingServiceData<'D> logger (v : MessagingDataVersion) =
         let proxy = createMessagingServiceProxy getMessagingConnectionString v
-        tryGetMessagingServiceDataImpl<'D> logger proxy v
+        getMessagingServiceDataImpl<'D> logger proxy v

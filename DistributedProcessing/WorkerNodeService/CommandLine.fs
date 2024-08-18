@@ -1,6 +1,7 @@
 namespace Softellect.DistributedProcessing.WorkerNodeService
 
 open System
+open System.Net
 open Argu
 
 open Softellect.Sys.Primitives
@@ -88,18 +89,18 @@ module CommandLine =
             tryGetPartitioner = fun p -> p |> List.tryPick (fun e -> match e with | WrkPartitioner p -> p |> MessagingClientId |> PartitionerId |> Some | _ -> None)
             tryGetNoOfCores = fun p -> p |> List.tryPick (fun e -> match e with | WrkNoOfCores p -> Some p | _ -> None)
             tryGetInactive = fun p -> p |> List.tryPick (fun e -> match e with | WrkInactive p -> Some p | _ -> None)
-            tryGetServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | WrkSvcAddress s -> s |> ServiceAddress |> Some | _ -> None)
+            tryGetServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | WrkSvcAddress s -> s |> ServiceAddress.tryCreate | _ -> None)
             tryGetServicePort = fun p -> p |> List.tryPick (fun e -> match e with | WrkSvcPort p -> p |> ServicePort |> Some | _ -> None)
-            tryGetMsgServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | WrkMsgSvcAddress s -> s |> ServiceAddress |> Some | _ -> None)
+            tryGetMsgServiceAddress = fun p -> p |> List.tryPick (fun e -> match e with | WrkMsgSvcAddress s -> s |> ServiceAddress.tryCreate | _ -> None)
             tryGetMsgServicePort = fun p -> p |> List.tryPick (fun e -> match e with | WrkMsgSvcPort p -> p |> ServicePort |> Some | _ -> None)
             tryGetForce = fun p -> p |> List.tryPick (fun e -> match e with | WrkForce p -> Some p | _ -> None)
         }
 
 
-    let tryLoadWorkerNodeSettings messagingDataVersion nodeIdOpt nameOpt =
+    let tryLoadWorkerNodeSettings dataVersion messagingDataVersion nodeIdOpt nameOpt =
         let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
-        let workerNodeSvcInfo, workerNodeServiceCommunicationType = loadWorkerNodeServiceSettings providerRes
-        let messagingSvcInfo, messagingServiceCommunicationType = loadMessagingSettings providerRes messagingDataVersion
+        let workerNodeSvcInfo = loadWorkerNodeServiceSettings providerRes dataVersion
+        let messagingSvcInfo = loadMessagingSettings providerRes messagingDataVersion
 
         match tryLoadWorkerNodeInfo providerRes nodeIdOpt nameOpt with
         | Some info ->
@@ -107,83 +108,83 @@ module CommandLine =
                 {
                     workerNodeInfo = info
                     workerNodeSvcInfo = workerNodeSvcInfo
-                    workerNodeCommunicationType = workerNodeServiceCommunicationType
                     messagingSvcInfo = messagingSvcInfo
-                    messagingCommunicationType = messagingServiceCommunicationType
                 }
 
             Some w
         | None -> None
 
 
-    let tryLoadSettings messagingDataVersion (proxy : WorkerNodeSettingsProxy<'P>) (p : 'P) =
+    let tryLoadSettings dataVersion messagingDataVersion (proxy : WorkerNodeSettingsProxy<'P>) (p : 'P) =
         let workerNodeId = proxy.tryGetClientId p
         let workerNodeName = proxy.tryGetNodeName p
 
-        match tryLoadWorkerNodeSettings messagingDataVersion workerNodeId workerNodeName with
+        match tryLoadWorkerNodeSettings dataVersion messagingDataVersion workerNodeId workerNodeName with
         | Some w ->
-            let wn = w.workerNodeSvcInfo.value.netTcpServiceInfo
-            let mn = w.messagingSvcInfo.messagingServiceAccessInfo.netTcpServiceInfo
+            //let wn = w.workerNodeSvcInfo.value.netTcpServiceInfo
+            //let mn = w.messagingSvcInfo.messagingServiceAccessInfo.netTcpServiceInfo
 
-            let w1 =
-                {
-                    workerNodeInfo =
-                        { w.workerNodeInfo with
-                            partitionerId = proxy.tryGetPartitioner p |> Option.defaultValue w.workerNodeInfo.partitionerId
+            //let w1 =
+            //    {
+            //        workerNodeInfo =
+            //            { w.workerNodeInfo with
+            //                partitionerId = proxy.tryGetPartitioner p |> Option.defaultValue w.workerNodeInfo.partitionerId
 
-                            noOfCores =
-                                let n = proxy.tryGetNoOfCores p |> Option.defaultValue w.workerNodeInfo.noOfCores
-                                max 0 (min n (8 * Environment.ProcessorCount))
+            //                noOfCores =
+            //                    let n = proxy.tryGetNoOfCores p |> Option.defaultValue w.workerNodeInfo.noOfCores
+            //                    max 0 (min n (8 * Environment.ProcessorCount))
 
-                            nodePriority =
-                                match w.workerNodeInfo.nodePriority.value with
-                                | x when x <= 0 -> WorkerNodePriority.defaultValue
-                                | _ -> w.workerNodeInfo.nodePriority
+            //                nodePriority =
+            //                    match w.workerNodeInfo.nodePriority.value with
+            //                    | x when x <= 0 -> WorkerNodePriority.defaultValue
+            //                    | _ -> w.workerNodeInfo.nodePriority
 
-                            isInactive = proxy.tryGetInactive p |> Option.defaultValue w.workerNodeInfo.isInactive
-                            lastErrorDateOpt = w.workerNodeInfo.lastErrorDateOpt
-                        }
+            //                isInactive = proxy.tryGetInactive p |> Option.defaultValue w.workerNodeInfo.isInactive
+            //                lastErrorDateOpt = w.workerNodeInfo.lastErrorDateOpt
+            //            }
 
-                    workerNodeSvcInfo =
-                        { w.workerNodeSvcInfo.value with
-                            netTcpServiceInfo =
-                                { wn with
-                                    netTcpServiceAddress = proxy.tryGetServiceAddress p |> Option.defaultValue wn.netTcpServiceAddress
-                                    netTcpServicePort = proxy.tryGetServicePort p |> Option.defaultValue wn.netTcpServicePort
-                                }
-                        }
-                        |> WorkerNodeServiceAccessInfo
+            //        workerNodeSvcInfo =
+            //            { w.workerNodeSvcInfo.value with
+            //                netTcpServiceInfo =
+            //                    { wn with
+            //                        netTcpServiceAddress = proxy.tryGetServiceAddress p |> Option.defaultValue wn.netTcpServiceAddress
+            //                        netTcpServicePort = proxy.tryGetServicePort p |> Option.defaultValue wn.netTcpServicePort
+            //                    }
+            //            }
+            //            |> WorkerNodeServiceAccessInfo
 
-                    workerNodeCommunicationType = w.workerNodeCommunicationType
+            //        workerNodeCommunicationType = w.workerNodeCommunicationType
 
-                    messagingSvcInfo =
-                        { w.messagingSvcInfo with
-                            messagingServiceAccessInfo =
-                                { w.messagingSvcInfo.messagingServiceAccessInfo with
-                                    netTcpServiceInfo =
-                                        { mn with
-                                            netTcpServiceAddress = proxy.tryGetMsgServiceAddress p |> Option.defaultValue mn.netTcpServiceAddress
-                                            netTcpServicePort = proxy.tryGetMsgServicePort p |> Option.defaultValue mn.netTcpServicePort
-                                        }
-                                }
-                            messagingDataVersion = messagingDataVersion
-                        }
+            //        messagingSvcInfo =
+            //            { w.messagingSvcInfo with
+            //                messagingServiceAccessInfo =
+            //                    { w.messagingSvcInfo.messagingServiceAccessInfo with
+            //                        netTcpServiceInfo =
+            //                            { mn with
+            //                                netTcpServiceAddress = proxy.tryGetMsgServiceAddress p |> Option.defaultValue mn.netTcpServiceAddress
+            //                                netTcpServicePort = proxy.tryGetMsgServicePort p |> Option.defaultValue mn.netTcpServicePort
+            //                            }
+            //                    }
+            //                messagingDataVersion = messagingDataVersion
+            //            }
 
-                    messagingCommunicationType = w.messagingCommunicationType
-                }
+            //        messagingCommunicationType = w.messagingCommunicationType
+            //    }
 
-            Some w1
+            //Some w1
+            failwith "tryLoadWorkerNodeSettings is not implemented yet."
         | None -> None
 
 
     let updateWorkerNodeServiceSettings (provider : AppSettingsProvider) (w : WorkerNodeServiceAccessInfo) (ct : WcfCommunicationType)  =
-        let h = w.value.httpServiceInfo
-        let n = w.value.netTcpServiceInfo
+        //let h = w.value.httpServiceInfo
+        //let n = w.value.netTcpServiceInfo
 
-        provider.trySet workerNodeServiceAddressKey n.netTcpServiceAddress.value |> ignore
-        provider.trySet workerNodeServiceHttpPortKey h.httpServicePort.value |> ignore
-        provider.trySet workerNodeServiceNetTcpPortKey n.netTcpServicePort.value |> ignore
-        provider.trySet workerNodeServiceCommunicationTypeKey ct.value |> ignore
+        //provider.trySet workerNodeServiceAddressKey n.netTcpServiceAddress.value |> ignore
+        //provider.trySet workerNodeServiceHttpPortKey h.httpServicePort.value |> ignore
+        //provider.trySet workerNodeServiceNetTcpPortKey n.netTcpServicePort.value |> ignore
+        //provider.trySet workerNodeServiceCommunicationTypeKey ct.value |> ignore
+        failwith "updateWorkerNodeServiceSettings is not implemented yet."
 
 
     type WorkerNodeSettings
@@ -198,17 +199,18 @@ module CommandLine =
                 //let wn = w.workerNodeSvcInfo.value.netTcpServiceInfo
 
                 try
-                    provider.trySet workerNodeNameKey v.workerNodeName.value |> ignore
-                    provider.trySet workerNodeIdKey v.workerNodeId.value.value |> ignore
-                    provider.trySet noOfCoresKey v.noOfCores |> ignore
-                    provider.trySet partitionerIdKey v.partitionerId.value |> ignore
-                    provider.trySet isInactiveKey v.isInactive |> ignore
-                    provider.trySet nodePriorityKey v.nodePriority.value |> ignore
+                    //provider.trySet workerNodeNameKey v.workerNodeName.value |> ignore
+                    //provider.trySet workerNodeIdKey v.workerNodeId.value.value |> ignore
+                    //provider.trySet noOfCoresKey v.noOfCores |> ignore
+                    //provider.trySet partitionerIdKey v.partitionerId.value |> ignore
+                    //provider.trySet isInactiveKey v.isInactive |> ignore
+                    //provider.trySet nodePriorityKey v.nodePriority.value |> ignore
 
-                    updateWorkerNodeServiceSettings provider w.workerNodeSvcInfo w.workerNodeCommunicationType
-                    updateMessagingSettings provider w.messagingSvcInfo w.messagingCommunicationType
+                    //updateWorkerNodeServiceSettings provider w.workerNodeSvcInfo w.workerNodeCommunicationType
+                    //updateMessagingSettings provider w.messagingSvcInfo w.messagingCommunicationType
 
-                    provider.trySave() |> Rop.bindError toErr
+                    //provider.trySave() |> Rop.bindError toErr
+                    failwith "trySaveSettings is not implemented yet."
                 with
                 | e -> toErr e
             | Error e, _ -> Error e
@@ -241,11 +243,12 @@ module CommandLine =
 
 
     let loadSettings messagingDataVersion p =
-        match tryLoadSettings messagingDataVersion proxy p with
-        | Some w ->
-            printfn $"loadSettings: w = %A{w}"
-            w
-        | None -> invalidOp "Unable to load settings."
+        //match tryLoadSettings messagingDataVersion proxy p with
+        //| Some w ->
+        //    printfn $"loadSettings: w = %A{w}"
+        //    w
+        //| None -> invalidOp "Unable to load settings."
+        failwith "loadSettings is not implemented yet."
 
 
     let getServiceAccessInfoImpl messagingDataVersion b p =

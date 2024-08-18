@@ -22,38 +22,45 @@ open Softellect.Messaging.Proxy
 
 module Service =
 
-    type MessagingServiceInfo =
-        {
-            expirationTime : TimeSpan
-            messagingDataVersion : MessagingDataVersion
-        }
+    let defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member getDefaultValue v =
-            {
-                expirationTime = MessagingServiceInfo.defaultExpirationTime
-                messagingDataVersion = v
-            }
+    //type MessagingServiceInfo =
+    //    {
+    //        expirationTime : TimeSpan
+    //        messagingDataVersion : MessagingDataVersion
+    //    }
 
-        static member getDefaultValue() =
-            {
-                expirationTime = MessagingServiceInfo.defaultExpirationTime
-                messagingDataVersion = MessagingDataVersion 0
-            }
+    //    static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
+
+    //    static member getDefaultValue v =
+    //        {
+    //            expirationTime = MessagingServiceInfo.defaultExpirationTime
+    //            messagingDataVersion = v
+    //        }
+
+    //    static member getDefaultValue() =
+    //        {
+    //            expirationTime = MessagingServiceInfo.defaultExpirationTime
+    //            messagingDataVersion = MessagingDataVersion 0
+    //        }
 
 
     type MessagingServiceData<'D> =
         {
-            messagingServiceInfo : MessagingServiceInfo
-            communicationType : WcfCommunicationType
+            //messagingServiceInfo : MessagingServiceInfo
+            expirationTime : TimeSpan
+            messagingDataVersion : MessagingDataVersion
+            //communicationType : WcfCommunicationType
             messagingServiceProxy : MessagingServiceProxy<'D>
         }
 
-        static member defaultValue : MessagingServiceData<'D> =
+        static member getDefaultValue v : MessagingServiceData<'D> =
             {
-                messagingServiceInfo = MessagingServiceInfo.getDefaultValue()
-                communicationType = HttpCommunication
+                expirationTime = defaultExpirationTime
+                messagingDataVersion = v
+                //messagingServiceInfo = MessagingServiceInfo.getDefaultValue()
+                //communicationType = HttpCommunication
                 messagingServiceProxy = MessagingServiceProxy.defaultValue
             }
 
@@ -64,74 +71,6 @@ module Service =
     let mutable messagingServiceCount = 0L
 
 
-    //type MessagingService<'D> private (d : MessagingServiceData<'D>) =
-    //    let count = Interlocked.Increment(&messagingServiceCount)
-    //    do printfn $"MessagingService: count = {count}."
-    //    static let mutable getData : unit -> MessagingServiceData<'D> option = fun () -> None
-
-    //    static let createService() : Result<IMessagingService<'D>, MessagingError> =
-    //        match getData() with
-    //        | Some data ->
-    //            let service = MessagingService<'D>(data)
-    //            service.createEventHandlers()
-    //            service :> IMessagingService<'D> |> Ok
-    //        | None ->
-    //            let errMessage = $"MessagingService<%s{typedefof<'D>.Name}>: Data is unavailable."
-    //            printfn $"%s{errMessage}"
-    //            failwith errMessage
-
-    //    static let serviceImpl = new Lazy<Result<IMessagingService<'D>, MessagingError>>(createService)
-    //    let proxy = d.messagingServiceProxy
-
-    //    static member getService() = serviceImpl.Value // new Lazy<Result<IMessagingService<'D, 'E>, 'E>>(createService)
-    //    static member setGetData g = getData <- g
-
-    //    static member tryStart() = MessagingService<'D>.getService() |> Rop.bind (fun _ -> Ok())
-
-    //    interface IMessagingService<'D> with
-    //        member _.getVersion() =
-    //            printfn "getVersion was called."
-    //            Ok d.messagingServiceInfo.messagingDataVersion
-
-    //        member _.sendMessage m =
-    //            printfn "sendMessage was called with message: %A." m
-    //            proxy.saveMessage m
-
-    //        member _.tryPickMessage n =
-    //            printfn "tryPeekMessage was called with MessagingClientId: %A." n
-    //            let result = proxy.tryPickMessage n
-    //            printfn "tryPickMessage - result: %A." result
-    //            result
-
-    //        member _.tryDeleteFromServer (_, m) =
-    //            //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
-    //            proxy.deleteMessage m
-
-    //        member _.removeExpiredMessages() =
-    //            //printfn "removeExpiredMessages was called."
-    //            proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
-
-    //    member private w.createEventHandlers () =
-    //        let eventHandler _ = (w :> IMessagingService<'D>).removeExpiredMessages()
-    //        let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
-
-    //        let proxy =
-    //            {
-    //                eventHandler = eventHandler
-    //                logger = proxy.logger
-    //                toErr = fun e -> e |> TimerEventErr
-    //            }
-
-    //        let i =
-    //            {
-    //                timerEventInfo = info
-    //                timerProxy = proxy
-    //            }
-
-    //        let h = TimerEventHandler i
-    //        do h.start()
-
-
     type MessagingService<'D> (d : MessagingServiceData<'D>) =
         let count = Interlocked.Increment(&messagingServiceCount)
         do printfn $"MessagingService: count = {count}."
@@ -139,7 +78,7 @@ module Service =
 
         let removeExpiredMessagesImpl () =
             //printfn "removeExpiredMessages was called."
-            proxy.deleteExpiredMessages d.messagingServiceInfo.expirationTime
+            proxy.deleteExpiredMessages d.expirationTime
 
         let createEventHandlers () =
             let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
@@ -167,7 +106,7 @@ module Service =
 
             member _.getVersion() =
                 printfn "getVersion was called."
-                Ok d.messagingServiceInfo.messagingDataVersion
+                Ok d.messagingDataVersion
 
             member _.sendMessage m =
                 printfn "sendMessage was called with message: %A." m
@@ -196,20 +135,20 @@ module Service =
     type MessagingWcfServiceData<'D> =
         {
             messagingServiceData : MessagingServiceData<'D>
-            msgWcfServiceAccessInfo : WcfServiceAccessInfo
+            msgWcfServiceAccessInfo : ServiceAccessInfo
             messagingWcfServiceProxy : MessagingWcfServiceProxy<'D>
         }
 
-        static member defaultValue : MessagingWcfServiceData<'D> =
-            {
-                messagingServiceData = MessagingServiceData.defaultValue
-                msgWcfServiceAccessInfo = WcfServiceAccessInfo.defaultValue
+        //static member defaultValue : MessagingWcfServiceData<'D> =
+        //    {
+        //        messagingServiceData = MessagingServiceData.defaultValue
+        //        msgWcfServiceAccessInfo = ServiceAccessInfo.defaultValue
 
-                messagingWcfServiceProxy =
-                    {
-                        logger = Logger.defaultValue
-                    }
-            }
+        //        messagingWcfServiceProxy =
+        //            {
+        //                logger = Logger.defaultValue
+        //            }
+        //    }
 
 
     let mutable private serviceCount = 0L
@@ -233,22 +172,18 @@ module Service =
 
 
     /// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
-    let tryGetMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
+    let getMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
         let retVal =
-            match WcfServiceAccessInfo.tryCreate serviceAccessInfo with
-            | Ok i ->
-                {
-                    wcfServiceAccessInfo = i
+            {
+                wcfServiceAccessInfo = serviceAccessInfo
 
-                    wcfServiceProxy =
-                        {
-                            wcfLogger = wcfLogger
-                        }
+                wcfServiceProxy =
+                    {
+                        wcfLogger = wcfLogger
+                    }
 
-                    serviceData = messagingServiceData
-                }
-                |> Ok
-            | Error e -> Error e
+                serviceData = messagingServiceData
+            }
 
-        printfn $"tryGetMsgServiceData: retVal = %A{retVal}"
+        printfn $"getMsgServiceData: retVal = %A{retVal}"
         retVal

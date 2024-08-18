@@ -11,7 +11,7 @@ open Softellect.Sys.Primitives
 module AppSettings =
 
     [<Literal>]
-    let ValueSeparator = ":"
+    let ValueSeparator = "="
 
 
     [<Literal>]
@@ -236,32 +236,32 @@ module AppSettings =
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
 
 
-    let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetString n with
-            | Ok (Some EmptyString) -> d
-            | Ok (Some s) -> s
-            | _ -> d
-        | _ -> d
-        |> ServiceAddress
+    //let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
+    //    match providerRes with
+    //    | Ok provider ->
+    //        match provider.tryGetString n with
+    //        | Ok (Some EmptyString) -> d
+    //        | Ok (Some s) -> s
+    //        | _ -> d
+    //    | _ -> d
+    //    |> ServiceAddress
 
 
-    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetInt n with
-            | Ok (Some k) when k > 0 -> k
-            | _ -> d
-        | _ -> d
-        |> ServicePort
+    //let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
+    //    match providerRes with
+    //    | Ok provider ->
+    //        match provider.tryGetInt n with
+    //        | Ok (Some k) when k > 0 -> k
+    //        | _ -> d
+    //    | _ -> d
+    //    |> ServicePort
 
 
-    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetInt n with
-            | Ok (Some k) when k > 0 -> k
-            | _ -> d
-        | _ -> d
-        |> ServicePort
+    //let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
+    //    match providerRes with
+    //    | Ok provider ->
+    //        match provider.tryGetInt n with
+    //        | Ok (Some k) when k > 0 -> k
+    //        | _ -> d
+    //    | _ -> d
+    //    |> ServicePort

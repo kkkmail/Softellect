@@ -25,10 +25,12 @@ module AppSettings =
 
     let workerNodeIdKey = ConfigKey "WorkerNodeId"
     let workerNodeNameKey = ConfigKey "WorkerNodeName"
-    let workerNodeServiceAddressKey = ConfigKey "WorkerNodeServiceAddress"
-    let workerNodeServiceHttpPortKey = ConfigKey "WorkerNodeServiceHttpPort"
-    let workerNodeServiceNetTcpPortKey = ConfigKey "WorkerNodeServiceNetTcpPort"
-    let workerNodeServiceCommunicationTypeKey = ConfigKey "WorkerNodeServiceCommunicationType"
+    let workerNodeServiceAccessInfoKey = ConfigKey "WorkerNodeServiceAccessInfo"
+
+    //let workerNodeServiceAddressKey = ConfigKey "WorkerNodeServiceAddress"
+    //let workerNodeServiceHttpPortKey = ConfigKey "WorkerNodeServiceHttpPort"
+    //let workerNodeServiceNetTcpPortKey = ConfigKey "WorkerNodeServiceNetTcpPort"
+    //let workerNodeServiceCommunicationTypeKey = ConfigKey "WorkerNodeServiceCommunicationType"
 
     let noOfCoresKey = ConfigKey "NoOfCores"
     let isInactiveKey = ConfigKey "IsInactive"
@@ -39,9 +41,7 @@ module AppSettings =
         {
             workerNodeInfo : WorkerNodeInfo
             workerNodeSvcInfo : WorkerNodeServiceAccessInfo
-            workerNodeCommunicationType : WcfCommunicationType
             messagingSvcInfo : MessagingServiceAccessInfo
-            messagingCommunicationType : WcfCommunicationType
         }
 
         member w.isValid() =
@@ -65,16 +65,20 @@ module AppSettings =
             | false, s -> s |> InvalidSettings |> Error
 
 
-    let loadWorkerNodeServiceSettings providerRes =
-        let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddressKey defaultWorkerNodeServiceAddress
-        let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPortKey defaultWorkerNodeHttpServicePort
-        let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPortKey defaultWorkerNodeNetTcpServicePort
-        let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey (NetTcpCommunication NoSecurity)
+    let loadWorkerNodeServiceSettings providerRes dataVersion : WorkerNodeServiceAccessInfo =
+        //let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddressKey defaultWorkerNodeServiceAddress
+        //let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPortKey defaultWorkerNodeHttpServicePort
+        //let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPortKey defaultWorkerNodeNetTcpServicePort
+        //let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey (NetTcpCommunication NoSecurity)
 
-        let workerNodeSvcInfo =
-            WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue
+        //let workerNodeSvcInfo =
+        //    WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue
 
-        (workerNodeSvcInfo, workerNodeServiceCommunicationType)
+        //(workerNodeSvcInfo, workerNodeServiceCommunicationType)
+        let d = WorkerNodeServiceAccessInfo.defaultServiceAccessInfo dataVersion
+        let m = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey d
+        let workerNodeSvcInfo = WorkerNodeServiceAccessInfo m
+        workerNodeSvcInfo
 
 
     let tryGetWorkerNodeId (providerRes : AppSettingsProviderResult) =

@@ -26,12 +26,13 @@ module EchoMsgServiceInfo =
 
 
     let serviceAddress = defaultMessagingServiceAddress
-    let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
+    //let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
     let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
 
-    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
+    //let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
     let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
-    let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    //let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    let echoMsgServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -120,7 +121,7 @@ module EchoMsgServiceInfo =
 
     let getClientData clientId proxy =
         createClientAccessInfo clientId
-        |> MessagingClientData.create proxy expirationTime communicationType
+        |> MessagingClientData.create proxy expirationTime
 
 
     let clientOneData = getClientData clientOneId clientOneProxy
@@ -129,23 +130,18 @@ module EchoMsgServiceInfo =
 
     let serviceData =
         {
-            messagingServiceInfo =
-                {
-                    expirationTime = TimeSpan.FromSeconds 10.0
-                    messagingDataVersion = echoDataVersion
-                }
-
-            communicationType = communicationType
+            expirationTime = TimeSpan.FromSeconds 10.0
+            messagingDataVersion = echoDataVersion
             messagingServiceProxy = serviceProxy
         }
 
 
-    let echoMsgServiceDataRes = tryGetMsgServiceData echoMsgServiceAccessInfo Logger.defaultValue serviceData
+    let echoMsgServiceDataRes = getMsgServiceData echoMsgServiceAccessInfo Logger.defaultValue serviceData
 
 
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
-        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgResponseHandlerData.msgAccessInfo}"
+        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
 
         let tryProcessMessage = onTryProcessMessage client.messageProcessorProxy
 

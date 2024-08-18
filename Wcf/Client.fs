@@ -72,6 +72,7 @@ module Client =
     /// Tries getting a Wcf Client.
     let tryGetWcfService<'T> t url =
         try
+            printfn $"tryGetWcfService - t: '%A{t}', url: '%A{url}'." 
             let binding = getBinding t
             let address = EndpointAddress(url)
             printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'." 

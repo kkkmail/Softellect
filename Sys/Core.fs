@@ -11,6 +11,8 @@ open MBrace.FsPickler.Json
 open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
+open Newtonsoft.Json.Serialization
+open System.Text
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -107,11 +109,46 @@ module Core =
     let binDeserialize b = binSerializer.UnPickle b
 
 
-    let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
-    //let jsonSerialize t = JsonConvert.SerializeObject t
-    //let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T> s
-    let jsonSerialize t = jsonSerializer.PickleToString t
-    let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
+    let jsonSettings =
+        JsonSerializerSettings(
+            Formatting = Formatting.Indented,
+            ContractResolver = CamelCasePropertyNamesContractResolver(),
+            Converters = [| new Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
+
+    let jsonSerialize t = JsonConvert.SerializeObject(t, jsonSettings)
+    let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T>(s, jsonSettings)
+
+    //let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
+    //let jsonSerialize t = jsonSerializer.PickleToString t
+    //let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
+
+
+    let joinStrings (s : string) (v : string[]) = String.Join(s, v)
+
+
+    //let rec private serializeImpl (value: obj) (indent: int) : string =
+    //    let indentStr = new string(' ', indent * 4)
+    //    match value with
+    //    | :? int | :? string | :? float | :? bool as primitive -> sprintf "%A" primitive
+    //    | :? System.Collections.Generic.IEnumerable<obj> as seq ->
+    //        let elements = seq |> Seq.map (fun item -> serializeImpl item (indent + 1))
+    //        let joined = String.Join("\n" + indentStr + "  ", elements)
+    //        sprintf "[\n%s  %s\n%s]" indentStr joined indentStr
+    //    | :? System.Collections.Generic.KeyValuePair<_,_> as kvp ->
+    //        sprintf "%s%s = %s" indentStr (serializeImpl kvp.Key (indent + 1)) (serializeImpl kvp.Value (indent + 1))
+    //    | :? (string * obj) as tuple ->
+    //        sprintf "%s%s = %s" indentStr (fst tuple) (serializeImpl (snd tuple) (indent + 1))
+    //    | :? System.Reflection.PropertyInfo as pInfo ->
+    //        sprintf "%s%s = %s" indentStr pInfo.Name (serializeImpl (pInfo.GetValue(value, null)) (indent + 1))
+    //    | _ ->
+    //        let props = value.GetType().GetProperties()
+    //        let serializedProps =
+    //            props
+    //            |> Array.map (fun prop -> serializeImpl prop (indent + 1))
+    //            |> joinStrings ("\n" + indentStr + "  ")
+    //        sprintf "{\n%s  %s\n%s}" indentStr serializedProps indentStr
+
+    //let serializeValue v = serializeImpl v 0
 
 
     let serialize f t =

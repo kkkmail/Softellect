@@ -63,10 +63,9 @@ module Worker =
 
     /// Low level WCF messaging client.
     type WorkerNodeResponseHandler (i : WorkerNodeServiceAccessInfo) =
-        let n = i.value.netTcpServiceInfo
-        let c = NetTcpCommunication NoSecurity
-        let url = i.value.getUrl c
-        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> c url
+        let n = i.value
+        let url = i.value.getUrl()
+        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> n.communicationType url
 
         //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
         //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr

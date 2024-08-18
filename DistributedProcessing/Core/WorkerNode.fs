@@ -291,7 +291,6 @@ module WorkerNode =
                 let messagingClientData =
                     {
                         msgAccessInfo = messagingClientAccessInfo
-                        communicationType = NetTcpCommunication NoSecurity
                         msgClientProxy = createMessagingClientProxy getMessageSize j messagingClientAccessInfo.msgClientId
                         expirationTime = MessagingClientData<'D>.defaultExpirationTime
                         logOnError = true

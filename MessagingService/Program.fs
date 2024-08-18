@@ -12,6 +12,7 @@ open Softellect.Sys.ExitErrorCodes
 open Softellect.MessagingService.Worker
 open Softellect.Messaging.Service
 open Softellect.Wcf.Service
+open Softellect.Wcf.Common
 open System
 open System.Net
 open CoreWCF
@@ -48,15 +49,23 @@ module Program =
                 services.AddSingleton<IMessagingService<'D>>(messagingService) |> ignore)
 
             .ConfigureWebHostDefaults(fun webBuilder ->
-                let i = data.wcfServiceData.wcfServiceAccessInfo
-                webBuilder.UseKestrel(fun options ->
-                    let endPoint = IPEndPoint(i.ipAddress, i.httpPort)
-                    options.Listen(endPoint)
-                    options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
+                match data.wcfServiceData.wcfServiceAccessInfo with
+                | HttpServiceInfo i ->
+                    webBuilder.UseKestrel(fun options ->
+                        let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
+                        options.Listen(endPoint)
+                        options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
+                | NetTcpServiceInfo i ->
+                    //webBuilder.UseKestrel(fun options ->
+                    //    let endPoint = IPEndPoint(i.netTcpServiceAddress.value.ipAddress, i.netTcpServicePort.value)
+                    //    options.Listen(endPoint)
+                    //    options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                    //    options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                    //    options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
+                    webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
 
-                webBuilder.UseNetTcp(i.netTcpPort) |> ignore
                 webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>(data.wcfServiceData)) |> ignore)
 
 

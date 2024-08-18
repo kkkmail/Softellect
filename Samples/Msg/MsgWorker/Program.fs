@@ -9,16 +9,10 @@ module Program =
 
     [<EntryPoint>]
     let main args =
-        match echoMsgServiceDataRes with
-        | Ok r ->
-            let data =
-                {
-                    messagingDataVersion = echoDataVersion
-                    //messagingServiceData = serviceData
-                    wcfServiceData = r
-                }
+        let data =
+            {
+                messagingDataVersion = echoDataVersion
+                wcfServiceData = echoMsgServiceDataRes
+            }
 
-            main<EchoMessageData> "MsgWorker" data args
-        | Error e ->
-            printfn $"Error: '{e}'."
-            CriticalError
+        main<EchoMessageData> "MsgWorker" data args
