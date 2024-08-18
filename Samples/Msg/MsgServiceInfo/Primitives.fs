@@ -10,7 +10,7 @@ module Primitives =
 
     let echoDataVersion = MessagingDataVersion 2
     let echoLogger = Logger<MessagingError>.defaultValue
-    let communicationType = NetTcpCommunication
+    let communicationType = NetTcpCommunication NoSecurity
 
 
     type EchoMsgType =

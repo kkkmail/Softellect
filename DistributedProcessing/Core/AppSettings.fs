@@ -69,7 +69,7 @@ module AppSettings =
         let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddressKey defaultWorkerNodeServiceAddress
         let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPortKey defaultWorkerNodeHttpServicePort
         let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPortKey defaultWorkerNodeNetTcpServicePort
-        let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey NetTcpCommunication
+        let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey (NetTcpCommunication NoSecurity)
 
         let workerNodeSvcInfo =
             WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue

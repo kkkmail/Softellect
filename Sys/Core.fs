@@ -7,7 +7,7 @@ open System.IO.Compression
 open System.Text
 open MBrace.FsPickler
 open Newtonsoft.Json
-
+open MBrace.FsPickler.Json
 open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
@@ -107,8 +107,11 @@ module Core =
     let binDeserialize b = binSerializer.UnPickle b
 
 
-    let jsonSerialize t = JsonConvert.SerializeObject t
-    let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T> s
+    let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
+    //let jsonSerialize t = JsonConvert.SerializeObject t
+    //let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T> s
+    let jsonSerialize t = jsonSerializer.PickleToString t
+    let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
 
 
     let serialize f t =

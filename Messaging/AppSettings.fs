@@ -38,7 +38,7 @@ module AppSettings =
 
 
     let loadMessagingSettings providerRes messagingDataVersion =
-        let messagingServiceCommunicationType = getCommunicationType providerRes messagingServiceCommunicationType NetTcpCommunication
+        let messagingServiceCommunicationType = getCommunicationType providerRes messagingServiceCommunicationType (NetTcpCommunication NoSecurity)
         let serviceAddress = getServiceAddress providerRes messagingServiceAddress defaultMessagingServiceAddress
         let httpServicePort = getServiceHttpPort providerRes messagingHttpServicePort (getDefaultMessagingHttpServicePort messagingDataVersion)
         let netTcpServicePort = getServiceNetTcpPort providerRes messagingNetTcpServicePort (getDefaultMessagingNetTcpServicePort messagingDataVersion)

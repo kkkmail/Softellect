@@ -63,16 +63,16 @@ module Client =
         binding
 
 
-    let getBinding t s =
+    let getBinding t =
         match t with
         | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding
-        | NetTcpCommunication -> getNetTcpBinding s |> NetTcpBinding
+        | NetTcpCommunication s -> getNetTcpBinding s |> NetTcpBinding
 
 
     /// Tries getting a Wcf Client.
-    let tryGetWcfService<'T> t s url =
+    let tryGetWcfService<'T> t url =
         try
-            let binding = getBinding t s
+            let binding = getBinding t
             let address = EndpointAddress(url)
             printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'." 
 

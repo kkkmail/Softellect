@@ -5,7 +5,9 @@ open System
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
+open Softellect.Sys.Core
 open System.Xml
+
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
 module Common =
@@ -19,19 +21,6 @@ module Common =
     type WcfLogger = Logger<WcfError>
 
 
-    type WcfCommunicationType =
-        | HttpCommunication
-        | NetTcpCommunication
-
-        static member tryCreate s =
-            match s with
-            | nameof(HttpCommunication) -> Some HttpCommunication
-            | nameof(NetTcpCommunication) -> Some NetTcpCommunication
-            | _ -> None
-
-        member c.value = c.ToString()
-
-
     /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.
     /// Since they live in different namespaces wrapper is required to make security negotiation simpler.
     type WcfSecurityMode =
@@ -41,6 +30,32 @@ module Common =
         | TransportWithMessageCredentialSecurity
 
         static member defaultValue = NoSecurity
+
+
+    type WcfCommunicationType =
+        | HttpCommunication
+        | NetTcpCommunication of WcfSecurityMode
+
+        member c.serialize() = jsonSerialize c
+            //serialize
+            //match c with
+            //| HttpCommunication -> nameof(HttpCommunication)
+            //| NetTcpCommunication s -> $"{nameof(NetTcpCommunication)}:{s}"
+
+        static member tryCreate s = 
+            try
+                jsonDeserialize<WcfCommunicationType> s |> Some
+            with
+            | e ->
+                printfn $"tryCreate: Exception: '%A{e}'."
+                None
+
+            //match s with
+            //| nameof(HttpCommunication) -> Some HttpCommunication
+            //| nameof(NetTcpCommunication) -> Some NetTcpCommunication
+            //| _ -> None
+
+        member c.value = c.ToString()
 
 
     let toValidServiceName (serviceName : string) =
@@ -121,4 +136,4 @@ module Common =
         member i.getUrl communicationType =
             match communicationType with
             | HttpCommunication -> i.httpUrl
-            | NetTcpCommunication -> i.netTcpUrl
+            | NetTcpCommunication _ -> i.netTcpUrl

@@ -149,10 +149,29 @@ module AppSettings =
         | Error e -> Error e
 
 
+    let tryGetFromJson<'T> jsonObj section key : Result<'T option, exn> =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                jsonDeserialize<'T> s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
     /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
     /// and returns provided default value instead.
     let tryGetOrDefault<'T> (defaultValue : 'T) tryCreate jsonObj section key : 'T =
         match tryGet<'T> tryCreate jsonObj section key with
+        | Ok (Some v) -> v
+        | _ -> defaultValue
+
+
+    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
+    /// and returns provided default value instead.
+    let tryGetFromJsonOrDefault<'T> (defaultValue : 'T) jsonObj section key : 'T =
+        match tryGetFromJson<'T> jsonObj section key with
         | Ok (Some v) -> v
         | _ -> defaultValue
 
@@ -191,9 +210,13 @@ module AppSettings =
         member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
         member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
         member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
+        member _.tryGetFromJson<'T> key = tryGetFromJson<'T> jsonObj ConfigSection.appSettings key
 
         member _.tryGetOrDefault<'T> (defaultValue : 'T) tryCreate key =
             tryGetOrDefault<'T> defaultValue tryCreate jsonObj ConfigSection.appSettings key
+
+        member _.tryGetFromJsonOrDefault<'T> (defaultValue : 'T) key =
+            tryGetFromJsonOrDefault<'T> defaultValue jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 

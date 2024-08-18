@@ -40,47 +40,57 @@ module Worker =
     let x = 1
 
 
-//    /// https://gist.github.com/dgfitch/661656
-//    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
-//    type IWorkerNodeWcfService =
+    /// https://gist.github.com/dgfitch/661656
+    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
+    type IWorkerNodeWcfService =
 
-////        [<OperationContract(Name = "configure")>]
-////        abstract configure : q:byte[] -> byte[]
+//        [<OperationContract(Name = "configure")>]
+//        abstract configure : q:byte[] -> byte[]
 
-//        //[<OperationContract(Name = "monitor")>]
-//        //abstract monitor : q:byte[] -> byte[]
+        //[<OperationContract(Name = "monitor")>]
+        //abstract monitor : q:byte[] -> byte[]
 
-//        [<OperationContract(Name = "ping")>]
-//        abstract ping : q:byte[] -> byte[]
-
-
-//    ///// Low level WCF messaging client.
-//    //type WorkerNodeResponseHandler private (url, communicationType, securityMode) =
-//    //    let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> communicationType securityMode url
-
-//    //    //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//    //    //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//    //    let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
-
-//    //    //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
-//    //    let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
-
-//    //    interface IWorkerNodeService with
-//    //        //member _.monitor p = monitorImpl p
-//    //        member _.ping() = pingImpl()
-
-//    //    new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
-//    //        WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
+        [<OperationContract(Name = "ping")>]
+        abstract ping : q:byte[] -> byte[]
 
 
-////    let private workerNodeRunner : Lazy<ClmResult<WorkerNodeRunner>> =
-////        new Lazy<ClmResult<WorkerNodeRunner>>(fun () -> WorkerNodeRunner.create serviceAccessInfo)
+    type WorkerNodeResponseHandlerData =
+        {
+            url : string
+            communicationType : WorkerNodeServiceAccessInfo
+        }
 
 
-////    let tryStartWorkerNodeRunner() =
-////        match workerNodeRunner.Value with
-////        | Ok service -> service.start() |> Ok
-////        | Error e -> Error e
+    /// Low level WCF messaging client.
+    type WorkerNodeResponseHandler (i : WorkerNodeServiceAccessInfo) =
+        let n = i.value.netTcpServiceInfo
+        let c = NetTcpCommunication NoSecurity
+        let url = i.value.getUrl c
+        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> c url
+
+        //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
+
+        //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
+        let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
+
+        interface IWorkerNodeService with
+            //member _.monitor p = monitorImpl p
+            member _.ping() = pingImpl()
+
+        //new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
+        //    WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
+
+
+//    let private workerNodeRunner : Lazy<ClmResult<WorkerNodeRunner>> =
+//        new Lazy<ClmResult<WorkerNodeRunner>>(fun () -> WorkerNodeRunner.create serviceAccessInfo)
+
+
+//    let tryStartWorkerNodeRunner() =
+//        match workerNodeRunner.Value with
+//        | Ok service -> service.start() |> Ok
+//        | Error e -> Error e
 
 
 //    type WorkerNodeWcfService<'D, 'P>(messagingDataVersion, data, tryRunSolverProcess) =

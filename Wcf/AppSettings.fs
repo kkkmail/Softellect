@@ -9,6 +9,6 @@ module AppSettings =
         match providerRes with
         | Ok provider ->
             match provider.tryGetString n with
-            | Ok (Some s) -> WcfCommunicationType.tryCreate s |> Option.defaultValue NetTcpCommunication
+            | Ok (Some s) -> WcfCommunicationType.tryCreate s |> Option.defaultValue (NetTcpCommunication NoSecurity)
             | _ -> d
         | _ -> d
