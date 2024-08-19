@@ -18,22 +18,7 @@ open Softellect.Messaging.CommandLine
 
 module EchoMsgServiceInfo =
     type EchoMessagingClient = MessagingClient<EchoMessageData>
-    type EchoMessagingClientData = MessagingClientData<EchoMessageData>
-    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
-    type EchoMessagingService = MessagingService<EchoMessageData>
-    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData>
-    //type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
-
-
-    //let serviceAddress = defaultMessagingServiceAddress
-    ////let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
-    //let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
-
-    ////let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
-    //let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
-    ////let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
-    //let echoMsgServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
 
     let echMessagingServiceData = getMessagingServiceData<EchoMessageData> Logger.defaultValue echoDataVersion
 

@@ -11,6 +11,7 @@ open Softellect.Sys.Worker
 open Softellect.Messaging.DataAccess
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Primitives
+open Softellect.Messaging.Proxy
 
 module CommandLine =
 
@@ -85,7 +86,7 @@ module CommandLine =
     type MessagingServiceTask = WorkerTask<(list<MessagingConfigParam> * MsgSettings), MessagingServiceRunArgs>
 
 
-    let getMessagingServiceDataImpl<'D> logger proxy v =
+    let private getMessagingServiceDataImpl logger proxy v =
         let i = getServiceSettings v []
 
         let serviceData =
@@ -101,5 +102,5 @@ module CommandLine =
 
 
     let getMessagingServiceData<'D> logger (v : MessagingDataVersion) =
-        let proxy = createMessagingServiceProxy getMessagingConnectionString v
-        getMessagingServiceDataImpl<'D> logger proxy v
+        let proxy : MessagingServiceProxy<'D> = createMessagingServiceProxy getMessagingConnectionString v
+        getMessagingServiceDataImpl logger proxy v
