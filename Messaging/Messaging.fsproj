@@ -42,9 +42,8 @@
     <Compile Include="AppSettings.fs" />
     <Compile Include="DataAccess.fs" />
     <Compile Include="ServiceProxy.fs" />
+    <Compile Include="CommandLine.fs" />
   </ItemGroup>
-
-  <ItemGroup />
 
   <ItemGroup>
     <ProjectReference Include="..\Sys\Sys.fsproj" />

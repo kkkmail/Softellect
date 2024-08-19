@@ -14,6 +14,7 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
 open Softellect.Messaging.VersionInfo
+open Softellect.Messaging.CommandLine
 
 module EchoMsgServiceInfo =
     type EchoMessagingClient = MessagingClient<EchoMessageData>
@@ -25,14 +26,16 @@ module EchoMsgServiceInfo =
     //type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
 
-    let serviceAddress = defaultMessagingServiceAddress
-    //let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
-    let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
+    //let serviceAddress = defaultMessagingServiceAddress
+    ////let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
+    //let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
 
-    //let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
-    //let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
-    let echoMsgServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
+    ////let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
+    //let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
+    ////let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    //let echoMsgServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
+
+    let echMessagingServiceData = getMessagingServiceData<EchoMessageData> Logger.defaultValue echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -117,7 +120,7 @@ module EchoMsgServiceInfo =
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
     let expirationTime = TimeSpan.FromSeconds 10.0
 
-    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echoMsgServiceAccessInfo clientId
+    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echMessagingServiceData.wcfServiceAccessInfo clientId
 
     let getClientData clientId proxy =
         createClientAccessInfo clientId
@@ -136,7 +139,7 @@ module EchoMsgServiceInfo =
         }
 
 
-    let echoMsgServiceDataRes = getMsgServiceData echoMsgServiceAccessInfo Logger.defaultValue serviceData
+    let echoMsgServiceDataRes = getMsgServiceData echMessagingServiceData.wcfServiceAccessInfo Logger.defaultValue serviceData
 
 
     let runClient clientData recipient =

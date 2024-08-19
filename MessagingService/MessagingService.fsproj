@@ -54,8 +54,6 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Compile Include="CommandLine.fs" />
-    <Compile Include="Worker.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

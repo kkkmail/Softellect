@@ -6,10 +6,9 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Softellect.Messaging.Primitives
-open Softellect.MessagingService
-open Softellect.MessagingService.CommandLine
+open Softellect.Messaging
+open Softellect.Messaging.CommandLine
 open Softellect.Sys.ExitErrorCodes
-open Softellect.MessagingService.Worker
 open Softellect.Messaging.Service
 open Softellect.Wcf.Service
 open Softellect.Wcf.Common
@@ -26,7 +25,7 @@ open System.Threading
 open Microsoft.FSharp.Core.Operators
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Softellect.MessagingService.CommandLine
+open Softellect.Messaging.CommandLine
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Primitives
@@ -58,12 +57,6 @@ module Program =
                         options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
                         options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
                 | NetTcpServiceInfo i ->
-                    //webBuilder.UseKestrel(fun options ->
-                    //    let endPoint = IPEndPoint(i.netTcpServiceAddress.value.ipAddress, i.netTcpServicePort.value)
-                    //    options.Listen(endPoint)
-                    //    options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    //    options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-                    //    options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
                     webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
 
                 webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>(data.wcfServiceData)) |> ignore)

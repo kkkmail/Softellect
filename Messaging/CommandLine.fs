@@ -1,4 +1,4 @@
-﻿namespace Softellect.MessagingService
+﻿namespace Softellect.Messaging
 
 open Argu
 open System.Net
