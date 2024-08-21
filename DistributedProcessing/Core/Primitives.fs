@@ -44,7 +44,6 @@ module Primitives =
 
     type PartitionerId =
         | PartitionerId of MessagingClientId
-        //| PartitionerId of Guid
 
         member this.value = let (PartitionerId v) = this in v.value
         member this.messagingClientId = let (PartitionerId v) = this in v
@@ -92,6 +91,7 @@ module Primitives =
         else None
 
 
+    /// 'P is any other data that is needed for progress tracking.
     type ProgressData<'P> =
         {
             progress : decimal
@@ -148,13 +148,7 @@ module Primitives =
         }
 
 
-    ///// 'D is the model data and 'C is the control data.
-    //type WorkerNodeRunModelData<'D, 'C> =
-    //    {
-    //        runningProcessData : RunningProcessData
-    //        modelData : 'D
-    //        controlData : 'C
-    //    }
+    ///// 'D is the model data.
     type WorkerNodeRunModelData<'D> =
         {
             runQueueId : RunQueueId
@@ -222,7 +216,7 @@ module Primitives =
         //    let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
         //    ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
 
-        static member defaultServiceAccessInfo v =
+        static member defaultServiceAccessInfo =
             {
                 netTcpServiceAddress = ServiceAddress localHost
                 netTcpServicePort = defaultContGenNetTcpServicePort
@@ -230,7 +224,6 @@ module Primitives =
                 netTcpSecurityMode = NoSecurity
             }
             |> NetTcpServiceInfo
-
 
 
     type WorkerNodeServiceInfo =

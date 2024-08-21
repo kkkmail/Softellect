@@ -23,49 +23,22 @@ module AppSettings =
     let expirationTimeInMinutesKey = ConfigKey "ExpirationTimeInMinutes"
     let messagingServiceAccessInfoKey = ConfigKey "MessagingServiceAccessInfo"
 
-    //let messagingServiceAddressKey = ConfigKey "MessagingServiceAddress"
-    //let messagingHttpServicePortKey = ConfigKey "MessagingHttpServicePort"
-    //let messagingNetTcpServicePortKey = ConfigKey "MessagingNetTcpServicePort"
-    //let messagingServiceCommunicationTypeKey = ConfigKey "MessagingServiceCommunicationType"
-
 
     let updateMessagingSettings (provider : AppSettingsProvider) (m : MessagingServiceAccessInfo) =
         let s = m.messagingServiceAccessInfo
         printfn $"updateMessagingSettings - s: '{s}'."
-        //let v = jsonSerialize s
-        //let v = serializeValue s
         let v = s.serialize()
         printfn $"updateMessagingSettings - v: '{v}'."
-        //let mh = m.messagingServiceAccessInfo.httpServiceInfo
-        //let mn = m.messagingServiceAccessInfo.netTcpServiceInfo
-
-        //provider.trySet messagingServiceAddress mn.netTcpServiceAddress.value |> ignore
-        //provider.trySet messagingHttpServicePort mh.httpServicePort.value |> ignore
-        //provider.trySet messagingNetTcpServicePort mn.netTcpServicePort.value |> ignore
-        //provider.trySet messagingServiceCommunicationType ct.value |> ignore
         let result = provider.trySet messagingServiceAccessInfoKey v
         printfn $"updateMessagingSettings - result: '%A{result}'."
         result
 
 
     let loadMessagingSettings providerRes messagingDataVersion =
-        //let messagingServiceCommunicationType = getCommunicationType providerRes messagingServiceCommunicationType (NetTcpCommunication NoSecurity)
-        //let serviceAddress = getServiceAddress providerRes messagingServiceAddress defaultMessagingServiceAddress
-        //let httpServicePort = getServiceHttpPort providerRes messagingHttpServicePort (getDefaultMessagingHttpServicePort messagingDataVersion)
-        //let netTcpServicePort = getServiceNetTcpPort providerRes messagingNetTcpServicePort (getDefaultMessagingNetTcpServicePort messagingDataVersion)
-
-        //let h = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
-        //let n = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
-        //let m = ServiceAccessInfo.create h n
-        //let messagingSvcInfo = MessagingServiceAccessInfo.create messagingDataVersion m
-
-        //messagingSvcInfo, messagingServiceCommunicationType
-
         let d = MessagingServiceAccessInfo.defaultServiceAccessInfo messagingDataVersion
         let m = getServiceAccessInfo providerRes messagingServiceAccessInfoKey d
         let messagingSvcInfo = MessagingServiceAccessInfo.create messagingDataVersion m
         messagingSvcInfo
-
 
 
     type MsgSettings =

@@ -119,15 +119,7 @@ module WorkerNode =
         }
 
 
-    //type WorkerNodeMessage<'D> =
-    //    | Start of AsyncReplyChannel<UnitResult>
-    //    | Register of AsyncReplyChannel<MessagingUnitResult>
-    //    | Unregister of AsyncReplyChannel<MessagingUnitResult>
-    //    | GetMessages of AsyncReplyChannel<MessagingUnitResult>
-    //    //| GetState of AsyncReplyChannel<WorkerNodeMonitorResponse>
-
-
-    /// 'D is underlying strongly typed input data, NOT A Message* data, 'P is underlying progress data.
+    /// 'D is underlying strongly typed input data, NOT A Message data, 'P is underlying progress data.
     type WorkerNodeRunner<'D, 'P>(i : WorkerNodeRunnerData<'D, 'P>) =
         let mutable callCount = -1
         let mutable started = false

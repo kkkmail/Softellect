@@ -10,11 +10,11 @@ open Softellect.Messaging.AppSettings
 open Softellect.Messaging.Errors
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.Common
+open Softellect.Wcf.AppSettings
+open Softellect.Messaging.ServiceInfo
 
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.AppSettings
-//open ClmSys.ClmWorker
-//open WorkerNodeServiceInfo.ServiceInfo
 open Softellect.Sys.Worker
 open Softellect.Sys
 
@@ -124,55 +124,58 @@ module CommandLine =
             //let wn = w.workerNodeSvcInfo.value.netTcpServiceInfo
             //let mn = w.messagingSvcInfo.messagingServiceAccessInfo.netTcpServiceInfo
 
-            //let w1 =
-            //    {
-            //        workerNodeInfo =
-            //            { w.workerNodeInfo with
-            //                partitionerId = proxy.tryGetPartitioner p |> Option.defaultValue w.workerNodeInfo.partitionerId
+            let w1 =
+                {
+                    workerNodeInfo =
+                        { w.workerNodeInfo with
+                            partitionerId = proxy.tryGetPartitioner p |> Option.defaultValue w.workerNodeInfo.partitionerId
 
-            //                noOfCores =
-            //                    let n = proxy.tryGetNoOfCores p |> Option.defaultValue w.workerNodeInfo.noOfCores
-            //                    max 0 (min n (8 * Environment.ProcessorCount))
+                            noOfCores =
+                                let n = proxy.tryGetNoOfCores p |> Option.defaultValue w.workerNodeInfo.noOfCores
+                                max 0 (min n (8 * Environment.ProcessorCount))
 
-            //                nodePriority =
-            //                    match w.workerNodeInfo.nodePriority.value with
-            //                    | x when x <= 0 -> WorkerNodePriority.defaultValue
-            //                    | _ -> w.workerNodeInfo.nodePriority
+                            nodePriority =
+                                match w.workerNodeInfo.nodePriority.value with
+                                | x when x <= 0 -> WorkerNodePriority.defaultValue
+                                | _ -> w.workerNodeInfo.nodePriority
 
-            //                isInactive = proxy.tryGetInactive p |> Option.defaultValue w.workerNodeInfo.isInactive
-            //                lastErrorDateOpt = w.workerNodeInfo.lastErrorDateOpt
-            //            }
+                            isInactive = proxy.tryGetInactive p |> Option.defaultValue w.workerNodeInfo.isInactive
+                            lastErrorDateOpt = w.workerNodeInfo.lastErrorDateOpt
+                        }
 
-            //        workerNodeSvcInfo =
-            //            { w.workerNodeSvcInfo.value with
-            //                netTcpServiceInfo =
-            //                    { wn with
-            //                        netTcpServiceAddress = proxy.tryGetServiceAddress p |> Option.defaultValue wn.netTcpServiceAddress
-            //                        netTcpServicePort = proxy.tryGetServicePort p |> Option.defaultValue wn.netTcpServicePort
-            //                    }
-            //            }
-            //            |> WorkerNodeServiceAccessInfo
+                    workerNodeSvcInfo = failwith ""
+                        //{ w.workerNodeSvcInfo.value with
+                        //    netTcpServiceInfo =
+                        //        { wn with
+                        //            netTcpServiceAddress = proxy.tryGetServiceAddress p |> Option.defaultValue wn.netTcpServiceAddress
+                        //            netTcpServicePort = proxy.tryGetServicePort p |> Option.defaultValue wn.netTcpServicePort
+                        //        }
+                        //}
+                        |> WorkerNodeServiceAccessInfo
 
-            //        workerNodeCommunicationType = w.workerNodeCommunicationType
+                    //workerNodeCommunicationType = w.workerNodeCommunicationType
 
-            //        messagingSvcInfo =
-            //            { w.messagingSvcInfo with
-            //                messagingServiceAccessInfo =
-            //                    { w.messagingSvcInfo.messagingServiceAccessInfo with
-            //                        netTcpServiceInfo =
-            //                            { mn with
-            //                                netTcpServiceAddress = proxy.tryGetMsgServiceAddress p |> Option.defaultValue mn.netTcpServiceAddress
-            //                                netTcpServicePort = proxy.tryGetMsgServicePort p |> Option.defaultValue mn.netTcpServicePort
-            //                            }
-            //                    }
-            //                messagingDataVersion = messagingDataVersion
-            //            }
+                    messagingSvcInfo =
+                        {
+                            messagingServiceAccessInfo = failwith ""
+                            messagingDataVersion = messagingDataVersion
+                        }
+                        //{ w.messagingSvcInfo with
+                        //    messagingServiceAccessInfo =
+                        //        { w.messagingSvcInfo.messagingServiceAccessInfo with
+                        //            netTcpServiceInfo =
+                        //                { mn with
+                        //                    netTcpServiceAddress = proxy.tryGetMsgServiceAddress p |> Option.defaultValue mn.netTcpServiceAddress
+                        //                    netTcpServicePort = proxy.tryGetMsgServicePort p |> Option.defaultValue mn.netTcpServicePort
+                        //                }
+                        //        }
+                        //    messagingDataVersion = messagingDataVersion
+                        //}
 
-            //        messagingCommunicationType = w.messagingCommunicationType
-            //    }
+                    //messagingCommunicationType = w.messagingCommunicationType
+                }
 
-            //Some w1
-            failwith "tryLoadWorkerNodeSettings is not implemented yet."
+            Some w1
         | None -> None
 
 
