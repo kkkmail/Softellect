@@ -4,6 +4,7 @@ open System
 open System.Threading
 
 open Softellect.Sys.Primitives
+open Softellect.Sys.DataAccess
 open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
 open Softellect.Wcf.Common
@@ -15,8 +16,13 @@ open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
 open Softellect.Messaging.VersionInfo
 open Softellect.Messaging.CommandLine
+open Softellect.Messaging.ServiceProxy
 
 module EchoMsgServiceInfo =
+
+    // Flip to false to use in memory lists for messaging service storage and to true to use local database.
+    let useLocalDatabase = true
+
     type EchoMessagingClient = MessagingClient<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
 
@@ -81,7 +87,7 @@ module EchoMsgServiceInfo =
         }
 
 
-    let serviceProxy =
+    let getListBasedServiceProxy() =
         {
             tryPickMessage =
                 fun clientId ->
@@ -99,6 +105,16 @@ module EchoMsgServiceInfo =
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
             logger = echoLogger
         }
+
+
+    let serviceProxy =
+        match useLocalDatabase with
+        | false ->
+            printfn "serviceProxy - Using in-memory lists for messaging service."
+            getListBasedServiceProxy()
+        | true ->
+            printfn "serviceProxy - Using local database for messaging service."
+            echMessagingServiceData.serviceData.messagingServiceProxy
 
 
     let clientOneProxy = getClientProxy clientOneMessageData clientOneId clientTwoId
