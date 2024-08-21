@@ -4,6 +4,7 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
         <Platforms>x64</Platforms>
+        <AssemblyName>MsgWorker</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,8 +13,8 @@
           <CopyToOutputDirectory>Never</CopyToOutputDirectory>
           <CopyToPublishDirectory>Never</CopyToPublishDirectory>
         </Content>
-        <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="PreserveNewest" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="PreserveNewest" Condition="Exists('MessagingServiceName.PS1')" />
+        <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
+        <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <Content Include="appsettings.Development.json">
           <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
