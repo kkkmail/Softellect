@@ -12,7 +12,6 @@ module TimerEvents =
 
 
     [<Literal>]
-    //let RefreshInterval = 30_000
     let RefreshInterval = 10_000
 
 

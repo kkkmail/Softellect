@@ -4,7 +4,6 @@ open Softellect.Messaging.Service
 open Softellect.MessagingService.Program
 open Softellect.Samples.Msg.ServiceInfo.Primitives
 open Softellect.Samples.Msg.ServiceInfo.EchoMsgServiceInfo
-open Softellect.Sys.ExitErrorCodes
 
 module Program =
 

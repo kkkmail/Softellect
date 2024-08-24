@@ -7,12 +7,10 @@ open System.IO.Compression
 open System.Text
 open MBrace.FsPickler
 open Newtonsoft.Json
-open MBrace.FsPickler.Json
 open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Newtonsoft.Json.Serialization
-open System.Text
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -126,6 +124,7 @@ module Core =
     let joinStrings (s : string) (v : string[]) = String.Join(s, v)
 
 
+    // TODO kk:20240824 - Does not work. Delete in 180 days if not fixed.
     //let rec private serializeImpl (value: obj) (indent: int) : string =
     //    let indentStr = new string(' ', indent * 4)
     //    match value with

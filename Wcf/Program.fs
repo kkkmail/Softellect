@@ -25,25 +25,25 @@ open Microsoft.Extensions.Logging
 module Program =
     let x = 1
 
-    //type ProgramData<'IService, 'Data> =
+    // TODO kk:20240824 - Does not want to compile and seems too complicated with generics due to F# limitations. Delete in 180 days.
+
+
+    //type ProgramData<'IService> =
     //    {
-    //        dataVersion : DataVersion
-    //        programName : string
-    //        wcfServiceData : WcfServiceData<'Data>
-    //        getService : 'Data -> 'IService
-    //        tryGetRunTask : string -> (unit -> unit) option
+    //        serviceAccessInfo : ServiceAccessInfo
+    //        getService : unit -> 'IService
     //    }
 
 
-    //let private createHostBuilder<'IService, 'IWcfService, 'Data when 'IService : not struct and 'IWcfService : not struct> (data : ProgramData<'IService, 'Data>) =
+    //let private createHostBuilder<'IService, 'IWcfService when 'IService : not struct and 'IWcfService : not struct> (data : ProgramData<'IService>) =
     //    Host.CreateDefaultBuilder()
     //        .UseWindowsService()
     //        .ConfigureServices(fun hostContext services ->
-    //            let service = data.getService(data.wcfServiceData.serviceData)
+    //            let service = data.getService()
     //            services.AddSingleton<'IService>(service) |> ignore)
 
     //        .ConfigureWebHostDefaults(fun webBuilder ->
-    //            match data.wcfServiceData.wcfServiceAccessInfo with
+    //            match data.serviceAccessInfo with
     //            | HttpServiceInfo i ->
     //                webBuilder.UseKestrel(fun options ->
     //                    let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
@@ -54,7 +54,7 @@ module Program =
     //            | NetTcpServiceInfo i ->
     //                webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
 
-    //            webBuilder.UseStartup(fun _ -> WcfStartup<'IService, 'IWcfService, 'Data>(data.wcfServiceData)) |> ignore)
+    //            webBuilder.UseStartup(fun _ -> WcfStartup<'IService, 'IWcfService>(data.wcfServiceData)) |> ignore)
 
 
     //let main<'IService, 'IWcfService, 'Data, 'Args when 'IService : not struct and 'IWcfService : not struct and 'Args :> IArgParserTemplate> data argv =

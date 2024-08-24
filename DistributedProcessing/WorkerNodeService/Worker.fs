@@ -31,7 +31,7 @@ open Softellect.DistributedProcessing.AppSettings
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.ServiceInfo
 open Softellect.DistributedProcessing.WorkerNode
-open Softellect.Sys.Worker
+open Softellect.Sys.AppSettings
 open Softellect.Sys
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service

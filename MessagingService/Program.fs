@@ -5,41 +5,19 @@ open System
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
-open Softellect.Messaging.Primitives
-open Softellect.Messaging
-open Softellect.Messaging.CommandLine
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Messaging.Service
 open Softellect.Wcf.Service
 open Softellect.Wcf.Common
-open System
 open System.Net
-open CoreWCF
 open CoreWCF.Configuration
-open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Server.Kestrel.Core
-open Microsoft.AspNetCore.Builder
-open Microsoft.Extensions.DependencyInjection
-open System.Threading
 open Microsoft.FSharp.Core.Operators
-open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
-open Softellect.Messaging.CommandLine
 open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.Service
-open Softellect.Messaging.Primitives
-open Softellect.Sys.Worker
-
+open Softellect.Sys.AppSettings
+open Softellect.Messaging.AppSettings
 
 module Program =
-
-    //type MessagingProgramData<'D> =
-    //    {
-    //        messagingDataVersion : MessagingDataVersion
-    //        wcfServiceData :  WcfServiceData<MessagingServiceData<'D>>
-    //    }
-
 
     let private createHostBuilder<'D> (data : MessagingServiceData<'D>) =
         let serviceAccessInfo = data.messagingServiceAccessInfo.serviceAccessInfo
@@ -75,45 +53,20 @@ module Program =
                 webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService>(serviceAccessInfo)) |> ignore)
 
 
-    //let main<'D> messagingProgramName data argv =
-    //    printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
-    //    printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
-    //    printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
-
-    //    let runHost() = createHostBuilder<'D>(data).Build().Run()
-
-    //    try
-    //        let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)
-    //        let results = (parser.Parse argv).GetAllResults() |> MsgSvcArgs.fromArgu convertArgs
-
-    //        let run p =
-    //            getParams data.messagingDataVersion p |> ignore
-    //            runHost
-
-    //        match MessagingServiceTask.tryCreate run (getSaveSettings data.messagingDataVersion) results with
-    //        | Some task -> task.run()
-    //        | None -> runHost()
-
-    //        CompletedSuccessfully
-
-    //    with
-    //    | exn ->
-    //        printfn $"%s{exn.Message}"
-    //        UnknownException
-
     let main<'D> messagingProgramName data argv =
-        //printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
-        //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
-        //printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
+        printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let runHost() = createHostBuilder<'D>(data).Build().Run()
 
         try
-            let parser = ArgumentParser.Create<WorkerArguments>(programName = messagingProgramName)
+            let parser = ArgumentParser.Create<SettingsArguments>(programName = messagingProgramName)
             let results = (parser.Parse argv).GetAllResults()
-            let saveSettings() = failwith "saveSettings is not implemented yet." // getSaveSettings data.messagingDataVersion
 
-            match WorkerTask.tryCreate saveSettings results with
+            let saveSettings() =
+                let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
+                printfn $"saveSettings - result: '%A{result}'."
+
+            match SettingsTask.tryCreate saveSettings results with
             | Some task -> task.run()
             | None -> runHost()
 

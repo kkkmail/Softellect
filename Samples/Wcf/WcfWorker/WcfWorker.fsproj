@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Worker;Microsoft.NET.Sdk.Publish">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <UserSecretsId>dotnet-WcfWorker-42B7797B-10C0-4875-B86B-A635EEE2C57E</UserSecretsId>
-    <AssemblyName>Softellect.Samples.Wcf.WcfWorker</AssemblyName>
+    <AssemblyName>WcfWorker</AssemblyName>
     <Platforms>x64</Platforms>
   </PropertyGroup>
 
@@ -10,12 +10,6 @@
     <Compile Include="EchoWcfService.fs" />
     <Compile Include="Worker.fs" />
     <Compile Include="Program.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Settings.job">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>

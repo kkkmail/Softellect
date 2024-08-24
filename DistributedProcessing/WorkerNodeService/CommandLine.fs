@@ -15,7 +15,7 @@ open Softellect.Messaging.ServiceInfo
 
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.AppSettings
-open Softellect.Sys.Worker
+open Softellect.Sys.AppSettings
 open Softellect.Sys
 
 module CommandLine =

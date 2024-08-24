@@ -4,9 +4,9 @@ open Newtonsoft.Json.Linq
 open System
 open System.IO
 open Newtonsoft.Json
+open Argu
 open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
-open Softellect.Sys.Primitives
 
 module AppSettings =
 
@@ -15,7 +15,7 @@ module AppSettings =
 
 
     [<Literal>]
-    let ListSeparator = ","
+    let ListSeparator = ";"
 
 
     [<Literal>]
@@ -23,7 +23,7 @@ module AppSettings =
 
 
     /// Expects a string in the form:
-    ///     someField1:SomeValue1,someField2:SomeValue2
+    ///     someField1:SomeValue1;someField2:SomeValue2
     let parseSimpleSetting (s : string) =
         let p =
             s.Split ListSeparator
@@ -236,32 +236,31 @@ module AppSettings =
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
 
 
-    //let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
-    //    match providerRes with
-    //    | Ok provider ->
-    //        match provider.tryGetString n with
-    //        | Ok (Some EmptyString) -> d
-    //        | Ok (Some s) -> s
-    //        | _ -> d
-    //    | _ -> d
-    //    |> ServiceAddress
+    /// A simple command line handler to save default settings into appconfig.json file.
+    /// Thisis helpful when the structures change and you want to reset the settings.
+    [<CliPrefix(CliPrefix.None)>]
+    type SettingsArguments =
+        | [<Unique>] [<First>] [<AltCommandLine("s")>] Save
+
+    with
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Save -> "saves default settings into appconfig.json file."
 
 
-    //let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-    //    match providerRes with
-    //    | Ok provider ->
-    //        match provider.tryGetInt n with
-    //        | Ok (Some k) when k > 0 -> k
-    //        | _ -> d
-    //    | _ -> d
-    //    |> ServicePort
+    type SettingsTask =
+        | SaveSettingsTask of (unit -> unit)
 
+        member task.run () =
+            match task with
+            | SaveSettingsTask s -> s()
 
-    //let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-    //    match providerRes with
-    //    | Ok provider ->
-    //        match provider.tryGetInt n with
-    //        | Ok (Some k) when k > 0 -> k
-    //        | _ -> d
-    //    | _ -> d
-    //    |> ServicePort
+        static member private tryCreateSaveSettingsTask s (p : list<SettingsArguments>) : SettingsTask option =
+            p |> List.tryPick (fun e -> match e with | Save -> s |> SaveSettingsTask |> Some | _ -> None)
+
+        static member tryCreate s p =
+            [
+                SettingsTask.tryCreateSaveSettingsTask s
+            ]
+            |> List.tryPick (fun e -> e p)

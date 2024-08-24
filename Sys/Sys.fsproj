@@ -50,7 +50,6 @@
     <Compile Include="ServiceInstaller.fs" />
     <Compile Include="AppSettings.fs" />
     <Compile Include="DataAccess.fs" />
-    <Compile Include="Worker.fs" />
   </ItemGroup>
 
   <ItemGroup>

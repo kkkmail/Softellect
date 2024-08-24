@@ -24,6 +24,8 @@ module Service =
     let private toError e = e |> Error
 
 
+    /// ! Do not try consolidating with Client. Different namespaces are used !
+    /// This SecurityMode lives in CoreWCF namespace.
     type WcfSecurityMode
         with
         member s.securityMode =
@@ -32,9 +34,6 @@ module Service =
             | TransportSecurity -> SecurityMode.Transport
             | MessageSecurity -> SecurityMode.Message
             | TransportWithMessageCredentialSecurity -> SecurityMode.TransportWithMessageCredential
-
-
-//    let mutable private serviceCount = 0L
 
 
     /// Service reply.
@@ -88,68 +87,7 @@ module Service =
         binding
 
 
-    //type WcfServiceAccessInfo =
-    //    {
-    //        ipAddress : IPAddress
-    //        httpPort : int
-    //        httpServiceName : string
-    //        netTcpPort : int
-    //        netTcpServiceName : string
-    //        netTcpSecurityMode : WcfSecurityMode
-    //    }
-
-    //    static member tryCreate (i : ServiceAccessInfo) =
-    //        let fail e : WcfResult<WcfServiceAccessInfo> = e |> WcfCriticalErr |> Error
-    //        let h = i.httpServiceInfo
-    //        let n = i.netTcpServiceInfo
-
-    //        match IPAddress.TryParse h.httpServiceAddress.value, h.httpServicePort = n.netTcpServicePort, h.httpServiceAddress = n.netTcpServiceAddress with
-    //        | (true, ipAddress), false, true ->
-    //            {
-    //                ipAddress = ipAddress
-    //                httpPort = h.httpServicePort.value
-    //                httpServiceName = h.httpServiceName.value
-    //                netTcpPort = n.netTcpServicePort.value
-    //                netTcpServiceName = n.netTcpServiceName.value
-    //                netTcpSecurityMode = n.netTcpSecurityMode
-    //            }
-    //            |> Ok
-
-    //        | (true, _), true, _ ->
-    //            fail $"http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
-    //        | (false, _), false, _ ->
-    //            fail $"invalid IP address: %s{h.httpServiceAddress.value}"
-    //        | (false, _), true, _ ->
-    //            fail $"invalid IP address: %s{h.httpServiceAddress.value} and http service port: %A{h.httpServicePort} must be different from nettcp service port: %A{n.netTcpServicePort}"
-    //        | _, _, false ->
-    //            fail $"http IP address: %s{h.httpServiceAddress.value} and net tcp IP address: %s{n.netTcpServiceAddress.value} must be the same"
-
-    //    static member defaultValue =
-    //        {
-    //            ipAddress = IPAddress.None
-    //            httpPort = -1
-    //            httpServiceName = String.Empty
-    //            netTcpPort = - 1
-    //            netTcpServiceName  = String.Empty
-    //            netTcpSecurityMode = WcfSecurityMode.defaultValue
-    //        }
-
-
-    //type WcfServiceProxy =
-    //    {
-    //        wcfLogger : WcfLogger
-    //    }
-
-
-    ///// 'Data - is a type of initialization data that the underlying service needs to operate.
-    //type WcfServiceData<'Data> =
-    //    {
-    //        //wcfServiceProxy : WcfServiceProxy
-    //        serviceAccessInfo : ServiceAccessInfo
-    //        serviceData : 'Data
-    //    }
-
-
+    /// kk:20240824 - We'd want to have a constraint "and 'Service :> 'IWcfService" but F# does not allow it as of this date.
     type WcfStartup<'Service, 'IWcfService when 'Service : not struct and 'IWcfService : not struct>(d : ServiceAccessInfo) =
         let createServiceModel (builder : IServiceBuilder) =
             let w (b : IServiceBuilder) =
@@ -166,7 +104,7 @@ module Service =
             builder
                 .AddService<'Service>()
                 |> w
-            |> ignore
+                |> ignore
 
         member _.ConfigureServices(services : IServiceCollection) =
             do
@@ -175,15 +113,3 @@ module Service =
 
         member _.Configure(app : IApplicationBuilder, env : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
-
-
-    //let getServiceData serviceAccessInfo serviceData =
-    //    {
-    //        //wcfServiceProxy =
-    //        //    {
-    //        //        wcfLogger = wcfLogger
-    //        //    }
-
-    //        serviceAccessInfo = serviceAccessInfo
-    //        serviceData = serviceData
-    //    }

@@ -3,21 +3,13 @@
 open System
 open System.Threading
 
-open Softellect.Sys.Primitives
-open Softellect.Sys.DataAccess
 open Softellect.Messaging.Primitives
-open Softellect.Sys.Logging
-open Softellect.Wcf.Common
-open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.AppSettings
 open Softellect.Messaging.DataAccess
-open Softellect.Messaging.Service
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
-open Softellect.Messaging.VersionInfo
-open Softellect.Messaging.CommandLine
 open Softellect.Messaging.ServiceProxy
 
 module EchoMsgServiceInfo =
@@ -140,23 +132,9 @@ module EchoMsgServiceInfo =
             logOnError = true
         }
 
-        //createClientAccessInfo clientId
-        //|> MessagingClientData.create proxy expirationTime
-
 
     let clientOneData = getClientData clientOneId clientOneProxy
     let clientTwoData = getClientData clientTwoId clientTwoProxy
-
-
-    //let serviceData =
-    //    {
-    //        expirationTime = TimeSpan.FromSeconds 10.0
-    //        messagingDataVersion = echoDataVersion
-    //        messagingServiceProxy = serviceProxy
-    //    }
-
-
-    //let echoMsgServiceDataRes = getMsgServiceData echMessagingServiceData.wcfServiceAccessInfo Logger.defaultValue serviceData
 
 
     let runClient clientData recipient =

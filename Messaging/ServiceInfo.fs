@@ -61,14 +61,6 @@ module ServiceInfo =
         abstract tryDeleteFromServer : cm:byte[] -> byte[]
 
 
-    ///// Extra data needed for messaging client and service to operate.
-    //type MessagingServiceData =
-    //    {
-    //        messagingDataVersion : MessagingDataVersion
-    //        expirationTime : TimeSpan
-    //    }
-
-
     type MessagingServiceAccessInfo =
         {
             messagingDataVersion : MessagingDataVersion
@@ -96,14 +88,3 @@ module ServiceInfo =
             msgClientId : MessagingClientId
             msgSvcAccessInfo : MessagingServiceAccessInfo
         }
-
-    //    static member create dataVersion info clientId =
-    //        {
-    //            msgClientId = clientId
-    //            msgSvcAccessInfo =
-    //                {
-    //                    messagingDataVersion = dataVersion
-    //                    serviceAccessInfo = info
-    //                    expirationTime = defaultExpirationTime
-    //                }
-    //        }

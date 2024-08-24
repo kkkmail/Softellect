@@ -3,10 +3,8 @@
 open System.Threading
 open System
 
-
 /// http://www.fssnip.net/bb/title/Exception-Retry-Computation-Expression
 module Retry =
-
 
     type RetryParams =
         {

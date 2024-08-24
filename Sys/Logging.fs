@@ -2,6 +2,7 @@
 
 open System
 
+/// TODO kk:20240824 - Needs reworking as it is clumsy and subsequently it is not used at all.
 module Logging =
 
     type LogData<'E> =

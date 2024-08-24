@@ -1,68 +1,24 @@
 ﻿namespace Softellect.Messaging
 
-open System
-
 open System.Threading
-open System
-open System.Threading.Tasks
-open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
-
 open CoreWCF
-open Softellect.Sys
-open Softellect.Sys.Logging
 open Softellect.Messaging.Errors
-open Softellect.Messaging.Primitives
 open Softellect.Sys.TimerEvents
 open Softellect.Wcf.Common
-open Softellect.Wcf.Errors
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 
 module Service =
 
-    //type MessagingServiceInfo =
-    //    {
-    //        expirationTime : TimeSpan
-    //        messagingDataVersion : MessagingDataVersion
-    //    }
-
-    //    static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
-
-    //    static member getDefaultValue v =
-    //        {
-    //            expirationTime = MessagingServiceInfo.defaultExpirationTime
-    //            messagingDataVersion = v
-    //        }
-
-    //    static member getDefaultValue() =
-    //        {
-    //            expirationTime = MessagingServiceInfo.defaultExpirationTime
-    //            messagingDataVersion = MessagingDataVersion 0
-    //        }
-
-
     type MessagingServiceData<'D> =
         {
-            //messagingDataVersion : MessagingDataVersion
             messagingServiceProxy : MessagingServiceProxy<'D>
             messagingServiceAccessInfo : MessagingServiceAccessInfo
-            //expirationTime : TimeSpan
         }
 
-        //static member defaultValue v : MessagingServiceData<'D> =
-        //    {
-        //        messagingDataVersion =  v
-        //        messagingServiceProxy = MessagingServiceProxy.defaultValue
-        //        expirationTime = defaultExpirationTime
-        //    }
 
-
-    //type WcfServiceDataResult<'D> = Result<WcfServiceData<MessagingServiceData<'D>>, WcfError>
-
-
-    let mutable messagingServiceCount = 0L
+    let mutable private messagingServiceCount = 0L
 
 
     type MessagingService<'D> (d : MessagingServiceData<'D>) =
@@ -119,7 +75,6 @@ module Service =
             member _.removeExpiredMessages() = removeExpiredMessagesImpl()
 
 
-
     type MessagingWcfServiceProxy<'D> =
         {
             logger : MessagingLogger
@@ -132,17 +87,6 @@ module Service =
             msgWcfServiceAccessInfo : ServiceAccessInfo
             messagingWcfServiceProxy : MessagingWcfServiceProxy<'D>
         }
-
-        //static member defaultValue : MessagingWcfServiceData<'D> =
-        //    {
-        //        messagingServiceData = MessagingServiceData.defaultValue
-        //        msgWcfServiceAccessInfo = ServiceAccessInfo.defaultValue
-
-        //        messagingWcfServiceProxy =
-        //            {
-        //                logger = Logger.defaultValue
-        //            }
-        //    }
 
 
     let mutable private serviceCount = 0L
@@ -163,21 +107,3 @@ module Service =
             member _.sendMessage b = tryReply m.sendMessage toSendMessageError b
             member _.tryPickMessage b = tryReply m.tryPickMessage toTryPickMessageError b
             member _.tryDeleteFromServer b = tryReply m.tryDeleteFromServer toTryDeleteFromServerError b
-
-
-    ///// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
-    //let getMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
-    //    let retVal =
-    //        {
-    //            wcfServiceAccessInfo = serviceAccessInfo
-
-    //            wcfServiceProxy =
-    //                {
-    //                    wcfLogger = wcfLogger
-    //                }
-
-    //            serviceData = messagingServiceData
-    //        }
-
-    //    printfn $"getMsgServiceData: retVal = %A{retVal}"
-    //    retVal

@@ -3,7 +3,6 @@
 open System
 open Softellect.Messaging.Primitives
 open Softellect.Sys.Logging
-open Softellect.Wcf.Common
 open Softellect.Messaging.Errors
 
 module Primitives =
@@ -33,7 +32,3 @@ module Primitives =
                 b = DateTime.Now
                 c = [ DateTime.Now.Day; DateTime.Now.Hour; DateTime.Now.Minute; DateTime.Now.Second ]
             }
-
-
-
-

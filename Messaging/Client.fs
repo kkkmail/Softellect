@@ -18,7 +18,6 @@ module Client =
 
     /// Maximum number of messages to process in one go.
     let maxNumberOfMessages = 5_000
-    let maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
 
     let maxNumberOfSmallMessages = 5_000
     let maxNumberOfMediumMessages = 500
@@ -60,37 +59,12 @@ module Client =
         member t.onLargeMessage() = { t with largeMessages = t.largeMessages + 1 }
 
 
-    //type MsgResponseHandlerData<'D> =
-    //    {
-    //        msgAccessInfo : MessagingClientAccessInfo
-    //        communicationType : WcfCommunicationType
-    //    }
-
-
     type MessagingClientData<'D> =
         {
-            //msgClientId : MessagingClientId
             msgAccessInfo : MessagingClientAccessInfo
             msgClientProxy : MessagingClientProxy<'D>
-            //serviceData : MessagingServiceData
             logOnError : bool
         }
-
-        //member d.msgResponseHandlerData : MsgResponseHandlerData<'D> =
-        //    {
-        //        msgAccessInfo = d.msgAccessInfo
-        //        communicationType = d.communicationType
-        //    }
-
-        //static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
-
-        //static member create (proxy : MessagingClientProxy<'D>) expiration info =
-        //    {
-        //        msgAccessInfo = info
-        //        msgClientProxy = proxy
-        //        expirationTime = expiration
-        //        logOnError = true
-        //    }
 
 
     type TryReceiveSingleMessageProxy<'D> =
@@ -147,7 +121,7 @@ module Client =
                 | Ok None -> Ok()
                 | Error e -> Error e
 
-        let y = doTryTransmit maxMessages MessageCount.defaultValue
+        let y = doTryTransmit [ for _ in 1..maxNumberOfMessages -> () ] MessageCount.defaultValue
         y
 
 
@@ -343,8 +317,6 @@ module Client =
                 tryPeekMessage = fun () -> responseHandler.tryPickMessage d.msgAccessInfo.msgClientId
                 tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
                 getMessageSize = d.msgClientProxy.getMessageSize
-                //toErr = proxy.toErr
-                //addError = proxy.addError
             }
 
 
