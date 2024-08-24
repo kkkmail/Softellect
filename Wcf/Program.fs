@@ -8,53 +8,61 @@ open Microsoft.Extensions.Logging
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Service
 open Softellect.Wcf.Common
-open System
 open System.Net
-open CoreWCF
 open CoreWCF.Configuration
-open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Server.Kestrel.Core
-open Microsoft.AspNetCore.Builder
-open Microsoft.Extensions.DependencyInjection
-open System.Threading
 open Microsoft.FSharp.Core.Operators
-open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
+open Softellect.Sys.AppSettings
 
 module Program =
-    let x = 1
 
-    // TODO kk:20240824 - Does not want to compile and seems too complicated with generics due to F# limitations. Delete in 180 days.
-
-
-    //type ProgramData<'IService> =
-    //    {
-    //        serviceAccessInfo : ServiceAccessInfo
-    //        getService : unit -> 'IService
-    //    }
+    type ProgramData<'IService, 'WcfService> =
+        {
+            serviceAccessInfo : ServiceAccessInfo
+            getService : unit -> 'IService
+            getWcfService : 'IService -> 'WcfService
+            saveSettings : unit -> unit
+        }
 
 
-    //let private createHostBuilder<'IService, 'IWcfService when 'IService : not struct and 'IWcfService : not struct> (data : ProgramData<'IService>) =
-    //    Host.CreateDefaultBuilder()
-    //        .UseWindowsService()
-    //        .ConfigureServices(fun hostContext services ->
-    //            let service = data.getService()
-    //            services.AddSingleton<'IService>(service) |> ignore)
+    /// IService is the underlying service that does the actual work.
+    /// IWcfService is the WCF service that is exposed to the client.
+    /// WcfService is the implementation of the WCF service.
+//    let private createHostBuilder<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct> (data : ProgramData<'IService>) =
+    let private createHostBuilder<'IService, 'IWcfService, 'WcfService
+        when 'IService : not struct
+        and 'IWcfService : not struct
+        and 'WcfService : not struct>
+        (data : ProgramData<'IService, 'WcfService>) =
+        Host.CreateDefaultBuilder()
+            .UseWindowsService()
 
-    //        .ConfigureWebHostDefaults(fun webBuilder ->
-    //            match data.serviceAccessInfo with
-    //            | HttpServiceInfo i ->
-    //                webBuilder.UseKestrel(fun options ->
-    //                    let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
-    //                    options.Listen(endPoint)
-    //                    options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-    //                    options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
-    //                    options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
-    //            | NetTcpServiceInfo i ->
-    //                webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
+            .ConfigureLogging(fun logging ->
+                logging.ClearProviders() |> ignore
+                logging.AddConsole() |> ignore  // Add console logging
+                logging.AddDebug() |> ignore    // Add debug logging
+                logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
 
-    //            webBuilder.UseStartup(fun _ -> WcfStartup<'IService, 'IWcfService>(data.wcfServiceData)) |> ignore)
+            .ConfigureServices(fun hostContext services ->
+                let service = data.getService()
+                services.AddSingleton<'IService>(service) |> ignore
+
+                let wcfService = data.getWcfService(service)
+                services.AddSingleton<'WcfService>(wcfService) |> ignore)
+
+            .ConfigureWebHostDefaults(fun webBuilder ->
+                match data.serviceAccessInfo with
+                | HttpServiceInfo i ->
+                    webBuilder.UseKestrel(fun options ->
+                        let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
+                        options.Listen(endPoint)
+                        options.Limits.MaxResponseBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        options.Limits.MaxRequestBufferSize <- (System.Nullable (int64 Int32.MaxValue))
+                        options.Limits.MaxRequestBodySize <- (System.Nullable (int64 Int32.MaxValue))) |> ignore
+                | NetTcpServiceInfo i ->
+                    webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
+
+                webBuilder.UseStartup(fun _ -> WcfStartup<'WcfService, 'IWcfService>(data.serviceAccessInfo)) |> ignore)
 
 
     //let main<'IService, 'IWcfService, 'Data, 'Args when 'IService : not struct and 'IWcfService : not struct and 'Args :> IArgParserTemplate> data argv =
@@ -77,3 +85,29 @@ module Program =
     //    | exn ->
     //        printfn $"%s{exn.Message}"
     //        UnknownException
+
+
+    let main<'IService, 'IWcfService, 'WcfService
+        when 'IService : not struct
+        and 'IWcfService : not struct
+        and 'WcfService : not struct>
+        programName data argv =
+        //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
+
+        let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
+
+        try
+            let parser = ArgumentParser.Create<SettingsArguments>(programName = programName)
+            let results = (parser.Parse argv).GetAllResults()
+
+            match SettingsTask.tryCreate data.saveSettings results with
+            | Some task -> task.run()
+            | None -> runHost()
+
+            CompletedSuccessfully
+
+        with
+        | exn ->
+            printfn $"%s{exn.Message}"
+            UnknownException
+
