@@ -26,13 +26,9 @@ module Program =
 
 
     /// IService is the underlying service that does the actual work.
-    /// IWcfService is the WCF service that is exposed to the client.
+    /// IWcfService is the WCF service interface that is exposed to the client.
     /// WcfService is the implementation of the WCF service.
-//    let private createHostBuilder<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct> (data : ProgramData<'IService>) =
-    let private createHostBuilder<'IService, 'IWcfService, 'WcfService
-        when 'IService : not struct
-        and 'IWcfService : not struct
-        and 'WcfService : not struct>
+    let private createHostBuilder<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
         Host.CreateDefaultBuilder()
             .UseWindowsService()
@@ -65,35 +61,8 @@ module Program =
                 webBuilder.UseStartup(fun _ -> WcfStartup<'WcfService, 'IWcfService>(data.serviceAccessInfo)) |> ignore)
 
 
-    //let main<'IService, 'IWcfService, 'Data, 'Args when 'IService : not struct and 'IWcfService : not struct and 'Args :> IArgParserTemplate> data argv =
-    //    printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
-    //    printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
-    //    printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
-
-    //    let runHost() = createHostBuilder<'IService, 'IWcfService, 'Data>(data).Build().Run()
-
-    //    try
-    //        let parser = ArgumentParser.Create<'Args>(programName = data.programName)
-
-    //        match data.tryGetRunTask argv with
-    //        | Some task -> task()
-    //        | None ->  runHost()
-
-    //        CompletedSuccessfully
-
-    //    with
-    //    | exn ->
-    //        printfn $"%s{exn.Message}"
-    //        UnknownException
-
-
-    let main<'IService, 'IWcfService, 'WcfService
-        when 'IService : not struct
-        and 'IWcfService : not struct
-        and 'WcfService : not struct>
-        programName data argv =
-        //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
-
+    let main<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct> programName data argv =
+        printfn $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
         let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
 
         try
@@ -110,4 +79,3 @@ module Program =
         | exn ->
             printfn $"%s{exn.Message}"
             UnknownException
-
