@@ -20,7 +20,7 @@ module EchoWcfServiceInfo =
     //let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort httpServiceName
     let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort netTcpServiceName WcfSecurityMode.defaultValue
     let echoWcfServiceAccessInfo = NetTcpServiceInfo netTcpServiceInfo
-    let echoLogger = Logger.defaultValue
+    //let echoLogger = Logger.defaultValue
 
 
     type EchoServiceData =
@@ -72,14 +72,14 @@ module EchoWcfServiceInfo =
         abstract complexEcho : EchoMessage -> EchoWcfResult<EchoReply>
 
 
-    let echoWcfServiceDataRes =
-        {
-            wcfServiceAccessInfo = echoWcfServiceAccessInfo
+    //let echoWcfServiceDataRes =
+    //    {
+    //        wcfServiceAccessInfo = echoWcfServiceAccessInfo
 
-            wcfServiceProxy =
-                {
-                    wcfLogger = echoLogger
-                }
+    //        wcfServiceProxy =
+    //            {
+    //                wcfLogger = echoLogger
+    //            }
 
-            serviceData = EchoServiceData.create()
-        }
+    //        serviceData = EchoServiceData.create()
+    //    }

@@ -40,56 +40,56 @@ module Worker =
     let x = 1
 
 
-    /// https://gist.github.com/dgfitch/661656
-    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
-    type IWorkerNodeWcfService =
+//    /// https://gist.github.com/dgfitch/661656
+//    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
+//    type IWorkerNodeWcfService =
 
-//        [<OperationContract(Name = "configure")>]
-//        abstract configure : q:byte[] -> byte[]
+////        [<OperationContract(Name = "configure")>]
+////        abstract configure : q:byte[] -> byte[]
 
-        //[<OperationContract(Name = "monitor")>]
-        //abstract monitor : q:byte[] -> byte[]
+//        //[<OperationContract(Name = "monitor")>]
+//        //abstract monitor : q:byte[] -> byte[]
 
-        [<OperationContract(Name = "ping")>]
-        abstract ping : q:byte[] -> byte[]
-
-
-    type WorkerNodeResponseHandlerData =
-        {
-            url : string
-            communicationType : WorkerNodeServiceAccessInfo
-        }
+//        [<OperationContract(Name = "ping")>]
+//        abstract ping : q:byte[] -> byte[]
 
 
-    /// Low level WCF messaging client.
-    type WorkerNodeResponseHandler (i : WorkerNodeServiceAccessInfo) =
-        let n = i.value
-        let url = i.value.getUrl()
-        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> n.communicationType url
-
-        //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-        //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-        let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
-
-        //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
-        let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
-
-        interface IWorkerNodeService with
-            //member _.monitor p = monitorImpl p
-            member _.ping() = pingImpl()
-
-        //new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
-        //    WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
+//    type WorkerNodeResponseHandlerData =
+//        {
+//            url : string
+//            communicationType : WorkerNodeServiceAccessInfo
+//        }
 
 
-//    let private workerNodeRunner : Lazy<ClmResult<WorkerNodeRunner>> =
-//        new Lazy<ClmResult<WorkerNodeRunner>>(fun () -> WorkerNodeRunner.create serviceAccessInfo)
+//    /// Low level WCF messaging client.
+//    type WorkerNodeResponseHandler (i : WorkerNodeServiceAccessInfo) =
+//        let n = i.workerNodeServiceAccessInfo
+//        let url = i.workerNodeServiceAccessInfo.getUrl()
+//        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> n.communicationType url
+
+//        //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+//        //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+//        let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
+
+//        //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
+//        let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
+
+//        interface IWorkerNodeService with
+//            //member _.monitor p = monitorImpl p
+//            member _.ping() = pingImpl()
+
+//        //new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
+//        //    WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
 
 
-//    let tryStartWorkerNodeRunner() =
-//        match workerNodeRunner.Value with
-//        | Ok service -> service.start() |> Ok
-//        | Error e -> Error e
+////    let private workerNodeRunner : Lazy<ClmResult<WorkerNodeRunner>> =
+////        new Lazy<ClmResult<WorkerNodeRunner>>(fun () -> WorkerNodeRunner.create serviceAccessInfo)
+
+
+////    let tryStartWorkerNodeRunner() =
+////        match workerNodeRunner.Value with
+////        | Ok service -> service.start() |> Ok
+////        | Error e -> Error e
 
 
 //    type WorkerNodeWcfService<'D, 'P>(messagingDataVersion, data, tryRunSolverProcess) =
@@ -98,7 +98,7 @@ module Worker =
 //        let toPingError f = f |> PingWcfErr |> WorkerNodeWcfErr
 
 //        let tryCreateWorkerNodeRunner() =
-//            match  WorkerNodeRunner<'D, 'P>.create messagingDataVersion data tryRunSolverProcess with
+//            match WorkerNodeRunner<'D, 'P>.create messagingDataVersion data tryRunSolverProcess with
 //            | Ok service ->
 //                service.start() |> ignore
 //                Ok service
@@ -116,71 +116,71 @@ module Worker =
 //            member _.ping b = tryReply ping toPingError b
 
 
-//    type WorkerNodeWcfServiceImpl<'D, 'P> = WcfService<WorkerNodeWcfService<'D, 'P>, IWorkerNodeWcfService, WorkerNodeServiceInfo>
+////    type WorkerNodeWcfServiceImpl<'D, 'P> = WcfService<WorkerNodeWcfService<'D, 'P>, IWorkerNodeWcfService, WorkerNodeServiceInfo>
 
 
-//    type WorkerNodeWorker<'D, 'P>(logger: ILogger<WorkerNodeWorker<'D, 'P>>, v : MessagingDataVersion, tryRunSolverProcess) =
-//        inherit BackgroundService()
+////    type WorkerNodeWorker<'D, 'P>(logger: ILogger<WorkerNodeWorker<'D, 'P>>, v : MessagingDataVersion, tryRunSolverProcess) =
+////        inherit BackgroundService()
 
-//        let tyGetHost() : WcfResult<WcfService> =
-//            let serviceData = failwith ""
+////        let tyGetHost() : WcfResult<WcfService> =
+////            let serviceData = failwith ""
 
-//            match serviceData with
-//            | Ok data ->
-//                printfn $"tryGetHost: Got MessagingServiceData: '{data}'."
-//                let service = new WorkerNodeWcfService<'D, 'P>(v, data, tryRunSolverProcess)
-//                Ok service
-//            | Error e ->
-//                printfn $"tryGetHost: Error: %A{e}"
-//                Error e
+////            match serviceData with
+////            | Ok data ->
+////                printfn $"tryGetHost: Got MessagingServiceData: '{data}'."
+////                let service = new WorkerNodeWcfService<'D, 'P>(v, data, tryRunSolverProcess)
+////                Ok service
+////            | Error e ->
+////                printfn $"tryGetHost: Error: %A{e}"
+////                Error e
 
-//            //let wcfLogger =  Logger.defaultValue
-//            //let clmLogger =  Logger.defaultValue
+////            //let wcfLogger =  Logger.defaultValue
+////            //let clmLogger =  Logger.defaultValue
 
-//            //match serviceAccessInfo with
-//            //| Ok data ->
-//            //    match tryGetServiceData data.workerNodeServiceAccessInfo.value wcfLogger data with
-//            //    | Ok serviceData ->
-//            //        let service = WorkerNodeWcfServiceImpl.tryGetService serviceData
-//            //        let r = tryStartWorkerNodeRunner()
+////            //match serviceAccessInfo with
+////            //| Ok data ->
+////            //    match tryGetServiceData data.workerNodeServiceAccessInfo.value wcfLogger data with
+////            //    | Ok serviceData ->
+////            //        let service = WorkerNodeWcfServiceImpl.tryGetService serviceData
+////            //        let r = tryStartWorkerNodeRunner()
                 
-//            //        match r with
-//            //        | Ok _ -> ignore()
-//            //        | Error e -> clmLogger.logCritData e
+////            //        match r with
+////            //        | Ok _ -> ignore()
+////            //        | Error e -> clmLogger.logCritData e
 
-//            //        service
-//            //    | Error e ->
-//            //        wcfLogger.logCritData e
-//            //        Error e
-//            //| Error e ->
-//            //    clmLogger.logCritData e
+////            //        service
+////            //    | Error e ->
+////            //        wcfLogger.logCritData e
+////            //        Error e
+////            //| Error e ->
+////            //    clmLogger.logCritData e
 
-//            //    // TODO kk:20201213 - Here we are forced to "downgrade" the error type because there is no conversion.
-//            //    e.ToString() |> WcfCriticalErr |> Error
+////            //    // TODO kk:20201213 - Here we are forced to "downgrade" the error type because there is no conversion.
+////            //    e.ToString() |> WcfCriticalErr |> Error
 
-//        let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tyGetHost())
-//        let getHost() = hostRes.Value
+////        let hostRes = Lazy<WcfResult<WcfService>>(fun () -> tyGetHost())
+////        let getHost() = hostRes.Value
 
-//        override _.ExecuteAsync(_: CancellationToken) =
-//            async {
-//                printfn "WorkerNodeWorker::Executing..."
-//                logger.LogInformation("Executing...")
+////        override _.ExecuteAsync(_: CancellationToken) =
+////            async {
+////                printfn "WorkerNodeWorker::Executing..."
+////                logger.LogInformation("Executing...")
 
-//                match getHost() with
-//                | Ok host -> do! host.runAsync()
-//                | Error e -> logger.LogCritical $"Error: %A{e}"
-//            }
-//            |> Async.StartAsTask
-//            :> Task
+////                match getHost() with
+////                | Ok host -> do! host.runAsync()
+////                | Error e -> logger.LogCritical $"Error: %A{e}"
+////            }
+////            |> Async.StartAsTask
+////            :> Task
 
-//        override _.StopAsync(_: CancellationToken) =
-//            async {
-//                logger.LogInformation("Stopping...")
+////        override _.StopAsync(_: CancellationToken) =
+////            async {
+////                logger.LogInformation("Stopping...")
 
-//                match getHost() with
-//                | Ok host -> do! host.stopAsync()
-//                | Error e -> logger.LogCritical$"Error: %A{e}"
-//            }
-//            |> Async.StartAsTask
-//            :> Task
+////                match getHost() with
+////                | Ok host -> do! host.stopAsync()
+////                | Error e -> logger.LogCritical$"Error: %A{e}"
+////            }
+////            |> Async.StartAsTask
+////            :> Task
 

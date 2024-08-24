@@ -15,7 +15,7 @@ module ServiceProxy =
 
     type MessagingClientProxyInfo =
         {
-            messagingClientName : MessagingClientName
+            //messagingClientName : MessagingClientName
             messagingDataVersion : MessagingDataVersion
             storageType : MessagingClientStorageType
         }

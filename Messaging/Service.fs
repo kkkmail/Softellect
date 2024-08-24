@@ -22,9 +22,6 @@ open Softellect.Messaging.Proxy
 
 module Service =
 
-    let defaultExpirationTime = TimeSpan.FromMinutes 5.0
-
-
     //type MessagingServiceInfo =
     //    {
     //        expirationTime : TimeSpan
@@ -48,24 +45,21 @@ module Service =
 
     type MessagingServiceData<'D> =
         {
-            //messagingServiceInfo : MessagingServiceInfo
-            expirationTime : TimeSpan
-            messagingDataVersion : MessagingDataVersion
-            //communicationType : WcfCommunicationType
+            //messagingDataVersion : MessagingDataVersion
             messagingServiceProxy : MessagingServiceProxy<'D>
+            messagingServiceAccessInfo : MessagingServiceAccessInfo
+            //expirationTime : TimeSpan
         }
 
-        static member getDefaultValue v : MessagingServiceData<'D> =
-            {
-                expirationTime = defaultExpirationTime
-                messagingDataVersion = v
-                //messagingServiceInfo = MessagingServiceInfo.getDefaultValue()
-                //communicationType = HttpCommunication
-                messagingServiceProxy = MessagingServiceProxy.defaultValue
-            }
+        //static member defaultValue v : MessagingServiceData<'D> =
+        //    {
+        //        messagingDataVersion =  v
+        //        messagingServiceProxy = MessagingServiceProxy.defaultValue
+        //        expirationTime = defaultExpirationTime
+        //    }
 
 
-    type WcfServiceDataResult<'D> = Result<WcfServiceData<MessagingServiceData<'D>>, WcfError>
+    //type WcfServiceDataResult<'D> = Result<WcfServiceData<MessagingServiceData<'D>>, WcfError>
 
 
     let mutable messagingServiceCount = 0L
@@ -78,7 +72,7 @@ module Service =
 
         let removeExpiredMessagesImpl () =
             //printfn "removeExpiredMessages was called."
-            proxy.deleteExpiredMessages d.expirationTime
+            proxy.deleteExpiredMessages d.messagingServiceAccessInfo.expirationTime
 
         let createEventHandlers () =
             let info = TimerEventInfo.defaultValue "MessagingService - removeExpiredMessages"
@@ -106,7 +100,7 @@ module Service =
 
             member _.getVersion() =
                 printfn "getVersion was called."
-                Ok d.messagingDataVersion
+                Ok d.messagingServiceAccessInfo.messagingDataVersion
 
             member _.sendMessage m =
                 printfn "sendMessage was called with message: %A." m
@@ -171,19 +165,19 @@ module Service =
             member _.tryDeleteFromServer b = tryReply m.tryDeleteFromServer toTryDeleteFromServerError b
 
 
-    /// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
-    let getMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
-        let retVal =
-            {
-                wcfServiceAccessInfo = serviceAccessInfo
+    ///// Tries to create MessagingWcfServiceData needed for MessagingWcfService.
+    //let getMsgServiceData<'D> serviceAccessInfo wcfLogger (messagingServiceData : MessagingServiceData<'D>) =
+    //    let retVal =
+    //        {
+    //            wcfServiceAccessInfo = serviceAccessInfo
 
-                wcfServiceProxy =
-                    {
-                        wcfLogger = wcfLogger
-                    }
+    //            wcfServiceProxy =
+    //                {
+    //                    wcfLogger = wcfLogger
+    //                }
 
-                serviceData = messagingServiceData
-            }
+    //            serviceData = messagingServiceData
+    //        }
 
-        printfn $"getMsgServiceData: retVal = %A{retVal}"
-        retVal
+    //    printfn $"getMsgServiceData: retVal = %A{retVal}"
+    //    retVal

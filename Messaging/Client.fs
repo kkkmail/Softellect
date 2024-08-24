@@ -69,9 +69,10 @@ module Client =
 
     type MessagingClientData<'D> =
         {
+            //msgClientId : MessagingClientId
             msgAccessInfo : MessagingClientAccessInfo
             msgClientProxy : MessagingClientProxy<'D>
-            expirationTime : TimeSpan
+            //serviceData : MessagingServiceData
             logOnError : bool
         }
 
@@ -81,15 +82,15 @@ module Client =
         //        communicationType = d.communicationType
         //    }
 
-        static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
+        //static member defaultExpirationTime = TimeSpan.FromMinutes 5.0
 
-        static member create (proxy : MessagingClientProxy<'D>) expiration info =
-            {
-                msgAccessInfo = info
-                msgClientProxy = proxy
-                expirationTime = expiration
-                logOnError = true
-            }
+        //static member create (proxy : MessagingClientProxy<'D>) expiration info =
+        //    {
+        //        msgAccessInfo = info
+        //        msgClientProxy = proxy
+        //        expirationTime = expiration
+        //        logOnError = true
+        //    }
 
 
     type TryReceiveSingleMessageProxy<'D> =
@@ -199,7 +200,7 @@ module Client =
 
     /// Low level WCF messaging client.
     type MsgResponseHandler<'D> (d : MessagingServiceAccessInfo) =
-        let i = d.messagingServiceAccessInfo
+        let i = d.serviceAccessInfo
         let url = i.getUrl()
         let tryGetWcfService() = tryGetWcfService<IMessagingWcfService> i.communicationType url
 
@@ -317,7 +318,7 @@ module Client =
         member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
         member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
         member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
-        member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.expirationTime
+        member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.msgAccessInfo.msgSvcAccessInfo.expirationTime
 
         member m.messageProcessorProxy : MessageProcessorProxy<'D> =
             {

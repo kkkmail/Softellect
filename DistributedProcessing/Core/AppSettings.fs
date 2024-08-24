@@ -75,9 +75,9 @@ module AppSettings =
         //    WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue
 
         //(workerNodeSvcInfo, workerNodeServiceCommunicationType)
-        let d = WorkerNodeServiceAccessInfo.defaultServiceAccessInfo
-        let m = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey d
-        let workerNodeSvcInfo = WorkerNodeServiceAccessInfo m
+        let d = WorkerNodeServiceAccessInfo.defaultValue dataVersion
+        let m = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey d.workerNodeServiceAccessInfo
+        let workerNodeSvcInfo = { d with workerNodeServiceAccessInfo = m }
         workerNodeSvcInfo
 
 

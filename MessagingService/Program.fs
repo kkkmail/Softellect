@@ -29,26 +29,39 @@ open Softellect.Messaging.CommandLine
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Service
 open Softellect.Messaging.Primitives
+open Softellect.Sys.Worker
 
 
 module Program =
 
-    type MessagingProgramData<'D> =
-        {
-            messagingDataVersion : MessagingDataVersion
-            wcfServiceData :  WcfServiceData<MessagingServiceData<'D>>
-        }
+    //type MessagingProgramData<'D> =
+    //    {
+    //        messagingDataVersion : MessagingDataVersion
+    //        wcfServiceData :  WcfServiceData<MessagingServiceData<'D>>
+    //    }
 
 
-    let private createHostBuilder<'D> (data : MessagingProgramData<'D>) =
+    let private createHostBuilder<'D> (data : MessagingServiceData<'D>) =
+        let serviceAccessInfo = data.messagingServiceAccessInfo.serviceAccessInfo
+        //let x : ILogger = failwith ""
+        //x.LogCritical("createHostBuilder")
+        //x.LogDebug("createHostBuilder")
+
         Host.CreateDefaultBuilder()
             .UseWindowsService()
+
+            .ConfigureLogging(fun logging ->
+                logging.ClearProviders() |> ignore
+                logging.AddConsole() |> ignore  // Add console logging
+                logging.AddDebug() |> ignore    // Add debug logging
+                logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
+
             .ConfigureServices(fun hostContext services ->
-                let messagingService = new MessagingService<'D>(data.wcfServiceData.serviceData)
+                let messagingService = new MessagingService<'D>(data)
                 services.AddSingleton<IMessagingService<'D>>(messagingService) |> ignore)
 
             .ConfigureWebHostDefaults(fun webBuilder ->
-                match data.wcfServiceData.wcfServiceAccessInfo with
+                match serviceAccessInfo with
                 | HttpServiceInfo i ->
                     webBuilder.UseKestrel(fun options ->
                         let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
@@ -59,27 +72,50 @@ module Program =
                 | NetTcpServiceInfo i ->
                     webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
 
-                webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService, MessagingServiceData<'D>>(data.wcfServiceData)) |> ignore)
+                webBuilder.UseStartup(fun _ -> WcfStartup<MessagingWcfService<'D>, IMessagingWcfService>(serviceAccessInfo)) |> ignore)
 
+
+    //let main<'D> messagingProgramName data argv =
+    //    printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
+    //    printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
+    //    printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
+
+    //    let runHost() = createHostBuilder<'D>(data).Build().Run()
+
+    //    try
+    //        let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)
+    //        let results = (parser.Parse argv).GetAllResults() |> MsgSvcArgs.fromArgu convertArgs
+
+    //        let run p =
+    //            getParams data.messagingDataVersion p |> ignore
+    //            runHost
+
+    //        match MessagingServiceTask.tryCreate run (getSaveSettings data.messagingDataVersion) results with
+    //        | Some task -> task.run()
+    //        | None -> runHost()
+
+    //        CompletedSuccessfully
+
+    //    with
+    //    | exn ->
+    //        printfn $"%s{exn.Message}"
+    //        UnknownException
 
     let main<'D> messagingProgramName data argv =
-        printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
-        printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
-        printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
+        //printfn $"main<{typeof<'D>.Name}> - data.messagingDataVersion = '{data.messagingDataVersion}'."
+        //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceData = '{data.wcfServiceData.serviceData}'."
+        //printfn $"main<{typeof<'D>.Name}> - data.wcfServiceData = '{data.wcfServiceData}'."
 
         let runHost() = createHostBuilder<'D>(data).Build().Run()
 
         try
-            let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)
-            let results = (parser.Parse argv).GetAllResults() |> MsgSvcArgs.fromArgu convertArgs
+            let parser = ArgumentParser.Create<WorkerArguments>(programName = messagingProgramName)
+            let results = (parser.Parse argv).GetAllResults()
+            let saveSettings() = failwith "saveSettings is not implemented yet." // getSaveSettings data.messagingDataVersion
 
-            let run p =
-                getParams data.messagingDataVersion p |> ignore
-                runHost
-
-            match MessagingServiceTask.tryCreate run (getSaveSettings data.messagingDataVersion) results with
+            match WorkerTask.tryCreate saveSettings results with
             | Some task -> task.run()
-            | None ->  runHost()
+            | None -> runHost()
 
             CompletedSuccessfully
 

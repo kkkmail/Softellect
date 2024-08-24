@@ -135,25 +135,25 @@ module Service =
     //        }
 
 
-    type WcfServiceProxy =
-        {
-            wcfLogger : WcfLogger
-        }
+    //type WcfServiceProxy =
+    //    {
+    //        wcfLogger : WcfLogger
+    //    }
 
 
-    /// 'Data - is a type of initialization data that the service needs to operate.
-    type WcfServiceData<'Data> =
-        {
-            wcfServiceAccessInfo : ServiceAccessInfo
-            wcfServiceProxy : WcfServiceProxy
-            serviceData : 'Data
-        }
+    ///// 'Data - is a type of initialization data that the underlying service needs to operate.
+    //type WcfServiceData<'Data> =
+    //    {
+    //        //wcfServiceProxy : WcfServiceProxy
+    //        serviceAccessInfo : ServiceAccessInfo
+    //        serviceData : 'Data
+    //    }
 
 
-    type WcfStartup<'Service, 'IWcfService, 'Data when 'Service : not struct and 'IWcfService : not struct>(d : WcfServiceData<'Data>) =
+    type WcfStartup<'Service, 'IWcfService when 'Service : not struct and 'IWcfService : not struct>(d : ServiceAccessInfo) =
         let createServiceModel (builder : IServiceBuilder) =
             let w (b : IServiceBuilder) =
-                match d.wcfServiceAccessInfo with
+                match d with
                 | HttpServiceInfo i ->
                     let httpBinding = getBasicHttpBinding()
                     printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}'."
@@ -177,14 +177,13 @@ module Service =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
 
 
-    let getServiceData serviceAccessInfo wcfLogger serviceData =
-        {
-            wcfServiceAccessInfo = serviceAccessInfo
+    //let getServiceData serviceAccessInfo serviceData =
+    //    {
+    //        //wcfServiceProxy =
+    //        //    {
+    //        //        wcfLogger = wcfLogger
+    //        //    }
 
-            wcfServiceProxy =
-                {
-                    wcfLogger = wcfLogger
-                }
-
-            serviceData = serviceData
-        }
+    //        serviceAccessInfo = serviceAccessInfo
+    //        serviceData = serviceData
+    //    }

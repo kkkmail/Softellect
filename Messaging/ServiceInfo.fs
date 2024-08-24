@@ -1,5 +1,6 @@
 ﻿namespace Softellect.Messaging
 
+open System
 open System.ServiceModel
 
 open Softellect.Sys.Rop
@@ -12,52 +13,8 @@ open Softellect.Messaging.VersionInfo
 
 module ServiceInfo =
 
-    //// ===================================================
-    //
-    //// Double gneric to send structured errors back.
-    //
-    //type MessagingResult<'D, 'E> = Result<'D, 'E>
-    //type MessagingOptionalResult<'D, 'E> = Result<Message<'D> option, 'E>
-    //type MessagingUnitResult<'E> = UnitResult<'E>
-    ////type MessagingLogger = Logger<MessagingError>
-    //type MessagingStateWithResult<'D, 'E> = 'D * MessagingUnitResult<'E>
-    //
-    //
-    ///// Client part of messaging service.
-    //type IMessagingClient<'D, 'E> =
-    //    abstract getVersion : unit -> MessagingResult<MessagingDataVersion, 'E>
-    //    abstract sendMessage : Message<'D> -> MessagingUnitResult<'E>
-    //    abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D, 'E>
-    //    abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MessagingUnitResult<'E>
-    //
-    //
-    ///// Server part of messaging service.
-    //type IMessagingService<'D, 'E> =
-    //    abstract getVersion : unit -> MessagingResult<MessagingDataVersion, 'E>
-    //    abstract sendMessage : Message<'D> -> MessagingUnitResult<'E>
-    //    abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D, 'E>
-    //    abstract tryDeleteFromServer : MessagingClientId * MessageId -> MessagingUnitResult<'E>
-    //    abstract removeExpiredMessages : unit -> MessagingUnitResult<'E>
-    //
-    //// ===================================================
-    ////
-    //// Singe gneric when capturing structured error on the other side is not needed.
-    //
-    //type MessagingResult<'D> = MessagingResult<'D, MessagingError>
-    //type MessagingOptionalResult<'D> = MessagingOptionalResult<'D, MessagingError>
-    //type MessagingUnitResult = UnitResult<MessagingError>
-    //type MessagingLogger = Logger<MessagingError>
-    //type MessagingStateWithResult<'D> = MessagingStateWithResult<'D, MessagingError>
-    //
-    //
-    ///// Client part of messaging service.
-    //type IMessagingClient<'D> = IMessagingClient<'D, MessagingError>
-    //
-    //
-    ///// Server part of messaging service.
-    //type IMessagingService<'D> = IMessagingService<'D, MessagingError>
-    //
-    // ===================================================
+    let defaultExpirationTime = TimeSpan.FromMinutes 5.0
+
 
     /// 'D is the strongly typed data that is being sent / received by messaging service.
     type MessagingResult<'D> = Result<'D, MessagingError>
@@ -75,7 +32,7 @@ module ServiceInfo =
         abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MessagingUnitResult
 
 
-    // Server part of messaging service.
+    // Service part of messaging service.
     type IMessagingService<'D> =
         abstract tryStart : unit -> MessagingUnitResult
         abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
@@ -84,11 +41,8 @@ module ServiceInfo =
         abstract tryDeleteFromServer : MessagingClientId * MessageId -> MessagingUnitResult
         abstract removeExpiredMessages : unit -> MessagingUnitResult
 
-    // ===================================================
-    //
-    // Common part.
 
-    /// Server WCF part of messaging service.
+    /// Service WCF part of messaging service.
     /// The method removeExpiredMessages is not exposed via WCF.
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = MessagingWcfServiceName)>]
@@ -107,26 +61,34 @@ module ServiceInfo =
         abstract tryDeleteFromServer : cm:byte[] -> byte[]
 
 
+    ///// Extra data needed for messaging client and service to operate.
+    //type MessagingServiceData =
+    //    {
+    //        messagingDataVersion : MessagingDataVersion
+    //        expirationTime : TimeSpan
+    //    }
+
+
     type MessagingServiceAccessInfo =
         {
-            messagingServiceAccessInfo : ServiceAccessInfo
             messagingDataVersion : MessagingDataVersion
+            serviceAccessInfo : ServiceAccessInfo
+            expirationTime : TimeSpan
         }
 
-        static member create dataVersion info =
+        static member defaultValue v =
             {
-                messagingServiceAccessInfo = info
-                messagingDataVersion = dataVersion
+                messagingDataVersion = v
+                serviceAccessInfo =
+                    {
+                        netTcpServiceAddress = ServiceAddress localHost
+                        netTcpServicePort = getDefaultMessagingHttpServicePort v
+                        netTcpServiceName = messagingServiceName.value
+                        netTcpSecurityMode = NoSecurity
+                    }
+                    |> NetTcpServiceInfo
+                expirationTime = defaultExpirationTime
             }
-
-        static member defaultServiceAccessInfo v =
-            {
-                netTcpServiceAddress = ServiceAddress localHost
-                netTcpServicePort = getDefaultMessagingHttpServicePort v
-                netTcpServiceName = messagingNetTcpServiceName.value
-                netTcpSecurityMode = NoSecurity
-            }
-            |> NetTcpServiceInfo
 
 
     type MessagingClientAccessInfo =
@@ -135,8 +97,13 @@ module ServiceInfo =
             msgSvcAccessInfo : MessagingServiceAccessInfo
         }
 
-        static member create dataVersion info clientId =
-            {
-                msgClientId = clientId
-                msgSvcAccessInfo = MessagingServiceAccessInfo.create dataVersion info
-            }
+    //    static member create dataVersion info clientId =
+    //        {
+    //            msgClientId = clientId
+    //            msgSvcAccessInfo =
+    //                {
+    //                    messagingDataVersion = dataVersion
+    //                    serviceAccessInfo = info
+    //                    expirationTime = defaultExpirationTime
+    //                }
+    //        }

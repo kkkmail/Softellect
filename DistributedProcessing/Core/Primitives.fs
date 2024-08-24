@@ -29,12 +29,12 @@ module Primitives =
     [<Literal>]
     let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
 
-    let defaultServicePort = 5000 // + messagingDataVersion.value
+    let defaultServicePort = 5000
 
 
-    let defaultContGenNetTcpServicePort = defaultServicePort |> ServicePort
-    let defaultContGenHttpServicePort = defaultContGenNetTcpServicePort.value + 1 |> ServicePort
-    let defaultContGenServiceAddress = localHost |> ServiceAddress
+    let defaultPartitionerNetTcpServicePort = defaultServicePort |> ServicePort
+    let defaultPartitionerHttpServicePort = defaultPartitionerNetTcpServicePort.value + 1 |> ServicePort
+    let defaultPartitionerServiceAddress = localHost |> ServiceAddress
 
 
     let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
@@ -50,6 +50,12 @@ module Primitives =
 
 
     let defaultPartitionerId = Guid("F941F87C-BEBC-43E7-ABD3-967E377CBD57") |> MessagingClientId |> PartitionerId
+
+
+    type DistributedProcessingDataVersion =
+        | DistributedProcessingDataVersion of int
+
+        member this.value = let (DistributedProcessingDataVersion v) = this in v
 
 
     type WorkerNodeConfigParam =
@@ -207,23 +213,28 @@ module Primitives =
 
 
     type WorkerNodeServiceAccessInfo =
-        | WorkerNodeServiceAccessInfo of ServiceAccessInfo
-
-        member w.value = let (WorkerNodeServiceAccessInfo v) = w in v
+        {
+            workerNodeServiceAccessInfo : ServiceAccessInfo
+            dataVersion : DistributedProcessingDataVersion
+        }
 
         //static member create address httpPort netTcpPort securityMode =
         //    let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
         //    let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
         //    ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
 
-        static member defaultServiceAccessInfo =
+        static member defaultValue dataVersion =
             {
-                netTcpServiceAddress = ServiceAddress localHost
-                netTcpServicePort = defaultContGenNetTcpServicePort
-                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
-                netTcpSecurityMode = NoSecurity
+                workerNodeServiceAccessInfo =
+                    {
+                        netTcpServiceAddress = ServiceAddress localHost
+                        netTcpServicePort = defaultPartitionerNetTcpServicePort
+                        netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
+                        netTcpSecurityMode = NoSecurity
+                    }
+                    |> NetTcpServiceInfo
+                dataVersion = dataVersion
             }
-            |> NetTcpServiceInfo
 
 
     type WorkerNodeServiceInfo =
@@ -261,7 +272,7 @@ module Primitives =
         | NotGeneratedCharts
 
 
-    /// Generic type parameter 'P is the type of progress data.
+    /// Generic type parameter 'P is the type of additional progress data.
     /// It should account for intermediate progress data and final progress data.
     type PartitionerMessage<'P> =
         | UpdateProgressPrtMsg of ProgressUpdateInfo<'P>

@@ -10,6 +10,8 @@ open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.AppSettings
+open Softellect.Messaging.DataAccess
 open Softellect.Messaging.Service
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
@@ -26,7 +28,9 @@ module EchoMsgServiceInfo =
     type EchoMessagingClient = MessagingClient<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
 
-    let echMessagingServiceData = getMessagingServiceData<EchoMessageData> Logger.defaultValue echoDataVersion
+    //let echMessagingServiceData = getMessagingServiceData<EchoMessageData> Logger.defaultValue echoDataVersion
+    let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
+    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getMessagingConnectionString echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -114,33 +118,45 @@ module EchoMsgServiceInfo =
             getListBasedServiceProxy()
         | true ->
             printfn "serviceProxy - Using local database for messaging service."
-            echMessagingServiceData.serviceData.messagingServiceProxy
+            getProxy()
 
 
     let clientOneProxy = getClientProxy clientOneMessageData clientOneId clientTwoId
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
     let expirationTime = TimeSpan.FromSeconds 10.0
 
-    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echMessagingServiceData.wcfServiceAccessInfo clientId
+
+    let createClientAccessInfo clientId : MessagingClientAccessInfo =
+        {
+            msgClientId = clientId
+            msgSvcAccessInfo = echMessagingServiceAccessInfo
+        }
+
 
     let getClientData clientId proxy =
-        createClientAccessInfo clientId
-        |> MessagingClientData.create proxy expirationTime
+        {
+            msgAccessInfo = createClientAccessInfo clientId
+            msgClientProxy = proxy
+            logOnError = true
+        }
+
+        //createClientAccessInfo clientId
+        //|> MessagingClientData.create proxy expirationTime
 
 
     let clientOneData = getClientData clientOneId clientOneProxy
     let clientTwoData = getClientData clientTwoId clientTwoProxy
 
 
-    let serviceData =
-        {
-            expirationTime = TimeSpan.FromSeconds 10.0
-            messagingDataVersion = echoDataVersion
-            messagingServiceProxy = serviceProxy
-        }
+    //let serviceData =
+    //    {
+    //        expirationTime = TimeSpan.FromSeconds 10.0
+    //        messagingDataVersion = echoDataVersion
+    //        messagingServiceProxy = serviceProxy
+    //    }
 
 
-    let echoMsgServiceDataRes = getMsgServiceData echMessagingServiceData.wcfServiceAccessInfo Logger.defaultValue serviceData
+    //let echoMsgServiceDataRes = getMsgServiceData echMessagingServiceData.wcfServiceAccessInfo Logger.defaultValue serviceData
 
 
     let runClient clientData recipient =

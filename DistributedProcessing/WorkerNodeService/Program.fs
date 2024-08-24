@@ -4,11 +4,18 @@ open Argu
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Messaging.Primitives
+open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.CommandLine
 open Softellect.Sys.ExitErrorCodes
 
 module Program =
+
+    type WorkerNodeProgramData<'D, 'P> =
+        {
+            x : int
+            y : DistributedProcessingMessageData<'D, 'P>
+        }
 
     //let private createHostBuilder<'D, 'P> (v : MessagingDataVersion) =
     //    Host.CreateDefaultBuilder()
