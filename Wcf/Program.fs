@@ -16,6 +16,8 @@ open Softellect.Sys.AppSettings
 
 module Program =
 
+    /// IService is the underlying service that does the actual work.
+    /// WcfService is the implementation of the WCF service.
     type ProgramData<'IService, 'WcfService> =
         {
             serviceAccessInfo : ServiceAccessInfo
@@ -58,7 +60,7 @@ module Program =
                 | NetTcpServiceInfo i ->
                     webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
 
-                webBuilder.UseStartup(fun _ -> WcfStartup<'WcfService, 'IWcfService>(data.serviceAccessInfo)) |> ignore)
+                webBuilder.UseStartup(fun _ -> WcfStartup<'IWcfService, 'WcfService>(data.serviceAccessInfo)) |> ignore)
 
 
     let main<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct> programName data argv =

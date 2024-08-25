@@ -40,18 +40,18 @@ module Worker =
     let x = 1
 
 
-//    /// https://gist.github.com/dgfitch/661656
-//    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
-//    type IWorkerNodeWcfService =
+    /// https://gist.github.com/dgfitch/661656
+    [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]
+    type IWorkerNodeWcfService =
 
-////        [<OperationContract(Name = "configure")>]
-////        abstract configure : q:byte[] -> byte[]
+//        [<OperationContract(Name = "configure")>]
+//        abstract configure : q:byte[] -> byte[]
 
-//        //[<OperationContract(Name = "monitor")>]
-//        //abstract monitor : q:byte[] -> byte[]
+        //[<OperationContract(Name = "monitor")>]
+        //abstract monitor : q:byte[] -> byte[]
 
-//        [<OperationContract(Name = "ping")>]
-//        abstract ping : q:byte[] -> byte[]
+        [<OperationContract(Name = "ping")>]
+        abstract ping : q:byte[] -> byte[]
 
 
 //    type WorkerNodeResponseHandlerData =
@@ -61,25 +61,25 @@ module Worker =
 //        }
 
 
-//    /// Low level WCF messaging client.
-//    type WorkerNodeResponseHandler (i : WorkerNodeServiceAccessInfo) =
-//        let n = i.workerNodeServiceAccessInfo
-//        let url = i.workerNodeServiceAccessInfo.getUrl()
-//        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> n.communicationType url
+    /// Low level WCF messaging client.
+    type WorkerNodeResponseHandler (i : WorkerNodeServiceInfo) =
+        let n = i.workerNodeServiceAccessInfo
+        let url = i.workerNodeServiceAccessInfo.getUrl()
+        let tryGetWcfService() = tryGetWcfService<IWorkerNodeWcfService> n.communicationType url
 
-//        //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//        //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//        let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
+        //let configureWcfErr e = e |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        //let monitorWcfErr e = e |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        let pingWcfErr e = e |> PingWcfErr |> WorkerNodeWcfErr
 
-//        //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
-//        let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
+        //let monitorImpl p = tryCommunicate tryGetWcfService (fun service -> service.monitor) monitorWcfErr p
+        let pingImpl() = tryCommunicate tryGetWcfService (fun service -> service.ping) pingWcfErr ()
 
-//        interface IWorkerNodeService with
-//            //member _.monitor p = monitorImpl p
-//            member _.ping() = pingImpl()
+        interface IWorkerNodeService with
+            //member _.monitor p = monitorImpl p
+            member _.ping() = pingImpl()
 
-//        //new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
-//        //    WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
+        //new (i : WorkerNodeServiceAccessInfo, communicationType, securityMode) =
+        //    WorkerNodeResponseHandler(i.value.getUrl communicationType, communicationType, securityMode)
 
 
 ////    let private workerNodeRunner : Lazy<ClmResult<WorkerNodeRunner>> =

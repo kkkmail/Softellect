@@ -88,28 +88,31 @@ module Service =
 
 
     /// kk:20240824 - We'd want to have a constraint "and 'Service :> 'IWcfService" but F# does not allow it as of this date.
-    type WcfStartup<'Service, 'IWcfService when 'Service : not struct and 'IWcfService : not struct>(d : ServiceAccessInfo) =
+    /// kk:20240824 - As of this date it seems impossible to use just one generic parameter 'IWcfService while in reality it is what we actually use.
+    ///     This is probably due to the fact that here we need to bind a WFC interface ('IWcfService) with a concrete implementation ('Service)
+    ///      and so providing just an interface is not enough from CoreWCF point of view. Revisit once / if this changes.
+    type WcfStartup<'IWcfService, 'WcfService when 'IWcfService : not struct and 'WcfService : not struct>(d : ServiceAccessInfo) =
         let createServiceModel (builder : IServiceBuilder) =
             let w (b : IServiceBuilder) =
                 match d with
                 | HttpServiceInfo i ->
                     let httpBinding = getBasicHttpBinding()
                     printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}'."
-                    b.AddServiceEndpoint<'Service, 'IWcfService>(httpBinding, "/" + i.httpServiceName.value)
+                    b.AddServiceEndpoint<'WcfService, 'IWcfService>(httpBinding, "/" + i.httpServiceName.value)
                 | NetTcpServiceInfo i ->
                     let netTcpBinding = getNetTcpBinding i.netTcpSecurityMode
                     printfn $"createServiceModel - netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
-                    b.AddServiceEndpoint<'Service, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName.value)
+                    b.AddServiceEndpoint<'WcfService, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName.value)
 
             builder
-                .AddService<'Service>()
+                .AddService<'WcfService>()
                 |> w
                 |> ignore
 
         member _.ConfigureServices(services : IServiceCollection) =
             do
                 services.AddServiceModelServices() |> ignore
-                services.AddTransient<'Service>() |> ignore
+                services.AddTransient<'WcfService>() |> ignore
 
         member _.Configure(app : IApplicationBuilder, env : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore

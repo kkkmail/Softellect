@@ -127,22 +127,9 @@ module AppSettings =
 
         match providerRes with
         | Ok provider ->
-            let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
             let m = loadMessagingServiceAccessInfo messagingDataVersion
             let w = loadWorkerNodeInfo provider
-
-            //let workerNodeServiceAddress = getServiceAddress providerRes workerNodeServiceAddressKey defaultWorkerNodeServiceAddress
-            //let workerNodeServiceHttpPort = getServiceHttpPort providerRes workerNodeServiceHttpPortKey defaultWorkerNodeHttpServicePort
-            //let workerNodeServiceNetTcpPort = getServiceNetTcpPort providerRes workerNodeServiceNetTcpPortKey defaultWorkerNodeNetTcpServicePort
-            //let workerNodeServiceCommunicationType = getCommunicationType providerRes workerNodeServiceCommunicationTypeKey (NetTcpCommunication NoSecurity)
-
-            //let workerNodeSvcInfo =
-            //    WorkerNodeServiceAccessInfo.create workerNodeServiceAddress workerNodeServiceHttpPort workerNodeServiceNetTcpPort WcfSecurityMode.defaultValue
-
-            //(workerNodeSvcInfo, workerNodeServiceCommunicationType)
-            //let d = WorkerNodeServiceAccessInfo.defaultValue dataVersion
             let i = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey ServiceAccessInfo.defaultWorkerNodeValue
-            //let workerNodeSvcInfo = { d with workerNodeServiceAccessInfo = m }
 
             let workerNodeSvcInfo =
                 {
@@ -152,7 +139,7 @@ module AppSettings =
                 }
 
             workerNodeSvcInfo
-        | Error e -> failwith $"Not implemented. Error: '{e}'."
+        | Error e -> failwith $"Cannot load settings. Error: '{e}'."
 
 
     ///// Type parameter 'P is needed because this class is shared by WorkerNodeService and WorkerNodeAdm
