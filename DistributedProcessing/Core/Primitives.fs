@@ -1,16 +1,10 @@
 namespace Softellect.DistributedProcessing
 
 open System
-open System.Threading
 open Softellect.Messaging.Primitives
-open Softellect.Messaging.Errors
-open Softellect.Sys.Rop
 open Softellect.Sys.Errors
-open Softellect.Sys.TimerEvents
 open Softellect.Wcf.Common
-open Softellect.Wcf.Client
 open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.Proxy
 open Softellect.Messaging.Client
 open Softellect.Sys.Primitives
 
@@ -42,6 +36,17 @@ module Primitives =
     let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress
 
 
+    type ServiceAccessInfo with
+        static member defaultWorkerNodeValue =
+            {
+                netTcpServiceAddress = ServiceAddress localHost
+                netTcpServicePort = defaultPartitionerNetTcpServicePort
+                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
+                netTcpSecurityMode = NoSecurity
+            }
+            |> NetTcpServiceInfo
+
+
     type PartitionerId =
         | PartitionerId of MessagingClientId
 
@@ -50,12 +55,6 @@ module Primitives =
 
 
     let defaultPartitionerId = Guid("F941F87C-BEBC-43E7-ABD3-967E377CBD57") |> MessagingClientId |> PartitionerId
-
-
-    type DistributedProcessingDataVersion =
-        | DistributedProcessingDataVersion of int
-
-        member this.value = let (DistributedProcessingDataVersion v) = this in v
 
 
     type WorkerNodeConfigParam =
@@ -132,6 +131,7 @@ module Primitives =
 
         member this.value = let (WorkerNodeId v) = this in v
         member this.messagingClientId = let (WorkerNodeId v) = this in v
+        static member newId() = Guid.NewGuid() |> MessagingClientId |> WorkerNodeId
 
 
     type WorkerNodePriority =
@@ -145,6 +145,7 @@ module Primitives =
         | WorkerNodeName of string
 
         member this.value = let (WorkerNodeName v) = this in v
+        static member newName() = $"{Guid.NewGuid()}".Replace("-", "") |> WorkerNodeName
 
 
     type SolverRunnerInfo =
@@ -154,7 +155,7 @@ module Primitives =
         }
 
 
-    ///// 'D is the model data.
+    /// 'D is the model data.
     type WorkerNodeRunModelData<'D> =
         {
             runQueueId : RunQueueId
@@ -182,24 +183,25 @@ module Primitives =
         static member defaultValue = LastAllowedNodeErr 60<minute>
 
 
-    type WorkerNodeState =
-        | NotStartedWorkerNode
-        | StartedWorkerNode
+    //type WorkerNodeState =
+    //    | NotStartedWorkerNode
+    //    | StartedWorkerNode
 
 
-    type WorkerNodeRunnerState =
-        {
-            workerNodeState : WorkerNodeState
-        }
+    //type WorkerNodeRunnerState =
+    //    {
+    //        workerNodeState : WorkerNodeState
+    //    }
 
-        static member maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
+    //    static member maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
 
-        static member defaultValue =
-            {
-                workerNodeState = NotStartedWorkerNode
-            }
+    //    static member defaultValue =
+    //        {
+    //            workerNodeState = NotStartedWorkerNode
+    //        }
 
 
+    /// Information about a worker node to be passed to partitioner.
     type WorkerNodeInfo =
         {
             workerNodeId : WorkerNodeId
@@ -212,35 +214,10 @@ module Primitives =
         }
 
 
-    type WorkerNodeServiceAccessInfo =
-        {
-            workerNodeServiceAccessInfo : ServiceAccessInfo
-            dataVersion : DistributedProcessingDataVersion
-        }
-
-        //static member create address httpPort netTcpPort securityMode =
-        //    let h = HttpServiceAccessInfo.create address httpPort WorkerNodeServiceName.httpServiceName.value
-        //    let n = NetTcpServiceAccessInfo.create address netTcpPort WorkerNodeServiceName.netTcpServiceName.value securityMode
-        //    ServiceAccessInfo.create h n |> WorkerNodeServiceAccessInfo
-
-        static member defaultValue dataVersion =
-            {
-                workerNodeServiceAccessInfo =
-                    {
-                        netTcpServiceAddress = ServiceAddress localHost
-                        netTcpServicePort = defaultPartitionerNetTcpServicePort
-                        netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
-                        netTcpSecurityMode = NoSecurity
-                    }
-                    |> NetTcpServiceInfo
-                dataVersion = dataVersion
-            }
-
-
     type WorkerNodeServiceInfo =
         {
             workerNodeInfo : WorkerNodeInfo
-            workerNodeServiceAccessInfo : WorkerNodeServiceAccessInfo
+            workerNodeServiceAccessInfo : ServiceAccessInfo
             messagingServiceAccessInfo : MessagingServiceAccessInfo
         }
 

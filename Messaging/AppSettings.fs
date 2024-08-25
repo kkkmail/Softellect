@@ -14,23 +14,6 @@ module AppSettings =
     let messagingServiceAccessInfoKey = ConfigKey "MessagingServiceAccessInfo"
 
 
-    let updateMessagingServiceAccessInfo (m : MessagingServiceAccessInfo) =
-        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
-        let toErr e = e |> MsgSettingExn |> MsgSettingsErr |> Error
-
-        match providerRes with
-        | Ok provider ->
-            let s = m.serviceAccessInfo
-            printfn $"updateMessagingSettings - s: '{s}'."
-            let v = s.serialize()
-            printfn $"updateMessagingSettings - v: '{v}'."
-            let result = provider.trySet messagingServiceAccessInfoKey v
-            printfn $"updateMessagingSettings - result: '%A{result}'."
-            provider.trySet expirationTimeInMinutesKey (int m.expirationTime.TotalMinutes) |> ignore
-            provider.trySave() |> Rop.bindError toErr
-        | Error e -> toErr e
-
-
     let loadMessagingServiceAccessInfo messagingDataVersion =
         let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
         let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
@@ -52,3 +35,20 @@ module AppSettings =
             }
 
         messagingSvcInfo
+
+
+    let updateMessagingServiceAccessInfo (m : MessagingServiceAccessInfo) =
+        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+        let toErr e = e |> MsgSettingExn |> MsgSettingsErr |> Error
+
+        match providerRes with
+        | Ok provider ->
+            let s = m.serviceAccessInfo
+            printfn $"updateMessagingSettings - s: '{s}'."
+            let v = s.serialize()
+            printfn $"updateMessagingSettings - v: '{v}'."
+            let result = provider.trySet messagingServiceAccessInfoKey v
+            printfn $"updateMessagingSettings - result: '%A{result}'."
+            provider.trySet expirationTimeInMinutesKey (int m.expirationTime.TotalMinutes) |> ignore
+            provider.trySave() |> Rop.bindError toErr
+        | Error e -> toErr e

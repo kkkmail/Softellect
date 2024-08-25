@@ -20,7 +20,6 @@ module EchoMsgServiceInfo =
     type EchoMessagingClient = MessagingClient<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
 
-    //let echMessagingServiceData = getMessagingServiceData<EchoMessageData> Logger.defaultValue echoDataVersion
     let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
     let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getMessagingConnectionString echoDataVersion
 
