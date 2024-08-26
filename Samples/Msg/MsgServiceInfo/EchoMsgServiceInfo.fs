@@ -21,7 +21,8 @@ module EchoMsgServiceInfo =
     type EchoMessage = Message<EchoMessageData>
 
     let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
-    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getMessagingConnectionString echoDataVersion
+    let getLogger = fun _ ->  echoLogger
+    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -78,7 +79,7 @@ module EchoMsgServiceInfo =
             tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
-            logger = echoLogger
+            getLogger = getLogger
         }
 
 
@@ -98,7 +99,7 @@ module EchoMsgServiceInfo =
 
             deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
-            logger = echoLogger
+            getLogger = getLogger
         }
 
 

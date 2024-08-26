@@ -5,6 +5,13 @@ open System
 /// TODO kk:20240824 - Needs reworking as it is clumsy and subsequently it is not used at all.
 module Logging =
 
+    /// An encapsulation of a logger name.
+    type LoggerName =
+        | LoggerName of string
+
+        member this.value = let (LoggerName v) = this in v
+
+
     type LogData<'E> =
         | SimpleLogData of string
         | ErrLogData of 'E

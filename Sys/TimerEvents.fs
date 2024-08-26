@@ -47,7 +47,7 @@ module TimerEvents =
     type TimerEventProxy<'E> =
         {
             eventHandler : unit -> UnitResult<'E>
-            logger : Logger<'E>
+            getLogger : LoggerName -> Logger<'E>
             toErr : TimerEventError -> 'E
         }
 
@@ -61,24 +61,24 @@ module TimerEvents =
         member i.withFirstDelay d =
             { i with timerEventInfo = { i.timerEventInfo with firstDelay = d } }
 
-        static member defaultValue logger e h n =
+        static member defaultValue e h n =
             {
                 timerEventInfo = TimerEventInfo.defaultValue n
                 timerProxy =
                     {
                         eventHandler = h
-                        logger = logger
+                        getLogger = fun _ -> Logger<'E>.defaultValue
                         toErr = e
                     }
             }
 
-        static member oneHourValue logger e h n =
+        static member oneHourValue e h n =
             {
                 timerEventInfo = TimerEventInfo.oneHourValue n
                 timerProxy =
                     {
                         eventHandler = h
-                        logger = logger
+                        getLogger = fun _ -> Logger<'E>.defaultValue
                         toErr = e
                     }
             }
@@ -89,7 +89,7 @@ module TimerEvents =
         let mutable lastStartedAt = DateTime.Now
         let handlerId = i.timerEventInfo.handlerId |> Option.defaultValue (Guid.NewGuid())
         let refreshInterval = i.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
-        let logger = i.timerProxy.logger
+        let logger = i.timerProxy.getLogger (LoggerName $"{nameof(TimerEventHandler)}<{typedefof<'E>.Name}>: {handlerId}")
         let firstDelay = i.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
         let logError e = e |> i.timerProxy.toErr |> logger.logErrorData
         let logWarn e = e |> i.timerProxy.toErr |> logger.logWarnData

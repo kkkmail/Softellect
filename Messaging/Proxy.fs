@@ -20,7 +20,7 @@ module Proxy =
             tryDeleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
-            logger : MessagingLogger
+            getLogger : LoggerName -> MessagingLogger
         }
 
 
@@ -31,17 +31,17 @@ module Proxy =
             saveMessage : Message<'D> -> MessagingUnitResult
             deleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
-            logger : MessagingLogger
+            getLogger : LoggerName -> MessagingLogger
         }
 
-        static member defaultValue : MessagingServiceProxy<'D> =
-            {
-                tryPickMessage = fun _ -> failwith ""
-                saveMessage = fun _ -> failwith ""
-                deleteMessage = fun _ -> failwith ""
-                deleteExpiredMessages = fun _ -> failwith ""
-                logger = Logger.defaultValue
-            }
+        //static member defaultValue : MessagingServiceProxy<'D> =
+        //    {
+        //        tryPickMessage = fun _ -> failwith ""
+        //        saveMessage = fun _ -> failwith ""
+        //        deleteMessage = fun _ -> failwith ""
+        //        deleteExpiredMessages = fun _ -> failwith ""
+        //        getLogger = Logger.defaultValue
+        //    }
 
 
     type MessageProcessorResult<'D> =
@@ -71,7 +71,7 @@ module Proxy =
             tryReceiveMessages : unit -> MessagingUnitResult
             trySendMessages : unit -> MessagingUnitResult
             removeExpiredMessages : unit -> MessagingUnitResult
-            logger : MessagingLogger
+            getLogger : LoggerName -> MessagingLogger
             incrementCount : unit -> int
             decrementCount : unit -> int
             logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.

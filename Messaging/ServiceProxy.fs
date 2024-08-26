@@ -21,7 +21,7 @@ module ServiceProxy =
         }
 
 
-    let createMessagingClientProxy<'D> getMessageSize (i : MessagingClientProxyInfo) (c : MessagingClientId) =
+    let createMessagingClientProxy<'D> getLogger getMessageSize (i : MessagingClientProxyInfo) (c : MessagingClientId) =
         let getMessageSize (e : MessageData<'D>) =
             match e with
             | SystemMsg _ -> SmallSize
@@ -38,7 +38,7 @@ module ServiceProxy =
                 tryDeleteMessage = deleteMessage g
                 deleteExpiredMessages = deleteExpiredMessages g v
                 getMessageSize = getMessageSize
-                logger = Logger.defaultValue
+                getLogger = getLogger
             }
         //| SqliteDatabase connectionString ->
         //    {
@@ -52,11 +52,11 @@ module ServiceProxy =
         //    }
 
 
-    let createMessagingServiceProxy (g : unit -> ConnectionString) (v : MessagingDataVersion) =
+    let createMessagingServiceProxy getLogger (g : unit -> ConnectionString) (v : MessagingDataVersion) =
         {
             tryPickMessage = tryPickIncomingMessage g v
             saveMessage = saveMessage g v
             deleteMessage = deleteMessage g
             deleteExpiredMessages = deleteExpiredMessages g v
-            logger = Logger.defaultValue
+            getLogger = getLogger
         }

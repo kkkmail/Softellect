@@ -37,8 +37,6 @@ open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 
 module Worker =
-    let x = 1
-
 
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]

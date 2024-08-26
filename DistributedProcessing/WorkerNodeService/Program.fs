@@ -25,7 +25,7 @@ module Program =
     //            services.AddHostedService<MsgWorker<'D>>() |> ignore)
 
 
-    let main<'D> messagingProgramName v argv =
+    let main<'D, 'P> workerNodeProgramName data argv =
         //let runHost() = createHostBuilder<'D>(v).Build().Run()
 
         //try

@@ -7,7 +7,7 @@ open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
-
+open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
 
@@ -198,15 +198,17 @@ module Client =
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     /// If you don't call it, then you have to operate MessagingClient by hands.
     let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D>) =
-        w.logger.logInfoString "createMessagingClientEventHandlers - starting..."
+        let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers<{typedefof<'D>.Name}>")
+
+        logger.logInfoString "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        w.logger.logInfoString $"%A{i}"
+        logger.logInfoString $"%A{i}"
 
         let proxy =
             {
                 eventHandler = eventHandler
-                logger = w.logger
+                getLogger = w.getLogger
                 toErr = fun e -> e |> TimerEventErr
             }
 
@@ -303,7 +305,7 @@ module Client =
                 tryReceiveMessages = m.tryReceiveMessages
                 trySendMessages = m.trySendMessages
                 removeExpiredMessages = m.removeExpiredMessages
-                logger = proxy.logger
+                getLogger = proxy.getLogger
                 incrementCount = incrementCount
                 decrementCount = decrementCount
                 logOnError = d.logOnError
@@ -322,6 +324,8 @@ module Client =
 
     /// Tries to process a single (first) message (if any) using a given message processor f.
     let onTryProcessMessage (w : MessageProcessorProxy<'D>) f =
+        let logger = w.getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
+
         let retVal =
             if w.incrementCount() = 0
             then
@@ -342,7 +346,7 @@ module Client =
         w.decrementCount() |> ignore
 
         match retVal.errorOpt, w.logOnError with
-        | Some e, true -> w.logger.logErrorData e
+        | Some e, true -> logger.logErrorData e
         | _ -> ignore()
 
         retVal
