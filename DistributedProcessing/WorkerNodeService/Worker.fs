@@ -132,8 +132,8 @@ module Worker =
 ////                printfn $"tryGetHost: Error: %A{e}"
 ////                Error e
 
-////            //let wcfLogger =  Logger.defaultValue
-////            //let clmLogger =  Logger.defaultValue
+////            //let wcfLogger = Logger.defaultValue
+////            //let clmLogger = Logger.defaultValue
 
 ////            //match serviceAccessInfo with
 ////            //| Ok data ->

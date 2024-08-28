@@ -228,13 +228,13 @@ module Core =
     let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
 
 
-    let timedImplementation<'E, 'A> b (l : Logger<'E>) name (f : unit -> 'A) =
+    let timedImplementation<'A> b (l : Logger) name (f : unit -> 'A) =
         let r, t = time f ()
 
         if t.TotalSeconds <= 10.0
         then
-            if b then l.logInfoString $"%s{name}: Execution time: %A{t}"
-        else l.logInfoString $"%s{name}: !!! LARGE Execution time: %A{t}"
+            if b then l.logInfo $"%s{name}: Execution time: %A{t}"
+        else l.logInfo $"%s{name}: !!! LARGE Execution time: %A{t}"
 
         r
 

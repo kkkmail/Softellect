@@ -200,10 +200,10 @@ module Client =
     let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D>) =
         let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers<{typedefof<'D>.Name}>")
 
-        logger.logInfoString "createMessagingClientEventHandlers - starting..."
+        logger.logInfo "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        logger.logInfoString $"%A{i}"
+        logger.logInfo $"%A{i}"
 
         let proxy =
             {
@@ -346,7 +346,7 @@ module Client =
         w.decrementCount() |> ignore
 
         match retVal.errorOpt, w.logOnError with
-        | Some e, true -> logger.logErrorData e
+        | Some e, true -> logger.logError $"%A{e}"
         | _ -> ignore()
 
         retVal

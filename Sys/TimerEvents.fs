@@ -47,7 +47,7 @@ module TimerEvents =
     type TimerEventProxy<'E> =
         {
             eventHandler : unit -> UnitResult<'E>
-            getLogger : LoggerName -> Logger<'E>
+            getLogger : GetLogger
             toErr : TimerEventError -> 'E
         }
 
@@ -67,7 +67,7 @@ module TimerEvents =
                 timerProxy =
                     {
                         eventHandler = h
-                        getLogger = fun _ -> Logger<'E>.defaultValue
+                        getLogger = fun _ -> Logger.defaultValue
                         toErr = e
                     }
             }
@@ -78,7 +78,7 @@ module TimerEvents =
                 timerProxy =
                     {
                         eventHandler = h
-                        getLogger = fun _ -> Logger<'E>.defaultValue
+                        getLogger = fun _ -> Logger.defaultValue
                         toErr = e
                     }
             }
@@ -91,8 +91,8 @@ module TimerEvents =
         let refreshInterval = i.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
         let logger = i.timerProxy.getLogger (LoggerName $"{nameof(TimerEventHandler)}<{typedefof<'E>.Name}>: {handlerId}")
         let firstDelay = i.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> i.timerProxy.toErr |> logger.logErrorData
-        let logWarn e = e |> i.timerProxy.toErr |> logger.logWarnData
+        let logError e = logger.logError $"%A{(i.timerProxy.toErr e)}"
+        let logWarn e = logger.logWarn $"%A{(i.timerProxy.toErr e)}"
         let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.timerEventInfo.handlerName}"
 //        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
 
@@ -102,7 +102,7 @@ module TimerEvents =
                 | Ok() ->
 //                    logger.logDebugString "proxy.eventHandler() - succeeded."
                     ()
-                | Error e -> logger.logErrorData e
+                | Error e -> logger.logError $"%A{e}"
             with
             | e ->
                 {

@@ -11,6 +11,7 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
 open Softellect.Messaging.ServiceProxy
+open Softellect.Sys.Logging
 
 module EchoMsgServiceInfo =
 
@@ -21,7 +22,7 @@ module EchoMsgServiceInfo =
     type EchoMessage = Message<EchoMessageData>
 
     let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
-    let getLogger = fun _ ->  echoLogger
+    let getLogger = fun _ -> Logger.defaultValue
     let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId

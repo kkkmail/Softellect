@@ -8,6 +8,7 @@ open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
+open Softellect.Sys.Logging
 
 module Service =
 
@@ -73,20 +74,6 @@ module Service =
                 proxy.deleteMessage m
 
             member _.removeExpiredMessages() = removeExpiredMessagesImpl()
-
-
-    type MessagingWcfServiceProxy<'D> =
-        {
-            logger : MessagingLogger
-        }
-
-
-    type MessagingWcfServiceData<'D> =
-        {
-            messagingServiceData : MessagingServiceData<'D>
-            msgWcfServiceAccessInfo : ServiceAccessInfo
-            messagingWcfServiceProxy : MessagingWcfServiceProxy<'D>
-        }
 
 
     let mutable private serviceCount = 0L

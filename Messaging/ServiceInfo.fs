@@ -20,7 +20,6 @@ module ServiceInfo =
     type MessagingResult<'D> = Result<'D, MessagingError>
     type MessagingOptionalResult<'D> = Result<Message<'D> option, MessagingError>
     type MessagingUnitResult = UnitResult<MessagingError>
-    type MessagingLogger = Logger<MessagingError>
     type MessagingStateWithResult<'D> = 'D * MessagingUnitResult
 
 

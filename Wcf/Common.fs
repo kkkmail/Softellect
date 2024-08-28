@@ -19,7 +19,6 @@ module Common =
 
 
     type WcfResult<'T> = Result<'T, WcfError>
-    type WcfLogger = Logger<WcfError>
 
 
     /// Wrapper around CoreWCF.SecurityMode and System.ServiceModel.SecurityMode.

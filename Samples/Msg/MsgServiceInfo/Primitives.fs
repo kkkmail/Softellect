@@ -8,7 +8,6 @@ open Softellect.Messaging.Errors
 module Primitives =
 
     let echoDataVersion = MessagingDataVersion 2
-    let echoLogger = Logger<MessagingError>.defaultValue
 
 
     type EchoMsgType =

@@ -20,7 +20,7 @@ module Proxy =
             tryDeleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
-            getLogger : LoggerName -> MessagingLogger
+            getLogger : GetLogger
         }
 
 
@@ -31,7 +31,7 @@ module Proxy =
             saveMessage : Message<'D> -> MessagingUnitResult
             deleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
-            getLogger : LoggerName -> MessagingLogger
+            getLogger : GetLogger
         }
 
         //static member defaultValue : MessagingServiceProxy<'D> =
@@ -71,7 +71,7 @@ module Proxy =
             tryReceiveMessages : unit -> MessagingUnitResult
             trySendMessages : unit -> MessagingUnitResult
             removeExpiredMessages : unit -> MessagingUnitResult
-            getLogger : LoggerName -> MessagingLogger
+            getLogger : GetLogger
             incrementCount : unit -> int
             decrementCount : unit -> int
             logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.
