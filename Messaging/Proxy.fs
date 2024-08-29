@@ -62,18 +62,29 @@ module Proxy =
             | BusyProcessing -> None
 
 
+    /// High level message processor proxy with all the parameters baked in.
     type MessageProcessorProxy<'D> =
         {
-            start : unit -> MessagingUnitResult
+            tryStart : unit -> MessagingUnitResult
             tryPickReceivedMessage : unit -> MessagingOptionalResult<'D>
             tryRemoveReceivedMessage : MessageId -> MessagingUnitResult
             sendMessage : MessageInfo<'D> -> MessagingUnitResult
-            tryReceiveMessages : unit -> MessagingUnitResult
-            trySendMessages : unit -> MessagingUnitResult
-            removeExpiredMessages : unit -> MessagingUnitResult
+            //tryReceiveMessages : unit -> MessagingUnitResult
+            //trySendMessages : unit -> MessagingUnitResult
+            //removeExpiredMessages : unit -> MessagingUnitResult
             getLogger : GetLogger
             incrementCount : unit -> int
             decrementCount : unit -> int
             logOnError : bool // If true, then message processor will log error if any is encountered. If false, then it is the client responsibility to check for errors.
             maxMessages : int // Max number of message to process in one batch.
+        }
+
+
+    /// Proxy for messaging client event handlers.
+    type MessagingClientEventHandlersProxy =
+        {
+            trySendMessages : unit -> MessagingUnitResult
+            tryReceiveMessages : unit -> MessagingUnitResult
+            removeExpiredMessages : unit -> MessagingUnitResult
+            getLogger : GetLogger
         }

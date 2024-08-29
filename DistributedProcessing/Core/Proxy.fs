@@ -21,7 +21,7 @@ module Proxy =
     //type private UnitResult = DistributedProcessingUnitResult
     type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
     type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
-    type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+    //type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
     type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
 
 
@@ -75,7 +75,9 @@ module Proxy =
         {
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy<'D>
-            messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
+            //messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
+            messageProcessorProxy : MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+            tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
 
 

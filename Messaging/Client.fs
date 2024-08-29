@@ -196,9 +196,8 @@ module Client =
 
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
-    /// If you don't call it, then you have to operate MessagingClient by hands.
-    let private createMessagingClientEventHandlers (w : MessageProcessorProxy<'D>) =
-        let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers<{typedefof<'D>.Name}>")
+    let private createMessagingClientEventHandlers (w : MessagingClientEventHandlersProxy) =
+        let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers")
 
         logger.logInfo "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
@@ -250,7 +249,8 @@ module Client =
     type MessagingClient<'D>(d : MessagingClientData<'D>) =
         let proxy = d.msgClientProxy
         let msgClientId = d.msgAccessInfo.msgClientId
-        let responseHandler = MsgResponseHandler<'D>(d.msgAccessInfo.msgSvcAccessInfo) :> IMessagingClient<'D>
+        let msgSvcAccessInfo = d.msgAccessInfo.msgSvcAccessInfo
+        let responseHandler = MsgResponseHandler<'D>(msgSvcAccessInfo) :> IMessagingClient<'D>
         let mutable callCount = -1
         let mutable started = false
 
@@ -274,37 +274,52 @@ module Client =
                 getMessageSize = d.msgClientProxy.getMessageSize
             }
 
+        let removeExpiredMessages() = proxy.deleteExpiredMessages msgSvcAccessInfo.expirationTime
+        let sendMessage m = createMessage msgSvcAccessInfo.messagingDataVersion msgClientId m |> proxy.saveMessage
+        let tryReceiveMessages() = tryReceiveMessages receiveProxy
+        let trySendMessages() = trySendMessages sendProxy
+
+        let eventHandlerProxy =
+            {
+                trySendMessages = trySendMessages
+                tryReceiveMessages = tryReceiveMessages
+                removeExpiredMessages = removeExpiredMessages
+                getLogger = proxy.getLogger
+            }
+
         /// Verifies that we have access to the relevant data storage, starts the timers and removes all expired messages.
-        member m.start() =
+        let tryStart() =
             if not started
             then
-                match m.removeExpiredMessages() with
+                match removeExpiredMessages() with
                 | Ok() ->
                     started <- true
-                    createMessagingClientEventHandlers m.messageProcessorProxy
+                    createMessagingClientEventHandlers eventHandlerProxy
                     Ok()
                 | Error e -> Error e
             else Ok()
 
-        member _.sendMessage (m : MessageInfo<'D>) : MessagingUnitResult =
-            createMessage d.msgAccessInfo.msgSvcAccessInfo.messagingDataVersion msgClientId m
-            |> proxy.saveMessage
+        //member _.sendMessage (m : MessageInfo<'D>) : MessagingUnitResult =
+        //    createMessage msgSvcAccessInfo.messagingDataVersion msgClientId m
+        //    |> proxy.saveMessage
 
-        member _.tryPickReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
-        member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
-        member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
-        member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
-        member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.msgAccessInfo.msgSvcAccessInfo.expirationTime
+        //member _.sendMessage m = sendMessageImpl m
 
-        member m.messageProcessorProxy : MessageProcessorProxy<'D> =
+        //member _.tryPickReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
+        //member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
+        //member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
+        //member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
+        //member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.msgAccessInfo.msgSvcAccessInfo.expirationTime
+
+        member _.messageProcessorProxy : MessageProcessorProxy<'D> =
             {
-                start = m.start
-                tryPickReceivedMessage = m.tryPickReceivedMessage
-                tryRemoveReceivedMessage = m.tryRemoveReceivedMessage
-                sendMessage = m.sendMessage
-                tryReceiveMessages = m.tryReceiveMessages
-                trySendMessages = m.trySendMessages
-                removeExpiredMessages = m.removeExpiredMessages
+                tryStart = tryStart
+                tryPickReceivedMessage = proxy.tryPickIncomingMessage
+                tryRemoveReceivedMessage = proxy.tryDeleteMessage
+                sendMessage = sendMessage
+                //tryReceiveMessages = tryReceiveMessages
+                //trySendMessages = trySendMessages
+                //removeExpiredMessages = removeExpiredMessages
                 getLogger = proxy.getLogger
                 incrementCount = incrementCount
                 decrementCount = decrementCount

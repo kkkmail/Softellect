@@ -125,6 +125,9 @@ module WorkerNode =
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
 
+        let c = getWorkerNodeSvcConnectionString
+
+        let getLogger = i.messageProcessorProxy.getLogger
         let onRegisterProxy = onRegisterProxy i
 
         let onStartProxy =
@@ -178,21 +181,91 @@ module WorkerNode =
         //        WorkerNodeRunnerState.defaultValue |> loop
         //        )
 
-        member _.start() =
+        let onStartImpl() =
             if not started
             then
                 let r = onStart onStartProxy
                 r
             else Ok()
 
-        member _.register() =
+        let onRegisterImpl() =
             match onRegister onRegisterProxy with
             | Ok v -> Ok v
             | Error e -> e |> UnableToRegisterWorkerNodeErr |> Error
 
-        member _.unregister() = onUnregister onRegisterProxy
+        let onGetMessagesImpl() =
+            let r = onGetMessages i.messageProcessorProxy onProcessMessage
+            r
 
-        member _.getMessages() = onGetMessages i.messageProcessorProxy onProcessMessage
+        let onUnregisterImpl() = onUnregister onRegisterProxy
+
+        let sr n (q : RunQueueId) =
+            match i.tryRunSolverProcess n q with
+            | Ok() -> Ok()
+            | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
+
+        //let tryStartX() =
+        //    //let d = i.
+        //    let messagingClientAccessInfo = i.messageProcessorProxy.messagingClientAccessInfo
+        //    let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
+
+        //    let j =
+        //        {
+        //            storageType = c |> MsSqlDatabase
+        //            messagingDataVersion = messagingDataVersion
+        //        }
+
+        //    let messagingClientData =
+        //        {
+        //            msgAccessInfo = messagingClientAccessInfo
+        //            msgClientProxy = createMessagingClientProxy getLogger getMessageSize j messagingClientAccessInfo.msgClientId
+        //            logOnError = true
+        //        }
+
+        //    let messagingClient = MessagingClient messagingClientData
+
+        //    messagingClient
+
+        let onTryStartImpl() =
+            let toError e = failwith $"Error: '{e}'."
+
+            match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
+            | false ->
+                printfn "createServiceImpl: Registering..."
+                match onRegisterImpl >-> onStartImpl |> evaluate with
+                | Ok() ->
+                    match i.messageProcessorProxy.tryStart() with
+                    | Ok () ->
+                        let getMessages() =
+                            match onGetMessagesImpl() with
+                            | Ok () -> Ok ()
+                            | Error e -> CreateServiceImplWorkerNodeErr e |> Error
+
+                        let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - getMessages"
+                            //                let h = TimerEventHandler(TimerEventHandlerInfo.defaultValue logger getMessages "WorkerNodeRunner - getMessages")
+                        let h = TimerEventHandler i1
+                        do h.start()
+
+                        // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
+                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - start"
+                        //let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
+                        let s = TimerEventHandler i2
+                        do s.start()
+
+                        Ok ()
+                    | Error e -> UnableToStartMessagingClientErr e |> Error 
+                | Error e -> Error e
+            | true ->
+                printfn "createServiceImpl: Unregistering..."
+                match onUnregisterImpl() with
+                | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
+                | Error e -> CreateServiceImplWorkerNodeErr e |> Error
+
+        //member _.start() = onStartImpl()
+        //member _.register() = onRegisterImpl()
+        //member _.unregister() = onUnregisterImpl()
+        //member _.getMessages() = onGetMessagesImpl()
+        member _.tryStart() = onTryStartImpl()
 
         //member _.getState() = messageLoop.PostAndReply GetState
         //
@@ -220,88 +293,89 @@ module WorkerNode =
         //    }
 
 
-    let private createServiceImpl (i : WorkerNodeRunnerData<'D, 'P>) =
-        let toError e = failwith $"Error: '{e}'."
-        printfn "createServiceImpl: Creating WorkerNodeRunner..."
-        let w = WorkerNodeRunner i
+//    let private createServiceImpl (i : WorkerNodeRunnerData<'D, 'P>) =
+//        let toError e = failwith $"Error: '{e}'."
+//        printfn "createServiceImpl: Creating WorkerNodeRunner..."
+//        let w = WorkerNodeRunner i
+//
+////        match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
+////        | false ->
+////            printfn "createServiceImpl: Registering..."
+////            match w.register >-> w.start |> evaluate with
+////            | Ok() ->
+////                let getMessages() =
+////                    match w.getMessages() with
+////                    | Ok () -> Ok ()
+////                    | Error e -> CreateServiceImplWorkerNodeErr e |> Error
+//
+////                let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - getMessages"
+//////                let h = TimerEventHandler(TimerEventHandlerInfo.defaultValue logger getMessages "WorkerNodeRunner - getMessages")
+////                let h = TimerEventHandler i1
+////                do h.start()
+//
+////                // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
+////                let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - start"
+////                //let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
+////                let s = TimerEventHandler i2
+////                do s.start()
+//
+////                Ok w
+////            | Error e -> Error e
+////        | true ->
+////            printfn "createServiceImpl: Unregistering..."
+////            match w.unregister() with
+////            | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
+////            | Error e -> CreateServiceImplWorkerNodeErr e |> Error
+//
+//        0
 
-        match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
-        | false ->
-            printfn "createServiceImpl: Registering..."
-            match w.register >-> w.start |> evaluate with
-            | Ok() ->
-                let getMessages() =
-                    match w.getMessages() with
-                    | Ok () -> Ok ()
-                    | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
-                let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - getMessages"
-//                let h = TimerEventHandler(TimerEventHandlerInfo.defaultValue logger getMessages "WorkerNodeRunner - getMessages")
-                let h = TimerEventHandler i1
-                do h.start()
+    //type WorkerNodeRunner<'D, 'P>
+    //    with
+    //    static member create messagingDataVersion (i : WorkerNodeServiceInfo) tryRunSolverProcess =
+    //        let logger = Logger.defaultValue
+    //        let getLogger = fun _ -> Logger.defaultValue
+    //        let addError f e = (f + e) |> Error
+    //        let c = getWorkerNodeSvcConnectionString
 
-                // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
-                let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - start"
-                //let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
-                let s = TimerEventHandler i2
-                do s.start()
+    //        //let sr n (q : RunQueueId) =
+    //        //    match tryRunSolverProcess n q with
+    //        //    | Ok() -> Ok()
+    //        //    | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
 
-                Ok w
-            | Error e -> Error e
-        | true ->
-            printfn "createServiceImpl: Unregistering..."
-            match w.unregister() with
-            | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
-            | Error e -> CreateServiceImplWorkerNodeErr e |> Error
+    //        let w =
+    //            //let messagingClientAccessInfo = i.messagingClientAccessInfo
+    //            //let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
 
+    //            //let j =
+    //            //    {
+    //            //        storageType = c |> MsSqlDatabase
+    //            //        messagingDataVersion = messagingDataVersion
+    //            //    }
 
-    type WorkerNodeRunner<'D, 'P>
-        with
-        static member create messagingDataVersion (i : WorkerNodeServiceInfo) tryRunSolverProcess =
-            let logger = Logger.defaultValue
-            let getLogger = fun _ -> Logger.defaultValue
-            let addError f e = (f + e) |> Error
-            let c = getWorkerNodeSvcConnectionString
+    //            //let messagingClientData =
+    //            //    {
+    //            //        msgAccessInfo = messagingClientAccessInfo
+    //            //        msgClientProxy = createMessagingClientProxy getLogger getMessageSize j messagingClientAccessInfo.msgClientId
+    //            //        logOnError = true
+    //            //    }
 
-            let sr n (q : RunQueueId) =
-                match tryRunSolverProcess n q with
-                | Ok() -> Ok()
-                | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
+    //            //let messagingClient = MessagingClient messagingClientData
 
-            let w =
-                let messagingClientAccessInfo = i.messagingClientAccessInfo
-                let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
-                //let x = i.messagingServiceAccessInfo
+    //            match messagingClient.tryStart() with
+    //            | Ok() ->
+    //                let n =
+    //                    {
+    //                        workerNodeServiceInfo = i
+    //                        workerNodeProxy = WorkerNodeProxy<'D>.create c (sr i.workerNodeInfo.noOfCores)
+    //                        messageProcessorProxy = messagingClient.messageProcessorProxy
+    //                        tryRunSolverProcess = tryRunSolverProcess
+    //                    }
+    //                    |> createServiceImpl
 
-                let j =
-                    {
-                        //messagingClientName = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
-                        storageType = c |> MsSqlDatabase
-                        messagingDataVersion = messagingDataVersion
-                    }
+    //                match n with
+    //                | Ok v -> Ok v
+    //                | Error e -> addError UnableToCreateWorkerNodeServiceErr e
+    //            | Error e -> UnableToStartMessagingClientErr e |> Error
 
-                let messagingClientData =
-                    {
-                        msgAccessInfo = messagingClientAccessInfo
-                        msgClientProxy = createMessagingClientProxy getLogger getMessageSize j messagingClientAccessInfo.msgClientId
-                        logOnError = true
-                    }
-
-                let messagingClient = MessagingClient messagingClientData
-
-                match messagingClient.start() with
-                | Ok() ->
-                    let n =
-                        {
-                            workerNodeServiceInfo = i
-                            workerNodeProxy = WorkerNodeProxy<'D>.create c (sr i.workerNodeInfo.noOfCores)
-                            messageProcessorProxy = messagingClient.messageProcessorProxy
-                        }
-                        |> createServiceImpl
-
-                    match n with
-                    | Ok v -> Ok v
-                    | Error e -> addError UnableToCreateWorkerNodeServiceErr e
-                | Error e -> UnableToStartMessagingClientErr e |> Error
-
-            w
+    //        w

@@ -141,10 +141,11 @@ module EchoMsgServiceInfo =
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
         printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
+        let messageProcessorProxy = client.messageProcessorProxy
 
-        let tryProcessMessage = onTryProcessMessage client.messageProcessorProxy
+        let tryProcessMessage = onTryProcessMessage messageProcessorProxy
 
-        match client.start() with
+        match messageProcessorProxy.tryStart() with
         | Ok() ->
             while true do
                 printfn $"Sending message to: %A{recipient}."
@@ -160,7 +161,7 @@ module EchoMsgServiceInfo =
                         messageData = EchoMessageData.create() |> UserMsg
                     }
 
-                let sendResult = client.sendMessage m
+                let sendResult = messageProcessorProxy.sendMessage m
                 printfn $"Sent with: %A{sendResult}."
 
                 printfn "Checking messages."

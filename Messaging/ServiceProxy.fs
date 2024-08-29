@@ -16,12 +16,13 @@ module ServiceProxy =
     type MessagingClientProxyInfo =
         {
             //messagingClientName : MessagingClientName
+            messagingClientId : MessagingClientId
             messagingDataVersion : MessagingDataVersion
             storageType : MessagingClientStorageType
         }
 
 
-    let createMessagingClientProxy<'D> getLogger getMessageSize (i : MessagingClientProxyInfo) (c : MessagingClientId) =
+    let createMessagingClientProxy<'D> getLogger getMessageSize (i : MessagingClientProxyInfo) =
         let getMessageSize (e : MessageData<'D>) =
             match e with
             | SystemMsg _ -> SmallSize
@@ -32,8 +33,8 @@ module ServiceProxy =
             let v = i.messagingDataVersion
 
             {
-                tryPickIncomingMessage = fun () -> tryPickIncomingMessage g v c
-                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage g v c
+                tryPickIncomingMessage = fun () -> tryPickIncomingMessage g v i.messagingClientId
+                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage g v i.messagingClientId
                 saveMessage = saveMessage g v
                 tryDeleteMessage = deleteMessage g
                 deleteExpiredMessages = deleteExpiredMessages g v
@@ -42,8 +43,8 @@ module ServiceProxy =
             }
         //| SqliteDatabase connectionString ->
         //    {
-        //        tryPickIncomingMessage = fun () -> tryPickIncomingMessageSqlite connectionString c
-        //        tryPickOutgoingMessage = fun () -> tryPickOutgoingMessageSqlite connectionString c
+        //        tryPickIncomingMessage = fun () -> tryPickIncomingMessageSqlite connectionString i.messagingClientId
+        //        tryPickOutgoingMessage = fun () -> tryPickOutgoingMessageSqlite connectionString i.messagingClientId
         //        saveMessage = saveMessageSqlite connectionString
         //        tryDeleteMessage = deleteMessageSqlite connectionString
         //        deleteExpiredMessages = deleteExpiredMessagesSqlite connectionString
