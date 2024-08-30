@@ -67,7 +67,7 @@ module Program =
         let programData =
             {
                 serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
-                getService = fun () -> new WorkerNodeResponseHandler(data.workerNodeServiceInfo) :> IWorkerNodeService
+                getService = fun () -> new WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
                 getWcfService = fun service -> new WorkerNodeWcfService(service)
                 saveSettings = saveSettings
                 configureServices = Some configureServices

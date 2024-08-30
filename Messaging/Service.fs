@@ -1,6 +1,8 @@
 ﻿namespace Softellect.Messaging
 
+open System
 open System.Threading
+open System.Threading.Tasks
 open CoreWCF
 open Softellect.Messaging.Errors
 open Softellect.Sys.TimerEvents
@@ -9,6 +11,7 @@ open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.Sys.Logging
+open Microsoft.Extensions.Hosting
 
 module Service =
 
@@ -26,6 +29,8 @@ module Service =
         let count = Interlocked.Increment(&messagingServiceCount)
         do printfn $"MessagingService: count = {count}."
         let proxy = d.messagingServiceProxy
+        let mutable started = false
+        let mutable eventHandler = None
 
         let removeExpiredMessagesImpl () =
             //printfn "removeExpiredMessages was called."
@@ -49,11 +54,34 @@ module Service =
 
             let h = TimerEventHandler i
             do h.start()
+            Some h
+
+        let onTryStart() =
+            if started then
+                printfn "Already started."
+                Ok() // Don't care if it is started.
+            else
+                eventHandler <- createEventHandlers()
+                started <- true
+                Ok()
+
+        let onTryStop() =
+            if not started then
+                printfn "Already stopped."
+                Ok() // Don't care if it is already stopped.
+            else
+                started <- false
+
+                match eventHandler with
+                | Some h ->
+                    h.stop()
+                    Ok()
+                | None -> Ok()
 
         interface IMessagingService<'D> with
-            member _.tryStart() =
-                createEventHandlers()
-                Ok()
+            //member _.tryStart() =
+            //    eventHandler <- createEventHandlers()
+            //    Ok()
 
             member _.getVersion() =
                 printfn "getVersion was called."
@@ -73,7 +101,26 @@ module Service =
                 //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
                 proxy.deleteMessage m
 
-            member _.removeExpiredMessages() = removeExpiredMessagesImpl()
+            //member _.removeExpiredMessages() = removeExpiredMessagesImpl()
+
+        interface IHostedService with
+            member _.StartAsync(cancellationToken: CancellationToken) =
+                match onTryStart() with
+                | Ok () ->
+                    printfn "MessagingService is starting..."
+                    Task.CompletedTask
+                | Error e ->
+                    printfn $"Error during start: %A{e}."
+                    Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
+
+            member _.StopAsync(cancellationToken: CancellationToken) =
+                match onTryStop() with
+                | Ok () ->
+                    printfn "MessagingService is stopping..."
+                    Task.CompletedTask
+                | Error e -> 
+                    printfn $"Error during stop: %A{e}."
+                    Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.
 
 
     let mutable private serviceCount = 0L

@@ -120,9 +120,9 @@ module WorkerNode =
         }
 
 
-    type IWorkerNodeRunner<'D, 'P> =
-        abstract member tryStart : unit -> DistributedProcessingUnitResult
-        abstract member tryStop : unit -> DistributedProcessingUnitResult
+    //type IWorkerNodeRunner<'D, 'P> =
+    //    abstract member tryStart : unit -> DistributedProcessingUnitResult
+    //    abstract member tryStop : unit -> DistributedProcessingUnitResult
 
 
     /// 'D is underlying strongly typed input data, NOT A Message data, 'P is underlying progress data.
@@ -276,20 +276,20 @@ module WorkerNode =
         //member _.getMessages() = onGetMessagesImpl()
         //member _.tryStart() = onTryStart()
 
-        interface IWorkerNodeRunner<'D, 'P> with
-            member _.tryStart() = onTryStart()
-            member _.tryStop() = onTryStop()
+        //interface IWorkerNodeRunner<'D, 'P> with
+        //    member _.tryStart() = onTryStart()
+        //    member _.tryStop() = onTryStop()
 
         interface IHostedService with
-            member w.StartAsync(cancellationToken: CancellationToken) =
-                match (w :> IWorkerNodeRunner<'D, 'P>).tryStart() with
+            member _.StartAsync(cancellationToken: CancellationToken) =
+                match onTryStart() with
                 | Ok () -> Task.CompletedTask
                 | Error e -> 
                     printfn $"Error during start: %A{e}."
                     Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
 
-            member w.StopAsync(cancellationToken: CancellationToken) =
-                match (w :> IWorkerNodeRunner<'D, 'P>).tryStop() with
+            member _.StopAsync(cancellationToken: CancellationToken) =
+                match onTryStop() with
                 | Ok () -> Task.CompletedTask
                 | Error e -> 
                     printfn $"Error during stop: %A{e}."

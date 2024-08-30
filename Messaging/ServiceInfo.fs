@@ -10,6 +10,7 @@ open Softellect.Wcf.Common
 open Softellect.Sys.Logging
 open Softellect.Messaging.Errors
 open Softellect.Messaging.VersionInfo
+open Microsoft.Extensions.Hosting
 
 module ServiceInfo =
 
@@ -33,12 +34,13 @@ module ServiceInfo =
 
     // Service part of messaging service.
     type IMessagingService<'D> =
-        abstract tryStart : unit -> MessagingUnitResult
+        inherit IHostedService
         abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
         abstract sendMessage : Message<'D> -> MessagingUnitResult
         abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>
         abstract tryDeleteFromServer : MessagingClientId * MessageId -> MessagingUnitResult
-        abstract removeExpiredMessages : unit -> MessagingUnitResult
+        //abstract tryStart : unit -> MessagingUnitResult
+        //abstract removeExpiredMessages : unit -> MessagingUnitResult
 
 
     /// Service WCF part of messaging service.

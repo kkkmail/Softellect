@@ -31,7 +31,10 @@ module Program =
     /// IService is the underlying service that does the actual work.
     /// IWcfService is the WCF service interface that is exposed to the client.
     /// WcfService is the implementation of the WCF service.
-    let private createHostBuilder<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct>
+    let private createHostBuilder<'IService, 'IWcfService, 'WcfService 
+        when 'IService :> IHostedService and 'IService : not struct
+        and 'IWcfService : not struct 
+        and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
         Host.CreateDefaultBuilder()
             .UseWindowsService()
@@ -45,6 +48,7 @@ module Program =
             .ConfigureServices(fun hostContext services ->
                 let service = data.getService()
                 services.AddSingleton<'IService>(service) |> ignore
+                services.AddSingleton<IHostedService>(service :> IHostedService) |> ignore
 
                 let wcfService = data.getWcfService(service)
                 services.AddSingleton<'WcfService>(wcfService) |> ignore
@@ -69,7 +73,10 @@ module Program =
                 webBuilder.UseStartup(fun _ -> WcfStartup<'IWcfService, 'WcfService>(data.serviceAccessInfo)) |> ignore)
 
 
-    let main<'IService, 'IWcfService, 'WcfService when 'IService : not struct and 'IWcfService : not struct and 'WcfService : not struct> programName data argv =
+    let main<'IService, 'IWcfService, 'WcfService
+        when 'IService :> IHostedService and 'IService : not struct
+        and 'IWcfService : not struct
+        and 'WcfService : not struct> programName data argv =
         printfn $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
         let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
 
