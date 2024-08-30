@@ -35,6 +35,7 @@ open Softellect.Sys.AppSettings
 open Softellect.Sys
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
+open CoreWCF
 
 module Worker =
 
@@ -90,28 +91,32 @@ module Worker =
 ////        | Error e -> Error e
 
 
-//    type WorkerNodeWcfService<'D, 'P>(messagingDataVersion, data, tryRunSolverProcess) =
-////        let toConfigureError f = f |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//        //let toMonitorError f = f |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
-//        let toPingError f = f |> PingWcfErr |> WorkerNodeWcfErr
+    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
+    //type WorkerNodeWcfService<'D, 'P>(messagingDataVersion, data, tryRunSolverProcess) =
+    type WorkerNodeWcfService<'D, 'P>(w : IWorkerNodeRunner<'D, 'P>) =
+//        let toConfigureError f = f |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        //let toMonitorError f = f |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
+        let toPingError f = f |> PingWcfErr |> WorkerNodeWcfErr
 
-//        let tryCreateWorkerNodeRunner() =
-//            match WorkerNodeRunner<'D, 'P>.create messagingDataVersion data tryRunSolverProcess with
-//            | Ok service ->
-//                service.start() |> ignore
-//                Ok service
-//            | Error e -> Error e
+        //let tryCreateWorkerNodeRunner() =
+        //    match WorkerNodeRunner<'D, 'P>.create messagingDataVersion data tryRunSolverProcess with
+        //    | Ok service ->
+        //        service.start() |> ignore
+        //        Ok service
+        //    | Error e -> Error e
 
-//        let workerNodeRunner = new Lazy<Result<WorkerNodeRunner<'D, 'P>, DistributedProcessingError>>(fun () -> tryCreateWorkerNodeRunner())
+        //let workerNodeRunner = new Lazy<Result<WorkerNodeRunner<'D, 'P>, DistributedProcessingError>>(fun () -> tryCreateWorkerNodeRunner())
 
-////        let configure c = workerNodeRunner.Value |> Rop.bind (fun e -> e.configure c)
-//        //let monitor (_ : WorkerNodeMonitorParam) = workerNodeRunner.Value |> Rop.bind (fun e -> e.getState() |> Ok)
-//        let ping () = workerNodeRunner.Value |> Rop.bind (fun _ -> Ok())
+//        let configure c = workerNodeRunner.Value |> Rop.bind (fun e -> e.configure c)
+        //let monitor (_ : WorkerNodeMonitorParam) = workerNodeRunner.Value |> Rop.bind (fun e -> e.getState() |> Ok)
+        
+        //let ping () = workerNodeRunner.Value |> Rop.bind (fun _ -> Ok())
+        let ping () = failwith ""
 
-//        interface IWorkerNodeWcfService with
-////            member _.configure b = tryReply configure toConfigureError b
-//            //member _.monitor b = tryReply monitor toMonitorError b
-//            member _.ping b = tryReply ping toPingError b
+        interface IWorkerNodeWcfService with
+//            member _.configure b = tryReply configure toConfigureError b
+            //member _.monitor b = tryReply monitor toMonitorError b
+            member _.ping b = tryReply ping toPingError b
 
 
 ////    type WorkerNodeWcfServiceImpl<'D, 'P> = WcfService<WorkerNodeWcfService<'D, 'P>, IWorkerNodeWcfService, WorkerNodeServiceInfo>

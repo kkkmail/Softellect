@@ -76,7 +76,7 @@ module Proxy =
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy<'D>
             //messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
-            messageProcessorProxy : MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
+            messageProcessor : IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
 

@@ -141,11 +141,11 @@ module EchoMsgServiceInfo =
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
         printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
-        let messageProcessorProxy = client.messageProcessorProxy
+        let messageProcessor = client :> IMessageProcessor<EchoMessageData>
 
-        let tryProcessMessage = onTryProcessMessage messageProcessorProxy
+        //let tryProcessMessage = onTryProcessMessage messageProcessor
 
-        match messageProcessorProxy.tryStart() with
+        match messageProcessor.tryStart() with
         | Ok() ->
             while true do
                 printfn $"Sending message to: %A{recipient}."
@@ -161,16 +161,16 @@ module EchoMsgServiceInfo =
                         messageData = EchoMessageData.create() |> UserMsg
                     }
 
-                let sendResult = messageProcessorProxy.sendMessage m
+                let sendResult = messageProcessor.sendMessage m
                 printfn $"Sent with: %A{sendResult}."
 
                 printfn "Checking messages."
 
                 let checkMessage() =
-                    match tryProcessMessage (fun _ m -> m) with
-                    | ProcessedSuccessfully m -> printfn $"    Received message: %A{m}."
-                    | ProcessedWithError (m, e) -> printfn $"    Received message: %A{m} with error e: %A{e}."
-                    | ProcessedWithFailedToRemove (m, e) -> printfn $"    Received message: %A{m} with error: %A{e}."
+                    match messageProcessor.tryProcessMessage (fun _ -> Ok()) with
+                    | ProcessedSuccessfully -> printfn $"    Received message: %A{m}."
+                    | ProcessedWithError e -> printfn $"    Received message: %A{m} with error e: %A{e}."
+                    | ProcessedWithFailedToRemove e -> printfn $"    Received message: %A{m} with error: %A{e}."
                     | FailedToProcess e -> printfn $"    Error e: %A{e}"
                     | NothingToDo -> printfn "    Nothing to do..."
                     | BusyProcessing -> printfn "    Busy processing..."

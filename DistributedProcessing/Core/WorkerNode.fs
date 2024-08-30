@@ -106,7 +106,7 @@ module WorkerNode =
     let sendMessageProxy i =
         {
             partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
-            sendMessage = i.messageProcessorProxy.sendMessage
+            sendMessage = i.messageProcessor.sendMessage
         }
 
 
@@ -117,6 +117,10 @@ module WorkerNode =
         }
 
 
+    type IWorkerNodeRunner<'D, 'P> =
+        abstract member tryStart : unit -> DistributedProcessingUnitResult
+
+
     /// 'D is underlying strongly typed input data, NOT A Message data, 'P is underlying progress data.
     type WorkerNodeRunner<'D, 'P>(i : WorkerNodeRunnerData<'D, 'P>) =
         let mutable callCount = -1
@@ -125,9 +129,8 @@ module WorkerNode =
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
 
-        let c = getWorkerNodeSvcConnectionString
-
-        let getLogger = i.messageProcessorProxy.getLogger
+        //let c = getWorkerNodeSvcConnectionString
+        //let getLogger = i.messageProcessor.getLogger
         let onRegisterProxy = onRegisterProxy i
 
         let onStartProxy =
@@ -194,7 +197,7 @@ module WorkerNode =
             | Error e -> e |> UnableToRegisterWorkerNodeErr |> Error
 
         let onGetMessagesImpl() =
-            let r = onGetMessages i.messageProcessorProxy onProcessMessage
+            let r = i.messageProcessor.processMessages onProcessMessage
             r
 
         let onUnregisterImpl() = onUnregister onRegisterProxy
@@ -226,7 +229,7 @@ module WorkerNode =
 
         //    messagingClient
 
-        let onTryStartImpl() =
+        let onTryStart() =
             let toError e = failwith $"Error: '{e}'."
 
             match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
@@ -234,7 +237,7 @@ module WorkerNode =
                 printfn "createServiceImpl: Registering..."
                 match onRegisterImpl >-> onStartImpl |> evaluate with
                 | Ok() ->
-                    match i.messageProcessorProxy.tryStart() with
+                    match i.messageProcessor.tryStart() with
                     | Ok () ->
                         let getMessages() =
                             match onGetMessagesImpl() with
@@ -265,7 +268,10 @@ module WorkerNode =
         //member _.register() = onRegisterImpl()
         //member _.unregister() = onUnregisterImpl()
         //member _.getMessages() = onGetMessagesImpl()
-        member _.tryStart() = onTryStartImpl()
+        //member _.tryStart() = onTryStart()
+
+        interface IWorkerNodeRunner<'D, 'P> with
+            member _.tryStart() = onTryStart()
 
         //member _.getState() = messageLoop.PostAndReply GetState
         //
