@@ -11,6 +11,7 @@ open Softellect.DistributedProcessing.WorkerNode
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy
+open Softellect.DistributedProcessing.ServiceInfo
 
 module Program =
 
@@ -59,12 +60,17 @@ module Program =
             //printfn $"saveSettings - result: '%A{result}'."
             failwith ""
 
+        let configureServices (services : IServiceCollection) =
+            let runner = new WorkerNodeRunner<'D, 'P>(data)
+            services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
+
         let programData =
             {
                 serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
-                getService = fun () -> new WorkerNodeRunner<'D, 'P>(data) :> IWorkerNodeRunner<'D, 'P>
-                getWcfService = fun service -> new WorkerNodeWcfService<'D, 'P>(service)
+                getService = fun () -> new WorkerNodeResponseHandler(data.workerNodeServiceInfo) :> IWorkerNodeService
+                getWcfService = fun service -> new WorkerNodeWcfService(service)
                 saveSettings = saveSettings
+                configureServices = Some configureServices
             }
 
-        main<IWorkerNodeRunner<'D, 'P>, IWorkerNodeWcfService, WorkerNodeWcfService<'D, 'P>> workerNodeProgramName programData argv
+        main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeProgramName programData argv

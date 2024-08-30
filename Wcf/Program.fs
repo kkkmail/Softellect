@@ -24,6 +24,7 @@ module Program =
             getService : unit -> 'IService
             getWcfService : 'IService -> 'WcfService
             saveSettings : unit -> unit
+            configureServices : (IServiceCollection -> unit) option
         }
 
 
@@ -46,7 +47,12 @@ module Program =
                 services.AddSingleton<'IService>(service) |> ignore
 
                 let wcfService = data.getWcfService(service)
-                services.AddSingleton<'WcfService>(wcfService) |> ignore)
+                services.AddSingleton<'WcfService>(wcfService) |> ignore
+
+                match data.configureServices with
+                | Some configure -> configure services |> ignore
+                | None -> ()
+                )
 
             .ConfigureWebHostDefaults(fun webBuilder ->
                 match data.serviceAccessInfo with

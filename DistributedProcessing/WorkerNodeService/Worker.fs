@@ -93,7 +93,7 @@ module Worker =
 
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     //type WorkerNodeWcfService<'D, 'P>(messagingDataVersion, data, tryRunSolverProcess) =
-    type WorkerNodeWcfService<'D, 'P>(w : IWorkerNodeRunner<'D, 'P>) =
+    type WorkerNodeWcfService(w : IWorkerNodeService) =
 //        let toConfigureError f = f |> ConfigureWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
         //let toMonitorError f = f |> MonitorWcfErr |> WorkerNodeWcfErr |> WorkerNodeServiceErr
         let toPingError f = f |> PingWcfErr |> WorkerNodeWcfErr
@@ -111,7 +111,7 @@ module Worker =
         //let monitor (_ : WorkerNodeMonitorParam) = workerNodeRunner.Value |> Rop.bind (fun e -> e.getState() |> Ok)
         
         //let ping () = workerNodeRunner.Value |> Rop.bind (fun _ -> Ok())
-        let ping () = failwith ""
+        let ping() = w.ping()
 
         interface IWorkerNodeWcfService with
 //            member _.configure b = tryReply configure toConfigureError b

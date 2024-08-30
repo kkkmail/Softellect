@@ -1,6 +1,8 @@
 ﻿namespace Softellect.DistributedProcessing
 
+open System
 open System.Threading
+open System.Threading.Tasks
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
@@ -19,6 +21,7 @@ open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Softellect.Messaging.Client
 open Softellect.Messaging.ServiceProxy
+open Microsoft.Extensions.Hosting
 
 module WorkerNode =
     let x = 1
@@ -119,6 +122,7 @@ module WorkerNode =
 
     type IWorkerNodeRunner<'D, 'P> =
         abstract member tryStart : unit -> DistributedProcessingUnitResult
+        abstract member tryStop : unit -> DistributedProcessingUnitResult
 
 
     /// 'D is underlying strongly typed input data, NOT A Message data, 'P is underlying progress data.
@@ -139,7 +143,7 @@ module WorkerNode =
                 onRunModel = i.workerNodeProxy.onProcessMessageProxy.onRunModel
             }
 
-        let onProcessMessage m =
+        let onProcessMessage (m : DistributedProcessingMessage<'D, 'P>) =
             let r = onProcessMessage i.workerNodeProxy.onProcessMessageProxy m
 
             let r1 =
@@ -264,6 +268,8 @@ module WorkerNode =
                 | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
                 | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
+        let onTryStop() = Ok()
+
         //member _.start() = onStartImpl()
         //member _.register() = onRegisterImpl()
         //member _.unregister() = onUnregisterImpl()
@@ -272,6 +278,22 @@ module WorkerNode =
 
         interface IWorkerNodeRunner<'D, 'P> with
             member _.tryStart() = onTryStart()
+            member _.tryStop() = onTryStop()
+
+        interface IHostedService with
+            member w.StartAsync(cancellationToken: CancellationToken) =
+                match (w :> IWorkerNodeRunner<'D, 'P>).tryStart() with
+                | Ok () -> Task.CompletedTask
+                | Error e -> 
+                    printfn $"Error during start: %A{e}."
+                    Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
+
+            member w.StopAsync(cancellationToken: CancellationToken) =
+                match (w :> IWorkerNodeRunner<'D, 'P>).tryStop() with
+                | Ok () -> Task.CompletedTask
+                | Error e -> 
+                    printfn $"Error during stop: %A{e}."
+                    Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.
 
         //member _.getState() = messageLoop.PostAndReply GetState
         //

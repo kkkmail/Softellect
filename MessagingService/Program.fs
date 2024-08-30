@@ -21,6 +21,7 @@ module Program =
                 getService = fun () -> new MessagingService<'D>(data) :> IMessagingService<'D>
                 getWcfService = fun service -> new MessagingWcfService<'D>(service)
                 saveSettings = saveSettings
+                configureServices = None
             }
 
         main<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv
