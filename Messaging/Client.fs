@@ -76,7 +76,7 @@ module Client =
         }
 
 
-    type TryReceiveSingleMessageProxy<'D> =
+    type private TryReceiveSingleMessageProxy<'D> =
         {
             saveMessage : Message<'D> -> MessagingUnitResult
             tryDeleteMessage : MessageId -> MessagingUnitResult
@@ -86,7 +86,7 @@ module Client =
         }
 
 
-    let tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D>) : Result<MessageSize option, MessagingError> =
+    let private tryReceiveSingleMessage (proxy : TryReceiveSingleMessageProxy<'D>) : Result<MessageSize option, MessagingError> =
         let addError a e = (TryReceiveSingleMessageErr a) + e |> Error
 
         let result =
@@ -119,7 +119,7 @@ module Client =
         | false -> None |> Ok
 
 
-    let tryTransmitMessages transmitter =
+    let private tryTransmitMessages transmitter =
 //        printfn "tryTransmitMessages: starting..."
         let rec doTryTransmit x c =
             match x with
@@ -134,10 +134,10 @@ module Client =
         y
 
 
-    let tryReceiveMessages proxy = tryTransmitMessages (fun () -> tryReceiveSingleMessage proxy)
+    let private tryReceiveMessages proxy = tryTransmitMessages (fun () -> tryReceiveSingleMessage proxy)
 
 
-    let createMessage messagingDataVersion msgClientId (m : MessageInfo<'D>) =
+    let private createMessage messagingDataVersion msgClientId (m : MessageInfo<'D>) =
         {
             messageDataInfo =
                 {
@@ -152,10 +152,10 @@ module Client =
         }
 
 
-    let onSendMessage saveMessage msgClientId m = createMessage msgClientId m |> saveMessage
+    let private onSendMessage saveMessage msgClientId m = createMessage msgClientId m |> saveMessage
 
 
-    type TrySendSingleMessageProxy<'D, 'E> =
+    type private TrySendSingleMessageProxy<'D, 'E> =
         {
             tryPickOutgoingMessage : unit -> Result<Message<'D> option, 'E>
             tryDeleteMessage : MessageId -> UnitResult<'E>
@@ -164,7 +164,7 @@ module Client =
         }
 
 
-    let trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
+    let private trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
         //printfn "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
         | Ok None -> Ok None
@@ -178,7 +178,7 @@ module Client =
         | Error e -> Error e
 
 
-    let trySendMessages proxy = tryTransmitMessages (fun () -> trySendSingleMessage proxy)
+    let private trySendMessages proxy = tryTransmitMessages (fun () -> trySendSingleMessage proxy)
 
 
     /// Low level WCF messaging client.
