@@ -35,7 +35,7 @@ module Errors =
 
 
     type OnGetMessagesError =
-        | ProcessedSuccessfullyWithInnerErr
+        //| ProcessedSuccessfullyWithInnerErr
         | ProcessedWithErr
         | ProcessedWithFailedToRemoveErr
         | FailedToProcessErr

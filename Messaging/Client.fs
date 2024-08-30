@@ -8,7 +8,6 @@ open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Logging
-open Softellect.Wcf.Common
 open Softellect.Wcf.Client
 
 open Softellect.Messaging.ServiceInfo
@@ -254,6 +253,7 @@ module Client =
 
         let h2 = TimerEventHandler info2
         do h2.start()
+        [h1; h2]
 
 
     type MessagingClient<'D>(d : MessagingClientData<'D>) =
@@ -263,6 +263,7 @@ module Client =
         let responseHandler = MsgResponseHandler<'D>(msgSvcAccessInfo) :> IMessagingClient<'D>
         let mutable callCount = -1
         let mutable started = false
+        let mutable eventHandlers = []
         let getLogger = d.msgClientProxy.getLogger
 
         let incrementCount() = Interlocked.Increment(&callCount)
@@ -305,11 +306,16 @@ module Client =
                 match removeExpiredMessages() with
                 | Ok() ->
                     started <- true
-                    createMessagingClientEventHandlers eventHandlerProxy
+                    eventHandlers <- createMessagingClientEventHandlers eventHandlerProxy
                     Ok()
                 | Error e -> Error e
             else Ok()
 
+        let tryStop() =
+            eventHandlers |> List.iter (fun h -> h.stop())
+            Ok()
+
+        // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
             let logger = getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
 
@@ -341,6 +347,7 @@ module Client =
 
             retVal
 
+        // Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
         let onProcessMessages (f : Message<'D> -> MessagingUnitResult) : MessagingUnitResult =
             let elevate e = e |> OnGetMessagesErr
             let addError f e = ((elevate f) + e) |> Error
@@ -352,9 +359,6 @@ module Client =
                 | _ :: t ->
                     match onTryProcessMessage f with
                     | ProcessedSuccessfully -> doFold t r
-                        //match u with
-                        //| Ok() -> doFold t r
-                        //| Error e -> doFold t ((addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults addMessagingError)
                     | ProcessedWithError e -> [ addError ProcessedWithErr e; r ] |> foldUnitResults addMessagingError
                     | ProcessedWithFailedToRemove e -> [ addError ProcessedWithFailedToRemoveErr e; r ] |> foldUnitResults addMessagingError
                     | FailedToProcess e -> addError FailedToProcessErr e
@@ -364,108 +368,9 @@ module Client =
             let result = doFold [for _ in 1..maxNumberOfMessages -> ()] (Ok())
             result
 
-        //member _.sendMessage (m : MessageInfo<'D>) : MessagingUnitResult =
-        //    createMessage msgSvcAccessInfo.messagingDataVersion msgClientId m
-        //    |> proxy.saveMessage
-
-        //member _.sendMessage m = sendMessageImpl m
-
-        //member _.tryPickReceivedMessage() : MessagingOptionalResult<'D> = proxy.tryPickIncomingMessage()
-        //member _.tryRemoveReceivedMessage (m : MessageId) : MessagingUnitResult = proxy.tryDeleteMessage m
-        //member _.tryReceiveMessages() : MessagingUnitResult = tryReceiveMessages receiveProxy
-        //member _.trySendMessages() : MessagingUnitResult = trySendMessages sendProxy
-        //member _.removeExpiredMessages() : MessagingUnitResult = proxy.deleteExpiredMessages d.msgAccessInfo.msgSvcAccessInfo.expirationTime
-
-        //member _.messageProcessorProxy : MessageProcessorProxy<'D> =
-        //    {
-        //        tryStart = tryStart
-        //        tryPickReceivedMessage = proxy.tryPickIncomingMessage
-        //        tryRemoveReceivedMessage = proxy.tryDeleteMessage
-        //        sendMessage = sendMessage
-        //        //tryReceiveMessages = tryReceiveMessages
-        //        //trySendMessages = trySendMessages
-        //        //removeExpiredMessages = removeExpiredMessages
-        //        getLogger = proxy.getLogger
-        //        incrementCount = incrementCount
-        //        decrementCount = decrementCount
-        //        logOnError = d.logOnError
-        //        maxMessages = maxNumberOfMessages
-        //    }
-
         interface IMessageProcessor<'D> with
             member _.tryStart() = tryStart()
+            member _.tryStop() = tryStop()
             member _.sendMessage d = sendMessage d
             member _.tryProcessMessage f = onTryProcessMessage f
             member _.processMessages f = onProcessMessages f
-
-            //member _.tryPickReceivedMessage() = proxy.tryPickIncomingMessage()
-            //member _.tryRemoveReceivedMessage m = proxy.tryDeleteMessage m
-            //member _.getLogger = proxy.getLogger
-            //member _.incrementCount() = incrementCount()
-            //member _.decrementCount() = decrementCount()
-            //member _.logOnError = d.logOnError
-            //member _.maxMessages = maxNumberOfMessages
-
-        //member _.tryReceiveSingleMessageProxy : TryReceiveSingleMessageProxy<'D> =
-        //    {
-        //        saveMessage = d.msgClientProxy.saveMessage
-        //        tryDeleteMessage = d.msgClientProxy.tryDeleteMessage
-        //        tryPeekMessage = fun () -> responseHandler.tryPickMessage d.msgAccessInfo.msgClientId
-        //        tryDeleteFromServer = fun x -> responseHandler.tryDeleteFromServer (d.msgAccessInfo.msgClientId, x)
-        //        getMessageSize = d.msgClientProxy.getMessageSize
-        //    }
-
-
-    ///// Tries to process a single (first) message (if any) using a given message processor f.
-    //let onTryProcessMessage (w : IMessageProcessor<'D>) (f : Message<'D> -> Result<unit, MessagingError>) =
-    //    let logger = w.getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
-
-    //    let retVal =
-    //        if w.incrementCount() = 0
-    //        then
-    //            match w.tryPickReceivedMessage() with
-    //            | Ok (Some m) ->
-    //                try
-    //                    let r = f m
-
-    //                    match w.tryRemoveReceivedMessage m.messageDataInfo.messageId with
-    //                    | Ok() -> ProcessedSuccessfully r
-    //                    | Error e -> ProcessedWithFailedToRemove (r, e)
-    //                with
-    //                | e -> e |> OnTryProcessMessageExn |> OnTryProcessMessageErr |> FailedToProcess
-    //            | Ok None -> NothingToDo
-    //            | Error e -> FailedToProcess e
-    //        else BusyProcessing
-
-    //    w.decrementCount() |> ignore
-
-    //    match retVal.errorOpt, w.logOnError with
-    //    | Some e, true -> logger.logError $"%A{e}"
-    //    | _ -> ignore()
-
-    //    retVal
-
-
-    ///// Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
-    //let onGetMessages<'D> (w : IMessageProcessor<'D>) (f : Message<'D> -> Result<unit, MessagingError>) =
-    //    let elevate e = e |> OnGetMessagesErr
-    //    let addError f e = ((elevate f) + e) |> Error
-    //    let toError e = e |> elevate |> Error
-
-    //    let rec doFold x r =
-    //        match x with
-    //        | [] -> Ok()
-    //        | _ :: t ->
-    //            match onTryProcessMessage w f with
-    //            | ProcessedSuccessfully u ->
-    //                match u with
-    //                | Ok() -> doFold t r
-    //                | Error e -> doFold t ((addError ProcessedSuccessfullyWithInnerErr e, r) ||> combineUnitResults addMessagingError)
-    //            | ProcessedWithError (u, e) -> [ addError ProcessedWithErr e; u; r ] |> foldUnitResults addMessagingError
-    //            | ProcessedWithFailedToRemove(u, e) -> [ addError ProcessedWithFailedToRemoveErr e; u; r ] |> foldUnitResults addMessagingError
-    //            | FailedToProcess e -> addError FailedToProcessErr e
-    //            | NothingToDo -> Ok()
-    //            | BusyProcessing -> toError BusyProcessingErr
-
-    //    let result = doFold [for _ in 1..w.maxMessages -> ()] (Ok())
-    //    result
