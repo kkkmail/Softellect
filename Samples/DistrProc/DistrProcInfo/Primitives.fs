@@ -41,6 +41,8 @@ module Primitives =
 
     type TestMessageData = DistributedProcessingMessageData<SolverData, ProgressData>
     type TestRunnereData = WorkerNodeRunnerData<SolverData, ProgressData>
+    type TestMessage = DistributedProcessingMessage<SolverData, ProgressData>
+
 
     let tryRunSolverProcessOne (r : RunQueueId) : DistributedProcessingUnitResult =
         failwith ""

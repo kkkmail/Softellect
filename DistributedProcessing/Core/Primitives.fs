@@ -281,6 +281,9 @@ module Primitives =
             | WorkerNodeMsg m -> m.messageSize
 
 
+    type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
+
+
     type PartitionerMessageInfo<'P> =
         {
             partitionerRecipient : PartitionerId

@@ -24,11 +24,9 @@ module ServiceInfo =
     let dataVersion = MessagingDataVersion 1
 
     //type EchoMessagingClient = MessagingClient<EchoMessageData>
-    //type EchoMessage = Message<EchoMessageData>
 
-    //let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
+    //
     //let getLogger = fun _ -> Logger.defaultValue
-    //let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString echoDataVersion
 
     //let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     //let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -185,6 +183,8 @@ module ServiceInfo =
     //            Thread.Sleep 10_000
     //    | Error e -> printfn $"Error: %A{e}"
 
+    // Worker Node Service
+
     let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
     let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
@@ -196,7 +196,7 @@ module ServiceInfo =
         {
             messagingClientId = workerNodeServiceInfo.messagingClientAccessInfo.msgClientId
             messagingDataVersion = dataVersion
-            storageType = MsSqlDatabase getMessagingConnectionString
+            storageType = MsSqlDatabase getWorkerNodeSvcConnectionString
         }
 
     let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData<SolverData, ProgressData>> getLogger getMessageSize messagingClientProxyInfo
@@ -207,3 +207,10 @@ module ServiceInfo =
             msgClientProxy = msgClientProxy
             logOnError = true
         }
+
+
+    // Messaging Service
+
+    let serviceProxy :  MessagingServiceProxy<TestMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString dataVersion
+    let messagingServiceAccessInfo = loadMessagingServiceAccessInfo dataVersion
+
