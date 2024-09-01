@@ -19,13 +19,6 @@ open Softellect.Messaging.Client
 
 module Proxy =
 
-    //type private UnitResult = DistributedProcessingUnitResult
-    type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
-    type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
-    //type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
-    type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
-
-
     type SendMessageProxy<'D, 'P> =
         {
             partitionerId : PartitionerId
