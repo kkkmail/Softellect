@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Platforms>x64</Platforms>
+    <AssemblyName>Softellect.Samples.DistrProc.ServiceInfo</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Primitives.fs" />
+    <Compile Include="ServiceInfo.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
+    <ProjectReference Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj" />
+    <ProjectReference Include="..\..\..\Messaging\Messaging.fsproj" />
+    <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="8.0.400" />
+  </ItemGroup>
+
+</Project>

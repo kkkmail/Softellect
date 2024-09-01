@@ -46,36 +46,36 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let onRegister (proxy : OnRegisterProxy<'D, 'P>) =
-        let result =
-            {
-                partitionerRecipient = proxy.sendMessageProxy.partitionerId
-                deliveryType = GuaranteedDelivery
-                messageData = proxy.workerNodeInfo |> RegisterWorkerNodePrtMsg
-            }.getMessageInfo()
-            |> proxy.sendMessageProxy.sendMessage
+    //let onRegister (proxy : OnRegisterProxy<'D, 'P>) =
+    //    let result =
+    //        {
+    //            partitionerRecipient = proxy.sendMessageProxy.partitionerId
+    //            deliveryType = GuaranteedDelivery
+    //            messageData = proxy.workerNodeInfo |> RegisterWorkerNodePrtMsg
+    //        }.getMessageInfo()
+    //        |> proxy.sendMessageProxy.sendMessage
 
-        result
-
-
-    let onUnregister (proxy : OnRegisterProxy<'D, 'P>) =
-        let result =
-            {
-                partitionerRecipient = proxy.sendMessageProxy.partitionerId
-                deliveryType = GuaranteedDelivery
-                messageData = proxy.workerNodeInfo.workerNodeId |> UnregisterWorkerNodePrtMsg
-            }.getMessageInfo()
-            |> proxy.sendMessageProxy.sendMessage
-
-        result
+    //    result
 
 
-    /// Now we attempt to restart everything on a [lengthy] timer event. This is to account for NOT
-    /// started solvers due to node overload.
-    let onStart (proxy : OnStartProxy) =
-        match proxy.loadAllActiveRunQueueId() with
-        | Ok m -> m |> List.map proxy.onRunModel |> foldUnitResults
-        | Error e -> Error e
+    //let onUnregister (proxy : OnRegisterProxy<'D, 'P>) =
+    //    let result =
+    //        {
+    //            partitionerRecipient = proxy.sendMessageProxy.partitionerId
+    //            deliveryType = GuaranteedDelivery
+    //            messageData = proxy.workerNodeInfo.workerNodeId |> UnregisterWorkerNodePrtMsg
+    //        }.getMessageInfo()
+    //        |> proxy.sendMessageProxy.sendMessage
+
+    //    result
+
+
+    ///// Now we attempt to restart everything on a [lengthy] timer event. This is to account for NOT
+    ///// started solvers due to node overload.
+    //let onStart (proxy : OnStartProxy) =
+    //    match proxy.loadAllActiveRunQueueId() with
+    //    | Ok m -> m |> List.map proxy.onRunModel |> foldUnitResults
+    //    | Error e -> Error e
 
 
     let onProcessMessage (proxy : OnProcessMessageProxy<'D>) (m : DistributedProcessingMessage<'D, 'P>) =
@@ -106,18 +106,18 @@ module WorkerNode =
     //    failwith "onGetState is not implemented yet."
 
 
-    let sendMessageProxy i =
-        {
-            partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
-            sendMessage = i.messageProcessor.sendMessage
-        }
+    //let sendMessageProxy i =
+    //    {
+    //        partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
+    //        sendMessage = i.messageProcessor.sendMessage
+    //    }
 
 
-    let onRegisterProxy i = // : OnRegisterProxy<'D, 'P> =
-        {
-            workerNodeInfo = i.workerNodeServiceInfo.workerNodeInfo
-            sendMessageProxy = sendMessageProxy i
-        }
+    //let onRegisterProxy i = // : OnRegisterProxy<'D, 'P> =
+    //    {
+    //        workerNodeInfo = i.workerNodeServiceInfo.workerNodeInfo
+    //        sendMessageProxy = sendMessageProxy i
+    //    }
 
 
     //type IWorkerNodeRunner<'D, 'P> =
@@ -129,19 +129,21 @@ module WorkerNode =
     type WorkerNodeRunner<'D, 'P>(i : WorkerNodeRunnerData<'D, 'P>) =
         let mutable callCount = -1
         let mutable started = false
+        let partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
+        let messageProcessor = new MessagingClient<DistributedProcessingMessageData<'D, 'P>>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
 
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
 
         //let c = getWorkerNodeSvcConnectionString
         //let getLogger = i.messageProcessor.getLogger
-        let onRegisterProxy = onRegisterProxy i
+        //let onRegisterProxy = onRegisterProxy i
 
-        let onStartProxy =
-            {
-                loadAllActiveRunQueueId = i.workerNodeProxy.loadAllActiveRunQueueId
-                onRunModel = i.workerNodeProxy.onProcessMessageProxy.onRunModel
-            }
+        //let onStartProxy =
+        //    {
+        //        loadAllActiveRunQueueId = i.workerNodeProxy.loadAllActiveRunQueueId
+        //        onRunModel = i.workerNodeProxy.onProcessMessageProxy.onRunModel
+        //    }
 
         let onProcessMessage (m : DistributedProcessingMessage<'D, 'P>) =
             let r = onProcessMessage i.workerNodeProxy.onProcessMessageProxy m
@@ -191,20 +193,39 @@ module WorkerNode =
         let onStartImpl() =
             if not started
             then
-                let r = onStart onStartProxy
-                r
+                match i.workerNodeProxy.loadAllActiveRunQueueId() with
+                | Ok m -> m |> List.map i.workerNodeProxy.onProcessMessageProxy.onRunModel |> foldUnitResults
+                | Error e -> Error e
             else Ok()
 
         let onRegisterImpl() =
-            match onRegister onRegisterProxy with
+            let result =
+                {
+                    partitionerRecipient = partitionerId
+                    deliveryType = GuaranteedDelivery
+                    messageData = i.workerNodeServiceInfo.workerNodeInfo |> RegisterWorkerNodePrtMsg
+                }.getMessageInfo()
+                |> messageProcessor.sendMessage
+
+            match result with
             | Ok v -> Ok v
             | Error e -> e |> UnableToRegisterWorkerNodeErr |> Error
 
         let onGetMessagesImpl() =
-            let r = i.messageProcessor.processMessages onProcessMessage
+            let r = messageProcessor.processMessages onProcessMessage
             r
 
-        let onUnregisterImpl() = onUnregister onRegisterProxy
+        let onUnregisterImpl() = //onUnregister onRegisterProxy
+            let result =
+                {
+                    partitionerRecipient = partitionerId
+                    deliveryType = GuaranteedDelivery
+                    messageData = i.workerNodeServiceInfo.workerNodeInfo.workerNodeId |> UnregisterWorkerNodePrtMsg
+                }.getMessageInfo()
+                |> messageProcessor.sendMessage
+
+            result
+
 
         let sr n (q : RunQueueId) =
             match i.tryRunSolverProcess n q with
@@ -241,7 +262,7 @@ module WorkerNode =
                 printfn "createServiceImpl: Registering..."
                 match onRegisterImpl >-> onStartImpl |> evaluate with
                 | Ok() ->
-                    match i.messageProcessor.tryStart() with
+                    match messageProcessor.tryStart() with
                     | Ok () ->
                         let getMessages() =
                             match onGetMessagesImpl() with
@@ -268,7 +289,8 @@ module WorkerNode =
                 | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
                 | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
-        let onTryStop() = Ok()
+        let onTryStop() =
+            failwith "onTryStop is not implemented yet. Stop all times before exiting."
 
         //member _.start() = onStartImpl()
         //member _.register() = onRegisterImpl()

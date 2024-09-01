@@ -15,6 +15,7 @@ open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess
 open Softellect.DistributedProcessing.AppSettings
 open Softellect.Sys.Primitives
+open Softellect.Messaging.Client
 
 module Proxy =
 
@@ -56,7 +57,7 @@ module Proxy =
             //logCrit : SolverRunnerCriticalError -> UnitResult
         }
 
-        static member create c sr =
+        static member create c sr : WorkerNodeProxy<'D> =
             {
                 onProcessMessageProxy =
                     {
@@ -76,20 +77,21 @@ module Proxy =
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy<'D>
             //messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
-            messageProcessor : IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
+            //messageProcessor : IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
+            messagingClientData : MessagingClientData<DistributedProcessingMessageData<'D, 'P>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
 
 
-    type OnRegisterProxy<'D, 'P> =
-        {
-            workerNodeInfo : WorkerNodeInfo
-            sendMessageProxy : SendMessageProxy<'D, 'P>
-        }
+    //type OnRegisterProxy<'D, 'P> =
+    //    {
+    //        workerNodeInfo : WorkerNodeInfo
+    //        sendMessageProxy : SendMessageProxy<'D, 'P>
+    //    }
 
 
-    type OnStartProxy =
-        {
-            loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-            onRunModel : RunQueueId -> DistributedProcessingUnitResult
-        }
+    //type OnStartProxy =
+    //    {
+    //        loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+    //        onRunModel : RunQueueId -> DistributedProcessingUnitResult
+    //    }
