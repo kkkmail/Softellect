@@ -185,7 +185,7 @@ module ServiceInfo =
     //            Thread.Sleep 10_000
     //    | Error e -> printfn $"Error: %A{e}"
 
-    let solverRunner = failwith ""
+    let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
     let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
     let workerNodeProxy = WorkerNodeProxy<SolverData>.create getWorkerNodeSvcConnectionString solverRunner

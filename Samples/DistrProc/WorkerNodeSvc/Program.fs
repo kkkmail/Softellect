@@ -13,7 +13,7 @@ module Program =
                 workerNodeServiceInfo = workerNodeServiceInfo
                 workerNodeProxy = workerNodeProxy
                 messagingClientData = messagingClientData
-                tryRunSolverProcess = failwith ""
+                tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
             }
 
         main<SolverData, ProgressData> "WorkerNodeSvc" data args
