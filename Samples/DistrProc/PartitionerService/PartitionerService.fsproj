@@ -4,17 +4,12 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
         <Platforms>x64</Platforms>
-        <AssemblyName>WorkerNodeService</AssemblyName>
+        <AssemblyName>PartitionerService</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Properties\launchSettings.json">
-          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-          <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </Content>
-        <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
+        <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
+        <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
         <Content Include="appsettings.Development.json">
           <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -35,10 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
-      <ProjectReference Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj" />
       <ProjectReference Include="..\..\..\MessagingService\MessagingService.fsproj" />
-      <ProjectReference Include="..\DistrProcInfo\DistrProcInfo.fsproj" />
     </ItemGroup>
 
 </Project>
