@@ -11,6 +11,7 @@ IF OBJECT_ID('[dbo].[RunQueue]') IS NULL begin
 		[notificationTypeId] [int] NOT NULL,
 		[errorMessage] [nvarchar](max) NULL,
 		[progress] [decimal](18, 14) NOT NULL,
+		[progressData] [varbinary](max) NOT NULL, -- Additional progress data to be sent to partitioner for further analysis and / or for earlier termination.
 		[callCount] [bigint] NOT NULL,
 		[relativeInvariant] [float] NOT NULL, -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
 		[createdOn] [datetime] NOT NULL,

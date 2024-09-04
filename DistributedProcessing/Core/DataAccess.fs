@@ -129,7 +129,7 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    let tryLoadRunQueue c (i : RunQueueId) =
+    let tryLoadRunQueue<'D> c (i : RunQueueId) =
         let elevate e = e |> TryLoadRunQueueErr
         let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
@@ -150,7 +150,11 @@ module DataAccess =
                 let w() =
                     try
                         match RunQueueStatus.tryCreate s with
-                        | Some st -> (v |> deserialize serializationFormat, st) |> Ok
+                        | Some st ->
+                            match v |> tryDeserialize<'D> serializationFormat with
+                            | Ok v -> Ok (v, st)
+                            | Error e -> toError (SerializationErr e)
+                            //(v |> deserialize serializationFormat, st) |> Ok
                         | None -> toError (InvalidRunQueueStatus (i, s))
                     with
                     | e -> toError (ExnWhenTryLoadRunQueue (i, e))

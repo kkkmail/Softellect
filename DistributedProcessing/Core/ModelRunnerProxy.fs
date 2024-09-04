@@ -40,69 +40,69 @@ open Softellect.Messaging.Client
 module ModelRunnerProxy =
     let x = 1
 
-    //type RunModelProxy<'D, 'P> =
-    //    {
-    //        sendRunModelMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
-    //        loadModelData : RunQueueId -> DistributedProcessingResult<'D>
-    //        controlData : RunnerControlData
-    //    }
+    type RunModelProxy<'D, 'P> =
+        {
+            sendRunModelMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
+            loadModelData : RunQueueId -> DistributedProcessingResult<'D>
+            //controlData : RunnerControlData
+        }
 
 
-    //type TryRunFirstModelProxy<'P> =
-    //    {
-    //        tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue<'P> option>
-    //        tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
-    //        runModel : RunQueue<'P> -> DistributedProcessingUnitResult
-    //        upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
-    //    }
+    type TryRunFirstModelProxy<'P> =
+        {
+            tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue<'P> option>
+            tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
+            runModel : RunQueue<'P> -> DistributedProcessingUnitResult
+            upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
+        }
 
 
-    //type TryCancelRunQueueProxy<'D, 'P> =
-    //    {
-    //        tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
-    //        sendCancelRunQueueMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
-    //        upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
-    //    }
+    type TryCancelRunQueueProxy<'D, 'P> =
+        {
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
+            sendCancelRunQueueMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
+            upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
+        }
 
 
-    //type TryRequestResultsProxy<'D, 'P> =
-    //    {
-    //        tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
-    //        sendRequestResultsMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
-    //    }
+    type TryRequestResultsProxy<'D, 'P> =
+        {
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
+            sendRequestResultsMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
+        }
 
 
-    //type TryResetProxy =
-    //    {
-    //        tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
-    //    }
+    type TryResetProxy =
+        {
+            tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
+        }
 
 
-    //type TryRunModelResult =
-    //    | WorkScheduled
-    //    | NoWork
-    //    | NoAvailableWorkerNodes
+    type TryRunModelResult =
+        | WorkScheduled
+        | NoWork
+        | NoAvailableWorkerNodes
 
 
-    //type TryRunAllModelsProxy =
-    //    {
-    //        tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
-    //    }
+    type TryRunAllModelsProxy =
+        {
+            tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
+        }
 
 
-    //type UpdateProgressProxy<'P> =
-    //    {
-    //        tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
-    //        upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
-    //        upsertWorkerNodeErr : WorkerNodeId -> DistributedProcessingUnitResult
-    //    }
+    type UpdateProgressProxy<'D, 'P> =
+        {
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue<'P> option>
+            upsertRunQueue : RunQueue<'P> -> DistributedProcessingUnitResult
+            upsertWorkerNodeErr : WorkerNodeId -> DistributedProcessingUnitResult
+        }
 
-    //    static member create c p =
-    //        {
-    //            tryLoadRunQueue = tryLoadRunQueue c
-    //            upsertRunQueue = upsertRunQueue c
-    //            upsertWorkerNodeErr = upsertWorkerNodeErr c p
-    //        }
+        //static member create c p : UpdateProgressProxy<'D, 'P> =
+        //    {
+        //        tryLoadRunQueue = tryLoadRunQueue<'D> c
+        //        upsertRunQueue = upsertRunQueue c
+        //        upsertWorkerNodeErr = upsertWorkerNodeErr c p
+        //    }
 
 
     //type RegisterProxy =

@@ -118,6 +118,7 @@ module Errors =
 
     type TryLoadRunQueueError =
         | TryLoadRunQueueDbErr of DbError
+        | SerializationErr of SerializationError
         | InvalidRunQueueStatus of RunQueueId * int
         | ExnWhenTryLoadRunQueue of RunQueueId * exn
         | UnableToFindRunQueue of RunQueueId
