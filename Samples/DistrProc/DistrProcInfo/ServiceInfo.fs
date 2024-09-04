@@ -11,10 +11,10 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Messaging.ServiceProxy
 open Softellect.Sys.Logging
-open Softellect.DistributedProcessing.AppSettings
-open Softellect.DistributedProcessing.Proxy
+open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
+open Softellect.DistributedProcessing.WorkerNodeService.Proxy
 open Primitives
-open Softellect.DistributedProcessing.DataAccess
+open Softellect.DistributedProcessing.WorkerNodeService.DataAccess
 open Softellect.DistributedProcessing.Primitives
 
 module ServiceInfo =

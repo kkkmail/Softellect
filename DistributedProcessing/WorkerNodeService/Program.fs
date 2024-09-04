@@ -7,11 +7,10 @@ open Softellect.Messaging.Primitives
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.CommandLine
-open Softellect.DistributedProcessing.WorkerNode
+open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
-open Softellect.DistributedProcessing.Proxy
-open Softellect.DistributedProcessing.ServiceInfo
+open Softellect.DistributedProcessing.WorkerNodeService.Proxy
 
 module Program =
 

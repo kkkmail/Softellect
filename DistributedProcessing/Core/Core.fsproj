@@ -35,13 +35,6 @@
     <Compile Include="Primitives.fs" />
     <Compile Include="VersionInfo.fs" />
     <Compile Include="Errors.fs" />
-    <Compile Include="ServiceInfo.fs" />
-    <Compile Include="AppSettings.fs" />
-    <Compile Include="DataAccess.fs" />
-    <Compile Include="Proxy.fs" />
-    <Compile Include="ModelRunnerProxy.fs" />
-    <Compile Include="WorkerNode.fs" />
-    <Compile Include="Partitioner.fs" />
   </ItemGroup>
 
   <ItemGroup>

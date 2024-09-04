@@ -1,6 +1,6 @@
 #nowarn "1104"
 
-namespace Softellect.DistributedProcessing
+namespace Softellect.DistributedProcessing.WorkerNodeService
 
 open System
 open System.Threading

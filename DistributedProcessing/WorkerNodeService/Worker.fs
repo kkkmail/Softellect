@@ -27,10 +27,9 @@ open Softellect.Sys.AppSettings
 open Softellect.Wcf.Common
 
 open Softellect.DistributedProcessing.Primitives
-open Softellect.DistributedProcessing.AppSettings
+open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.ServiceInfo
-open Softellect.DistributedProcessing.WorkerNode
+open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.Sys.AppSettings
 open Softellect.Sys
 open Softellect.Wcf.Common
@@ -38,6 +37,14 @@ open Softellect.Wcf.Service
 open CoreWCF
 
 module Worker =
+
+    type IWorkerNodeService =
+        inherit IHostedService
+        //abstract monitor : WorkerNodeMonitorParam -> ClmResult<WorkerNodeMonitorResponse>
+
+        /// To check if service is working.
+        abstract ping : unit -> DistributedProcessingUnitResult
+
 
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = WorkerNodeWcfServiceName)>]

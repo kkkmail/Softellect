@@ -1,22 +1,22 @@
 namespace Softellect.DistributedProcessing.WorkerNodeService
 
-open System
-open System.Net
-open Argu
+//open System
+//open System.Net
+//open Argu
 
-open Softellect.Sys.Primitives
-open Softellect.Messaging.Primitives
-open Softellect.Messaging.AppSettings
-open Softellect.Messaging.Errors
-open Softellect.Sys.AppSettings
-open Softellect.Wcf.Common
-open Softellect.Wcf.AppSettings
-open Softellect.Messaging.ServiceInfo
+//open Softellect.Sys.Primitives
+//open Softellect.Messaging.Primitives
+//open Softellect.Messaging.AppSettings
+//open Softellect.Messaging.Errors
+//open Softellect.Sys.AppSettings
+//open Softellect.Wcf.Common
+//open Softellect.Wcf.AppSettings
+//open Softellect.Messaging.ServiceInfo
 
-open Softellect.DistributedProcessing.Primitives
-open Softellect.DistributedProcessing.AppSettings
-open Softellect.Sys.AppSettings
-open Softellect.Sys
+//open Softellect.DistributedProcessing.Primitives
+//open Softellect.DistributedProcessing.AppSettings
+//open Softellect.Sys.AppSettings
+//open Softellect.Sys
 
 module CommandLine =
     let x = 1
