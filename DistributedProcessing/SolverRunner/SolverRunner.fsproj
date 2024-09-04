@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.DistributedProcessing.WorkerNodeService</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.SolverRunner</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -30,37 +30,15 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="WorkerNodeVersionInfo.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="WorkerNodeServiceName.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="WorkerNodeFunctions.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Install-WorkerNodeService.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Start-WorkerNodeService.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Stop-WorkerNodeService.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Uninstall-WorkerNodeService.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="Primitives.fs" />
     <Compile Include="AppSettings.fs" />
-    <Compile Include="CommandLine.fs" />
     <Compile Include="DataAccess.fs" />
+    <Compile Include="CommandLine.fs" />
     <Compile Include="Proxy.fs" />
-    <Compile Include="WorkerNode.fs" />
-    <Compile Include="Worker.fs" />
+    <Compile Include="Runner.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

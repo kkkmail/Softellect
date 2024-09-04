@@ -19,6 +19,7 @@ open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.AppSettings
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 
 module AppSettings =
 

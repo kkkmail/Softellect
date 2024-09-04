@@ -28,6 +28,7 @@ open Softellect.Wcf.Common
 
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.Sys.AppSettings

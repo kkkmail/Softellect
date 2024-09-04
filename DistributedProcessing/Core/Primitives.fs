@@ -17,34 +17,12 @@ module Primitives =
     let defaultNoOfProgressPoints = 100
 
 
-    let workerNodeServiceProgramName = "WorkerNodeService.exe"
-
-
-    [<Literal>]
-    let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
-
     let defaultServicePort = 5000
 
 
     let defaultPartitionerNetTcpServicePort = defaultServicePort |> ServicePort
     let defaultPartitionerHttpServicePort = defaultPartitionerNetTcpServicePort.value + 1 |> ServicePort
     let defaultPartitionerServiceAddress = localHost |> ServiceAddress
-
-
-    let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
-    let defaultWorkerNodeHttpServicePort = defaultWorkerNodeNetTcpServicePort.value + 1 |> ServicePort
-    let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress
-
-
-    type ServiceAccessInfo with
-        static member defaultWorkerNodeValue =
-            {
-                netTcpServiceAddress = ServiceAddress localHost
-                netTcpServicePort = defaultPartitionerNetTcpServicePort
-                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
-                netTcpSecurityMode = NoSecurity
-            }
-            |> NetTcpServiceInfo
 
 
     type PartitionerId =
@@ -116,14 +94,6 @@ module Primitives =
             }
 
         member data.estimateEndTime (started : DateTime) = estimateEndTime data.progress started
-
-
-    type WorkerNodeServiceName =
-        | WorkerNodeServiceName of ServiceName
-
-        member this.value = let (WorkerNodeServiceName v) = this in v
-        static member netTcpServiceName = "WorkerNodeNetTcpService" |> ServiceName |> WorkerNodeServiceName
-        static member httpServiceName = "WorkerNodeHttpService" |> ServiceName |> WorkerNodeServiceName
 
 
     type WorkerNodeId =
@@ -214,20 +184,6 @@ module Primitives =
         }
 
 
-    type WorkerNodeServiceInfo =
-        {
-            workerNodeInfo : WorkerNodeInfo
-            workerNodeServiceAccessInfo : ServiceAccessInfo
-            messagingServiceAccessInfo : MessagingServiceAccessInfo
-        }
-
-        member this.messagingClientAccessInfo =
-            {
-                msgClientId = this.workerNodeInfo.workerNodeId.messagingClientId
-                msgSvcAccessInfo = this.messagingServiceAccessInfo
-            }
-
-
     type ProgressUpdateInfo<'P> =
         {
             runQueueId : RunQueueId
@@ -301,24 +257,6 @@ module Primitives =
                         deliveryType = this.deliveryType
                     }
                 messageData = this.messageData |> PartitionerMsg |> UserMsg
-            }
-
-
-    type WorkerNodeMessageInfo<'D> =
-        {
-            workerNodeRecipient : WorkerNodeId
-            deliveryType : MessageDeliveryType
-            messageData : WorkerNodeMessage<'D>
-        }
-
-        member this.getMessageInfo() =
-            {
-                recipientInfo =
-                    {
-                        recipient = this.workerNodeRecipient.messagingClientId
-                        deliveryType = this.deliveryType
-                    }
-                messageData = this.messageData |> WorkerNodeMsg |> UserMsg
             }
 
 

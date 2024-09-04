@@ -16,6 +16,7 @@ open Softellect.DistributedProcessing.WorkerNodeService.DataAccess
 open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Client
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 
 module Proxy =
 

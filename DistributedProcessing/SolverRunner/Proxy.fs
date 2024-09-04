@@ -1,4 +1,4 @@
-﻿namespace Softellect.DistributedProcessing.WorkerNodeService
+﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
 open System.Threading
@@ -12,8 +12,8 @@ open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.WorkerNodeService.DataAccess
-open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
+//open Softellect.DistributedProcessing.WorkerNodeService.DataAccess
+//open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Client
 
@@ -37,7 +37,7 @@ open Softellect.Messaging.Client
 //open NoSql.FileSystemTypes
 //open Softellect.Sys.Primitives
 
-module ModelRunnerProxy =
+module Proxy =
     let x = 1
 
     type RunModelProxy<'D, 'P> =

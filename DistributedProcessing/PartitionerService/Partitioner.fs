@@ -1,4 +1,4 @@
-﻿namespace Softellect.DistributedProcessing
+﻿namespace Softellect.DistributedProcessing.PartitionerService
 
 //open Primitives.GeneralPrimitives
 //open Primitives.SolverPrimitives

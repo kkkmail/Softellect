@@ -11,6 +11,7 @@ open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 
 module Program =
 

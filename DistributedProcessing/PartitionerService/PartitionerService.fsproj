@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.DistributedProcessing.WorkerNodeService</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.PartitionerService</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -30,25 +30,25 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="WorkerNodeVersionInfo.ps1">
+    <None Include="PartitionerVersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="WorkerNodeServiceName.ps1">
+    <None Include="PartitionerServiceName.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="WorkerNodeFunctions.ps1">
+    <None Include="PartitionerFunctions.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Install-WorkerNodeService.ps1">
+    <None Include="Install-PartitionerService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Start-WorkerNodeService.ps1">
+    <None Include="Start-PartitionerService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Stop-WorkerNodeService.ps1">
+    <None Include="Stop-PartitionerService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Uninstall-WorkerNodeService.ps1">
+    <None Include="Uninstall-PartitionerService.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="appsettings.json">
@@ -56,11 +56,10 @@
     </Content>
     <Compile Include="Primitives.fs" />
     <Compile Include="AppSettings.fs" />
-    <Compile Include="CommandLine.fs" />
     <Compile Include="DataAccess.fs" />
+    <Compile Include="CommandLine.fs" />
     <Compile Include="Proxy.fs" />
-    <Compile Include="WorkerNode.fs" />
-    <Compile Include="Worker.fs" />
+    <Compile Include="Partitioner.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
