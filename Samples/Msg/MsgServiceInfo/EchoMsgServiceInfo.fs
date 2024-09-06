@@ -23,7 +23,7 @@ module EchoMsgServiceInfo =
 
     let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
     let getLogger = fun _ -> Logger.defaultValue
-    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString echoDataVersion
+    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId

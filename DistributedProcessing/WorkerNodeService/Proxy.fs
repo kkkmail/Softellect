@@ -51,17 +51,17 @@ module Proxy =
             //logCrit : SolverRunnerCriticalError -> UnitResult
         }
 
-        static member create c sr : WorkerNodeProxy<'D> =
+        static member create sr : WorkerNodeProxy<'D> =
             {
                 onProcessMessageProxy =
                     {
-                        saveWorkerNodeRunModelData = saveRunQueue c
-                        requestCancellation = tryRequestCancelRunQueue c
-                        notifyOfResults = fun q r -> tryNotifyRunQueue c q (Some r)
+                        saveWorkerNodeRunModelData = saveRunQueue
+                        requestCancellation = tryRequestCancelRunQueue
+                        notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                         onRunModel = sr
                     }
 
-                loadAllActiveRunQueueId = fun () -> loadAllActiveRunQueueId c
+                loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 //logCrit = saveSolverRunnerErrFs name
             }
 

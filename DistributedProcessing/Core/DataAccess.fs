@@ -53,7 +53,7 @@ module SolverRunner =
 module WorkerNodeService =
 #endif
 
-    let serializationFormat = BinaryZippedFormat
+    let private serializationFormat = BinaryZippedFormat
 
 
 #if PARTITIONER
@@ -75,8 +75,9 @@ module WorkerNodeService =
     [<Literal>]
     let private DbName = "prt" + VersionNumberNumericalValue
 
-    [<Literal>]
-    let private SqlProviderName : string = "name=PartitionerService"
+
+    //[<Literal>]
+    //let private SqlProviderName : string = "name=PartitionerService"
 
 
 #endif
@@ -91,7 +92,7 @@ module WorkerNodeService =
             createdOn : DateTime
         }
 
-    let connectionStringKey = ConfigKey "WorkerNodeService"
+    let private connectionStringKey = ConfigKey "WorkerNodeService"
 
 
     //[<Literal>]
@@ -99,11 +100,11 @@ module WorkerNodeService =
 
 
     [<Literal>]
-    let DbName = "wns" + VersionNumberNumericalValue
+    let private DbName = "wns" + VersionNumberNumericalValue
 
 
-    [<Literal>]
-    let SqlProviderName : string = "name=WorkerNodeService"
+    //[<Literal>]
+    //let private SqlProviderName : string = "name=WorkerNodeService"
 
 
     //[<Literal>]
@@ -128,7 +129,7 @@ module WorkerNodeService =
 
     let private getConnectionStringImpl() = getConnectionString AppSettingsFile connectionStringKey ConnectionStringValue
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
-    let getConnectionString() = connectionString.Value
+    let private getConnectionString() = connectionString.Value
 
 
     type private Db = SqlDataProvider<
@@ -146,13 +147,13 @@ module WorkerNodeService =
 
 #if SOLVER_RUNNER || WORKER_NODE
 
-    let tryLoadSolverRunners c =
+    let tryLoadSolverRunners () =
         let elevate e = e |> TryLoadSolverRunnersErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryLoadSolverRunnersDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -169,13 +170,13 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryGetRunningSolversCount c =
+    let tryGetRunningSolversCount () =
         let elevate e = e |> TryGetRunningSolversCountErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryGetRunningSolversCountDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -190,13 +191,13 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryPickRunQueue c =
+    let tryPickRunQueue () =
         let elevate e = e |> TryPickRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -212,13 +213,13 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryLoadRunQueue<'D> c (i : RunQueueId) =
+    let tryLoadRunQueue<'D> (i : RunQueueId) =
         let elevate e = e |> TryLoadRunQueueErr
         let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -249,13 +250,13 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let loadAllActiveRunQueueId c =
+    let loadAllActiveRunQueueId () =
         let elevate e = e |> LoadAllActiveRunQueueIdErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -286,13 +287,13 @@ module WorkerNodeService =
         row
 
 
-    let saveRunQueue<'D> c (w : WorkerNodeRunModelData<'D>) =
+    let saveRunQueue<'D> (w : WorkerNodeRunModelData<'D>) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let row = addRunQueueRow ctx w.runQueueId w.modelData
             ctx.SubmitUpdates()
 
@@ -305,14 +306,14 @@ module WorkerNodeService =
     /// If run queue is in RunQueueStatus_CancelRequested state then we don't allow restarting it automatically.
     /// This could happen when cancel requested has propagated to the database but the system then crashed and
     /// did not actually cancel the solver.
-    let tryStartRunQueue c (q : RunQueueId) (ProcessId pid) =
+    let tryStartRunQueue (q : RunQueueId) (ProcessId pid) =
         let elevate e = e |> TryStartRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotStartRunQueue e |> elevate
         let fromDbError e = e |> TryStartRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryStartRunQueue.Invoke(``@runQueueId`` = q.value, ``@processId`` = pid)
             r.ResultSet |> bindIntScalar x q
 
@@ -320,14 +321,14 @@ module WorkerNodeService =
 
 
     /// Can transition to Completed from InProgress or CancelRequested.
-    let tryCompleteRunQueue c (q : RunQueueId) =
+    let tryCompleteRunQueue (q : RunQueueId) =
         let elevate e = e |> TryCompleteRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotCompleteRunQueue e |> elevate
         let fromDbError e = e |> TryCompleteRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryCompleteRunQueue.Invoke(``@runQueueId`` = q.value)
             r.ResultSet |> bindIntScalar x q
 
@@ -335,14 +336,14 @@ module WorkerNodeService =
 
 
     /// Can transition to Cancelled from NotStarted, InProgress, or CancelRequested.
-    let tryCancelRunQueue c (q : RunQueueId) (errMsg : string) =
+    let tryCancelRunQueue (q : RunQueueId) (errMsg : string) =
         let elevate e = e |> TryCancelRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = TryCancelRunQueueError.CannotCancelRunQueue e |> elevate
         let fromDbError e = e |> TryCancelRunQueueError.TryCancelRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
             r.ResultSet |> bindIntScalar x q
 
@@ -350,14 +351,14 @@ module WorkerNodeService =
 
 
     /// Can transition to Failed from InProgress or CancelRequested.
-    let tryFailRunQueue c (q : RunQueueId) (errMsg : string) =
+    let tryFailRunQueue (q : RunQueueId) (errMsg : string) =
         let elevate e = e |> TryFailRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotFailRunQueue e |> elevate
         let fromDbError e = e |> TryFailRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryFailRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
             r.ResultSet |> bindIntScalar x q
 
@@ -365,14 +366,14 @@ module WorkerNodeService =
 
 
     /// Can transition to CancelRequested from InProgress.
-    let tryRequestCancelRunQueue c (q : RunQueueId) (r : CancellationType) =
+    let tryRequestCancelRunQueue (q : RunQueueId) (r : CancellationType) =
         let elevate e = e |> TryRequestCancelRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotRequestCancelRunQueue e |> elevate
         let fromDbError e = e |> TryRequestCancelRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryRequestCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = r.value)
             r.ResultSet |> bindIntScalar x q
 
@@ -380,14 +381,14 @@ module WorkerNodeService =
 
 
     /// Can request notification of results when state is InProgress or CancelRequested.
-    let tryNotifyRunQueue c (q : RunQueueId) (r : ResultNotificationType option) =
+    let tryNotifyRunQueue (q : RunQueueId) (r : ResultNotificationType option) =
         let elevate e = e |> TryNotifyRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotNotifyRunQueue e |> elevate
         let fromDbError e = e |> TryNotifyRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let v = r |> Option.bind (fun e -> Some e.value) |> Option.defaultValue 0
             let r = ctx.Procedures.TryNotifyRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = v)
             r.ResultSet |> bindIntScalar x q
@@ -395,13 +396,13 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryCheckCancellation c (q : RunQueueId) =
+    let tryCheckCancellation (q : RunQueueId) =
         let elevate e = e |> TryCheckCancellationErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryCheckCancellationDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -424,14 +425,14 @@ module WorkerNodeService =
 
 
     /// Check for notification only when InProgress
-    let tryCheckNotification c (q : RunQueueId) =
+    let tryCheckNotification (q : RunQueueId) =
         let elevate e = e |> TryCheckNotificationErr
         //let toError e = e |> elevate |> Error
         let y e = CannotCheckNotification e |> elevate
         let fromDbError e = e |> TryCheckNotificationDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -455,28 +456,28 @@ module WorkerNodeService =
 
 
     /// Clear notification only when InProgress
-    let tryClearNotification c (q : RunQueueId) =
+    let tryClearNotification (q : RunQueueId) =
         let elevate e = e |> TryClearNotificationErr
         //let toError e = e |> elevate |> Error
         let x e = CannotClearNotification e |> elevate
         let fromDbError e = e |> TryClearNotificationDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryClearNotificationRunQueue.Invoke(``@runQueueId`` = q.value)
             r.ResultSet |> bindIntScalar x q
 
         tryDbFun fromDbError g
 
 
-    let deleteRunQueue c (q : RunQueueId) =
+    let deleteRunQueue (q : RunQueueId) =
         let elevate e = e |> DeleteRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = DeleteRunQueueEntryErr e |> elevate
         let fromDbError e = e |> DeleteRunQueueDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.DeleteRunQueue.Invoke(``@runQueueId`` = q.value)
             r.ResultSet |> bindIntScalar x q
 

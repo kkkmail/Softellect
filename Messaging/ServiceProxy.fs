@@ -9,8 +9,9 @@ open Softellect.Messaging.DataAccess
 module ServiceProxy =
 
     type MessagingClientStorageType =
-        | MsSqlDatabase of (unit -> ConnectionString)
+        //| MsSqlDatabase of (unit -> ConnectionString)
         //| SqliteDatabase of SqliteConnectionString
+        | MsSqlDatabase
 
 
     type MessagingClientProxyInfo =
@@ -29,15 +30,15 @@ module ServiceProxy =
             | UserMsg m -> getMessageSize m
 
         match i.storageType with
-        | MsSqlDatabase g ->
+        | MsSqlDatabase ->
             let v = i.messagingDataVersion
 
             {
-                tryPickIncomingMessage = fun () -> tryPickIncomingMessage g v i.messagingClientId
-                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage g v i.messagingClientId
-                saveMessage = saveMessage g v
-                tryDeleteMessage = deleteMessage g
-                deleteExpiredMessages = deleteExpiredMessages g v
+                tryPickIncomingMessage = fun () -> tryPickIncomingMessage v i.messagingClientId
+                tryPickOutgoingMessage = fun () -> tryPickOutgoingMessage v i.messagingClientId
+                saveMessage = saveMessage v
+                tryDeleteMessage = deleteMessage
+                deleteExpiredMessages = deleteExpiredMessages v
                 getMessageSize = getMessageSize
                 getLogger = getLogger
             }
@@ -53,11 +54,11 @@ module ServiceProxy =
         //    }
 
 
-    let createMessagingServiceProxy getLogger (g : unit -> ConnectionString) (v : MessagingDataVersion) =
+    let createMessagingServiceProxy getLogger (v : MessagingDataVersion) =
         {
-            tryPickMessage = tryPickIncomingMessage g v
-            saveMessage = saveMessage g v
-            deleteMessage = deleteMessage g
-            deleteExpiredMessages = deleteExpiredMessages g v
+            tryPickMessage = tryPickIncomingMessage v
+            saveMessage = saveMessage v
+            deleteMessage = deleteMessage
+            deleteExpiredMessages = deleteExpiredMessages v
             getLogger = getLogger
         }

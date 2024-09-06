@@ -188,7 +188,7 @@ module ServiceInfo =
     let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
     let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
-    let workerNodeProxy = WorkerNodeProxy<SolverData>.create getConnectionString solverRunner
+    let workerNodeProxy = WorkerNodeProxy<SolverData>.create solverRunner
 
     let getMessageSize _ = SmallSize
 
@@ -196,7 +196,7 @@ module ServiceInfo =
         {
             messagingClientId = workerNodeServiceInfo.messagingClientAccessInfo.msgClientId
             messagingDataVersion = dataVersion
-            storageType = MsSqlDatabase getConnectionString
+            storageType = MsSqlDatabase
         }
 
     let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData<SolverData, ProgressData>> getLogger getMessageSize messagingClientProxyInfo
@@ -211,6 +211,6 @@ module ServiceInfo =
 
     // Messaging Service
 
-    let serviceProxy :  MessagingServiceProxy<TestMessageData> = createMessagingServiceProxy getLogger getMessagingConnectionString dataVersion
+    let serviceProxy :  MessagingServiceProxy<TestMessageData> = createMessagingServiceProxy getLogger dataVersion
     let messagingServiceAccessInfo = loadMessagingServiceAccessInfo dataVersion
 
