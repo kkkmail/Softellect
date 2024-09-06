@@ -53,7 +53,14 @@ module SolverRunner =
 module WorkerNodeService =
 #endif
 
+    /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
+    /// Zipped binary carries about 100X compression ratio over JSON / XML.
     let private serializationFormat = BinaryZippedFormat
+
+
+    /// The progress data should be human readable, so that a query can be run to check the detailed progress.
+    /// JSON is supported by MSSQL and so it is a good choice.
+    let private progressSerializationFormat = JSonFormat
 
 
 #if PARTITIONER
@@ -87,6 +94,8 @@ module WorkerNodeService =
             createdOn : DateTime
         }
 
+
+    /// Both WorkerNodeService and SolverRunner use the same database.
     let private connectionStringKey = ConfigKey "WorkerNodeService"
 
 

@@ -307,3 +307,9 @@ module Primitives =
         | AlreadyRunning of ProcessId
         | TooManyRunning of int
         | GetProcessesByNameExn of exn
+
+
+    type SolverType =
+        | OdeSolver
+        | FredholmSolver
+        | UserDefinedSolver
