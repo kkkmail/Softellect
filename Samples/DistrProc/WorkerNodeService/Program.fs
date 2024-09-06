@@ -1,14 +1,15 @@
-﻿namespace Softellect.Samples.Msg.WcfWorker
+﻿namespace Softellect.Samples.DistrProc.WorkerNodeService
 
 open Softellect.DistributedProcessing.WorkerNodeService.Program
 open Softellect.Samples.DistrProc.ServiceInfo.Primitives
 open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
+open Softellect.DistributedProcessing.Primitives
 
 module Program =
 
     [<EntryPoint>]
     let main args =
-        let data : TestRunnereData =
+        let data : TestRunnerData =
             {
                 workerNodeServiceInfo = workerNodeServiceInfo
                 workerNodeProxy = workerNodeProxy
@@ -16,4 +17,4 @@ module Program =
                 tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
             }
 
-        main<SolverData, ProgressData> "WorkerNodeSvc" data args
+        main<SolverData, ProgressData<TestProgressData>> "WorkerNodeSvc" data args

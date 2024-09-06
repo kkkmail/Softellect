@@ -74,26 +74,35 @@ module Primitives =
         else None
 
 
-    /// 'P is any other data that is needed for progress tracking.
-    type ProgressData<'P> =
+    type ProgressData =
         {
             progress : decimal
             callCount : int64
             relativeInvariant : double // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
-            progressData : 'P
+        }
+
+
+    /// 'P is any other data that is needed for progress tracking.
+    type ProgressData<'P> =
+        {
+            progressData : ProgressData
+            progressDetailed : 'P
         }
 
         static member getDefaultValue p =
             {
-                progress = 0.0m
-                callCount = 0L
-                relativeInvariant = 1.0
-                errorMessageOpt = None
-                progressData = p
+                progressData =
+                    {
+                        progress = 0.0m
+                        callCount = 0L
+                        relativeInvariant = 1.0
+                        errorMessageOpt = None
+                    }
+                progressDetailed = p
             }
 
-        member data.estimateEndTime (started : DateTime) = estimateEndTime data.progress started
+        member data.estimateEndTime (started : DateTime) = estimateEndTime data.progressData.progress started
 
 
     type WorkerNodeId =
@@ -291,3 +300,10 @@ module Primitives =
         //        | _ -> EmptyString
 
         //    $"{{ T: %s{s};%s{estCompl} DF: %A{defaultValueId}; MDID: %A{modelDataId}; PID: %A{runQueueId}; %A{r.progressData.progressData.progress} }}"
+
+
+    type CheckRunningResult =
+        | CanRun
+        | AlreadyRunning of ProcessId
+        | TooManyRunning of int
+        | GetProcessesByNameExn of exn

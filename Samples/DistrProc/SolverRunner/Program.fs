@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.Msg.WcfWorker
+﻿namespace Softellect.Samples.DistrProc.SolverRunner
 
 open Softellect.DistributedProcessing.WorkerNodeService.Program
 open Softellect.Samples.DistrProc.ServiceInfo.Primitives

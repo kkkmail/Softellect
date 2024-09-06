@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.Msg.WcfWorker
+﻿namespace Softellect.Samples.DistrProc.PartitionerService
 
 open Softellect.Messaging.Service
 open Softellect.MessagingService.Program

@@ -97,9 +97,9 @@ module Proxy =
             upsertWorkerNodeErr : WorkerNodeId -> DistributedProcessingUnitResult
         }
 
-        //static member create c p : UpdateProgressProxy<'D, 'P> =
+        //static member create p : UpdateProgressProxy<'D, 'P> =
         //    {
-        //        tryLoadRunQueue = tryLoadRunQueue<'D> c
+        //        tryLoadRunQueue = tryLoadRunQueue<'D>
         //        upsertRunQueue = upsertRunQueue c
         //        upsertWorkerNodeErr = upsertWorkerNodeErr c p
         //    }

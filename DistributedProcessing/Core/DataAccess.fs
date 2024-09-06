@@ -75,11 +75,6 @@ module WorkerNodeService =
     [<Literal>]
     let private DbName = "prt" + VersionNumberNumericalValue
 
-
-    //[<Literal>]
-    //let private SqlProviderName : string = "name=PartitionerService"
-
-
 #endif
 
 #if SOLVER_RUNNER || WORKER_NODE
@@ -95,32 +90,8 @@ module WorkerNodeService =
     let private connectionStringKey = ConfigKey "WorkerNodeService"
 
 
-    //[<Literal>]
-    //let WorkerNodeSvcBaseName = "wns" + VersionNumberNumericalValue
-
-
     [<Literal>]
     let private DbName = "wns" + VersionNumberNumericalValue
-
-
-    //[<Literal>]
-    //let private SqlProviderName : string = "name=WorkerNodeService"
-
-
-    //[<Literal>]
-    //let WorkerNodeConnectionStringValue = "Server=localhost;Database=" + WorkerNodeDbName + ";Integrated Security=SSPI"
-
-
-    //let private getWorkerNodeConnectionStringImpl() = getConnectionString AppSettingsFile workerNodeConnectionStringKey WorkerNodeConnectionStringValue
-    //let private workerNodeConnectionString = Lazy<ConnectionString>(getWorkerNodeConnectionStringImpl)
-    //let getWorkerNodeSvcConnectionString() = workerNodeConnectionString.Value
-
-
-    //type private WorkerNodeDb = SqlDataProvider<
-    //                Common.DatabaseProviderTypes.MSSQLSERVER,
-    //                ConnectionString = WorkerNodeConnectionStringValue,
-    //                UseOptionTypes = Common.NullableColumnType.OPTION>
-
 
 #endif
 
@@ -141,7 +112,7 @@ module WorkerNodeService =
     let private getDbContext (c : unit -> ConnectionString) = c().value |> Db.GetDataContext
 
 
-    type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
+    //type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     //type private MessageEntity = DbContext.``dbo.MessageEntity``
 
 

@@ -34,14 +34,10 @@ module Primitives =
         | DataTwo of SolverDataTwo
 
 
-    type ProgressData =
-        | ProgressOne of ProgressDataOne
-        | ProgressTwo of ProgressDataTwo
-
-
-    type TestMessageData = DistributedProcessingMessageData<SolverData, ProgressData>
-    type TestRunnereData = WorkerNodeRunnerData<SolverData, ProgressData>
-    type TestMessage = DistributedProcessingMessage<SolverData, ProgressData>
+    type TestProgressData = unit
+    type TestMessageData = DistributedProcessingMessageData<SolverData, ProgressData<TestProgressData>>
+    type TestRunnerData = WorkerNodeRunnerData<SolverData, ProgressData<TestProgressData>>
+    type TestMessage = DistributedProcessingMessage<SolverData, ProgressData<TestProgressData>>
 
 
     let tryRunSolverProcessOne (r : RunQueueId) : DistributedProcessingUnitResult =

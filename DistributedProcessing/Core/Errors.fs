@@ -376,3 +376,15 @@ module Errors =
     type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
     type DistributedProcessingListResult<'T> = ListResult<'T, DistributedProcessingError>
     type DistributedProcessingStateWithResult<'T> = StateWithResult<'T, DistributedProcessingError>
+
+
+    /// See: https://stackoverflow.com/questions/49974736/how-to-declare-a-generic-exception-types-in-f
+    /// We have to resort to throwing a specific exception in order
+    /// to perform early termination from deep inside C# ODE solver.
+    /// There seems to be no other easy and clean way. Revisit if that changes.
+    // type ComputationAbortedException<'T> (pd : ProgressData<'T>, ct : CancellationType) =
+    type ComputationAbortedException (pd : ProgressData, ct : CancellationType) =
+        inherit System.Exception ()
+
+        member e.progressData = pd
+        member e.cancellationType = ct

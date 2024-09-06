@@ -199,9 +199,9 @@ module ServiceInfo =
             storageType = MsSqlDatabase
         }
 
-    let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData<SolverData, ProgressData>> getLogger getMessageSize messagingClientProxyInfo
+    let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData<SolverData, ProgressData<TestProgressData>>> getLogger getMessageSize messagingClientProxyInfo
 
-    let messagingClientData : MessagingClientData<DistributedProcessingMessageData<SolverData, ProgressData>> =
+    let messagingClientData =
         {
             msgAccessInfo = workerNodeServiceInfo.messagingClientAccessInfo
             msgClientProxy = msgClientProxy
