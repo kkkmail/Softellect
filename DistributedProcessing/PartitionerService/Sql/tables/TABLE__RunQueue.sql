@@ -4,6 +4,7 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	CREATE TABLE dbo.RunQueue(
 		runQueueId uniqueidentifier NOT NULL,
 		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
+		workerNodeId uniqueidentifier NULL,
 		modelTypeId int NOT NULL, -- Should a mapper from an int to an F# type be pvovided to deserialize workerNodeRunModelData ???
 		workerNodeRunModelData varbinary(max) NOT NULL,
 		runQueueStatusId int NOT NULL,

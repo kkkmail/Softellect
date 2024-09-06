@@ -1,6 +1,5 @@
 #nowarn "1104"
-
-namespace Softellect.DistributedProcessing.WorkerNodeService
+namespace Softellect.DistributedProcessing.DataAccess
 
 open System
 open System.Threading
@@ -26,45 +25,126 @@ open Softellect.Sys.AppSettings
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives
 
-module DataAccess =
+// ==========================================
+
+#if PARTITIONER
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+#endif
+
+#if SOLVER_RUNNER
+#endif
+
+#if WORKER_NODE
+#endif
+
+// ==========================================
+
+#if PARTITIONER
+module PartitionerService =
+#endif
+
+#if SOLVER_RUNNER
+module SolverRunner =
+#endif
+
+#if WORKER_NODE
+module WorkerNodeService =
+#endif
 
     let serializationFormat = BinaryZippedFormat
 
-#if WORKER_NODE
 
-    let workerNodeConnectionStringKey = ConfigKey "WorkerNodeService"
+#if PARTITIONER
+
+    type RunQueue<'P> =
+        {
+            runQueueId : RunQueueId
+            //info : RunQueueInfo
+            runQueueStatus : RunQueueStatus
+            workerNodeIdOpt : WorkerNodeId option
+            progressData : ProgressData<'P>
+            createdOn : DateTime
+        }
+
+
+    let connectionStringKey = ConfigKey "PartitionerService"
 
 
     [<Literal>]
-    let WorkerNodeDbName = WorkerNodeSvcBaseName
+    let private DbName = "prt" + VersionNumberNumericalValue
+
+    [<Literal>]
+    let private SqlProviderName : string = "name=PartitionerService"
+
+
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+
+    type RunQueue<'P> =
+        {
+            runQueueId : RunQueueId
+            runQueueStatus : RunQueueStatus
+            progressData : ProgressData<'P>
+            createdOn : DateTime
+        }
+
+    let connectionStringKey = ConfigKey "WorkerNodeService"
+
+
+    //[<Literal>]
+    //let WorkerNodeSvcBaseName = "wns" + VersionNumberNumericalValue
 
 
     [<Literal>]
-    let WorkerNodeConnectionStringValue = "Server=localhost;Database=" + WorkerNodeDbName + ";Integrated Security=SSPI"
-
-
-    let private getWorkerNodeConnectionStringImpl() = getConnectionString AppSettingsFile workerNodeConnectionStringKey WorkerNodeConnectionStringValue
-    let private workerNodeConnectionString = Lazy<ConnectionString>(getWorkerNodeConnectionStringImpl)
-    let getWorkerNodeSvcConnectionString() = workerNodeConnectionString.Value
+    let DbName = "wns" + VersionNumberNumericalValue
 
 
     [<Literal>]
-    let WorkerNodeSqlProviderName : string = "name=WorkerNodeService"
+    let SqlProviderName : string = "name=WorkerNodeService"
 
 
-    type private WorkerNodeDb = SqlDataProvider<
+    //[<Literal>]
+    //let WorkerNodeConnectionStringValue = "Server=localhost;Database=" + WorkerNodeDbName + ";Integrated Security=SSPI"
+
+
+    //let private getWorkerNodeConnectionStringImpl() = getConnectionString AppSettingsFile workerNodeConnectionStringKey WorkerNodeConnectionStringValue
+    //let private workerNodeConnectionString = Lazy<ConnectionString>(getWorkerNodeConnectionStringImpl)
+    //let getWorkerNodeSvcConnectionString() = workerNodeConnectionString.Value
+
+
+    //type private WorkerNodeDb = SqlDataProvider<
+    //                Common.DatabaseProviderTypes.MSSQLSERVER,
+    //                ConnectionString = WorkerNodeConnectionStringValue,
+    //                UseOptionTypes = Common.NullableColumnType.OPTION>
+
+
+#endif
+
+    [<Literal>]
+    let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI"
+
+    let private getConnectionStringImpl() = getConnectionString AppSettingsFile connectionStringKey ConnectionStringValue
+    let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
+    let getConnectionString() = connectionString.Value
+
+
+    type private Db = SqlDataProvider<
                     Common.DatabaseProviderTypes.MSSQLSERVER,
-                    ConnectionString = WorkerNodeConnectionStringValue,
+                    ConnectionString = ConnectionStringValue,
                     UseOptionTypes = Common.NullableColumnType.OPTION>
 
+    type private DbContext = Db.dataContext
+    let private getDbContext (c : unit -> ConnectionString) = c().value |> Db.GetDataContext
 
-    type private WorkerNodeDbContext = WorkerNodeDb.dataContext
-    let private getDbContext (c : unit -> ConnectionString) = c().value |> WorkerNodeDb.GetDataContext
+
+    type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
+    //type private MessageEntity = DbContext.``dbo.MessageEntity``
 
 
-    type private RunQueueEntity = WorkerNodeDbContext.``dbo.RunQueueEntity``
-    type private MessageEntity = WorkerNodeDbContext.``dbo.MessageEntity``
-
+#if SOLVER_RUNNER || WORKER_NODE
 
     let tryLoadSolverRunners c =
         let elevate e = e |> TryLoadSolverRunnersErr
@@ -195,7 +275,7 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    let private addRunQueueRow<'D> (ctx : WorkerNodeDbContext) (r : RunQueueId) (w : 'D) =
+    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : 'D) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.value,
                             WorkerNodeRunModelData = (w |> serialize serializationFormat),
@@ -428,5 +508,7 @@ module DataAccess =
     //        r.ResultSet |> bindIntScalar x q
 
     //    tryDbFun fromDbError g
-
 #endif
+
+// === COMMON - SHARED AMONG ALL ===
+

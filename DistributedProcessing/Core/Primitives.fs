@@ -260,16 +260,6 @@ module Primitives =
             }
 
 
-    type RunQueue<'P> =
-        {
-            runQueueId : RunQueueId
-            //info : RunQueueInfo
-            runQueueStatus : RunQueueStatus
-            workerNodeIdOpt : WorkerNodeId option
-            progressData : ProgressData<'P>
-            createdOn : DateTime
-        }
-
         //member q.modelCommandLineParam = q.info.modelCommandLineParam
 
         //static member fromModelCommandLineParam modelDataId defaultValueId p =

@@ -15,7 +15,7 @@ open Softellect.Messaging.Proxy
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.WorkerNodeService.Proxy
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.WorkerNodeService.DataAccess
+open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
