@@ -14,6 +14,7 @@
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
     <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <DefineConstants>SOLVER_RUNNER</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -35,8 +36,8 @@
     </Content>
     <Compile Include="Primitives.fs" />
     <Compile Include="AppSettings.fs" />
-    <Compile Include="DataAccess.fs" />
     <Compile Include="CommandLine.fs" />
+    <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
     <Compile Include="Proxy.fs" />
     <Compile Include="Runner.fs" />
     <Compile Include="Program.fs" />

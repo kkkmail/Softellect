@@ -29,6 +29,9 @@ open Softellect.DistributedProcessing.Primitives
 module DataAccess =
 
     let serializationFormat = BinaryZippedFormat
+
+#if WORKER_NODE
+
     let workerNodeConnectionStringKey = ConfigKey "WorkerNodeService"
 
 
@@ -425,3 +428,5 @@ module DataAccess =
     //        r.ResultSet |> bindIntScalar x q
 
     //    tryDbFun fromDbError g
+
+#endif

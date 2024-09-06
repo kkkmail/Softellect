@@ -35,6 +35,7 @@
     <Compile Include="Primitives.fs" />
     <Compile Include="VersionInfo.fs" />
     <Compile Include="Errors.fs" />
+    <Compile Include="DataAccess.fs" />
   </ItemGroup>
 
   <ItemGroup>
