@@ -84,18 +84,18 @@ module WorkerNode =
         match m.messageData with
         | UserMsg (WorkerNodeMsg x) ->
             match x with
-            | RunModelWrkMsg d ->
-                printfn $"    onProcessMessage: runQueueId: {d.runQueueId}."
+            | RunModelWrkMsg (r, d) ->
+                printfn $"    onProcessMessage: runQueueId: '{r}'."
 
-                match proxy.saveWorkerNodeRunModelData d with
+                match proxy.saveModelData r d with
                 | Ok() ->
-                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: {d.runQueueId} - OK."
-                    let result = proxy.onRunModel d.runQueueId
-                    printfn $"    onProcessMessage: onRunModel with runQueueId: {d.runQueueId} - %A{result}."
+                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' - OK."
+                    let result = proxy.onRunModel r
+                    printfn $"    onProcessMessage: onRunModel with runQueueId: '{r}' - %A{result}."
                     result
                 | Error e ->
-                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: {d.runQueueId} ERROR: %A{e}."
-                    let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, d.runQueueId))
+                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
+                    let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
             | RequestResultWrkMsg q -> q ||> proxy.notifyOfResults

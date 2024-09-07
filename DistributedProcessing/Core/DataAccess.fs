@@ -267,14 +267,15 @@ module WorkerNodeService =
         row
 
 
-    let saveRunQueue<'D> (w : WorkerNodeRunModelData<'D>) =
+    /// Saves intocoming model data into a database fur further processing.
+    let saveModelData<'D> (r : RunQueueId) (w : 'D) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate
 
         let g() =
             let ctx = getDbContext getConnectionString
-            let row = addRunQueueRow ctx w.runQueueId w.modelData
+            let row = addRunQueueRow ctx r w
             ctx.SubmitUpdates()
 
             Ok()

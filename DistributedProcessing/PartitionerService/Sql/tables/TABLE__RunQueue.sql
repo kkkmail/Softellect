@@ -19,9 +19,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 		errorMessage nvarchar(max) NULL,
 		progress decimal(18, 14) NOT NULL,
 
-		-- Additional progress data used for further analysis and / or for earlier termination.
+		-- Additional progress data (if any) used for further analysis and / or for earlier termination.
 		-- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
-		progressData nvarchar(max) NOT NULL,
+		progressData nvarchar(max) NULL,
 
 		callCount bigint NOT NULL,
 

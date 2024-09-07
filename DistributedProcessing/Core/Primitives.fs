@@ -134,16 +134,17 @@ module Primitives =
         }
 
 
-    /// 'D is the model data.
-    type WorkerNodeRunModelData<'D> =
-        {
-            runQueueId : RunQueueId
-            modelData : 'D
-        }
+    ///// 'D is the model data.
+    //type WorkerNodeRunModelData<'D> =
+    //    {
+    //        runQueueId : RunQueueId
+    //        modelData : 'D
+    //    }
 
 
     type WorkerNodeMessage<'D> =
-        | RunModelWrkMsg of WorkerNodeRunModelData<'D>
+        //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
+        | RunModelWrkMsg of (RunQueueId * 'D)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestResultWrkMsg of (RunQueueId * ResultNotificationType)
 

@@ -29,7 +29,8 @@ module Proxy =
 
     type OnUpdateProgressProxy<'D, 'P> =
         {
-            tryDeleteWorkerNodeRunModelData : unit -> DistributedProcessingUnitResult
+            // Was called tryDeleteWorkerNodeRunModelData.
+            tryDeleteRunQueue : unit -> DistributedProcessingUnitResult
             tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
             sendMessageProxy : SendMessageProxy<'D, 'P>
         }
@@ -37,7 +38,7 @@ module Proxy =
 
     type OnProcessMessageProxy<'D> =
         {
-            saveWorkerNodeRunModelData : WorkerNodeRunModelData<'D> -> DistributedProcessingUnitResult
+            saveModelData : RunQueueId -> 'D -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
             onRunModel : RunQueueId -> DistributedProcessingUnitResult
@@ -55,7 +56,7 @@ module Proxy =
             {
                 onProcessMessageProxy =
                     {
-                        saveWorkerNodeRunModelData = saveRunQueue
+                        saveModelData = saveModelData
                         requestCancellation = tryRequestCancelRunQueue
                         notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                         onRunModel = sr
