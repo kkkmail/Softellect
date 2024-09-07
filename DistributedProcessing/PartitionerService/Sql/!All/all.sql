@@ -1,68 +1,108 @@
-IF OBJECT_ID('[dbo].[ModelType]') IS NULL begin
-	print 'Creating table [dbo].[ModelType] ...'
+IF OBJECT_ID('dbo.ModelType') IS NULL begin
+	print 'Creating table dbo.ModelType ...'
 
-	CREATE TABLE [dbo].[ModelType](
-		[modelTypeId] [int] NOT NULL,
-		[modelTypeName] [nvarchar](50) NOT NULL,
-	 CONSTRAINT [PK_ModelType] PRIMARY KEY CLUSTERED 
+	CREATE TABLE dbo.ModelType(
+		modelTypeId int NOT NULL,
+		modelTypeName nvarchar(50) NOT NULL,
+	 CONSTRAINT PK_ModelType PRIMARY KEY CLUSTERED 
 	(
-		[modelTypeId] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		modelTypeId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX [UX_ModelType] ON [dbo].[ModelType]
+	CREATE UNIQUE NONCLUSTERED INDEX UX_ModelType ON dbo.ModelType
 	(
-		[modelTypeName] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		modelTypeName ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table [dbo].[ModelType] already exists ...'
+	print 'Table dbo.ModelType already exists ...'
 end
 go
 
 
-IF OBJECT_ID('[dbo].[NotificationType]') IS NULL begin
-	print 'Creating table [dbo].[NotificationType] ...'
+IF OBJECT_ID('dbo.NotificationType') IS NULL begin
+	print 'Creating table dbo.NotificationType ...'
 
-	CREATE TABLE [dbo].[NotificationType](
-		[notificationTypeId] [int] NOT NULL,
-		[notificationTypeName] [nvarchar](50) NOT NULL,
-	 CONSTRAINT [PK_NotificationType] PRIMARY KEY CLUSTERED 
+	CREATE TABLE dbo.NotificationType(
+		notificationTypeId int NOT NULL,
+		notificationTypeName nvarchar(50) NOT NULL,
+	 CONSTRAINT PK_NotificationType PRIMARY KEY CLUSTERED 
 	(
-		[notificationTypeId] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		notificationTypeId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX [UX_NotificationType] ON [dbo].[NotificationType]
+	CREATE UNIQUE NONCLUSTERED INDEX UX_NotificationType ON dbo.NotificationType
 	(
-		[notificationTypeName] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		notificationTypeName ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table [dbo].[NotificationType] already exists ...'
+	print 'Table dbo.NotificationType already exists ...'
 end
 go
 
 
-IF OBJECT_ID('[dbo].[RunQueueStatus]') IS NULL begin
-	print 'Creating table [dbo].[RunQueueStatus] ...'
+IF OBJECT_ID('dbo.RunQueueStatus') IS NULL begin
+	print 'Creating table dbo.RunQueueStatus ...'
 
-	CREATE TABLE [dbo].[RunQueueStatus](
-		[runQueueStatusId] [int] NOT NULL,
-		[runQueueStatusName] [nvarchar](50) NOT NULL,
-	 CONSTRAINT [PK_RunQueueStatus] PRIMARY KEY CLUSTERED 
+	CREATE TABLE dbo.RunQueueStatus(
+		runQueueStatusId int NOT NULL,
+		runQueueStatusName nvarchar(50) NOT NULL,
+	 CONSTRAINT PK_RunQueueStatus PRIMARY KEY CLUSTERED 
 	(
-		[runQueueStatusId] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		runQueueStatusId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX [UX_RunQueueStatus] ON [dbo].[RunQueueStatus]
+	CREATE UNIQUE NONCLUSTERED INDEX UX_RunQueueStatus ON dbo.RunQueueStatus
 	(
-		[runQueueStatusName] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		runQueueStatusName ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table [dbo].[RunQueueStatus] already exists ...'
+	print 'Table dbo.RunQueueStatus already exists ...'
 end
 go
 
+
+IF OBJECT_ID('dbo.WorkerNode') IS NULL begin
+	print 'Creating table dbo.WorkerNode ...'
+
+	CREATE TABLE dbo.WorkerNode(
+		workerNodeId uniqueidentifier NOT NULL,
+		workerNodeOrder bigint IDENTITY(1,1) NOT NULL,
+		workerNodeName nvarchar(100) NOT NULL,
+		nodePriority int NOT NULL,
+		numberOfCores int NOT NULL,
+		description nvarchar(1000) NULL,
+		isInactive bit NOT NULL,
+		createdOn datetime NOT NULL,
+		modifiedOn datetime NOT NULL,
+		lastErrorOn datetime NULL,
+	 CONSTRAINT PK_WorkerNode PRIMARY KEY CLUSTERED 
+	(
+		workerNodeId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY]
+
+	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_isInactive  DEFAULT ((0)) FOR isInactive
+	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_nodePriority  DEFAULT ((100)) FOR nodePriority
+	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_numberOfCores  DEFAULT ((0)) FOR numberOfCores
+	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_createdOn  DEFAULT (getdate()) FOR createdOn
+	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_modifiedOn  DEFAULT (getdate()) FOR modifiedOn
+
+	CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeName ON dbo.WorkerNode
+	(
+		workerNodeName ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+	CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeOrder ON dbo.WorkerNode
+	(
+		workerNodeOrder ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+end else begin
+	print 'Table dbo.WorkerNode already exists ...'
+end
+go
 
 IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	print 'Creating table dbo.RunQueue ...'
@@ -70,24 +110,41 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	CREATE TABLE dbo.RunQueue(
 		runQueueId uniqueidentifier NOT NULL,
 		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
-		workerNodeId uniqueidentifier NULL,
-		modelTypeId int NOT NULL, -- Should a mapper from an int to an F# type be pvovided to deserialize workerNodeRunModelData ???
-		workerNodeRunModelData varbinary(max) NOT NULL,
+
+		-- A human readable model type id to give a hint of what's running.
+		-- This is needed because the modelData is stored in a zipped binary format.
+		modelTypeId int NOT NULL, 
+
+		-- All the initial data that is needed to run the calculation.
+		-- It is designed to be huge, and so zipped binary format is used.
+		modelData varbinary(max) NOT NULL,
+
 		runQueueStatusId int NOT NULL,
 		processId int NULL,
 		notificationTypeId int NOT NULL,
 		errorMessage nvarchar(max) NULL,
 		progress decimal(18, 14) NOT NULL,
-		progressData varbinary(max) NOT NULL, -- Additional progress data to be sent to partitioner for further analysis and / or for earlier termination.
+
+		-- Additional progress data used for further analysis and / or for earlier termination.
+		-- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
+		progressData nvarchar(max) NOT NULL,
+
 		callCount bigint NOT NULL,
-		relativeInvariant float NOT NULL, -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
+
+		 -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
+		relativeInvariant float NOT NULL,
+
 		createdOn datetime NOT NULL,
-		startedOn datetime NULL,
 		modifiedOn datetime NOT NULL,
+		startedOn datetime NULL,
+
+		-- Partitioner has extra column to account for the worker node running the calculation.
+		workerNodeId uniqueidentifier NULL,
+
 	 CONSTRAINT PK_WorkerNodeRunModelData PRIMARY KEY CLUSTERED 
 	(
 		runQueueId ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
 	ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR runQueueStatusId
@@ -110,33 +167,37 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	REFERENCES dbo.ModelType (modelTypeId)
 	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_ModelType
 
+	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_WorkerNode FOREIGN KEY(workerNodeId)
+	REFERENCES dbo.WorkerNode (workerNodeId)
+	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_WorkerNode
+
 end else begin
 	print 'Table dbo.RunQueue already exists ...'
 end
 go
 
-IF OBJECT_ID('[dbo].[Setting]') IS NULL begin
-	print 'Creating table [dbo].[Setting] ...'
+IF OBJECT_ID('dbo.Setting') IS NULL begin
+	print 'Creating table dbo.Setting ...'
 
-	CREATE TABLE [dbo].[Setting](
-		[settingId] [int] NOT NULL,
-		[settingName] [nvarchar](50) NOT NULL,
-		[settingBool] [bit] NULL,
-		[settingGuid] [uniqueidentifier] NULL,
-		[settingLong] [bigint] NULL,
-		[settingText] [nvarchar](1000) NULL,
-	 CONSTRAINT [PK_Setting] PRIMARY KEY CLUSTERED 
+	CREATE TABLE dbo.Setting(
+		settingId int NOT NULL,
+		settingName nvarchar(50) NOT NULL,
+		settingBool bit NULL,
+		settingGuid uniqueidentifier NULL,
+		settingLong bigint NULL,
+		settingText nvarchar(1000) NULL,
+	 CONSTRAINT PK_Setting PRIMARY KEY CLUSTERED 
 	(
-		[settingId] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		settingId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX [IX_Setting] ON [dbo].[Setting]
+	CREATE UNIQUE NONCLUSTERED INDEX IX_Setting ON dbo.Setting
 	(
-		[settingName] ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+		settingName ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table [dbo].[Setting] already exists ...'
+	print 'Table dbo.Setting already exists ...'
 end
 go
 

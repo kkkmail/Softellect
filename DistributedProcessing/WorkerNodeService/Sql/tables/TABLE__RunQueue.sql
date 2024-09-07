@@ -4,23 +4,37 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	CREATE TABLE dbo.RunQueue(
 		runQueueId uniqueidentifier NOT NULL,
 		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
-		modelTypeId int NOT NULL, -- Should a mapper from an int to an F# type be pvovided to deserialize workerNodeRunModelData ???
-		workerNodeRunModelData varbinary(max) NOT NULL,
+
+		-- A human readable model type id to give a hint of what's running.
+		-- This is needed because the modelData is stored in a zipped binary format.
+		modelTypeId int NOT NULL, 
+
+		-- All the initial data that is needed to run the calculation.
+		-- It is designed to be huge, and so zipped binary format is used.
+		modelData varbinary(max) NOT NULL,
+
 		runQueueStatusId int NOT NULL,
 		processId int NULL,
 		notificationTypeId int NOT NULL,
 		errorMessage nvarchar(max) NULL,
 		progress decimal(18, 14) NOT NULL,
-		progressData varbinary(max) NOT NULL, -- Additional progress data to be sent to partitioner for further analysis and / or for earlier termination.
+
+		-- Additional progress data used for further analysis and / or for earlier termination.
+		-- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
+		progressData nvarchar(max) NOT NULL,
+
 		callCount bigint NOT NULL,
-		relativeInvariant float NOT NULL, -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
+
+		 -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
+		relativeInvariant float NOT NULL,
+
 		createdOn datetime NOT NULL,
 		startedOn datetime NULL,
 		modifiedOn datetime NOT NULL,
 	 CONSTRAINT PK_WorkerNodeRunModelData PRIMARY KEY CLUSTERED 
 	(
 		runQueueId ASC
-	)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
 	ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR runQueueStatusId

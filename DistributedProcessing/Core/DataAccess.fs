@@ -205,7 +205,7 @@ module WorkerNodeService =
                 query {
                     for q in ctx.Dbo.RunQueue do
                     where (q.RunQueueId = i.value)
-                    select (Some (q.WorkerNodeRunModelData, q.RunQueueStatusId))
+                    select (Some (q.ModelData, q.RunQueueStatusId))
                     exactlyOneOrDefault
                 }
 
@@ -259,7 +259,7 @@ module WorkerNodeService =
     let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : 'D) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.value,
-                            WorkerNodeRunModelData = (w |> serialize serializationFormat),
+                            ModelData = (w |> serialize serializationFormat),
                             RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
                             CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
