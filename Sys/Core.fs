@@ -252,6 +252,11 @@ module Core =
         | GetContent of AsyncReplyChannel<'S>
 
 
+    type IAsyncUpdater<'A, 'S> =
+        abstract member addContent : 'A -> unit
+        abstract member getContent : unit -> 'S
+
+
     type AsyncUpdater<'I, 'A, 'S> (updater : IUpdater<'I, 'A, 'S>, i : 'I) =
         let chat = Updater.Start(fun u ->
           let rec loop s = async {
@@ -265,8 +270,12 @@ module Core =
 
           updater.init i |> loop)
 
-        member _.addContent p = AddContent p |> chat.Post
-        member _.getContent () = chat.PostAndReply GetContent
+        //member _.addContent p = AddContent p |> chat.Post
+        //member _.getContent () = chat.PostAndReply GetContent
+
+        interface IAsyncUpdater<'A, 'S> with
+            member _.addContent p = AddContent p |> chat.Post
+            member _.getContent () = chat.PostAndReply GetContent
 
 
     type Map<'k, 'v when 'k : comparison>

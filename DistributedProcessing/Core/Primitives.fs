@@ -66,7 +66,7 @@ module Primitives =
             | CancelWithResults _ -> 2
 
 
-    let private estimateEndTime progress (started : DateTime) =
+    let estimateEndTime progress (started : DateTime) =
         if progress > 0.0m && progress <= 1.0m
         then
             let estRunTime = (decimal (DateTime.Now.Subtract(started).Ticks)) / progress |> int64 |> TimeSpan.FromTicks
@@ -82,27 +82,31 @@ module Primitives =
             errorMessageOpt : ErrorMessage option
         }
 
+        static member defaultValue : ProgressData =
+            {
+                progress = 0.0m
+                callCount = 0L
+                relativeInvariant = 1.0
+                errorMessageOpt = None
+            }
+
+        member data.estimateEndTime started = estimateEndTime data.progress started
+
 
     /// 'P is any other data that is needed for progress tracking.
     type ProgressData<'P> =
         {
             progressData : ProgressData
-            progressDetailed : 'P
+            progressDetailed : 'P option
         }
 
-        static member getDefaultValue p =
+        static member defaultValue : ProgressData<'P> =
             {
-                progressData =
-                    {
-                        progress = 0.0m
-                        callCount = 0L
-                        relativeInvariant = 1.0
-                        errorMessageOpt = None
-                    }
-                progressDetailed = p
+                progressData = ProgressData.defaultValue
+                progressDetailed = None
             }
 
-        member data.estimateEndTime (started : DateTime) = estimateEndTime data.progressData.progress started
+        member data.estimateEndTime started = data.progressData.estimateEndTime started
 
 
     type WorkerNodeId =

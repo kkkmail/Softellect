@@ -16,6 +16,7 @@ open Softellect.DistributedProcessing.DataAccess.SolverRunner
 //open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Client
+open Softellect.Sys.Core
 
 //open ClmSys.ContGenData
 //open Primitives.GeneralPrimitives
@@ -37,9 +38,35 @@ open Softellect.Messaging.Client
 //open NoSql.FileSystemTypes
 //open Softellect.Sys.Primitives
 
+/// A SolverRunner operates on input data 'D and produces progress / output data 'P.
+/// Internally it uses a data type 'T to store the state of the computation and may produce "chart" data 'C.
+/// A "chart" is some transformation of 'T made at some steps. This is introduced because 'T can be huge and so
+/// capturing the state on all steps is very memory consuming if possible at all. It is possible to sent 'T back
+/// when needed and then let the partitioner deal with the transformations. But, again, 'T could be huge and it could be
+/// in some very inconvenient "internal" form.
+///
+/// So, 4 generics are used: 'D, 'P, 'T, 'C and it is a minimum that's needed.
+/// "Charts" are some slices of data that are produced during the computation and can be used to visualize the progress or for any other purposes.
+/// We do it that way because both 'D and 'T could be huge and so capturing the state of the computation on each step is expensive.
+/// Charts are relatively small and can be used to visualize the progress of the computation.
 module Proxy =
-    let x = 1
 
+    /// Everything that we need to know how to run the solver and report progress.
+    type RunSolverData<'D, 'P, 'T, 'C> =
+        {
+            runQueueId : RunQueueId
+            modelData : 'D
+            noOfProgressPoints : int
+            noOfChartPoints : int option // Charts are optional
+            getProgressData : 'T -> ProgressData<'P>
+            progressCallBack : RunQueueStatus option -> ProgressData<'P> -> unit
+            chartDataUpdater : IAsyncUpdater<'T, 'C>
+            checkCancellation : RunQueueId -> CancellationType option
+            checkFreq : TimeSpan
+        }
+
+
+    /// TODO kk:20240908 - These seem to be the proxies that are used to communicate with the WorkerNodeService.
     type RunModelProxy<'D, 'P> =
         {
             sendRunModelMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
