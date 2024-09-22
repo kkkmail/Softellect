@@ -254,7 +254,6 @@ module Runner =
 
 
     let runSover<'D, 'P, 'X, 'C> (d : SolverRunnerData<'D, 'P, 'X, 'C>) =
-        // (n : SolverParams<'P, 'X>, 
         let getProgressData t x =
             {
                 progressData = (getNeedsCallBackData d.runQueueId).progressData
