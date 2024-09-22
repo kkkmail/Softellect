@@ -11,10 +11,13 @@ namespace Softellect.DistributedProcessing.SolverRunner
 //open Softellect.Sys.ExitErrorCodes
 //open Softellect.Wcf.Program
 //open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Softellect.DistributedProcessing.SolverRunner.Runner
+open Softellect.DistributedProcessing.SolverRunner.CommandLine
+open Softellect.DistributedProcessing.Primitives
+open Primitives
 
 module Program =
     let x = 1
-
     ////type WorkerNodeProgramData<'D, 'P> =
     ////    {
     ////        x : int
@@ -52,7 +55,7 @@ module Program =
     ////    //    UnknownException
     ////    0
 
-    //let main<'D, 'P> workerNodeProgramName (data : WorkerNodeRunnerData<'D, 'P>) argv =
+    //let main<'D, 'P, 'X, 'C> (data : SolverRunnerData<'D, 'P, 'X, 'C>) argv =
     //    //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
     //    let saveSettings() =

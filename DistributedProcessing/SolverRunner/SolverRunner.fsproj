@@ -39,9 +39,11 @@
     <Compile Include="AppSettings.fs" />
     <Compile Include="CommandLine.fs" />
     <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
-    <Compile Include="Proxy.fs" />
+    <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
+    <Compile Include="Proxy1.fs" />
     <Compile Include="OdeSolver.fs" />
     <Compile Include="Runner.fs" />
+    <Compile Include="Implementation.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

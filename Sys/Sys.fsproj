@@ -51,6 +51,7 @@
     <Compile Include="ServiceInstaller.fs" />
     <Compile Include="AppSettings.fs" />
     <Compile Include="DataAccess.fs" />
+    <Compile Include="Wolfram.fs" />
   </ItemGroup>
 
   <ItemGroup>

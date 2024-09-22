@@ -13,7 +13,7 @@ open Softellect.Wcf.Client
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.DistributedProcessing.Primitives
-open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 open Softellect.DistributedProcessing.WorkerNodeService.AppSettings

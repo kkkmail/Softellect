@@ -7,7 +7,7 @@ open Softellect.Messaging.Errors
 open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives
-open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 
 module Primitives =
 

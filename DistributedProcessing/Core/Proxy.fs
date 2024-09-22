@@ -1,25 +1,74 @@
-namespace Softellect.DistributedProcessing.WorkerNodeService
+﻿namespace Softellect.DistributedProcessing.Proxy
 
 open System
 open System.Threading
+
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
+
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
+
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
-open Softellect.DistributedProcessing.Primitives
-open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
-open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
+open System
+open FSharp.Data.Sql
+open Softellect.Sys.Core
 open Softellect.Sys.Primitives
+open Softellect.Sys.Retry
+open Softellect.Sys.DataAccess
+open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
 open Softellect.Messaging.Client
+open Softellect.DistributedProcessing.Errors
+open Softellect.DistributedProcessing.Primitives
+
+#if WORKER_NODE
 open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
+#endif
 
-module Proxy =
+// ==========================================
 
+#if PARTITIONER
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+#endif
+
+#if SOLVER_RUNNER
+#endif
+
+#if WORKER_NODE
+#endif
+
+// ==========================================
+
+#if PARTITIONER
+module PartitionerService =
+#endif
+
+#if SOLVER_RUNNER
+module SolverRunner =
+#endif
+
+#if WORKER_NODE
+module WorkerNodeService =
+#endif
+
+// ==========================================
+
+    // To make a compiler happy.
+    let private dummy = 0
+
+// ==========================================
+
+#if PARTITIONER
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
     type SendMessageProxy<'D, 'P> =
         {
             partitionerId : PartitionerId
@@ -34,8 +83,12 @@ module Proxy =
             tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
             sendMessageProxy : SendMessageProxy<'D, 'P>
         }
+#endif
 
+#if SOLVER_RUNNER
+#endif
 
+#if WORKER_NODE
     type OnProcessMessageProxy<'D> =
         {
             saveModelData : RunQueueId -> 'D -> DistributedProcessingUnitResult
@@ -90,3 +143,4 @@ module Proxy =
     //        loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
     //        onRunModel : RunQueueId -> DistributedProcessingUnitResult
     //    }
+#endif

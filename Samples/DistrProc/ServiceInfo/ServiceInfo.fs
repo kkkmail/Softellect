@@ -12,7 +12,7 @@ open Softellect.Messaging.Proxy
 open Softellect.Messaging.ServiceProxy
 open Softellect.Sys.Logging
 open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
-open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Primitives
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives
