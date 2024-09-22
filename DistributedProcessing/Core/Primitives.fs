@@ -39,6 +39,23 @@ module Primitives =
         | WorkerNumberOfSores of int
 
 
+    /// An encapsulation of the evolution time in the system.
+    /// It is convenient to have it as a separate type to avoid confusion with other decimal values.
+    type EvolutionTime =
+        | EvolutionTime of decimal
+
+        member this.value = let (EvolutionTime v) = this in v
+        static member defaultValue = EvolutionTime 0.0m
+
+
+    /// A relative invariant is a value that should be close to 1.0 all the time.
+    type RelativeInvariant =
+        | RelativeInvariant of double
+
+        member this.value = let (RelativeInvariant v) = this in v
+        static member defaultValue = RelativeInvariant 1.0
+
+
     type AbsoluteTolerance =
         | AbsoluteTolerance of double
 
@@ -76,9 +93,10 @@ module Primitives =
 
     type ProgressData =
         {
-            progress : decimal
+            progress : decimal // Progress in the range [0.0, 1.0]
             callCount : int64
-            relativeInvariant : double // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
+            t : EvolutionTime // Evolution time of the system. May coincide with callCount in some cases.
+            relativeInvariant : RelativeInvariant // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
         }
 
@@ -86,7 +104,8 @@ module Primitives =
             {
                 progress = 0.0m
                 callCount = 0L
-                relativeInvariant = 1.0
+                t = EvolutionTime.defaultValue
+                relativeInvariant = RelativeInvariant.defaultValue
                 errorMessageOpt = None
             }
 
