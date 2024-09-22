@@ -142,13 +142,17 @@ module Primitives =
             }
 
 
-    /// Everything that we need to know how to run the solver.
+    type SolverRunner<'X> =
+        | SolverRunner of ((EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X))
+
+        member r.invoke = let (SolverRunner v) = r in v
+
+
     type SolverData<'D, 'P, 'X> =
         {
-            getInitialData : 'D -> (EvolutionTime * 'X) // Get the initial data from the model data.
+            getInitialData : 'D -> 'X // Get the initial data from the model data.
             getProgressData : (EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
             getInvariant : EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
-            run : (EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X) // Run the computation from the initial data till the end and report progress on the way.
         }
 
 
@@ -162,6 +166,7 @@ module Primitives =
             solverOutputParams : SolverOutputParams
             callBackInfo : CallBackInfo<'P, 'X, 'C>
             solverData : SolverData<'D, 'P, 'X>
+            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
         }
 
 

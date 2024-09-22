@@ -268,13 +268,14 @@ module Runner =
         let tryCallBack : TryCallBack<'X> = TryCallBack updateNeedsCallBackData
 
         // Calculate initial progress, including additional progress data, and notify about beginning of computation.
-        let (t0, x0) = d.solverData.getInitialData d.modelData
-        updateNeedsCallBackData t0 x0
+        let t0 = d.solverInputParams.startTime
+        let x0 = d.solverData.getInitialData d.modelData
+        updateNeedsCallBackData d.solverInputParams.startTime x0
         let cbdStart = { progressData = getProgressData t0 x0; x = x0 }
         notifyAll d RegularCallBack cbdStart
 
         // Run the computation from the initial data till the end and report progress on the way.
-        let (tEnd, xEnd) = d.solverData.run (t0, x0) tryCallBack
+        let (tEnd, xEnd) = d.solverRunner.invoke (t0, x0) tryCallBack
 
         // Calculate final progress, including additional progress data, and notify about completion of computation.
         let cbdEnd = { progressData = getProgressData tEnd xEnd; x = xEnd }
