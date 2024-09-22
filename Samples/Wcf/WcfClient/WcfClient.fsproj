@@ -5,6 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AssemblyName>Softellect.Samples.Wcf.WcfClient</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

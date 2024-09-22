@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AssemblyName>Softellect.Samples.Msg.ServiceInfo</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>

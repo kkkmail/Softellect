@@ -4,6 +4,7 @@
     <UserSecretsId>dotnet-WcfWorker-42B7797B-10C0-4875-B86B-A635EEE2C57E</UserSecretsId>
     <AssemblyName>Softellect.Samples.Wcf.WcfWorker</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WeatherForecast.fs" />

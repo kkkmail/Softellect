@@ -119,64 +119,6 @@ module Primitives =
         }
 
 
-    //type DerivativeCalculator =
-    //    | OneByOne of (double -> double[] -> int -> double)
-    //    | FullArray of (double -> double[] -> double[])
-    //
-    //    member d.calculate t x =
-    //        match d with
-    //        | OneByOne f -> x |> Array.mapi (fun i _ -> f t x i)
-    //        | FullArray f -> f t x
-    //
-    //type AlgLibMethod =
-    //    | CashCarp
-    //
-    //
-    //type OdePackMethod =
-    //    | Adams
-    //    | Bdf
-    //
-    //    member t.value =
-    //        match t with
-    //        | Adams -> 1
-    //        | Bdf -> 2
-    //
-    //
-    //type CorrectorIteratorType =
-    //    | Functional
-    //    | ChordWithDiagonalJacobian
-    //
-    //    member t.value =
-    //        match t with
-    //        | Functional -> 0
-    //        | ChordWithDiagonalJacobian -> 3
-    //
-    //
-    //type NegativeValuesCorrectorType =
-    //    | DoNotCorrect
-    //    | UseNonNegative of double
-    //
-    //    member nc.value =
-    //        match nc with
-    //        | DoNotCorrect -> 0
-    //        | UseNonNegative _ -> 1
-    //
-    //    member nc.correction =
-    //        match nc with
-    //        | DoNotCorrect -> 0.0
-    //        | UseNonNegative c -> c
-    //
-    //
-    //type SolverType =
-    //    | AlgLib of AlgLibMethod
-    //    | OdePack of OdePackMethod * CorrectorIteratorType * NegativeValuesCorrectorType
-    //
-    //    member t.correction =
-    //        match t with
-    //        | AlgLib _ -> 0.0
-    //        | OdePack (_, _, nc) -> nc.correction
-
-
     type SolverInputParams =
         {
             started : DateTime
@@ -200,16 +142,6 @@ module Primitives =
             }
 
 
-    //type SolverParams<'P, 'X> =
-    //    {
-    //        runQueueId : RunQueueId
-    //        solveInputParams : SolveInputParams
-    //        solverOutputParams : SolverOutputParams
-    //        callBackInfo : CallBackInfo<'P, 'X>
-    //        started : DateTime
-    //    }
-
-
     /// Everything that we need to know how to run the solver.
     type SolverData<'D, 'P, 'X> =
         {
@@ -230,29 +162,81 @@ module Primitives =
             solverOutputParams : SolverOutputParams
             callBackInfo : CallBackInfo<'P, 'X, 'C>
             solverData : SolverData<'D, 'P, 'X>
-
-            //noOfProgressPoints : int // Number of progress points to report. Default is 100.
-            //noOfChartPoints : int option // Charts are optional.
-            //getInitialData : 'D -> (EvolutionTime * 'X) // Get the initial data from the model data.
-            //getProgressData : (EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
-            //getInvariant : EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
-            //run : (EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X) // Run the computation from the initial data till the end and report progress on the way.
-            //progressCallBack : RunQueueStatus option -> ProgressData<'P> -> unit // Report progress if needed.
-            //chartDataUpdater : IAsyncUpdater<'X, 'C> // Update chart data.
-            //checkCancellation : RunQueueId -> CancellationType option // Checks if cancellation is requested.
-            //checkFreq : TimeSpan // How often to check if cancellation is requested.
         }
 
 
-    //type OdeParams =
-    //    {
-    //        startTime : double
-    //        endTime : double
-    //        stepSize : double
-    //        absoluteTolerance : AbsoluteTolerance
-    //        solverType : SolverType
-    //        outputParams : OdeOutputParams
-    //    }
+    // ==========================================
+    // ODE Solver
+    // ==========================================
+
+    type DerivativeCalculator =
+        | OneByOne of (double -> double[] -> int -> double)
+        | FullArray of (double -> double[] -> double[])
+    
+        member d.calculate t x =
+            match d with
+            | OneByOne f -> x |> Array.mapi (fun i _ -> f t x i)
+            | FullArray f -> f t x
+    
+    type AlgLibMethod =
+        | CashCarp
+    
+    
+    type OdePackMethod =
+        | Adams
+        | Bdf
+    
+        member t.value =
+            match t with
+            | Adams -> 1
+            | Bdf -> 2
+    
+    
+    type CorrectorIteratorType =
+        | Functional
+        | ChordWithDiagonalJacobian
+    
+        member t.value =
+            match t with
+            | Functional -> 0
+            | ChordWithDiagonalJacobian -> 3
+    
+    
+    type NegativeValuesCorrectorType =
+        | DoNotCorrect
+        | UseNonNegative of double
+    
+        member nc.value =
+            match nc with
+            | DoNotCorrect -> 0
+            | UseNonNegative _ -> 1
+    
+        member nc.correction =
+            match nc with
+            | DoNotCorrect -> 0.0
+            | UseNonNegative c -> c
+    
+    
+    type SolverType =
+        | AlgLib of AlgLibMethod
+        | OdePack of OdePackMethod * CorrectorIteratorType * NegativeValuesCorrectorType
+    
+        member t.correction =
+            match t with
+            | AlgLib _ -> 0.0
+            | OdePack (_, _, nc) -> nc.correction
+
+
+
+    type OdeParams =
+        {
+            //startTime : double
+            //endTime : double
+            stepSize : double
+            absoluteTolerance : AbsoluteTolerance
+            solverType : SolverType
+            derivative : DerivativeCalculator
+        }
 
 
     //type NSolveParam =

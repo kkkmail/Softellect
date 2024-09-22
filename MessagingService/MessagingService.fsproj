@@ -14,6 +14,7 @@
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
     <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/MessagingService</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
