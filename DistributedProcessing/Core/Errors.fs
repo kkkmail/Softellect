@@ -372,6 +372,26 @@ module Errors =
 
     // ==================================
 
+    /// We need a special error type to handle critical errors that can occur during the solver run.
+    /// Unique errorId is needed because we save critical errors into file system (assuming that nothing else is available).
+    ///
+    /// Critical error is NOT a part of DistributedProcessingError by design.
+    type SolverRunnerCriticalError =
+        {
+            errorId : ErrorId
+            runQueueId : RunQueueId
+            errorMessage : string
+        }
+
+        static member create q e =
+            {
+                errorId = ErrorId.getNewId()
+                runQueueId = q
+                errorMessage = $"%A{e}"
+            }
+
+    // ==================================
+
     type DistributedProcessingUnitResult = UnitResult<DistributedProcessingError>
     type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
     type DistributedProcessingListResult<'T> = ListResult<'T, DistributedProcessingError>
@@ -382,9 +402,8 @@ module Errors =
     /// We have to resort to throwing a specific exception in order
     /// to perform early termination from deep inside C# ODE solver.
     /// There seems to be no other easy and clean way. Revisit if that changes.
-    // type ComputationAbortedException<'T> (pd : ProgressData<'T>, ct : CancellationType) =
     type ComputationAbortedException (pd : ProgressData, ct : CancellationType) =
         inherit System.Exception ()
 
-        member e.progressData = pd
-        member e.cancellationType = ct
+        member _.progressData = pd
+        member _.cancellationType = ct

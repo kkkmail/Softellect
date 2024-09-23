@@ -13,6 +13,15 @@ module Primitives =
     [<Literal>]
     let DefaultAbsoluteTolerance = 1.0e-08
 
+
+    [<Literal>]
+    let SolverRunnerName = "SolverRunner.exe"
+
+
+    [<Literal>]
+    let SolverRunnerProcessName = "SolverRunner"
+
+
     let defaultNoOfOutputPoints = 1000
     let defaultNoOfProgressPoints = 100
 

@@ -439,3 +439,20 @@ module Core =
         match b with
         | true -> b, Some s
         | false -> b, None
+
+
+    let getAssemblyLocation() =
+        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
+        x
+
+
+    let getExeName exeName =
+        let location = getAssemblyLocation()
+        location + @"\" + exeName
+
+
+    /// http://codebetter.com/matthewpodwysocki/2010/02/05/using-and-abusing-the-f-dynamic-lookup-operator/
+    let (?) (this : 'Source) (prop : string) : 'Result =
+        let t = this.GetType()
+        let p = t.GetProperty(prop)
+        p.GetValue(this, null) :?> 'Result

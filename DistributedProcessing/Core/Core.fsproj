@@ -52,6 +52,7 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
     <PackageReference Update="FSharp.Core" Version="8.0.400" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.7" />
   </ItemGroup>
 
 </Project>

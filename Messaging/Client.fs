@@ -137,7 +137,7 @@ module Client =
     let private tryReceiveMessages proxy = tryTransmitMessages (fun () -> tryReceiveSingleMessage proxy)
 
 
-    let private createMessage messagingDataVersion msgClientId (m : MessageInfo<'D>) =
+    let createMessage messagingDataVersion msgClientId (m : MessageInfo<'D>) =
         {
             messageDataInfo =
                 {

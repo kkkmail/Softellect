@@ -467,31 +467,32 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    ///// Can modify progress related information when state is InProgress or CancelRequested.
-    //let tryUpdateProgress c (q : RunQueueId) (td : ClmProgressData) =
-    //    let elevate e = e |> TryUpdateProgressErr
-    //    //let toError e = e |> elevate |> Error
-    //    let x e = CannotUpdateProgress e |> elevate
-    //    let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
+    /// Can modify progress related information when state is InProgress or CancelRequested.
+    let tryUpdateProgress (q : RunQueueId) (td : ProgressData<'P>) =
+        let elevate e = e |> TryUpdateProgressErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotUpdateProgress e |> elevate
+        let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
-    //    let g() =
-    //        printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{td}."
-    //        let ctx = getDbContext c
-    //        let ee = td.eeData
+        let g() =
+            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{td}."
+            let ctx = getDbContext getConnectionString
 
-    //        let r = ctx.Procedures.ClmTryUpdateProgressRunQueue.Invoke(
-    //                                    ``@runQueueId`` = q.value,
-    //                                    ``@progress`` = td.progressData.progress,
-    //                                    ``@callCount`` = td.progressData.callCount,
-    //                                    ``@relativeInvariant`` = td.yRelative,
-    //                                    ``@maxEe`` = ee.maxEe,
-    //                                    ``@maxAverageEe`` = ee.maxAverageEe,
-    //                                    ``@maxWeightedAverageAbsEe`` = ee.maxWeightedAverageAbsEe,
-    //                                    ``@maxLastEe`` = ee.maxLastEe)
+            let progressData =
+                match td.progressDetailed with
+                | Some pd -> jsonSerialize pd
+                | None -> null
 
-    //        r.ResultSet |> bindIntScalar x q
+            let r = ctx.Procedures.TryUpdateProgressRunQueue.Invoke(
+                                        ``@runQueueId`` = q.value,
+                                        ``@progress`` = td.progressData.progress,
+                                        ``@progressData`` = progressData,
+                                        ``@callCount`` = td.progressData.callCount,
+                                        ``@relativeInvariant`` = td.progressData.relativeInvariant.value)
 
-    //    tryDbFun fromDbError g
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
 #endif
 
 // === COMMON - SHARED AMONG ALL ===
