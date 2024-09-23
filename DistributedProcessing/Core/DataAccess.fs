@@ -468,7 +468,7 @@ module WorkerNodeService =
 
 
     /// Can modify progress related information when state is InProgress or CancelRequested.
-    let tryUpdateProgress (q : RunQueueId) (td : ProgressData<'P>) =
+    let tryUpdateProgress<'P> (q : RunQueueId) (td : ProgressData<'P>) =
         let elevate e = e |> TryUpdateProgressErr
         //let toError e = e |> elevate |> Error
         let x e = CannotUpdateProgress e |> elevate

@@ -335,6 +335,28 @@ module Primitives =
         //    $"{{ T: %s{s};%s{estCompl} DF: %A{defaultValueId}; MDID: %A{modelDataId}; PID: %A{runQueueId}; %A{r.progressData.progressData.progress} }}"
 
 
+    type WorkerNodeServiceName =
+        | WorkerNodeServiceName of ServiceName
+
+        member this.value = let (WorkerNodeServiceName v) = this in v
+        static member netTcpServiceName = "WorkerNodeNetTcpService" |> ServiceName |> WorkerNodeServiceName
+        static member httpServiceName = "WorkerNodeHttpService" |> ServiceName |> WorkerNodeServiceName
+
+
+    type WorkerNodeServiceInfo =
+        {
+            workerNodeInfo : WorkerNodeInfo
+            workerNodeServiceAccessInfo : ServiceAccessInfo
+            messagingServiceAccessInfo : MessagingServiceAccessInfo
+        }
+
+        member this.messagingClientAccessInfo =
+            {
+                msgClientId = this.workerNodeInfo.workerNodeId.messagingClientId
+                msgSvcAccessInfo = this.messagingServiceAccessInfo
+            }
+
+
     type CheckRunningResult =
         | CanRun
         | AlreadyRunning of ProcessId
