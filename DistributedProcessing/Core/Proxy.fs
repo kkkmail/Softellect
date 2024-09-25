@@ -62,7 +62,7 @@ module WorkerNodeService =
 
 // ==========================================
 
-    // To make a compiler happy.F
+    // To make a compiler happy.
     let private dummy = 0
 
 // ==========================================

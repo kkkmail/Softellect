@@ -37,48 +37,78 @@ module Primitives =
         | FinalCallBack of CalculationCompletionType
 
 
-    /// An evolution-like call-back data.
-    type CallBackData<'P, 'X> =
-        {
-            progressData : ProgressData<'P>
-            x : 'X
-        }
+    ///// An evolution-like call-back data.
+    ///// Evolution time is inside ProgressData
+    //type CallBackData<'P, 'X> =
+    //    {
+    //        progressData : ProgressData<'P>
+    //        x : 'X
+    //    }
 
 
     /// A function to call in order to notify about progress.
-    type ProgressCallBack<'P, 'X> =
-        | ProgressCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
+    //type ProgressCallBack<'P, 'X> =
+    //    | ProgressCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
+    type ProgressCallBack<'P> =
+        | ProgressCallBack of (CallBackType -> ProgressData<'P> -> unit)
 
         member r.invoke = let (ProgressCallBack v) = r in v
 
 
-    /// A function to call in order to generate a chart data point.
-    type ChartCallBack<'P, 'X> =
-        | ChartCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
+    type ChartGenerator<'D, 'X, 'C> =
+        {
+            /// A function to call in order to generate a chart data point.
+            /// This is to collect "lightweight" chart data points at some predetermined intervals.
+            getChartData : 'D -> EvolutionTime -> 'X -> 'C
+
+            ///// A function to call in order to generate and store locally a chart data point.
+            ///// This is to collect "lightweight" chart data points at some predetermined intervals.
+            //addChartData : 'C -> unit
+
+            /// A function to call to generate all lightweight ("evolution") charts.
+            generateCharts : 'D -> list<'C> -> list<Chart>
+
+            /// A function to call to generate heavy charts.
+            generateDetailedCharts : 'D -> EvolutionTime -> 'X -> list<Chart>
+        }
+
+
+    type ChartCallBack =
+        | ChartCallBack of (list<Chart> -> unit)
 
         member r.invoke = let (ChartCallBack v) = r in v
 
+        //{
 
-    /// A function to call in order to generate a detailed chart data point.
-    /// This is mostly to collect "heavy" 3D data at some predetermined intervals.
-    type ChartDetailedCallBack<'P, 'X> =
-        | ChartDetailedCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
+        //    ///
+        //    chartCallBack : (CallBackType -> CallBackData<'P, 'X> -> unit)
 
-        member r.invoke = let (ChartDetailedCallBack v) = r in v
+        //    /// A function to call in order to generate and store a detailed chart data point.
+        //    /// This is to collect "heavy", e.g., 3D data at some predetermined intervals.
+        //    /// A heavy chart should be send back one by one. if any post processing is needed,
+        //    /// then it should be done by partitioner.
+        //    chartDetailedCallBack : (CallBackType -> CallBackData<'P, 'X> -> unit)
+        //}
 
 
     /// A function to call to check if cancellation is requested.
     type CheckCancellation =
-        {
-            invoke : RunQueueId -> CancellationType option
-            checkFreq : TimeSpan // How often to check if cancellation is requested.
-        }
+        | CheckCancellation of (RunQueueId -> CancellationType option)
 
-        static member defaultValue =
-            {
-                invoke = fun _ -> None
-                checkFreq = TimeSpan.FromMinutes(5.0)
-            }
+        member r.invoke = let (CheckCancellation v) = r in v
+
+
+    //type CheckCancellation =
+    //    {
+    //        invoke : RunQueueId -> CancellationType option
+    //        checkFreq : TimeSpan // How often to check if cancellation is requested.
+    //    }
+
+    //    static member defaultValue =
+    //        {
+    //            invoke = fun _ -> None
+    //            checkFreq = TimeSpan.FromMinutes(5.0)
+    //        }
 
 
     /// An addition [past] data needed to determine if a call back is needed.
@@ -108,38 +138,13 @@ module Primitives =
         member r.invoke = let (NeedsCallBack v) = r in v
 
 
-    /// All information needed to call back.
-    type CallBackInfo<'P, 'X, 'C> =
+    /// A proxy with all information needed to call back.
+    type CallBackProxy<'P> =
         {
-            progressCallBack : ProgressCallBack<'P, 'X>
-            chartDataUpdater : IAsyncUpdater<'X, 'C> // Update chart data.
-            chartCallBack : ChartCallBack<'P, 'X>
-            chartDetailedCallBack : ChartDetailedCallBack<'P, 'X>
+            progressCallBack : ProgressCallBack<'P>
+            chartCallBack : ChartCallBack
             checkCancellation : CheckCancellation
         }
-
-
-    type SolverInputParams =
-        {
-            started : DateTime
-            startTime : EvolutionTime
-            endTime : EvolutionTime
-        }
-
-
-    type SolverOutputParams =
-        {
-            noOfOutputPoints : int
-            noOfProgressPoints : int
-            noOfChartDetailedPoints : int option
-        }
-
-        static member defaultValue =
-            {
-                noOfOutputPoints = 2
-                noOfProgressPoints = 100
-                noOfChartDetailedPoints = None
-            }
 
 
     type SolverRunner<'X> =
@@ -148,25 +153,50 @@ module Primitives =
         member r.invoke = let (SolverRunner v) = r in v
 
 
-    type SolverData<'D, 'P, 'X> =
+    type SolverProxy<'D, 'P, 'X> =
         {
             getInitialData : 'D -> 'X // Get the initial data from the model data.
-            getProgressData : (EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
-            getInvariant : EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
+            getProgressData : ('D -> EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
+            getInvariant : 'D -> EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
+        }
+
+
+    /// A user proxy to run the solver. Must be implemented by the user.
+    type UserProxy<'D, 'P, 'X, 'C> =
+        {
+            chartGenerator : ChartGenerator<'D, 'X, 'C>
+            solverProxy : SolverProxy<'D, 'P, 'X>
+        }
+
+
+    /// A system proxy to run the solver. Is implemented by the system but can be overridden.
+    type SystemProxy<'D, 'P, 'X, 'C> =
+        {
+            callBackProxy : CallBackProxy<'P>
+            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
+            addChartData : 'C -> unit
+        }
+
+
+    /// A model data and supportting data that is needed to run the solver.
+    type RunnerData<'D> =
+        {
+            runQueueId : RunQueueId
+            modelData : ModelData<'D>
+            started : DateTime
+            cancellationCheckFreq : TimeSpan // How often to check if cancellation is requested.
         }
 
 
     /// Everything that we need to know how to run the solver and report progress.
     /// It seems convenient to separate evolution time (whatever it means) and a computation state, 'X
-    type SolverRunnerData<'D, 'P, 'X, 'C> =
+    /// The overall data consists of the model data & related data, which can be serialized / deserialized,
+    // the user proxy (must be implemented outside the library), and the system proxy (implemented in the library).
+    type SolverRunnerContext<'D, 'P, 'X, 'C> =
         {
-            runQueueId : RunQueueId
-            modelData : 'D // All data that we need to run the model.
-            solverInputParams : SolverInputParams
-            solverOutputParams : SolverOutputParams
-            callBackInfo : CallBackInfo<'P, 'X, 'C>
-            solverData : SolverData<'D, 'P, 'X>
-            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
+            runnerData : RunnerData<'D>
+            systemProxy : SystemProxy<'D, 'P, 'X, 'C>
+            userProxy : UserProxy<'D, 'P, 'X, 'C>
         }
 
 

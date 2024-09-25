@@ -166,6 +166,40 @@ module Primitives =
         }
 
 
+    type SolverInputParams =
+        {
+            //started : DateTime
+            startTime : EvolutionTime
+            endTime : EvolutionTime
+        }
+
+
+    type SolverOutputParams =
+        {
+            noOfOutputPoints : int
+            noOfProgressPoints : int
+            noOfChartDetailedPoints : int option
+        }
+
+        static member defaultValue =
+            {
+                noOfOutputPoints = 2
+                noOfProgressPoints = 100
+                noOfChartDetailedPoints = None
+            }
+
+
+    /// All data that we need in order to run a model.
+    /// The underlying model data is of type 'D.
+    /// And we have solver input parameters and solver output parameters to control the evolution and what we output.
+    type ModelData<'D> =
+        {
+            solverInputParams : SolverInputParams
+            solverOutputParams : SolverOutputParams
+            modelData : 'D
+        }
+
+
     ///// 'D is the model data.
     //type WorkerNodeRunModelData<'D> =
     //    {
@@ -176,7 +210,7 @@ module Primitives =
 
     type WorkerNodeMessage<'D> =
         //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
-        | RunModelWrkMsg of (RunQueueId * 'D)
+        | RunModelWrkMsg of (RunQueueId * ModelData<'D>)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestResultWrkMsg of (RunQueueId * ResultNotificationType)
 
@@ -237,8 +271,7 @@ module Primitives =
     type ChartInfo =
         {
             runQueueId : RunQueueId
-            //defaultValueId : ClmDefaultValueId
-            charts : list<HtmlChart>
+            charts : list<Chart>
         }
 
 

@@ -280,6 +280,18 @@ module Errors =
     type TryGetAvailableWorkerNodeRunnerError =
         | A
 
+    // ==================================
+    // Solver Runner errors
+
+    type OnSaveChartsError =
+        | SendChartMessageErr of (MessagingClientId * RunQueueId * MessagingError)
+
+
+    type OnUpdateProgressError =
+        | UnableToSendProgressMsgErr of RunQueueId
+        | UnableToFindMappingErr of RunQueueId
+
+
 
     //type ModelRunnerError =
     //    | RunModelRunnerErr of RunModelRunnerError
@@ -354,6 +366,9 @@ module Errors =
 
         | WorkerNodeWcfErr of WorkerNodeWcfError
 
+        // Solver runner errors
+        | OnSaveChartsErr of OnSaveChartsError
+        | OnUpdateProgressErr of OnUpdateProgressError
 
         static member addError a b =
             match a, b with
@@ -364,7 +379,6 @@ module Errors =
 
         static member (+) (a, b) = DistributedProcessingError.addError a b
         member a.add b = a + b
-
 
     // ==================================
     // Partitioner errors
@@ -402,7 +416,7 @@ module Errors =
     /// We have to resort to throwing a specific exception in order
     /// to perform early termination from deep inside C# ODE solver.
     /// There seems to be no other easy and clean way. Revisit if that changes.
-    type ComputationAbortedException (pd : ProgressData, ct : CancellationType) =
+    type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
         inherit System.Exception ()
 
         member _.progressData = pd

@@ -175,3 +175,15 @@ module Primitives =
             htmlContent: string
             fileName : string
         }
+
+
+    type BinaryChart =
+        {
+            binaryContent: byte[]
+            fileName : string
+        }
+
+
+    type Chart =
+        | HtmlChart of HtmlChart
+        | BinaryChart of BinaryChart

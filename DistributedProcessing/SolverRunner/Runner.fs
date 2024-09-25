@@ -30,13 +30,13 @@ module Runner =
 
     // ================================================================ //
 
-    let private calculateProgress d (t : EvolutionTime) =
-        (t.value - d.solverInputParams.startTime.value) / (d.solverInputParams.endTime.value - d.solverInputParams.startTime.value)
+    let private calculateProgress (i : SolverInputParams) (t : EvolutionTime) =
+        (t.value - i.startTime.value) / (i.endTime.value - i.startTime.value)
         |> decimal
 
 
-    let private shouldNotifyByCallCount d =
-        let callCount = d.progressData.callCount
+    let private shouldNotifyByCallCount ncbd =
+        let callCount = ncbd.progressData.callCount
 
         let r =
             [
@@ -57,79 +57,73 @@ module Runner =
         r
 
 
-    let private shouldNotifyByNextProgress d ncbd t =
-        let p = calculateProgress d t
+    let private shouldNotifyByNextProgress i ncbd t =
+        let p = calculateProgress i t
         let r = p >= ncbd.nextProgress
         // n.logger.logDebugString $"shouldNotifyByNextProgress: p = {p}, nextProgress = {d.nextProgress}, r = {r}."
         r
 
 
-    let private shouldNotifyByNextChartProgress d ncbd t =
-        let p = calculateProgress d t
+    let private shouldNotifyByNextChartProgress i ncbd t =
+        let p = calculateProgress i t
         let r = p >= ncbd.nextChartProgress
         // n.logger.logDebugString $"shouldNotifyByNextChartProgress: p = {p}, nextChartProgress = {d.nextChartProgress}, r = {r}."
         r
 
 
-    let private shouldNotifyByNextChartDetailedProgress d ncbd t =
+    let private shouldNotifyByNextChartDetailedProgress i o ncbd t =
         // n.logger.logDebugString $"shouldNotifyByNextChartDetailedProgress: t = {t}, n.odeParams.outputParams.noOfChartDetailedPoints = {n.odeParams.outputParams.noOfChartDetailedPoints}."
-        match d.solverOutputParams.noOfChartDetailedPoints with
+        match o.noOfChartDetailedPoints with
         | Some _ ->
-            let p = calculateProgress d t
+            let p = calculateProgress i t
             let r = p >= ncbd.nextChartDetailedProgress
             // n.logger.logDebugString $"shouldNotifyByNextChartDetailedProgress: t = {t}, p = {p}, d.nextChartDetailedProgress = {d.nextChartDetailedProgress}, r = {r}."
             r
         | None -> false
 
 
-    let private calculateNextProgress d t =
-        let r =
-            match d.solverOutputParams.noOfProgressPoints with
-            | np when np <= 0 -> 1.0m
-            | np -> min 1.0m ((((calculateProgress d t) * (decimal np) |> floor) + 1.0m) / (decimal np))
+    let calculateNextProgressImpl i t nop =
+        match nop with
+        | np when np <= 0 -> 1.0m
+        | np ->
+            let progress = calculateProgress i t
+            min 1.0m (((progress * (decimal np) |> floor) + 1.0m) / (decimal np))
+
+
+    let private calculateNextProgress i o t =
+        let r = calculateNextProgressImpl i t o.noOfProgressPoints
         // n.logger.logDebugString $"calculateNextProgress: r = {r}."
         r
 
 
-    let private calculateNextChartProgress d t =
-        let r =
-            match d.solverOutputParams.noOfOutputPoints with
-            | np when np <= 0 -> 1.0m
-            | np -> min 1.0m ((((calculateProgress d t) * (decimal np) |> floor) + 1.0m) / (decimal np))
+    let private calculateNextChartProgress i o t =
+        let r = calculateNextProgressImpl i t o.noOfOutputPoints
         // n.logger.logDebugString $"calculateNextChartProgress: t = {t}, r = {r}."
         r
 
 
-    let private calculateNextChartDetailedProgress d t =
+    let private calculateNextChartDetailedProgress i o t =
         let r =
-            match d.solverOutputParams.noOfChartDetailedPoints with
-            | Some nop ->
-                let r =
-                    match nop with
-                    | np when np <= 0 -> 1.0m
-                    | np ->
-                        let progress = calculateProgress d t
-                        // n.logger.logDebugString $"calculateNextChartDetailedProgress: t = {t}, progress = {progress}."
-                        min 1.0m ((((calculateProgress d t) * (decimal np) |> floor) + 1.0m) / (decimal np))
-                r
+            match o.noOfChartDetailedPoints with
+            | Some nop -> calculateNextProgressImpl i t nop
             | None -> 1.0m
         // n.logger.logDebugString $"calculateNextChartDetailedProgress: t = {t}, r = {r}."
         r
 
 
-    let private shouldNotifyProgress d ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextProgress d ncbd t
-    let private shouldNotifyChart d ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextChartProgress d ncbd t
+    let private shouldNotifyProgress i ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextProgress i ncbd t
+    let private shouldNotifyChart i ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextChartProgress i ncbd t
 
 
-    let private needsCallBack d =
+    let private needsCallBack i o =
         let f ncbd t =
-            let shouldNotifyProgress = shouldNotifyProgress d ncbd t
-            let shouldNotifyChart = shouldNotifyChart d ncbd t
-            let shouldNotifyChartDetailed = shouldNotifyByNextChartDetailedProgress d ncbd t
+            let shouldNotifyProgress = shouldNotifyProgress i ncbd t
+            let shouldNotifyChart = shouldNotifyChart i ncbd t
+            let shouldNotifyChartDetailed = shouldNotifyByNextChartDetailedProgress i o ncbd t
 
-            let nextProgress = calculateNextProgress d t
-            let nextChartProgress = calculateNextChartProgress d t
-            let nextChartDetailedProgress = calculateNextChartDetailedProgress d t
+            let nextProgress = calculateNextProgress  i o t
+            let nextChartProgress = calculateNextChartProgress i o t
+            let nextChartDetailedProgress = calculateNextChartDetailedProgress i o t
             // n.logger.logDebugString $"needsCallBack: t = {t}, d = {d}, shouldNotifyProgress = {shouldNotifyProgress}, shouldNotifyChart = {shouldNotifyChart}, shouldNotifyChartDetailed = {shouldNotifyChartDetailed}, nextChartDetailedProgress = {nextChartDetailedProgress}."
 
             let retVal =
@@ -158,21 +152,21 @@ module Runner =
         NeedsCallBack f
 
 
-    let private checkCancellation d ncbd =
+    let private checkCancellation runQueueId checkFreq (c : CheckCancellation) ncbd =
         let fromLastCheck = DateTime.Now - ncbd.lastCheck
         // n.logger.logDebugString $"checkCancellation: runQueueId = %A{n.runQueueId}, time interval from last check = %A{fromLastCheck}."
 
-        if fromLastCheck > d.callBackInfo.checkCancellation.checkFreq
+        if fromLastCheck > checkFreq
         then
-            let cancel = d.callBackInfo.checkCancellation.invoke d.runQueueId
+            let cancel = c.invoke runQueueId
             { ncbd with lastCheck = DateTime.Now}, cancel
         else ncbd, None
 
 
-    let private estCompl d (t : EvolutionTime) =
-        match estimateEndTime (calculateProgress d t) d.solverInputParams.started with
-        | Some e -> " est. compl.: " + e.ToShortDateString() + ", " + e.ToShortTimeString() + ","
-        | None -> EmptyString
+    //let private estCompl d (t : EvolutionTime) =
+    //    match estimateEndTime (calculateProgress d t) d.started with
+    //    | Some e -> " est. compl.: " + e.ToShortDateString() + ", " + e.ToShortTimeString() + ","
+    //    | None -> EmptyString
 
 
     let private calculateProgressDataWithErr ncbd (t : EvolutionTime) v =
@@ -197,12 +191,47 @@ module Runner =
             |> withMessage s
 
 
-    let private notifyAll d c cbd =
-        d.callBackInfo.progressCallBack.invoke c cbd
-        d.callBackInfo.chartDetailedCallBack.invoke c cbd
+    let private notifyProgress s cb pd =
+        s.callBackProxy.progressCallBack.invoke cb pd
 
 
-    let private tryCallBack d ncbd p ri (t : EvolutionTime) x =
+    let private notifyCharts data t x =
+        let u = data.userProxy
+        let s = data.systemProxy
+
+        let modelData = data.runnerData.modelData.modelData
+
+        let cd = u.chartGenerator.getChartData modelData t x
+        s.addChartData cd
+
+
+    let private notifyChartsDetailed data t x =
+        let u = data.userProxy
+        let s = data.systemProxy
+
+        let modelData = data.runnerData.modelData.modelData
+        let c = u.chartGenerator.generateDetailedCharts modelData t x
+        s.callBackProxy.chartCallBack.invoke c
+
+
+    let private notifyAll data cb pd t x =
+        let s = data.systemProxy
+        notifyProgress s cb pd
+        notifyCharts data t x
+        notifyChartsDetailed data t x
+
+
+    let private tryCallBack ctx ncbd (t : EvolutionTime) x =
+        let d = ctx.runnerData
+        let u = ctx.userProxy
+        let s = ctx.systemProxy
+
+        let runQueueId = d.runQueueId
+        let modelData = d.modelData.modelData
+        let i = d.modelData.solverInputParams
+        let o = d.modelData.solverOutputParams
+        let c = s.callBackProxy.checkCancellation
+
         //let d0 = needsCallBackData
         // n.logger.logDebugString $"tryCallBack - starting: t = {t}, needsCallBackData = {d0}."
         //let pd = { d0.progressData with callCount = d0.progressData.callCount + 1L; progress = calculateProgress n t }
@@ -211,74 +240,114 @@ module Runner =
             {
                 progressData =
                     {
-                        progress = calculateProgress d t
+                        progress = calculateProgress i t
                         callCount = ncbd.progressData.callCount + 1L
                         t = t
-                        relativeInvariant = ri t x
+                        relativeInvariant = u.solverProxy.getInvariant modelData t x
                         errorMessageOpt = None
                     }
-                progressDetailed = p |> Option.map (fun e -> e t x) // |> Some // Calculates detailed progress.
+                progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x) // Calculates detailed progress.
             }
 
         let ncbd1 = { ncbd with progressData = pd.progressData }
-        let ncbd2, ct = checkCancellation d ncbd1
+        let ncbd2, ct = checkCancellation runQueueId d.cancellationCheckFreq c ncbd1
 
-        let cbd = { progressData = pd; x = x }
+        //let cbd = { progressData = pd; x = x }
         // n.logger.logDebugString $"    tryCallBack: t = {t}, d = {d}, cbd = {cbd}."
 
         match ct with
         | Some v ->
-            notifyAll d (v |> CancelledCalculation |> FinalCallBack) cbd
-            let progressDataWithErr = calculateProgressDataWithErr ncbd1 t v
-            raise(ComputationAbortedException (progressDataWithErr, v))
+            notifyAll ctx (v |> CancelledCalculation |> FinalCallBack) pd t x
+            let progressDataWithErr = { pd with progressData = calculateProgressDataWithErr ncbd1 t v }
+            raise (ComputationAbortedException<'P> (progressDataWithErr, v))
         | None ->
             // let c, v = n.callBackInfo.needsCallBack.invoke d t
-            let ncbd3, v = (needsCallBack d).invoke ncbd2 t
+            let ncbd3, v = (needsCallBack i o).invoke ncbd2 t
             // n.logger.logDebugString $"    tryCallBack: t = {t}, setting needsCallBackData to c = {c}, v = {v}."
 
             match v with
             | None -> ()
             | Some v ->
-                let i = d.callBackInfo
-
                 match v with
-                | ProgressNotification -> i.progressCallBack.invoke RegularCallBack cbd
-                | ChartNotification -> i.chartCallBack.invoke RegularCallBack cbd
-                | ChartDetailedNotification -> i.chartDetailedCallBack.invoke RegularCallBack cbd
+                | ProgressNotification -> notifyProgress s RegularCallBack pd
+                | ChartNotification -> notifyCharts ctx t x
+                | ChartDetailedNotification -> notifyChartsDetailed ctx t x
                 | ProgressAndChartNotification ->
-                    i.progressCallBack.invoke RegularCallBack cbd
-                    i.chartCallBack.invoke RegularCallBack cbd
-                | AllNotification -> notifyAll d RegularCallBack cbd
+                    notifyProgress s RegularCallBack pd
+                    notifyCharts ctx t x
+                | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
             ncbd3
 
 
-    let runSover<'D, 'P, 'X, 'C> (d : SolverRunnerData<'D, 'P, 'X, 'C>) =
+    //let notifyOfCharts d t =
+    //    printfn $"notifyOfCharts: t = %A{t}"
+    //    let charts = d.callBackInfo.chartCallBack.generateCharts()
+    //
+    //    let chartResult =
+    //        {
+    //            runQueueId = d.runQueueId
+    //            charts = charts
+    //        }
+    //        |> plotAllResults t
+    //        |> proxy.saveCharts
+    //
+    //    printfn $"notifyOfResults completed with result: %A{chartResult}"
+    //    chartResult
+
+
+    let runSover<'D, 'P, 'X, 'C> (ctx : SolverRunnerContext<'D, 'P, 'X, 'C>) =
+        let d = ctx.runnerData
+        let u = ctx.userProxy
+        let s = ctx.systemProxy
+
+        let modelData = d.modelData.modelData
+
         let getProgressData t x =
             {
                 progressData = (getNeedsCallBackData d.runQueueId).progressData
-                progressDetailed = d.solverData.getProgressData |> Option.map (fun e -> e t x)
+                progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x)
             }
 
         let updateNeedsCallBackData t v =
             let ncbd = getNeedsCallBackData d.runQueueId
-            let ncbd1 = tryCallBack d ncbd (d.solverData.getProgressData) (d.solverData.getInvariant) t v
+            let ncbd1 = tryCallBack ctx ncbd t v
             setNeedsCallBackData d.runQueueId ncbd1
 
         let tryCallBack : TryCallBack<'X> = TryCallBack updateNeedsCallBackData
 
         // Calculate initial progress, including additional progress data, and notify about beginning of computation.
-        let t0 = d.solverInputParams.startTime
-        let x0 = d.solverData.getInitialData d.modelData
-        updateNeedsCallBackData d.solverInputParams.startTime x0
-        let cbdStart = { progressData = getProgressData t0 x0; x = x0 }
-        notifyAll d RegularCallBack cbdStart
+        let t0 = d.modelData.solverInputParams.startTime
+        let x0 = u.solverProxy.getInitialData d.modelData.modelData
+        let pd0 = getProgressData t0 x0
+        updateNeedsCallBackData d.modelData.solverInputParams.startTime x0
+        notifyAll ctx RegularCallBack pd0 t0 x0
 
         // Run the computation from the initial data till the end and report progress on the way.
-        let (tEnd, xEnd) = d.solverRunner.invoke (t0, x0) tryCallBack
+        try
+            let (tEnd, xEnd) = s.solverRunner.invoke (t0, x0) tryCallBack
 
-        // Calculate final progress, including additional progress data, and notify about completion of computation.
-        let cbdEnd = { progressData = getProgressData tEnd xEnd; x = xEnd }
-        notifyAll d (FinalCallBack CompletedCalculation) cbdEnd
+            // Calculate final progress, including additional progress data, and notify about completion of computation.
+            let pd = getProgressData tEnd xEnd
+            notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
 
-        (tEnd, xEnd)
+            (tEnd, xEnd)
+        with
+        | :? ComputationAbortedException<'P> as ex ->
+            let ncbd = getNeedsCallBackData d.runQueueId
+            let x = ex.progressData
+            let cbdEnd = { progressData = getProgressData ncbd.progressData.t x0; x = x0 }
+
+            match ex.cancellationType with
+            | CancelWithResults e ->
+                notifyOfCharts d ForceChartGeneration |> logIfFailed "Unable to send charts."
+                getProgress w (Some CompletedRunQueue) ex.progressData
+            | AbortCalculation e ->
+                getProgress w (Some CancelledRunQueue) ex.progressData
+            |> updateFinalProgress "getSolverRunner - ComputationAborted failed."
+
+            raise ex
+        | ex ->
+            let cbdEnd = { progressData = getProgressData d.modelData.solverInputParams.endTime x0; x = x0 }
+            notifyAll d (FinalCallBack CompletedCalculation) cbdEnd
+            raise ex
