@@ -98,7 +98,7 @@ module WorkerNode =
                     let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
-            | RequestResultWrkMsg q -> q ||> proxy.notifyOfResults
+            | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
@@ -290,7 +290,7 @@ module WorkerNode =
                 | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
         let onTryStop() =
-            failwith "onTryStop is not implemented yet. Stop all times before exiting."
+            failwith "onTryStop is not implemented yet. Stop all timers before exiting."
 
         //member _.start() = onStartImpl()
         //member _.register() = onRegisterImpl()

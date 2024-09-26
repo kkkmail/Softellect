@@ -72,7 +72,8 @@ module Primitives =
         static member defaultValue = AbsoluteTolerance DefaultAbsoluteTolerance
 
 
-    type ResultNotificationType =
+    /// Was ResultNotificationType
+    type ChartNotificationType =
         | RegularChartGeneration
         | ForceChartGeneration
 
@@ -212,13 +213,13 @@ module Primitives =
         //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
         | RunModelWrkMsg of (RunQueueId * ModelData<'D>)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
-        | RequestResultWrkMsg of (RunQueueId * ResultNotificationType)
+        | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
 
         member this.messageSize =
             match this with
             | RunModelWrkMsg _ -> LargeSize
             | CancelRunWrkMsg _ -> SmallSize
-            | RequestResultWrkMsg _ -> SmallSize
+            | RequestChartsWrkMsg _ -> SmallSize
 
 
     /// Number of minutes for worker node errors to expire before the node can be again included in work distribution.

@@ -364,7 +364,7 @@ module WorkerNodeService =
 
 
     /// Can request notification of results when state is InProgress or CancelRequested.
-    let tryNotifyRunQueue (q : RunQueueId) (r : ResultNotificationType option) =
+    let tryNotifyRunQueue (q : RunQueueId) (r : ChartNotificationType option) =
         let elevate e = e |> TryNotifyRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotNotifyRunQueue e |> elevate

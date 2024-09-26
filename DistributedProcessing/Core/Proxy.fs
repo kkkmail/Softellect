@@ -145,7 +145,7 @@ module WorkerNodeService =
 
     type SolverNotificationProxy =
         {
-            checkNotificationRequest : RunQueueId -> ResultNotificationType option
+            checkNotificationRequest : RunQueueId -> ChartNotificationType option
             clearNotificationRequest : RunQueueId -> DistributedProcessingUnitResult
         }
 
@@ -166,7 +166,7 @@ module WorkerNodeService =
         {
             saveModelData : RunQueueId -> ModelData<'D> -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
-            notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
+            notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
             onRunModel : RunQueueId -> DistributedProcessingUnitResult
         }
 

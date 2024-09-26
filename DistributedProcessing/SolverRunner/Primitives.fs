@@ -66,7 +66,7 @@ module Primitives =
             //addChartData : 'C -> unit
 
             /// A function to call to generate all lightweight ("evolution") charts.
-            generateCharts : 'D -> list<'C> -> list<Chart>
+            generateCharts : 'D -> ChartNotificationType -> list<'C> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
 
             /// A function to call to generate heavy charts.
             generateDetailedCharts : 'D -> EvolutionTime -> 'X -> list<Chart>
@@ -176,6 +176,8 @@ module Primitives =
             solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
             addChartData : 'C -> unit
             getChartData : unit -> list<'C>
+            checkNotification : RunQueueId -> ChartNotificationType option
+            clearNotification : RunQueueId -> unit
         }
 
 

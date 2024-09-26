@@ -7,6 +7,8 @@ open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
 open System.Collections.Concurrent
+open Softellect.Sys.TimerEvents
+open Softellect.Sys.Rop
 
 module Runner =
 
@@ -221,14 +223,30 @@ module Runner =
         notifyChartsDetailed ctx t x
 
 
-    let private notifyCharts ctx =
+    let private notifyCharts ctx t =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
         let cd = s.getChartData()
-        let c = u.chartGenerator.generateCharts modelData cd
-        s.callBackProxy.chartCallBack.invoke c
+
+        match u.chartGenerator.generateCharts modelData t cd with
+        | Some c -> s.callBackProxy.chartCallBack.invoke c
+        | None -> ignore()
+
+
+    let notifyOfCharts ctx =
+        let s = ctx.systemProxy
+        let runQueueId = ctx.runnerData.runQueueId
+
+        match s.checkNotification runQueueId with
+        | Some t ->
+            // TODO kk:20240926 - handle errors.
+            let r1 = notifyCharts ctx t
+            let r2 = s.clearNotification runQueueId
+            //combineUnitResults (DistributedProcessingError.addError) r1 r2
+            Ok()
+        | None -> Ok()
 
 
     let private tryCallBack ctx ncbd (t : EvolutionTime) x =
@@ -311,27 +329,32 @@ module Runner =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
+        let runQueueId = d.runQueueId
         let modelData = d.modelData.modelData
 
         let getProgressData t x =
             {
-                progressData = (getNeedsCallBackData d.runQueueId).progressData
+                progressData = (getNeedsCallBackData runQueueId).progressData
                 progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x)
             }
 
         let updateNeedsCallBackData t v =
-            let ncbd = getNeedsCallBackData d.runQueueId
+            let ncbd = getNeedsCallBackData runQueueId
             let ncbd1 = tryCallBack ctx ncbd t v
-            setNeedsCallBackData d.runQueueId ncbd1
+            setNeedsCallBackData runQueueId ncbd1
 
         let tryCallBack : TryCallBack<'X> = TryCallBack updateNeedsCallBackData
 
         // Calculate initial progress, including additional progress data, and notify about beginning of computation.
         let t0 = d.modelData.solverInputParams.startTime
-        let x0 = u.solverProxy.getInitialData d.modelData.modelData
+        let x0 = u.solverProxy.getInitialData modelData
         let pd0 = getProgressData t0 x0
         updateNeedsCallBackData d.modelData.solverInputParams.startTime x0
         notifyAll ctx RegularCallBack pd0 t0 x0
+
+        let i = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue TimerEventErr (fun () -> notifyOfCharts ctx) "runSover - notifyOfCharts"
+        let h = TimerEventHandler i
+        do h.start()
 
         try
             try
@@ -356,7 +379,6 @@ module Runner =
             | ex ->
                 let ncbd = getNeedsCallBackData d.runQueueId
                 let pd = { progressData = { ncbd.progressData with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
-                notifyProgress s (Some "" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
+                notifyProgress s (Some $"{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
-            // Dispose of a timer.
-            printfn ""
+            h.stop()
