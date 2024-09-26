@@ -195,30 +195,40 @@ module Runner =
         s.callBackProxy.progressCallBack.invoke cb pd
 
 
-    let private notifyCharts data t x =
-        let u = data.userProxy
-        let s = data.systemProxy
+    let private updateCharts ctx t x =
+        let u = ctx.userProxy
+        let s = ctx.systemProxy
 
-        let modelData = data.runnerData.modelData.modelData
+        let modelData = ctx.runnerData.modelData.modelData
 
         let cd = u.chartGenerator.getChartData modelData t x
         s.addChartData cd
 
 
-    let private notifyChartsDetailed data t x =
-        let u = data.userProxy
-        let s = data.systemProxy
+    let private notifyChartsDetailed ctx t x =
+        let u = ctx.userProxy
+        let s = ctx.systemProxy
 
-        let modelData = data.runnerData.modelData.modelData
+        let modelData = ctx.runnerData.modelData.modelData
         let c = u.chartGenerator.generateDetailedCharts modelData t x
         s.callBackProxy.chartCallBack.invoke c
 
 
-    let private notifyAll data cb pd t x =
-        let s = data.systemProxy
+    let private notifyAll ctx cb pd t x =
+        let s = ctx.systemProxy
         notifyProgress s cb pd
-        notifyCharts data t x
-        notifyChartsDetailed data t x
+        updateCharts ctx t x
+        notifyChartsDetailed ctx t x
+
+
+    let private notifyCharts ctx =
+        let u = ctx.userProxy
+        let s = ctx.systemProxy
+
+        let modelData = ctx.runnerData.modelData.modelData
+        let cd = s.getChartData()
+        let c = u.chartGenerator.generateCharts modelData cd
+        s.callBackProxy.chartCallBack.invoke c
 
 
     let private tryCallBack ctx ncbd (t : EvolutionTime) x =
@@ -270,11 +280,11 @@ module Runner =
             | Some v ->
                 match v with
                 | ProgressNotification -> notifyProgress s RegularCallBack pd
-                | ChartNotification -> notifyCharts ctx t x
+                | ChartNotification -> updateCharts ctx t x
                 | ChartDetailedNotification -> notifyChartsDetailed ctx t x
                 | ProgressAndChartNotification ->
                     notifyProgress s RegularCallBack pd
-                    notifyCharts ctx t x
+                    updateCharts ctx t x
                 | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
             ncbd3
@@ -323,31 +333,30 @@ module Runner =
         updateNeedsCallBackData d.modelData.solverInputParams.startTime x0
         notifyAll ctx RegularCallBack pd0 t0 x0
 
-        // Run the computation from the initial data till the end and report progress on the way.
         try
-            let (tEnd, xEnd) = s.solverRunner.invoke (t0, x0) tryCallBack
+            try
+                // Run the computation from the initial data till the end and report progress on the way.
+                let (tEnd, xEnd) = s.solverRunner.invoke modelData (t0, x0) tryCallBack
 
-            // Calculate final progress, including additional progress data, and notify about completion of computation.
-            let pd = getProgressData tEnd xEnd
-            notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
+                // Calculate final progress, including additional progress data, and notify about completion of computation.
+                let pd = getProgressData tEnd xEnd
+                notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
 
-            (tEnd, xEnd)
-        with
-        | :? ComputationAbortedException<'P> as ex ->
-            let ncbd = getNeedsCallBackData d.runQueueId
-            let x = ex.progressData
-            let cbdEnd = { progressData = getProgressData ncbd.progressData.t x0; x = x0 }
+                //(tEnd, xEnd)
+            with
+            | :? ComputationAbortedException<'P> as ex ->
+                let pd = ex.progressData
 
-            match ex.cancellationType with
-            | CancelWithResults e ->
-                notifyOfCharts d ForceChartGeneration |> logIfFailed "Unable to send charts."
-                getProgress w (Some CompletedRunQueue) ex.progressData
-            | AbortCalculation e ->
-                getProgress w (Some CancelledRunQueue) ex.progressData
-            |> updateFinalProgress "getSolverRunner - ComputationAborted failed."
-
-            raise ex
-        | ex ->
-            let cbdEnd = { progressData = getProgressData d.modelData.solverInputParams.endTime x0; x = x0 }
-            notifyAll d (FinalCallBack CompletedCalculation) cbdEnd
-            raise ex
+                match ex.cancellationType with
+                | CancelWithResults e ->
+                    notifyCharts ctx
+                    notifyProgress s (e |> CancelWithResults |> CancelledCalculation |> FinalCallBack) pd
+                | AbortCalculation e ->
+                    notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
+            | ex ->
+                let ncbd = getNeedsCallBackData d.runQueueId
+                let pd = { progressData = { ncbd.progressData with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
+                notifyProgress s (Some "" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
+        finally
+            // Dispose of a timer.
+            printfn ""

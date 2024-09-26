@@ -164,7 +164,7 @@ module WorkerNodeService =
 #if WORKER_NODE
     type OnProcessMessageProxy<'D> =
         {
-            saveModelData : RunQueueId -> 'D -> DistributedProcessingUnitResult
+            saveModelData : RunQueueId -> ModelData<'D> -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
             onRunModel : RunQueueId -> DistributedProcessingUnitResult

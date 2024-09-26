@@ -80,7 +80,7 @@ module OdeSolver =
         | AlgLib CashCarp ->
             //n.logger.logDebugString "nSolve: Using Cash - Carp Alglib solver."
 
-            let solve (_, x0) (c : TryCallBack<double[]>) =
+            let solve () (_, x0) (c : TryCallBack<double[]>) =
                 let nt = 2
 
                 let cashCarpDerivative (x : double[]) (t : double) : double[] =
@@ -103,7 +103,7 @@ module OdeSolver =
             //n.logger.logDebugString $"nSolve: Using {m} / {i} / {nc} DLSODE solver."
             let mapResults (r : SolverResult) _ = (decimal r.EndTime |> EvolutionTime, r.X)
 
-            let solve (_, x0) (c : TryCallBack<double[]>) =
+            let solve () (_, x0) (c : TryCallBack<double[]>) =
                 let result =
                     match nc with
                     | UseNonNegative _ ->

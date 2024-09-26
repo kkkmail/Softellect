@@ -147,8 +147,8 @@ module Primitives =
         }
 
 
-    type SolverRunner<'X> =
-        | SolverRunner of ((EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X))
+    type SolverRunner<'D, 'X> =
+        | SolverRunner of ('D -> (EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X))
 
         member r.invoke = let (SolverRunner v) = r in v
 
@@ -173,8 +173,9 @@ module Primitives =
     type SystemProxy<'D, 'P, 'X, 'C> =
         {
             callBackProxy : CallBackProxy<'P>
-            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
+            solverRunner : SolverRunner<'D, 'X> // Run the computation from the initial data till the end and report progress on the way.
             addChartData : 'C -> unit
+            getChartData : unit -> list<'C>
         }
 
 
@@ -260,7 +261,6 @@ module Primitives =
             match t with
             | AlgLib _ -> 0.0
             | OdePack (_, _, nc) -> nc.correction
-
 
 
     type OdeParams =

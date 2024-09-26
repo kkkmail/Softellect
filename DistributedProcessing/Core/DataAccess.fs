@@ -217,7 +217,7 @@ module WorkerNodeService =
                     try
                         match RunQueueStatus.tryCreate s with
                         | Some st ->
-                            match v |> tryDeserialize<'D> serializationFormat with
+                            match v |> tryDeserialize<ModelData<'D>> serializationFormat with
                             | Ok v -> Ok (v, st)
                             | Error e -> toError (SerializationErr e)
                             //(v |> deserialize serializationFormat, st) |> Ok
@@ -258,7 +258,7 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : 'D) =
+    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelData<'D>) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.value,
                             ModelData = (w |> serialize serializationFormat),
@@ -270,7 +270,7 @@ module WorkerNodeService =
 
 
     /// Saves intocoming model data into a database fur further processing.
-    let saveModelData<'D> (r : RunQueueId) (w : 'D) =
+    let saveModelData<'D> (r : RunQueueId) (w : ModelData<'D>) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate
@@ -468,27 +468,27 @@ module WorkerNodeService =
 
 
     /// Can modify progress related information when state is InProgress or CancelRequested.
-    let tryUpdateProgress<'P> (q : RunQueueId) (td : ProgressData<'P>) =
+    let tryUpdateProgress<'P> (q : RunQueueId) (pd : ProgressData<'P>) =
         let elevate e = e |> TryUpdateProgressErr
         //let toError e = e |> elevate |> Error
         let x e = CannotUpdateProgress e |> elevate
         let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
         let g() =
-            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{td}."
+            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
             let ctx = getDbContext getConnectionString
 
             let progressData =
-                match td.progressDetailed with
+                match pd.progressDetailed with
                 | Some pd -> jsonSerialize pd
                 | None -> null
 
             let r = ctx.Procedures.TryUpdateProgressRunQueue.Invoke(
                                         ``@runQueueId`` = q.value,
-                                        ``@progress`` = td.progressData.progress,
+                                        ``@progress`` = pd.progressData.progress,
                                         ``@progressData`` = progressData,
-                                        ``@callCount`` = td.progressData.callCount,
-                                        ``@relativeInvariant`` = td.progressData.relativeInvariant.value)
+                                        ``@callCount`` = pd.progressData.callCount,
+                                        ``@relativeInvariant`` = pd.progressData.relativeInvariant.value)
 
             r.ResultSet |> bindIntScalar x q
 

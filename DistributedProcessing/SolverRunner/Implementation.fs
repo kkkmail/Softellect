@@ -230,9 +230,9 @@ module Implementation =
                         // If we got here that means that the solver was terminated before it had a chance to process cancellation.
                         // At this point we have no choice but abort the calculation because there is no data available to continue.
                         let errMessage = "The solver was terminated before processing cancellation. Aborting."
-                        let p0 = ProgressData.defaultValue
-                        let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
-                        getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
+                        //let p0 = ProgressData.defaultValue
+                        //let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
+                        //getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
                         exitWithLogCrit errMessage NotProcessedCancellation
                     | _ -> exitWithLogCrit ($"Invalid run queue status: {st}") InvalidRunQueueStatus
                 | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
