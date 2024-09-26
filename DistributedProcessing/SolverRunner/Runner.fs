@@ -336,7 +336,7 @@ module Runner =
         try
             try
                 // Run the computation from the initial data till the end and report progress on the way.
-                let (tEnd, xEnd) = s.solverRunner.invoke modelData (t0, x0) tryCallBack
+                let (tEnd, xEnd) = s.solverRunner.invoke (t0, x0) tryCallBack
 
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
