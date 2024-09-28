@@ -134,30 +134,30 @@ module WorkerNodeService =
 
 #if SOLVER_RUNNER
 
-    type SolverUpdateProxy<'P> =
-        {
-            updateProgress : ProgressUpdateInfo<'P> -> DistributedProcessingUnitResult
-//            updateTime : ProgressData -> UnitResult
-            checkCancellation : RunQueueId -> CancellationType option
-            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
-        }
+//    type SolverUpdateProxy<'P> =
+//        {
+//            updateProgress : ProgressUpdateInfo<'P> -> DistributedProcessingUnitResult
+////            updateTime : ProgressData -> UnitResult
+//            checkCancellation : RunQueueId -> CancellationType option
+//            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
+//        }
 
 
-    type SolverNotificationProxy =
-        {
-            checkNotificationRequest : RunQueueId -> ChartNotificationType option
-            clearNotificationRequest : RunQueueId -> DistributedProcessingUnitResult
-        }
+//    type SolverNotificationProxy =
+//        {
+//            checkNotificationRequest : RunQueueId -> ChartNotificationType option
+//            clearNotificationRequest : RunQueueId -> DistributedProcessingUnitResult
+//        }
 
 
-    type SolverRunnerProxy<'P> =
-        {
-            solverUpdateProxy : SolverUpdateProxy<'P>
-            solverNotificationProxy : SolverNotificationProxy
-//            saveResult : ResultDataWithId -> UnitResult
-            saveCharts : ChartGenerationResult -> DistributedProcessingUnitResult
-            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
-        }
+//    type SolverRunnerProxy<'P> =
+//        {
+//            solverUpdateProxy : SolverUpdateProxy<'P>
+//            solverNotificationProxy : SolverNotificationProxy
+////            saveResult : ResultDataWithId -> UnitResult
+//            saveCharts : ChartGenerationResult -> DistributedProcessingUnitResult
+//            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
+//        }
 
 #endif
 

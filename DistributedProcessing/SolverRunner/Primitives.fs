@@ -37,6 +37,42 @@ module Primitives =
         | FinalCallBack of CalculationCompletionType
 
 
+    /// We don't want to store any initial data in the chart data.
+    /// Rather, we provide 'D when generating charts.
+    type ChartInitData = unit
+
+
+    type ChartSliceData<'C> =
+        {
+            t : decimal
+            chartData : 'C
+        }
+
+
+    type ChartData<'C> = list<ChartSliceData<'C>>
+        //{
+        //    //initData : 'D // TODO kk:20240927 - Store more (like tEnd)???
+        //    allChartData : list<ChartSliceData<'C>>
+        //}
+
+        /// Last calculated value of tEnd.
+        //member cd.tLast =
+        //    match cd.allChartData |> List.tryHead with
+        //    | Some c -> c.t
+        //    | None -> 0.0m
+
+
+        //member cd.progress =
+        //    let tEnd = cd.initData.tEnd
+        //    min (max (if tEnd > 0.0m then cd.tLast / tEnd else 0.0m) 0.0m) 1.0m
+
+
+    type ChartDataUpdater<'C> () =
+        interface IUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>> with
+            member _.init _ = []
+            member _.add a m = a :: m
+
+
     ///// An evolution-like call-back data.
     ///// Evolution time is inside ProgressData
     //type CallBackData<'P, 'X> =
@@ -66,7 +102,7 @@ module Primitives =
             //addChartData : 'C -> unit
 
             /// A function to call to generate all lightweight ("evolution") charts.
-            generateCharts : 'D -> ChartNotificationType -> list<'C> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
+            generateCharts : 'D -> ChartNotificationType -> list<ChartSliceData<'C>> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
 
             /// A function to call to generate heavy charts.
             generateDetailedCharts : 'D -> EvolutionTime -> 'X -> list<Chart>
@@ -164,8 +200,9 @@ module Primitives =
     /// A user proxy to run the solver. Must be implemented by the user.
     type UserProxy<'D, 'P, 'X, 'C> =
         {
-            chartGenerator : ChartGenerator<'D, 'X, 'C>
+            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
             solverProxy : SolverProxy<'D, 'P, 'X>
+            chartGenerator : ChartGenerator<'D, 'X, 'C>
         }
 
 
@@ -173,9 +210,8 @@ module Primitives =
     type SystemProxy<'D, 'P, 'X, 'C> =
         {
             callBackProxy : CallBackProxy<'P>
-            solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
-            addChartData : 'C -> unit
-            getChartData : unit -> list<'C>
+            addChartData : ChartSliceData<'C> -> unit
+            getChartData : unit -> list<ChartSliceData<'C>>
             checkNotification : RunQueueId -> ChartNotificationType option
             clearNotification : RunQueueId -> unit
         }

@@ -43,6 +43,7 @@ open Softellect.DistributedProcessing.DataAccess.SolverRunner
 open Softellect.DistributedProcessing.SolverRunner.CommandLine
 open Softellect.DistributedProcessing.SolverRunner.NoSql
 open Softellect.DistributedProcessing.SolverRunner.Runner
+open Softellect.Sys.Core
 
 
 module Implementation =
@@ -133,34 +134,55 @@ module Implementation =
         result
 
 
+    /// TODO kk:20240928 - Add error handling.
+    let createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
+        let updater = AsyncUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>>(ChartDataUpdater<'C>(), ()) :> IAsyncUpdater<ChartSliceData<'C>, ChartData<'C>>
+
+        let proxy : SystemProxy<'D, 'P, 'X, 'C> =
+            {
+                callBackProxy =
+                    {
+                        progressCallBack = 0
+                        chartCallBack = 0
+                        checkCancellation = CheckCancellation (fun q -> tryCheckCancellation q |> toOption |> Option.bind id)
+                    }
+                addChartData = updater.addContent
+                getChartData = updater.getContent
+                checkNotification = fun q -> tryCheckNotification q |> toOption |> Option.bind id
+                clearNotification = fun q -> tryClearNotification q |> toOption |> Option.defaultValue ()
+            }
+
+        proxy
+
+
     //let private tryLoadWorkerNodeSettings () = tryLoadWorkerNodeSettings None None
     //let private name = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
 
 
-    type SolverRunnerProxy<'P>
-        with
-        static member create logCrit (proxy : OnUpdateProgressProxy<'D, 'P>) =
-            let checkCancellation q = tryCheckCancellation q |> Rop.toOption |> Option.bind id
-            let checkNotification q = tryCheckNotification q |> Rop.toOption |> Option.bind id
-            let clearNotification q = tryClearNotification q
+    //type SolverRunnerProxy<'P>
+    //    with
+    //    static member create logCrit (proxy : OnUpdateProgressProxy<'D, 'P>) =
+    //        let checkCancellation q = tryCheckCancellation q |> Rop.toOption |> Option.bind id
+    //        let checkNotification q = tryCheckNotification q |> Rop.toOption |> Option.bind id
+    //        let clearNotification q = tryClearNotification q
 
-            {
-                solverUpdateProxy =
-                    {
-                        updateProgress = onUpdateProgress proxy
-                        checkCancellation = checkCancellation
-                        logCrit = logCrit
-                    }
+    //        {
+    //            solverUpdateProxy =
+    //                {
+    //                    updateProgress = onUpdateProgress proxy
+    //                    checkCancellation = checkCancellation
+    //                    logCrit = logCrit
+    //                }
 
-                solverNotificationProxy =
-                    {
-                        checkNotificationRequest = checkNotification
-                        clearNotificationRequest = clearNotification
-                    }
+    //            solverNotificationProxy =
+    //                {
+    //                    checkNotificationRequest = checkNotification
+    //                    clearNotificationRequest = clearNotification
+    //                }
 
-                saveCharts = onSaveCharts proxy.sendMessageProxy
-                logCrit = logCrit
-            }
+    //            saveCharts = onSaveCharts proxy.sendMessageProxy
+    //            logCrit = logCrit
+    //        }
 
 
     // Send the message directly to local database.
@@ -214,7 +236,7 @@ module Implementation =
                                 }
                         }
 
-                    let solverProxy = SolverRunnerProxy.create logCrit proxy
+                    //let solverProxy = SolverRunnerProxy.create logCrit proxy
 
                     match st with
                     | NotStartedRunQueue | InProgressRunQueue ->

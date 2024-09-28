@@ -235,7 +235,7 @@ module Runner =
         | None -> ignore()
 
 
-    let notifyOfCharts ctx =
+    let private notifyOfCharts ctx =
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runQueueId
 
@@ -359,7 +359,7 @@ module Runner =
         try
             try
                 // Run the computation from the initial data till the end and report progress on the way.
-                let (tEnd, xEnd) = s.solverRunner.invoke (t0, x0) tryCallBack
+                let (tEnd, xEnd) = u.solverRunner.invoke (t0, x0) tryCallBack
 
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
@@ -372,7 +372,7 @@ module Runner =
 
                 match ex.cancellationType with
                 | CancelWithResults e ->
-                    notifyCharts ctx
+                    notifyCharts ctx RegularChartGeneration
                     notifyProgress s (e |> CancelWithResults |> CancelledCalculation |> FinalCallBack) pd
                 | AbortCalculation e ->
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
