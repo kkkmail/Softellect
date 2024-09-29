@@ -44,11 +44,13 @@ open Softellect.DistributedProcessing.SolverRunner.CommandLine
 open Softellect.DistributedProcessing.SolverRunner.NoSql
 open Softellect.DistributedProcessing.SolverRunner.Runner
 open Softellect.Sys.Core
+open Softellect.DistributedProcessing.AppSettings.SolverRunner
 
 
 module Implementation =
 
-    let private name = "SolverRunner"
+    [<Literal>]
+    let SolverProgramName = "SolverRunner"
 
     /// Extra solver's "overhead" allowed when running SolverRunner by hands.
     /// This is needed when two versions share the same machine and one version has some stuck
@@ -169,7 +171,7 @@ module Implementation =
 
 
     /// TODO kk:20240928 - Add error handling.
-    let createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
+    let private createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
         let updater = AsyncUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>>(ChartDataUpdater<'C>(), ()) :> IAsyncUpdater<ChartSliceData<'C>, ChartData<'C>>
 
         let proxy : SystemProxy<'D, 'P, 'X, 'C> =
@@ -219,9 +221,8 @@ module Implementation =
     //        }
 
 
-    let runSolverProcessImpl<'D, 'P, 'X, 'C> messagingDataVersion userProxy (results : ParseResults<SolverRunnerArguments>) usage : int =
-        //let c = getWorkerNodeSvcConnectionString
-        let logCrit = saveSolverRunnerErrFs name
+    let runSolverProcess<'D, 'P, 'X, 'C> messagingDataVersion userProxy (results : ParseResults<SolverRunnerArguments>) : int =
+        let logCrit = saveSolverRunnerErrFs SolverProgramName
 
         match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
         | Some q ->
@@ -230,13 +231,13 @@ module Implementation =
                 SolverRunnerCriticalError.create q e |> logCrit |> ignore
                 x
 
-            let svc : WorkerNodeServiceInfo option = failwith "loadWorkerNodeServiceInfo messagingDataVersion" //
+            let i = loadWorkerNodeServiceInfo messagingDataVersion
 
-            match tryLoadRunQueue<'D> q, svc with
-            | Ok (w, st), Some s ->
+            match tryLoadRunQueue<'D> q with
+            | Ok (w, st) ->
                 let allowedSolvers =
                     match results.TryGetResult ForceRun |> Option.defaultValue false with
-                    | false -> getAllowedSolvers s.workerNodeInfo |> Some
+                    | false -> getAllowedSolvers i.workerNodeInfo |> Some
                     | true -> None
 
                 match checkRunning allowedSolvers q with
@@ -249,7 +250,7 @@ module Implementation =
                             let data : RunnerData<'D> =
                                 {
                                     runQueueId = q
-                                    partitionerId = s.workerNodeInfo.partitionerId
+                                    partitionerId = i.workerNodeInfo.partitionerId
                                     messagingDataVersion = messagingDataVersion
                                     modelData = w
                                     started = DateTime.Now
@@ -282,8 +283,7 @@ module Implementation =
                 | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
                 | TooManyRunning n -> exitWithLogCrit (TooManyRunning n) TooManySolversRunning
                 | GetProcessesByNameExn e -> exitWithLogCrit e CriticalError
-            | Error e, _ -> exitWithLogCrit e DatabaseErrorOccurred
-            | _, None -> exitWithLogCrit "Unable to load WorkerNodeSettings." CriticalError
+            | Error e -> exitWithLogCrit e DatabaseErrorOccurred
         | None ->
-            printfn $"runSolver: {usage}."
+            printfn "runSolver - invalid command line arguments."
             InvalidCommandLineArgs

@@ -57,7 +57,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="Primitives.fs" />
-    <Compile Include="AppSettings.fs" />
+    <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
     <Compile Include="CommandLine.fs" />
     <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
     <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />

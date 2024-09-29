@@ -14,21 +14,6 @@ module Primitives =
     let workerNodeServiceProgramName = "WorkerNodeService.exe"
 
 
-    [<Literal>]
-    let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
-
-
-    type ServiceAccessInfo with
-        static member defaultWorkerNodeValue =
-            {
-                netTcpServiceAddress = ServiceAddress localHost
-                netTcpServicePort = defaultPartitionerNetTcpServicePort
-                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
-                netTcpSecurityMode = NoSecurity
-            }
-            |> NetTcpServiceInfo
-
-
     let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
     let defaultWorkerNodeHttpServicePort = defaultWorkerNodeNetTcpServicePort.value + 1 |> ServicePort
     let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress

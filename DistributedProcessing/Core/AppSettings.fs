@@ -1,4 +1,4 @@
-namespace Softellect.DistributedProcessing.WorkerNodeService
+﻿namespace Softellect.DistributedProcessing.AppSettings
 
 open System
 open System.Threading
@@ -19,12 +19,58 @@ open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.AppSettings
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+//open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 open Softellect.DistributedProcessing.Primitives
 
-module AppSettings =
+// ==========================================
+
+#if PARTITIONER
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+#endif
+
+#if SOLVER_RUNNER
+#endif
+
+#if WORKER_NODE
+#endif
+
+#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#endif
+
+// ==========================================
+
+#if PARTITIONER
+module PartitionerService =
+#endif
+
+#if SOLVER_RUNNER
+module SolverRunner =
+#endif
+
+#if WORKER_NODE
+module WorkerNodeService =
+#endif
+
+// ==========================================
+#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
 
     let partitionerIdKey = ConfigKey "PartitionerId"
+
+
+    let getPartitionerId (provider : AppSettingsProvider) d =
+        match provider.tryGetGuid partitionerIdKey with
+        | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
+        | _ -> d
+
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+
+    [<Literal>]
+    let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
+
 
     let workerNodeIdKey = ConfigKey "WorkerNodeId"
     let workerNodeNameKey = ConfigKey "WorkerNodeName"
@@ -34,32 +80,15 @@ module AppSettings =
     let nodePriorityKey = ConfigKey "NodePriority"
 
 
-//    type WorkerNodeSettings =
-//        {
-//            workerNodeInfo : WorkerNodeInfo
-//            workerNodeSvcInfo : WorkerNodeServiceAccessInfo
-//            messagingSvcInfo : MessagingServiceAccessInfo
-//        }
-
-//        member w.isValid() =
-//            let r =
-//                [
-//                    w.workerNodeInfo.workerNodeName.value <> EmptyString, $"%A{w.workerNodeInfo.workerNodeName} is invalid"
-//                    w.workerNodeInfo.workerNodeId.value.value <> Guid.Empty, $"%A{w.workerNodeInfo.workerNodeId} is invalid"
-//                    w.workerNodeInfo.noOfCores >= 0, $"noOfCores: %A{w.workerNodeInfo.noOfCores} is invalid"
-//                    w.workerNodeInfo.partitionerId.value <> Guid.Empty, $"%A{w.workerNodeInfo.partitionerId} is invalid"
-
-////                    w.workerNodeSvcInfo.workerNodeServiceAddress.value.value <> EmptyString, sprintf "%A is invalid" w.workerNodeSvcInfo.workerNodeServiceAddress
-////                    w.workerNodeSvcInfo.workerNodeServicePort.value.value > 0, sprintf "%A is invalid" w.workerNodeSvcInfo.workerNodeServicePort
-////
-////                    w.messagingSvcInfo.messagingServiceAddress.value.value <> EmptyString, sprintf "%A is invalid" w.messagingSvcInfo.messagingServiceAddress
-////                    w.messagingSvcInfo.messagingServicePort.value.value > 0, sprintf "%A is invalid" w.messagingSvcInfo.messagingServicePort
-//                ]
-//                |> List.fold(fun acc r -> combine acc r) (true, EmptyString)
-
-//            match r with
-//            | true, _ -> Ok()
-//            | false, s -> s |> InvalidSettings |> Error
+    type ServiceAccessInfo with
+        static member defaultWorkerNodeValue =
+            {
+                netTcpServiceAddress = ServiceAddress localHost
+                netTcpServicePort = defaultPartitionerNetTcpServicePort
+                netTcpServiceName = WorkerNodeWcfServiceName |> ServiceName
+                netTcpSecurityMode = NoSecurity
+            }
+            |> NetTcpServiceInfo
 
 
     let getWorkerNodeId (provider : AppSettingsProvider) d =
@@ -90,12 +119,6 @@ module AppSettings =
     let getIsInactive (provider : AppSettingsProvider) d =
         match provider.tryGetBool isInactiveKey with
         | Ok (Some b) -> b
-        | _ -> d
-
-
-    let getPartitionerId (provider : AppSettingsProvider) d =
-        match provider.tryGetGuid partitionerIdKey with
-        | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
         | _ -> d
 
 
@@ -144,18 +167,9 @@ module AppSettings =
         | Error e -> failwith $"Cannot load settings. Error: '{e}'."
 
 
-    ///// Type parameter 'P is needed because this class is shared by WorkerNodeService and WorkerNodeAdm
-    ///// and they do have different type of this 'P.
-    //type WorkerNodeSettingsProxy<'P> =
-    //    {
-    //        tryGetClientId : 'P -> WorkerNodeId option
-    //        tryGetNodeName : 'P -> WorkerNodeName option
-    //        tryGetPartitioner : 'P -> PartitionerId option
-    //        tryGetNoOfCores : 'P -> int option
-    //        tryGetInactive : 'P -> bool option
-    //        tryGetServiceAddress : 'P -> ServiceAddress option
-    //        tryGetServicePort : 'P -> ServicePort option
-    //        tryGetMsgServiceAddress : 'P -> ServiceAddress option
-    //        tryGetMsgServicePort : 'P -> ServicePort option
-    //        tryGetForce : 'P -> bool option // TODO kk:20211123 - Not yet fully implemented.
-    //    }
+#endif
+
+#if WORKER_NODE
+
+
+#endif

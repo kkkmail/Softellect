@@ -16,7 +16,7 @@ open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
-open Softellect.DistributedProcessing.WorkerNodeService.AppSettings
+open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Softellect.Messaging.Client
@@ -138,7 +138,7 @@ module WorkerNode =
         //let c = getWorkerNodeSvcConnectionString
         //let getLogger = i.messageProcessor.getLogger
         //let onRegisterProxy = onRegisterProxy i
-
+        //
         //let onStartProxy =
         //    {
         //        loadAllActiveRunQueueId = i.workerNodeProxy.loadAllActiveRunQueueId
@@ -236,22 +236,22 @@ module WorkerNode =
         //    //let d = i.
         //    let messagingClientAccessInfo = i.messageProcessorProxy.messagingClientAccessInfo
         //    let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
-
+        //
         //    let j =
         //        {
         //            storageType = c |> MsSqlDatabase
         //            messagingDataVersion = messagingDataVersion
         //        }
-
+        //
         //    let messagingClientData =
         //        {
         //            msgAccessInfo = messagingClientAccessInfo
         //            msgClientProxy = createMessagingClientProxy getLogger getMessageSize j messagingClientAccessInfo.msgClientId
         //            logOnError = true
         //        }
-
+        //
         //    let messagingClient = MessagingClient messagingClientData
-
+        //
         //    messagingClient
 
         let onTryStart() =
@@ -297,7 +297,7 @@ module WorkerNode =
         //member _.unregister() = onUnregisterImpl()
         //member _.getMessages() = onGetMessagesImpl()
         //member _.tryStart() = onTryStart()
-
+        //
         //interface IWorkerNodeRunner<'D, 'P> with
         //    member _.tryStart() = onTryStart()
         //    member _.tryStop() = onTryStop()
@@ -378,8 +378,8 @@ module WorkerNode =
 ////            | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 //
 //        0
-
-
+//
+//
     //type WorkerNodeRunner<'D, 'P>
     //    with
     //    static member create messagingDataVersion (i : WorkerNodeServiceInfo) tryRunSolverProcess =
@@ -387,31 +387,31 @@ module WorkerNode =
     //        let getLogger = fun _ -> Logger.defaultValue
     //        let addError f e = (f + e) |> Error
     //        let c = getWorkerNodeSvcConnectionString
-
+    //
     //        //let sr n (q : RunQueueId) =
     //        //    match tryRunSolverProcess n q with
     //        //    | Ok() -> Ok()
     //        //    | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
-
+    //
     //        let w =
     //            //let messagingClientAccessInfo = i.messagingClientAccessInfo
     //            //let getMessageSize (m : DistributedProcessingMessageData<'D, 'P>) = m.getMessageSize()
-
+    //
     //            //let j =
     //            //    {
     //            //        storageType = c |> MsSqlDatabase
     //            //        messagingDataVersion = messagingDataVersion
     //            //    }
-
+    //
     //            //let messagingClientData =
     //            //    {
     //            //        msgAccessInfo = messagingClientAccessInfo
     //            //        msgClientProxy = createMessagingClientProxy getLogger getMessageSize j messagingClientAccessInfo.msgClientId
     //            //        logOnError = true
     //            //    }
-
+    //
     //            //let messagingClient = MessagingClient messagingClientData
-
+    //
     //            match messagingClient.tryStart() with
     //            | Ok() ->
     //                let n =
@@ -422,10 +422,10 @@ module WorkerNode =
     //                        tryRunSolverProcess = tryRunSolverProcess
     //                    }
     //                    |> createServiceImpl
-
+    //
     //                match n with
     //                | Ok v -> Ok v
     //                | Error e -> addError UnableToCreateWorkerNodeServiceErr e
     //            | Error e -> UnableToStartMessagingClientErr e |> Error
-
+    //
     //        w
