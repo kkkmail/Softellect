@@ -62,32 +62,50 @@ module Implementation =
     //let private toError g f = f |> g |> SolverRunnerErr |> Error
     //let private addError g f e = ((f |> g |> SolverRunnerErr) + e) |> Error
 
-    let runSolver solverProxy w = failwith "runSolver is not implemented yet"
+    //let runSolver solverProxy w = failwith "runSolver is not implemented yet"
 
 
-    let onSaveCharts (proxy : SendMessageProxy<'D, 'P>) (r : ChartGenerationResult) =
-        match r with
-        | GeneratedCharts c ->
-            printfn $"onSaveCharts: Sending charts with runQueueId = %A{c.runQueueId}."
-
-            let result =
-                {
-                    partitionerRecipient = proxy.partitionerId
-                    deliveryType = GuaranteedDelivery
-                    messageData = c |> SaveChartsPrtMsg
-                }.getMessageInfo()
-                |> proxy.sendMessage
-
-            match result with
-            | Ok v -> Ok v
-            | Error e -> OnSaveChartsErr (SendChartMessageErr (proxy.partitionerId.messagingClientId, c.runQueueId, e)) |> Error
-            //|> Rop.bindError (addError OnSaveChartsErr (SendChartMessageErr (proxy.partitionerId.messagingClientId, c.runQueueId)))
-        | NotGeneratedCharts ->
-            printfn "onSaveCharts: No charts."
-            Ok()
+    // Send the message directly to local database.
+    let private sendMessage<'D, 'P> messagingDataVersion m i =
+        createMessage messagingDataVersion m i
+        |> saveMessage<DistributedProcessingMessageData<'D, 'P>> messagingDataVersion
+        //|> bindError (fun e -> MessagingErr e |> SendMessageErr |> Error)
 
 
-    let toDeliveryType (p : ProgressUpdateInfo<'P>) =
+    let private tryStartRunQueue q =
+        let pid = Process.GetCurrentProcess().Id |> ProcessId
+        tryStartRunQueue q pid
+
+
+    let private getAllowedSolvers i =
+        let noOfCores = i.noOfCores
+        max ((float noOfCores) * (1.0 + AllowedOverhead) |> int) (noOfCores + 1)
+
+
+    let private onSaveCharts<'D, 'P> (data : RunnerData<'D>) c =
+        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}."
+
+        let i =
+            {
+                charts = c
+                runQueueId = data.runQueueId
+            }
+
+        let result =
+            {
+                partitionerRecipient = data.partitionerId
+                deliveryType = GuaranteedDelivery
+                messageData = i |> SaveChartsPrtMsg
+            }.getMessageInfo()
+            |> sendMessage<'D, 'P> data.messagingDataVersion data.partitionerId.messagingClientId
+
+        match result with
+        | Ok v -> Ok v
+        | Error e -> OnSaveChartsErr (SendChartMessageErr (data.partitionerId.messagingClientId, data.runQueueId, e)) |> Error
+        //|> Rop.bindError (addError OnSaveChartsErr (SendChartMessageErr (proxy.partitionerId.messagingClientId, c.runQueueId)))
+
+
+    let private toDeliveryType (p : ProgressUpdateInfo<'P>) =
         match p.updatedRunQueueStatus with
         | Some s ->
             match s with
@@ -103,18 +121,34 @@ module Implementation =
         | None -> (NonGuaranteedDelivery, false)
 
 
-    let onUpdateProgress (proxy : OnUpdateProgressProxy<'D, 'P>) (p : ProgressUpdateInfo<'P>) : DistributedProcessingUnitResult =
-        printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, progress = %A{p.progressData}."
+    let private onUpdateProgress<'D, 'P> (data : RunnerData<'D>) cb (pd : ProgressData<'P>) =
+        let p =
+            {
+                runQueueId = data.runQueueId
+                updatedRunQueueStatus =
+                    match cb with
+                    | RegularCallBack -> Some InProgressRunQueue
+                    | FinalCallBack f ->
+                        match f with
+                        | CompletedCalculation -> Some CompletedRunQueue
+                        | CancelledCalculation c ->
+                            match c with
+                            | CancelWithResults so -> Some CancelledRunQueue
+                            | AbortCalculation so -> Some CancelledRunQueue
+                progressData = pd
+            }
+
+        //printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, progress = %A{p.progressData}."
         let t, completed = toDeliveryType p
-        let r0 = proxy.tryUpdateProgressData p.progressData
+        let r0 = tryUpdateProgress<'P> p.runQueueId p.progressData
 
         let r11 =
             {
-                partitionerRecipient = proxy.sendMessageProxy.partitionerId
+                partitionerRecipient = data.partitionerId
                 deliveryType = t
                 messageData = UpdateProgressPrtMsg p
             }.getMessageInfo()
-            |> proxy.sendMessageProxy.sendMessage
+            |> sendMessage data.messagingDataVersion data.partitionerId.messagingClientId
 
         let r1 =
             match r11 with
@@ -125,7 +159,7 @@ module Implementation =
         let result =
             if completed
             then
-                let r2 = proxy.tryDeleteRunQueue()
+                let r2 = deleteRunQueue p.runQueueId
 //                let r2 = Ok()
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
@@ -142,8 +176,8 @@ module Implementation =
             {
                 callBackProxy =
                     {
-                        progressCallBack = 0
-                        chartCallBack = 0
+                        progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'D, 'P> data cb pd |> ignore)
+                        chartCallBack = ChartCallBack (fun c -> onSaveCharts<'D, 'P> data c |> ignore)
                         checkCancellation = CheckCancellation (fun q -> tryCheckCancellation q |> toOption |> Option.bind id)
                     }
                 addChartData = updater.addContent
@@ -185,24 +219,7 @@ module Implementation =
     //        }
 
 
-    // Send the message directly to local database.
-    let private sendMessage<'D, 'P> messagingDataVersion m i =
-        createMessage messagingDataVersion m i
-        |> saveMessage<DistributedProcessingMessageData<'D, 'P>> messagingDataVersion
-        //|> bindError (fun e -> MessagingErr e |> SendMessageErr |> Error)
-
-
-    let private tryStartRunQueue q =
-        let pid = Process.GetCurrentProcess().Id |> ProcessId
-        tryStartRunQueue q pid
-
-
-    let getAllowedSolvers i =
-        let noOfCores = i.noOfCores
-        max ((float noOfCores) * (1.0 + AllowedOverhead) |> int) (noOfCores + 1)
-
-
-    let runSolverProcessImpl<'D, 'P> messagingDataVersion (results : ParseResults<SolverRunnerArguments>) usage : int =
+    let runSolverProcessImpl<'D, 'P, 'X, 'C> messagingDataVersion userProxy (results : ParseResults<SolverRunnerArguments>) usage : int =
         //let c = getWorkerNodeSvcConnectionString
         let logCrit = saveSolverRunnerErrFs name
 
@@ -213,7 +230,7 @@ module Implementation =
                 SolverRunnerCriticalError.create q e |> logCrit |> ignore
                 x
 
-            let svc : WorkerNodeServiceInfo option = failwith "loadWorkerNodeServiceInfo messagingDataVersion" // 
+            let svc : WorkerNodeServiceInfo option = failwith "loadWorkerNodeServiceInfo messagingDataVersion" //
 
             match tryLoadRunQueue<'D> q, svc with
             | Ok (w, st), Some s ->
@@ -224,27 +241,32 @@ module Implementation =
 
                 match checkRunning allowedSolvers q with
                 | CanRun ->
-                    let proxy : OnUpdateProgressProxy<'D, 'P> =
-                        {
-                            tryDeleteRunQueue = fun () -> deleteRunQueue q
-                            tryUpdateProgressData = tryUpdateProgress<'P> q
-
-                            sendMessageProxy =
-                                {
-                                    partitionerId = s.workerNodeInfo.partitionerId
-                                    sendMessage = sendMessage<'D, 'P> messagingDataVersion s.workerNodeInfo.workerNodeId.messagingClientId
-                                }
-                        }
-
-                    //let solverProxy = SolverRunnerProxy.create logCrit proxy
-
                     match st with
                     | NotStartedRunQueue | InProgressRunQueue ->
                         match tryStartRunQueue q with
                         | Ok() ->
                             printfn $"runSolver: Starting solver with runQueueId: {q}."
+                            let data : RunnerData<'D> =
+                                {
+                                    runQueueId = q
+                                    partitionerId = s.workerNodeInfo.partitionerId
+                                    messagingDataVersion = messagingDataVersion
+                                    modelData = w
+                                    started = DateTime.Now
+                                    cancellationCheckFreq = TimeSpan.FromMinutes 5.0
+                                }
+
+                            let proxy = createSystemProxy<'D, 'P, 'X, 'C> data
+
+                            let ctx =
+                                {
+                                    runnerData = data
+                                    systemProxy = proxy
+                                    userProxy = userProxy
+                                }
+
                             // The call below does not return until the run is completed OR cancelled in some way.
-                            runSolver solverProxy w
+                            runSover<'D, 'P, 'X, 'C> ctx
                             printfn "runSolver: Call to solver.run() completed."
                             CompletedSuccessfully
                         | Error e -> exitWithLogCrit e UnknownException

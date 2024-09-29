@@ -203,7 +203,12 @@ module Runner =
 
         let modelData = ctx.runnerData.modelData.modelData
 
-        let cd = u.chartGenerator.getChartData modelData t x
+        let cd =
+            {
+                chartData = u.chartGenerator.getChartData modelData t x
+                t = t.value
+            }
+
         s.addChartData cd
 
 
@@ -244,7 +249,7 @@ module Runner =
             // TODO kk:20240926 - handle errors.
             let r1 = notifyCharts ctx t
             let r2 = s.clearNotification runQueueId
-            //combineUnitResults (DistributedProcessingError.addError) r1 r2
+            // let r = combineUnitResults (DistributedProcessingError.addError) r1 r2
             Ok()
         | None -> Ok()
 
@@ -338,6 +343,13 @@ module Runner =
                 progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x)
             }
 
+        let getProgressUpdateInfo s p =
+            {
+                runQueueId = d.runQueueId
+                updatedRunQueueStatus = s
+                progressData = p
+            }
+
         let updateNeedsCallBackData t v =
             let ncbd = getNeedsCallBackData runQueueId
             let ncbd1 = tryCallBack ctx ncbd t v
@@ -364,6 +376,7 @@ module Runner =
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
+                notifyOfCharts ctx |> ignore
 
                 //(tEnd, xEnd)
             with

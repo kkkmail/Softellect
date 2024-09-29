@@ -71,20 +71,20 @@ module WorkerNodeService =
 #endif
 
 #if SOLVER_RUNNER || WORKER_NODE
-    type SendMessageProxy<'D, 'P> =
-        {
-            partitionerId : PartitionerId
-            sendMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
-        }
+    //type SendMessageProxy<'D, 'P> =
+    //    {
+    //        partitionerId : PartitionerId
+    //        sendMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
+    //    }
 
 
-    type OnUpdateProgressProxy<'D, 'P> =
-        {
-            // Was called tryDeleteWorkerNodeRunModelData.
-            tryDeleteRunQueue : unit -> DistributedProcessingUnitResult
-            tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
-            sendMessageProxy : SendMessageProxy<'D, 'P>
-        }
+    //type OnUpdateProgressProxy<'D, 'P> =
+    //    {
+    //        // Was called tryDeleteWorkerNodeRunModelData.
+    //        tryDeleteRunQueue : unit -> DistributedProcessingUnitResult
+    //        tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
+    //        sendMessageProxy : SendMessageProxy<'D, 'P>
+    //    }
 
 
     /// Returns CanRun when a given RunQueueId is NOT used by any of the running solvers

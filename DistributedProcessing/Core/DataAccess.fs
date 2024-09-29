@@ -39,6 +39,9 @@ open Softellect.DistributedProcessing.Primitives
 #if WORKER_NODE
 #endif
 
+#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#endif
+
 // ==========================================
 
 #if PARTITIONER
@@ -106,6 +109,8 @@ module WorkerNodeService =
 
 #endif
 
+#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI"
 
@@ -125,75 +130,9 @@ module WorkerNodeService =
 
     //type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     //type private MessageEntity = DbContext.``dbo.MessageEntity``
+#endif
 
-
-#if SOLVER_RUNNER || WORKER_NODE
-
-    let tryLoadSolverRunners () =
-        let elevate e = e |> TryLoadSolverRunnersErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryLoadSolverRunnersDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
-                    select (q.RunQueueId, q.ProcessId)
-                }
-
-            x
-            |> Seq.toList
-            |> List.map (fun (r, p) -> { runQueueId = RunQueueId r; processId = p |> Option.bind (fun e -> e |> ProcessId |> Some) })
-            |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let tryGetRunningSolversCount () =
-        let elevate e = e |> TryGetRunningSolversCountErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryGetRunningSolversCountDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
-                    select q
-                    count
-                }
-
-            Ok x
-
-        tryDbFun fromDbError g
-
-
-    let tryPickRunQueue () =
-        let elevate e = e |> TryPickRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value)
-                    sortBy q.RunQueueOrder
-                    select (Some q.RunQueueId)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map RunQueueId |> Ok
-
-        tryDbFun fromDbError g
-
+#if SOLVER_RUNNER
 
     let tryLoadRunQueue<'D> (i : RunQueueId) =
         let elevate e = e |> TryLoadRunQueueErr
@@ -232,59 +171,6 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let loadAllActiveRunQueueId () =
-        let elevate e = e |> LoadAllActiveRunQueueIdErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId =
-                        RunQueueStatus.NotStartedRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
-                    select q.RunQueueId
-                }
-
-            x
-            |> Seq.toList
-            |> List.map RunQueueId
-            |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelData<'D>) =
-        let row = ctx.Dbo.RunQueue.Create(
-                            RunQueueId = r.value,
-                            ModelData = (w |> serialize serializationFormat),
-                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
-                            CreatedOn = DateTime.Now,
-                            ModifiedOn = DateTime.Now)
-
-        row
-
-
-    /// Saves intocoming model data into a database fur further processing.
-    let saveModelData<'D> (r : RunQueueId) (w : ModelData<'D>) =
-        let elevate e = e |> SaveRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let row = addRunQueueRow ctx r w
-            ctx.SubmitUpdates()
-
-            Ok()
-
-        tryDbFun fromDbError g
-
-
     /// Can transition to InProgress from NotStarted or InProgress (to restart).
     /// If run queue is in RunQueueStatus_CancelRequested state then we don't allow restarting it automatically.
     /// This could happen when cancel requested has propagated to the database but the system then crashed and
@@ -298,82 +184,6 @@ module WorkerNodeService =
         let g() =
             let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryStartRunQueue.Invoke(``@runQueueId`` = q.value, ``@processId`` = pid)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    /// Can transition to Completed from InProgress or CancelRequested.
-    let tryCompleteRunQueue (q : RunQueueId) =
-        let elevate e = e |> TryCompleteRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = CannotCompleteRunQueue e |> elevate
-        let fromDbError e = e |> TryCompleteRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.TryCompleteRunQueue.Invoke(``@runQueueId`` = q.value)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    /// Can transition to Cancelled from NotStarted, InProgress, or CancelRequested.
-    let tryCancelRunQueue (q : RunQueueId) (errMsg : string) =
-        let elevate e = e |> TryCancelRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = TryCancelRunQueueError.CannotCancelRunQueue e |> elevate
-        let fromDbError e = e |> TryCancelRunQueueError.TryCancelRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.TryCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    /// Can transition to Failed from InProgress or CancelRequested.
-    let tryFailRunQueue (q : RunQueueId) (errMsg : string) =
-        let elevate e = e |> TryFailRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = CannotFailRunQueue e |> elevate
-        let fromDbError e = e |> TryFailRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.TryFailRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    /// Can transition to CancelRequested from InProgress.
-    let tryRequestCancelRunQueue (q : RunQueueId) (r : CancellationType) =
-        let elevate e = e |> TryRequestCancelRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = CannotRequestCancelRunQueue e |> elevate
-        let fromDbError e = e |> TryRequestCancelRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.TryRequestCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = r.value)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    /// Can request notification of results when state is InProgress or CancelRequested.
-    let tryNotifyRunQueue (q : RunQueueId) (r : ChartNotificationType option) =
-        let elevate e = e |> TryNotifyRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = CannotNotifyRunQueue e |> elevate
-        let fromDbError e = e |> TryNotifyRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let v = r |> Option.bind (fun e -> Some e.value) |> Option.defaultValue 0
-            let r = ctx.Procedures.TryNotifyRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = v)
             r.ResultSet |> bindIntScalar x q
 
         tryDbFun fromDbError g
@@ -493,7 +303,203 @@ module WorkerNodeService =
             r.ResultSet |> bindIntScalar x q
 
         tryDbFun fromDbError g
+
 #endif
 
-// === COMMON - SHARED AMONG ALL ===
+#if WORKER_NODE
 
+    let tryLoadSolverRunners () =
+        let elevate e = e |> TryLoadSolverRunnersErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryLoadSolverRunnersDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+                    select (q.RunQueueId, q.ProcessId)
+                }
+
+            x
+            |> Seq.toList
+            |> List.map (fun (r, p) -> { runQueueId = RunQueueId r; processId = p |> Option.bind (fun e -> e |> ProcessId |> Some) })
+            |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let tryGetRunningSolversCount () =
+        let elevate e = e |> TryGetRunningSolversCountErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetRunningSolversCountDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+                    select q
+                    count
+                }
+
+            Ok x
+
+        tryDbFun fromDbError g
+
+
+    let tryPickRunQueue () =
+        let elevate e = e |> TryPickRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value)
+                    sortBy q.RunQueueOrder
+                    select (Some q.RunQueueId)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map RunQueueId |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let loadAllActiveRunQueueId () =
+        let elevate e = e |> LoadAllActiveRunQueueIdErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId =
+                        RunQueueStatus.NotStartedRunQueue.value
+                        || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value
+                        || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+                    select q.RunQueueId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map RunQueueId
+            |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelData<'D>) =
+        let row = ctx.Dbo.RunQueue.Create(
+                            RunQueueId = r.value,
+                            ModelData = (w |> serialize serializationFormat),
+                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
+                            CreatedOn = DateTime.Now,
+                            ModifiedOn = DateTime.Now)
+
+        row
+
+
+    /// Saves intocoming model data into a database fur further processing.
+    let saveModelData<'D> (r : RunQueueId) (w : ModelData<'D>) =
+        let elevate e = e |> SaveRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let row = addRunQueueRow ctx r w
+            ctx.SubmitUpdates()
+
+            Ok()
+
+        tryDbFun fromDbError g
+
+
+    /// Can transition to Completed from InProgress or CancelRequested.
+    let tryCompleteRunQueue (q : RunQueueId) =
+        let elevate e = e |> TryCompleteRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotCompleteRunQueue e |> elevate
+        let fromDbError e = e |> TryCompleteRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryCompleteRunQueue.Invoke(``@runQueueId`` = q.value)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+
+    /// Can transition to Cancelled from NotStarted, InProgress, or CancelRequested.
+    let tryCancelRunQueue (q : RunQueueId) (errMsg : string) =
+        let elevate e = e |> TryCancelRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = TryCancelRunQueueError.CannotCancelRunQueue e |> elevate
+        let fromDbError e = e |> TryCancelRunQueueError.TryCancelRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+
+    /// Can transition to Failed from InProgress or CancelRequested.
+    let tryFailRunQueue (q : RunQueueId) (errMsg : string) =
+        let elevate e = e |> TryFailRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotFailRunQueue e |> elevate
+        let fromDbError e = e |> TryFailRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryFailRunQueue.Invoke(``@runQueueId`` = q.value, ``@errorMessage`` = errMsg)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+
+    /// Can transition to CancelRequested from InProgress.
+    let tryRequestCancelRunQueue (q : RunQueueId) (r : CancellationType) =
+        let elevate e = e |> TryRequestCancelRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotRequestCancelRunQueue e |> elevate
+        let fromDbError e = e |> TryRequestCancelRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryRequestCancelRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = r.value)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+
+    /// Can request notification of results when state is InProgress or CancelRequested.
+    let tryNotifyRunQueue (q : RunQueueId) (r : ChartNotificationType option) =
+        let elevate e = e |> TryNotifyRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotNotifyRunQueue e |> elevate
+        let fromDbError e = e |> TryNotifyRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let v = r |> Option.bind (fun e -> Some e.value) |> Option.defaultValue 0
+            let r = ctx.Procedures.TryNotifyRunQueue.Invoke(``@runQueueId`` = q.value, ``@notificationTypeId`` = v)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+#endif

@@ -4,6 +4,7 @@ open System
 open Softellect.DistributedProcessing.Primitives
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
+open Softellect.Messaging.Primitives
 
 /// A SolverRunner operates on input data 'D and produces progress / output data 'P.
 /// Internally it uses a data type 'X to store the state of the computation and may produce chart data 'C.
@@ -221,6 +222,8 @@ module Primitives =
     type RunnerData<'D> =
         {
             runQueueId : RunQueueId
+            partitionerId : PartitionerId
+            messagingDataVersion : MessagingDataVersion
             modelData : ModelData<'D>
             started : DateTime
             cancellationCheckFreq : TimeSpan // How often to check if cancellation is requested.

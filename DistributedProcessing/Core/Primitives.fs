@@ -276,9 +276,9 @@ module Primitives =
         }
 
 
-    type ChartGenerationResult =
-        | GeneratedCharts of ChartInfo
-        | NotGeneratedCharts
+    //type ChartGenerationResult =
+    //    | GeneratedCharts of ChartInfo
+    //    | NotGeneratedCharts
 
 
     /// Generic type parameter 'P is the type of additional progress data.
