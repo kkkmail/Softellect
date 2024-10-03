@@ -1,10 +1,11 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Softellect.Messaging.Primitives
+open Softellect.DistributedProcessing.Primitives.SolverRunner
 
 /// A SolverRunner operates on input data 'D and produces progress / output data 'P.
 /// Internally it uses a data type 'X to store the state of the computation and may produce chart data 'C.
@@ -13,6 +14,69 @@ open Softellect.Messaging.Primitives
 /// We do it that way because both 'D and 'X could be huge and so capturing the state of the computation on each step is expensive.
 /// Charts are relatively small and can be used to visualize the progress of the computation.
 module Primitives =
+
+    /// See: https://stackoverflow.com/questions/49974736/how-to-declare-a-generic-exception-types-in-f
+    /// We have to resort to throwing a specific exception in order
+    /// to perform early termination from deep inside C# ODE solver.
+    /// There seems to be no other easy and clean way. Revisit if that changes.
+    type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
+        inherit System.Exception ()
+
+        member _.progressData = pd
+        member _.cancellationType = ct
+
+
+    type ProgressUpdateInfo<'P> =
+        {
+            runQueueId : RunQueueId
+            updatedRunQueueStatus : RunQueueStatus option
+            progressData : ProgressData<'P>
+        }
+
+        member p.toProgressUpdateInfo() : ProgressUpdateInfo =
+            {
+                runQueueId = p.runQueueId
+                updatedRunQueueStatus = p.updatedRunQueueStatus
+                progressData = p.progressData.toProgressData()
+            }
+
+
+    /// All data that we need in order to run a model.
+    /// The underlying model data is of type 'D.
+    /// And we have solver input parameters and solver output parameters to control the evolution and what we output.
+    type ModelData<'D> =
+        {
+            solverInputParams : SolverInputParams
+            solverOutputParams : SolverOutputParams
+            modelData : 'D
+        }
+
+        member d.toModelBinaryData() : ModelBinaryData =
+            {
+                solverInputParams = d.solverInputParams
+                solverOutputParams = d.solverOutputParams
+                modelData = d.modelData |> serialize serializationFormat
+            }
+
+        static member tryFromModelBinaryData (m : ModelBinaryData) =
+            match tryDeserialize<'D> serializationFormat m.modelData with
+            | Ok modelData ->
+                {
+                    solverInputParams = m.solverInputParams
+                    solverOutputParams = m.solverOutputParams
+                    modelData = modelData
+                } |> Ok
+            | Error e -> Error e
+
+
+    type RunQueue<'P> =
+        {
+            runQueueId : RunQueueId
+            runQueueStatus : RunQueueStatus
+            progressData : ProgressData<'P>
+            createdOn : DateTime
+        }
+
 
     type TryCallBack<'X> =
         | TryCallBack of (EvolutionTime -> 'X -> unit)
@@ -86,6 +150,8 @@ module Primitives =
     /// A function to call in order to notify about progress.
     //type ProgressCallBack<'P, 'X> =
     //    | ProgressCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
+    //type ProgressCallBack<'P> =
+    //    | ProgressCallBack of (CallBackType -> ProgressData<'P> -> unit)
     type ProgressCallBack<'P> =
         | ProgressCallBack of (CallBackType -> ProgressData<'P> -> unit)
 

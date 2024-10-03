@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "DistributedProcessingMessagingService": {
+      "commandName": "Project",
+      "commandLineArgs": "s -save",
+      "workingDirectory": "$(OutDir)",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": "true"
+    }
+  }
+}

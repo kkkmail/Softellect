@@ -12,7 +12,7 @@ open Softellect.Wcf.Common
 open Softellect.Wcf.Client
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
@@ -78,7 +78,7 @@ module WorkerNode =
     //    | Error e -> Error e
 
 
-    let onProcessMessage (proxy : OnProcessMessageProxy<'D>) (m : DistributedProcessingMessage<'D, 'P>) =
+    let onProcessMessage (proxy : OnProcessMessageProxy) (m : DistributedProcessingMessage) =
         printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}."
 
         match m.messageData with
@@ -126,11 +126,11 @@ module WorkerNode =
 
 
     /// 'D is underlying strongly typed input data, NOT A Message data, 'P is underlying progress data.
-    type WorkerNodeRunner<'D, 'P>(i : WorkerNodeRunnerData<'D, 'P>) =
+    type WorkerNodeRunner(i : WorkerNodeRunnerData) =
         let mutable callCount = -1
         let mutable started = false
         let partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
-        let messageProcessor = new MessagingClient<DistributedProcessingMessageData<'D, 'P>>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
+        let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
@@ -145,7 +145,7 @@ module WorkerNode =
         //        onRunModel = i.workerNodeProxy.onProcessMessageProxy.onRunModel
         //    }
 
-        let onProcessMessage (m : DistributedProcessingMessage<'D, 'P>) =
+        let onProcessMessage (m : DistributedProcessingMessage) =
             let r = onProcessMessage i.workerNodeProxy.onProcessMessageProxy m
 
             let r1 =

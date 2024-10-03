@@ -1,25 +1,3 @@
-IF OBJECT_ID('dbo.ModelType') IS NULL begin
-	print 'Creating table dbo.ModelType ...'
-
-	CREATE TABLE dbo.ModelType(
-		modelTypeId int NOT NULL,
-		modelTypeName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_ModelType PRIMARY KEY CLUSTERED 
-	(
-		modelTypeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
-
-	CREATE UNIQUE NONCLUSTERED INDEX UX_ModelType ON dbo.ModelType
-	(
-		modelTypeName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end else begin
-	print 'Table dbo.ModelType already exists ...'
-end
-go
-
-
 IF OBJECT_ID('dbo.NotificationType') IS NULL begin
 	print 'Creating table dbo.NotificationType ...'
 
@@ -64,39 +42,67 @@ end
 go
 
 
+IF OBJECT_ID('dbo.Solver') IS NULL begin
+	print 'Creating table dbo.Solver ...'
+
+	CREATE TABLE dbo.Solver(
+		solverId uniqueidentifier not null,
+		solverOrder bigint identity(1,1) not null,
+		solverName nvarchar(100) not null,
+        description nvarchar(2000) null, 
+        solverData varbinary(max) null,
+        createdOn datetime not null,
+	 CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
+	(
+		solverId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+	ALTER TABLE dbo.Solver ADD DEFAULT (getdate()) FOR createdOn
+
+    CREATE UNIQUE NONCLUSTERED INDEX IX_Solver_solverName ON dbo.Solver
+    (
+      solverName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+
+end else begin
+	print 'Table dbo.RunQueue already exists ...'
+end
+go
+
 IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	print 'Creating table dbo.RunQueue ...'
 
 	CREATE TABLE dbo.RunQueue(
-		runQueueId uniqueidentifier NOT NULL,
-		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
+		runQueueId uniqueidentifier not null,
+		runQueueOrder bigint IDENTITY(1,1) not null,
 
-		-- A human readable model type id to give a hint of what's running.
+		-- A solver id to determine which solver should run the model.
 		-- This is needed because the modelData is stored in a zipped binary format.
-		modelTypeId int NOT NULL, 
+		solverId uniqueidentifier not null,
 
 		-- All the initial data that is needed to run the calculation.
 		-- It is designed to be huge, and so zipped binary format is used.
-		modelData varbinary(max) NOT NULL,
+		modelData varbinary(max) not null,
 
-		runQueueStatusId int NOT NULL,
+		runQueueStatusId int not null,
 		processId int NULL,
-		notificationTypeId int NOT NULL,
-		errorMessage nvarchar(max) NULL,
-		progress decimal(18, 14) NOT NULL,
+		notificationTypeId int not null,
+		errorMessage nvarchar(max) null,
+		progress decimal(18, 14) not null,
 
 		-- Additional progress data (if any) used for further analysis and / or for earlier termination.
 		-- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
 		progressData nvarchar(max) NULL,
 
-		callCount bigint NOT NULL,
+		callCount bigint not null,
 
 		 -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
-		relativeInvariant float NOT NULL,
+		relativeInvariant float not null,
 
-		createdOn datetime NOT NULL,
-		startedOn datetime NULL,
-		modifiedOn datetime NOT NULL,
+		createdOn datetime not null,
+		startedOn datetime null,
+		modifiedOn datetime not null,
 	 CONSTRAINT PK_WorkerNodeRunModelData PRIMARY KEY CLUSTERED 
 	(
 		runQueueId ASC
@@ -119,9 +125,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	REFERENCES dbo.RunQueueStatus (runQueueStatusId)
 	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_RunQueueStatus
 
-	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_ModelType FOREIGN KEY(modelTypeId)
-	REFERENCES dbo.ModelType (modelTypeId)
-	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_ModelType
+	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_Solver FOREIGN KEY(solverId)
+	REFERENCES dbo.Solver (solverId)
+	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_Solver
 
 end else begin
 	print 'Table dbo.RunQueue already exists ...'
@@ -251,7 +257,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max))
+create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max) = null)
 as
 begin
 	declare @rowCount int
@@ -335,7 +341,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-create procedure dbo.tryFailRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max))
+create procedure dbo.tryFailRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max) = null)
 as
 begin
 	declare @rowCount int
@@ -432,6 +438,41 @@ begin
 		modifiedOn = (getdate())
 	where runQueueId = @runQueueId and runQueueStatusId in (dbo.RunQueueStatus_NotStarted(), dbo.RunQueueStatus_InProgress())
 
+
+	set @rowCount = @@rowcount
+	select @rowCount as [RowCount]
+end
+go
+
+drop procedure if exists dbo.tryUpdateProgressRunQueue
+go
+
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+create procedure dbo.tryUpdateProgressRunQueue (
+                        @runQueueId uniqueidentifier,
+                        @progress decimal(18, 14),
+                        @progressData nvarchar(max) = null,
+                        @callCount bigint,
+                        @relativeInvariant float)
+as
+begin
+	declare @rowCount int
+	set nocount on;
+
+    update dbo.RunQueue
+    set
+        progress = @progress,
+        progressData = @progressData,
+        callCount = @callCount,
+        relativeInvariant = @relativeInvariant,
+        modifiedOn = (getdate())
+    where runQueueId = @runQueueId and runQueueStatusId in (dbo.RunQueueStatus_InProgress(), dbo.RunQueueStatus_CancelRequested())
 
 	set @rowCount = @@rowcount
 	select @rowCount as [RowCount]

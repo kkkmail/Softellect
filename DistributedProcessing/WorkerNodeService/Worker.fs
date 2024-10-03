@@ -36,6 +36,7 @@ open Softellect.Sys
 open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open CoreWCF
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Worker =
 

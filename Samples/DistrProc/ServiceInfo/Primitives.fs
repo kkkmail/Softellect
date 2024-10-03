@@ -35,9 +35,9 @@ module Primitives =
 
 
     type TestProgressData = unit
-    type TestMessageData = DistributedProcessingMessageData<SolverData, ProgressData<TestProgressData>>
-    type TestRunnerData = WorkerNodeRunnerData<SolverData, ProgressData<TestProgressData>>
-    type TestMessage = DistributedProcessingMessage<SolverData, ProgressData<TestProgressData>>
+    type TestMessageData = DistributedProcessingMessageData
+    type TestRunnerData = WorkerNodeRunnerData
+    type TestMessage = DistributedProcessingMessage
 
 
     let tryRunSolverProcessOne (r : RunQueueId) : DistributedProcessingUnitResult =

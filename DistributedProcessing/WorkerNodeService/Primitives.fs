@@ -7,7 +7,7 @@ open Softellect.Wcf.Common
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Client
 open Softellect.Sys.Primitives
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Primitives =
 
@@ -19,11 +19,37 @@ module Primitives =
     let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress
 
 
-    type WorkerNodeMessageInfo<'D> =
+    type RunQueue =
+        {
+            runQueueId : RunQueueId
+            runQueueStatus : RunQueueStatus
+            progressData : ProgressData
+            createdOn : DateTime
+        }
+
+
+    //type WorkerNodeMessageInfo<'D> =
+    //    {
+    //        workerNodeRecipient : WorkerNodeId
+    //        deliveryType : MessageDeliveryType
+    //        messageData : WorkerNodeMessage<'D>
+    //    }
+
+    //    member this.getMessageInfo() =
+    //        {
+    //            recipientInfo =
+    //                {
+    //                    recipient = this.workerNodeRecipient.messagingClientId
+    //                    deliveryType = this.deliveryType
+    //                }
+    //            messageData = this.messageData |> WorkerNodeMsg |> UserMsg
+    //        }
+
+    type WorkerNodeMessageInfo =
         {
             workerNodeRecipient : WorkerNodeId
             deliveryType : MessageDeliveryType
-            messageData : WorkerNodeMessage<'D>
+            messageData : WorkerNodeMessage
         }
 
         member this.getMessageInfo() =

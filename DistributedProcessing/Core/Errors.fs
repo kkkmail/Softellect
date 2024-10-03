@@ -16,7 +16,7 @@ open Softellect.Messaging.Proxy
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Errors =
 
@@ -416,8 +416,14 @@ module Errors =
     /// We have to resort to throwing a specific exception in order
     /// to perform early termination from deep inside C# ODE solver.
     /// There seems to be no other easy and clean way. Revisit if that changes.
-    type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
-        inherit System.Exception ()
+    //type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
+    //    inherit System.Exception ()
 
-        member _.progressData = pd
-        member _.cancellationType = ct
+    //    member _.progressData = pd
+    //    member _.cancellationType = ct
+
+    //type ComputationAbortedException (pd : ProgressData, ct : CancellationType) =
+    //    inherit System.Exception ()
+
+    //    member _.progressData = pd
+    //    member _.cancellationType = ct

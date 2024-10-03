@@ -3,7 +3,7 @@
 open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
 
@@ -68,9 +68,9 @@ module Implementation =
 
 
     // Send the message directly to local database.
-    let private sendMessage<'D, 'P> messagingDataVersion m i =
+    let private sendMessage messagingDataVersion m i =
         createMessage messagingDataVersion m i
-        |> saveMessage<DistributedProcessingMessageData<'D, 'P>> messagingDataVersion
+        |> saveMessage<DistributedProcessingMessageData> messagingDataVersion
         //|> bindError (fun e -> MessagingErr e |> SendMessageErr |> Error)
 
 
@@ -99,7 +99,7 @@ module Implementation =
                 deliveryType = GuaranteedDelivery
                 messageData = i |> SaveChartsPrtMsg
             }.getMessageInfo()
-            |> sendMessage<'D, 'P> data.messagingDataVersion data.partitionerId.messagingClientId
+            |> sendMessage data.messagingDataVersion data.partitionerId.messagingClientId
 
         match result with
         | Ok v -> Ok v
@@ -148,7 +148,7 @@ module Implementation =
             {
                 partitionerRecipient = data.partitionerId
                 deliveryType = t
-                messageData = UpdateProgressPrtMsg p
+                messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
             }.getMessageInfo()
             |> sendMessage data.messagingDataVersion data.partitionerId.messagingClientId
 

@@ -5,9 +5,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 		runQueueId uniqueidentifier NOT NULL,
 		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
 
-		-- A human readable model type id to give a hint of what's running.
+		-- A solver id to determine which solver should run the model.
 		-- This is needed because the modelData is stored in a zipped binary format.
-		modelTypeId int NOT NULL, 
+		solverId uniqueidentifier not null,
 
 		-- All the initial data that is needed to run the calculation.
 		-- It is designed to be huge, and so zipped binary format is used.
@@ -57,9 +57,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	REFERENCES dbo.RunQueueStatus (runQueueStatusId)
 	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_RunQueueStatus
 
-	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_ModelType FOREIGN KEY(modelTypeId)
-	REFERENCES dbo.ModelType (modelTypeId)
-	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_ModelType
+	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_Solver FOREIGN KEY(solverId)
+	REFERENCES dbo.Solver (solverId)
+	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_Solver
 
 	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_WorkerNode FOREIGN KEY(workerNodeId)
 	REFERENCES dbo.WorkerNode (workerNodeId)

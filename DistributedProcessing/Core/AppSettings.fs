@@ -14,13 +14,12 @@ open Softellect.Wcf.Client
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.Sys.Primitives
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.AppSettings
 //open Softellect.DistributedProcessing.WorkerNodeService.Primitives
-open Softellect.DistributedProcessing.Primitives
 
 // ==========================================
 

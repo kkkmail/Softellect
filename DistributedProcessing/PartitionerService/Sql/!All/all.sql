@@ -1,25 +1,3 @@
-IF OBJECT_ID('dbo.ModelType') IS NULL begin
-	print 'Creating table dbo.ModelType ...'
-
-	CREATE TABLE dbo.ModelType(
-		modelTypeId int NOT NULL,
-		modelTypeName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_ModelType PRIMARY KEY CLUSTERED 
-	(
-		modelTypeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
-
-	CREATE UNIQUE NONCLUSTERED INDEX UX_ModelType ON dbo.ModelType
-	(
-		modelTypeName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-end else begin
-	print 'Table dbo.ModelType already exists ...'
-end
-go
-
-
 IF OBJECT_ID('dbo.NotificationType') IS NULL begin
 	print 'Creating table dbo.NotificationType ...'
 
@@ -63,6 +41,34 @@ end else begin
 end
 go
 
+
+IF OBJECT_ID('dbo.Solver') IS NULL begin
+	print 'Creating table dbo.Solver ...'
+
+	CREATE TABLE dbo.Solver(
+		solverId uniqueidentifier not null,
+		solverOrder bigint identity(1,1) not null,
+		solverName nvarchar(100) not null,
+        description nvarchar(2000) null, 
+        solverData varbinary(max) null,
+        createdOn datetime not null,
+	 CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
+	(
+		solverId ASC
+	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+	ALTER TABLE dbo.Solver ADD DEFAULT (getdate()) FOR createdOn
+
+    CREATE UNIQUE NONCLUSTERED INDEX IX_Solver_solverName ON dbo.Solver
+    (
+      solverName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+
+end else begin
+	print 'Table dbo.RunQueue already exists ...'
+end
+go
 
 IF OBJECT_ID('dbo.WorkerNode') IS NULL begin
 	print 'Creating table dbo.WorkerNode ...'
@@ -111,9 +117,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 		runQueueId uniqueidentifier NOT NULL,
 		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
 
-		-- A human readable model type id to give a hint of what's running.
+		-- A solver id to determine which solver should run the model.
 		-- This is needed because the modelData is stored in a zipped binary format.
-		modelTypeId int NOT NULL, 
+		solverId uniqueidentifier not null,
 
 		-- All the initial data that is needed to run the calculation.
 		-- It is designed to be huge, and so zipped binary format is used.
@@ -163,9 +169,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	REFERENCES dbo.RunQueueStatus (runQueueStatusId)
 	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_RunQueueStatus
 
-	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_ModelType FOREIGN KEY(modelTypeId)
-	REFERENCES dbo.ModelType (modelTypeId)
-	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_ModelType
+	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_Solver FOREIGN KEY(solverId)
+	REFERENCES dbo.Solver (solverId)
+	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_Solver
 
 	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_WorkerNode FOREIGN KEY(workerNodeId)
 	REFERENCES dbo.WorkerNode (workerNodeId)
@@ -299,7 +305,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max))
+create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max) = null)
 as
 begin
 	declare @rowCount int
@@ -383,7 +389,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-create procedure dbo.tryFailRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max))
+create procedure dbo.tryFailRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max) = null)
 as
 begin
 	declare @rowCount int

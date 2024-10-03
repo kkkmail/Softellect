@@ -9,11 +9,11 @@ GO
 
 
 create procedure dbo.tryUpdateProgressRunQueue (
-						@runQueueId uniqueidentifier,
-						@progress decimal(18, 14),
-                        @progressData nvarchar(max),
-						@callCount bigint,
-						@relativeInvariant float)
+                        @runQueueId uniqueidentifier,
+                        @progress decimal(18, 14),
+                        @progressData nvarchar(max) = null,
+                        @callCount bigint,
+                        @relativeInvariant float)
 as
 begin
 	declare @rowCount int

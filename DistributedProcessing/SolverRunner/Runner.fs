@@ -3,12 +3,13 @@
 open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
 open System.Collections.Concurrent
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
+open Softellect.DistributedProcessing.Primitives.SolverRunner
 
 module Runner =
 
@@ -37,8 +38,8 @@ module Runner =
         |> decimal
 
 
-    let private shouldNotifyByCallCount ncbd =
-        let callCount = ncbd.progressData.callCount
+    let private shouldNotifyByCallCount (ncbd : NeedsCallBackData) =
+        let callCount = ncbd.progressData.progressInfo.callCount
 
         let r =
             [
@@ -171,7 +172,7 @@ module Runner =
     //    | None -> EmptyString
 
 
-    let private calculateProgressDataWithErr ncbd (t : EvolutionTime) v =
+    let private calculateProgressDataWithErr (ncbd : NeedsCallBackData) (t : EvolutionTime) v =
         // n.logger.logDebugString $"calculateProgressDataWithErr: Called with t = {t}, v = {v}."
 
         let withMessage s m =
@@ -182,14 +183,14 @@ module Runner =
                 |> ErrorMessage
                 |> Some
 
-            let pd = { ncbd.progressData with errorMessageOpt = eo}
+            let pd = { ncbd.progressData.progressInfo with errorMessageOpt = eo}
             pd
 
         match v with
-        | AbortCalculation s -> $"The run queue was aborted at: %.2f{ncbd.progressData.progress * 100.0m}%% progress." |> withMessage s
+        | AbortCalculation s -> $"The run queue was aborted at: %.2f{ncbd.progressData.progressInfo.progress * 100.0m}%% progress." |> withMessage s
         | CancelWithResults s ->
             //$"The run queue was cancelled at: %.2f{d.progressData.progressData.progress * 100.0m}%% progress. Absolute tolerance: {n.odeParams.absoluteTolerance}."
-            $"The run queue was cancelled at: %.2f{ncbd.progressData.progress * 100.0m}%% progress."
+            $"The run queue was cancelled at: %.2f{ncbd.progressData.progressInfo.progress * 100.0m}%% progress."
             |> withMessage s
 
 
@@ -254,7 +255,7 @@ module Runner =
         | None -> Ok()
 
 
-    let private tryCallBack ctx ncbd (t : EvolutionTime) x =
+    let private tryCallBack ctx (ncbd : NeedsCallBackData) (t : EvolutionTime) x =
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -269,20 +270,22 @@ module Runner =
         // n.logger.logDebugString $"tryCallBack - starting: t = {t}, needsCallBackData = {d0}."
         //let pd = { d0.progressData with callCount = d0.progressData.callCount + 1L; progress = calculateProgress n t }
 
+        let progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x) // Calculates detailed progress.
+
         let pd =
             {
-                progressData =
+                progressInfo =
                     {
                         progress = calculateProgress i t
-                        callCount = ncbd.progressData.callCount + 1L
+                        callCount = ncbd.progressData.progressInfo.callCount + 1L
                         t = t
                         relativeInvariant = u.solverProxy.getInvariant modelData t x
                         errorMessageOpt = None
                     }
-                progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x) // Calculates detailed progress.
+                progressDetailed = progressDetailed
             }
 
-        let ncbd1 = { ncbd with progressData = pd.progressData }
+        let ncbd1 = { ncbd with progressData = pd.toProgressData() }
         let ncbd2, ct = checkCancellation runQueueId d.cancellationCheckFreq c ncbd1
 
         //let cbd = { progressData = pd; x = x }
@@ -291,7 +294,7 @@ module Runner =
         match ct with
         | Some v ->
             notifyAll ctx (v |> CancelledCalculation |> FinalCallBack) pd t x
-            let progressDataWithErr = { pd with progressData = calculateProgressDataWithErr ncbd1 t v }
+            let progressDataWithErr = { pd with progressInfo = calculateProgressDataWithErr ncbd1 t v }
             raise (ComputationAbortedException<'P> (progressDataWithErr, v))
         | None ->
             // let c, v = n.callBackInfo.needsCallBack.invoke d t
@@ -339,7 +342,7 @@ module Runner =
 
         let getProgressData t x =
             {
-                progressData = (getNeedsCallBackData runQueueId).progressData
+                progressInfo = (getNeedsCallBackData runQueueId).progressData.progressInfo
                 progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x)
             }
 
@@ -391,7 +394,7 @@ module Runner =
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
             | ex ->
                 let ncbd = getNeedsCallBackData d.runQueueId
-                let pd = { progressData = { ncbd.progressData with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
+                let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
                 notifyProgress s (Some $"{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
             h.stop()

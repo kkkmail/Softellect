@@ -71,6 +71,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "WorkerNodeService", "Sample
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SolverRunner", "Samples\DistrProc\SolverRunner\SolverRunner.fsproj", "{35129EDB-8546-4BC8-A3D8-76292F70FB23}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "DistributedProcessingMessagingService", "DistributedProcessing\MessagingService\DistributedProcessingMessagingService.fsproj", "{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -189,6 +191,10 @@ Global
 		{35129EDB-8546-4BC8-A3D8-76292F70FB23}.Debug|x64.Build.0 = Debug|x64
 		{35129EDB-8546-4BC8-A3D8-76292F70FB23}.Release|x64.ActiveCfg = Release|x64
 		{35129EDB-8546-4BC8-A3D8-76292F70FB23}.Release|x64.Build.0 = Release|x64
+		{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE}.Debug|x64.ActiveCfg = Debug|x64
+		{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE}.Debug|x64.Build.0 = Debug|x64
+		{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE}.Release|x64.ActiveCfg = Release|x64
+		{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -218,6 +224,7 @@ Global
 		{F1001003-4364-47B2-ABF4-8BA414C101BF} = {B058BD13-C2C0-451A-83F2-50D993285078}
 		{4AF728C1-6895-4DA8-9ECB-D1DCC2ED40C4} = {B058BD13-C2C0-451A-83F2-50D993285078}
 		{35129EDB-8546-4BC8-A3D8-76292F70FB23} = {B058BD13-C2C0-451A-83F2-50D993285078}
+		{A6EE2A8C-34BC-4A32-8A29-1F407E24A3AE} = {F9C514B7-8DB8-4204-AA4C-DDF5F257BDFA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7A2921D5-1F3D-48DF-A77D-B0C8D846BDB8}

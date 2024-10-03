@@ -3,7 +3,7 @@
 open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
 open System

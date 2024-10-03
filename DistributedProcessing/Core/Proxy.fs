@@ -25,7 +25,7 @@ open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 #if WORKER_NODE
 open Softellect.DistributedProcessing.WorkerNodeService.Primitives
@@ -162,23 +162,23 @@ module WorkerNodeService =
 #endif
 
 #if WORKER_NODE
-    type OnProcessMessageProxy<'D> =
+    type OnProcessMessageProxy =
         {
-            saveModelData : RunQueueId -> ModelData<'D> -> DistributedProcessingUnitResult
+            saveModelData : RunQueueId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
             onRunModel : RunQueueId -> DistributedProcessingUnitResult
         }
 
 
-    type WorkerNodeProxy<'D> =
+    type WorkerNodeProxy =
         {
-            onProcessMessageProxy : OnProcessMessageProxy<'D>
+            onProcessMessageProxy : OnProcessMessageProxy
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             //logCrit : SolverRunnerCriticalError -> UnitResult
         }
 
-        static member create sr : WorkerNodeProxy<'D> =
+        static member create sr : WorkerNodeProxy =
             {
                 onProcessMessageProxy =
                     {
@@ -193,13 +193,13 @@ module WorkerNodeService =
             }
 
 
-    type WorkerNodeRunnerData<'D, 'P> =
+    type WorkerNodeRunnerData =
         {
             workerNodeServiceInfo : WorkerNodeServiceInfo
-            workerNodeProxy : WorkerNodeProxy<'D>
-            //messageProcessorProxy : DistributedProcessingMessageProcessorProxy<'D, 'P>
-            //messageProcessor : IMessageProcessor<DistributedProcessingMessageData<'D, 'P>>
-            messagingClientData : MessagingClientData<DistributedProcessingMessageData<'D, 'P>>
+            workerNodeProxy : WorkerNodeProxy
+            //messageProcessorProxy : DistributedProcessingMessageProcessorProxy
+            //messageProcessor : IMessageProcessor<DistributedProcessingMessageData>
+            messagingClientData : MessagingClientData<DistributedProcessingMessageData>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
 

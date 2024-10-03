@@ -1,4 +1,4 @@
-namespace Softellect.DistributedProcessing
+namespace Softellect.DistributedProcessing.Primitives
 
 open System
 open Softellect.Messaging.Primitives
@@ -7,8 +7,9 @@ open Softellect.Wcf.Common
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Client
 open Softellect.Sys.Primitives
+open Softellect.Sys.Core
 
-module Primitives =
+module Common =
 
     [<Literal>]
     let DefaultAbsoluteTolerance = 1.0e-08
@@ -20,6 +21,19 @@ module Primitives =
 
     [<Literal>]
     let SolverRunnerProcessName = "SolverRunner"
+
+
+    /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
+    /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
+    let serializationFormat = BinaryZippedFormat
+
+
+    /// The progress data should be human readable, so that a query can be run to check the detailed progress.
+    /// JSON is supported by MSSQL and so it is a good choice.
+    let progressSerializationFormat = JSonFormat
+
+    let serializeProgress = jsonSerialize
+    let deserializeProgress<'T> = jsonDeserialize<'T>
 
 
     let defaultNoOfOutputPoints = 1000
@@ -101,7 +115,7 @@ module Primitives =
         else None
 
 
-    type ProgressData =
+    type ProgressInfo =
         {
             progress : decimal // Progress in the range [0.0, 1.0]
             callCount : int64
@@ -110,7 +124,7 @@ module Primitives =
             errorMessageOpt : ErrorMessage option
         }
 
-        static member defaultValue : ProgressData =
+        static member defaultValue : ProgressInfo =
             {
                 progress = 0.0m
                 callCount = 0L
@@ -122,20 +136,41 @@ module Primitives =
         member data.estimateEndTime started = estimateEndTime data.progress started
 
 
+    type ProgressData =
+        {
+            progressInfo : ProgressInfo
+            progressDetailed : string option
+        }
+
+        static member defaultValue : ProgressData =
+            {
+                progressInfo = ProgressInfo.defaultValue
+                progressDetailed = None
+            }
+
+        member data.estimateEndTime started = data.progressInfo.estimateEndTime started
+
+
     /// 'P is any other data that is needed for progress tracking.
     type ProgressData<'P> =
         {
-            progressData : ProgressData
+            progressInfo : ProgressInfo
             progressDetailed : 'P option
         }
 
         static member defaultValue : ProgressData<'P> =
             {
-                progressData = ProgressData.defaultValue
+                progressInfo = ProgressInfo.defaultValue
                 progressDetailed = None
             }
 
-        member data.estimateEndTime started = data.progressData.estimateEndTime started
+        member p.toProgressData() : ProgressData =
+            {
+                progressInfo = p.progressInfo
+                progressDetailed = p.progressDetailed |> Option.map (fun e -> serializeProgress e)
+            }
+
+    //    member data.estimateEndTime started = data.progressData.estimateEndTime started
 
 
     type WorkerNodeId =
@@ -193,11 +228,18 @@ module Primitives =
     /// All data that we need in order to run a model.
     /// The underlying model data is of type 'D.
     /// And we have solver input parameters and solver output parameters to control the evolution and what we output.
-    type ModelData<'D> =
+    //type ModelData<'D> =
+    //    {
+    //        solverInputParams : SolverInputParams
+    //        solverOutputParams : SolverOutputParams
+    //        modelData : 'D
+    //    }
+
+    type ModelBinaryData =
         {
             solverInputParams : SolverInputParams
             solverOutputParams : SolverOutputParams
-            modelData : 'D
+            modelData : byte[]
         }
 
 
@@ -209,9 +251,20 @@ module Primitives =
     //    }
 
 
-    type WorkerNodeMessage<'D> =
-        //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
-        | RunModelWrkMsg of (RunQueueId * ModelData<'D>)
+    //type WorkerNodeMessage<'D> =
+    //    //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
+    //    | RunModelWrkMsg of (RunQueueId * ModelData<'D>)
+    //    | CancelRunWrkMsg of (RunQueueId * CancellationType)
+    //    | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
+
+    //    member this.messageSize =
+    //        match this with
+    //        | RunModelWrkMsg _ -> LargeSize
+    //        | CancelRunWrkMsg _ -> SmallSize
+    //        | RequestChartsWrkMsg _ -> SmallSize
+
+    type WorkerNodeMessage =
+        | RunModelWrkMsg of (RunQueueId * ModelBinaryData)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
 
@@ -261,11 +314,19 @@ module Primitives =
         }
 
 
-    type ProgressUpdateInfo<'P> =
+    //type ProgressUpdateInfo<'P> =
+    //    {
+    //        runQueueId : RunQueueId
+    //        updatedRunQueueStatus : RunQueueStatus option
+    //        progressData : ProgressData<'P>
+    //    }
+
+
+    type ProgressUpdateInfo =
         {
             runQueueId : RunQueueId
             updatedRunQueueStatus : RunQueueStatus option
-            progressData : ProgressData<'P>
+            progressData : ProgressData
         }
 
 
@@ -283,8 +344,21 @@ module Primitives =
 
     /// Generic type parameter 'P is the type of additional progress data.
     /// It should account for intermediate progress data and final progress data.
-    type PartitionerMessage<'P> =
-        | UpdateProgressPrtMsg of ProgressUpdateInfo<'P>
+    //type PartitionerMessage<'P> =
+    //    | UpdateProgressPrtMsg of ProgressUpdateInfo<'P>
+    //    | SaveChartsPrtMsg of ChartInfo
+    //    | RegisterWorkerNodePrtMsg of WorkerNodeInfo
+    //    | UnregisterWorkerNodePrtMsg of WorkerNodeId
+
+    //    member this.messageSize =
+    //        match this with
+    //        | UpdateProgressPrtMsg _ -> SmallSize
+    //        | SaveChartsPrtMsg _ -> MediumSize
+    //        | RegisterWorkerNodePrtMsg _ -> SmallSize
+    //        | UnregisterWorkerNodePrtMsg _ -> SmallSize
+
+    type PartitionerMessage =
+        | UpdateProgressPrtMsg of ProgressUpdateInfo
         | SaveChartsPrtMsg of ChartInfo
         | RegisterWorkerNodePrtMsg of WorkerNodeInfo
         | UnregisterWorkerNodePrtMsg of WorkerNodeId
@@ -301,9 +375,20 @@ module Primitives =
     /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>) 
     /// and WorkerNodes send messages to Partitioner (PartitionerMessage<'P>).
     /// Single type could be used, but it seems inconvenient, as both partitioner and worker node would have to perform exhaustive pattern matching.
-    type DistributedProcessingMessageData<'D, 'P> =
-        | PartitionerMsg of PartitionerMessage<'P> // A message sent from worker node to partitioner.
-        | WorkerNodeMsg of WorkerNodeMessage<'D> // A message sent from partitioner to worker node.
+    //type DistributedProcessingMessageData<'D, 'P> =
+    //    | PartitionerMsg of PartitionerMessage<'P> // A message sent from worker node to partitioner.
+    //    | WorkerNodeMsg of WorkerNodeMessage<'D> // A message sent from partitioner to worker node.
+
+    //    static member maxInfoLength = 500
+
+    //    member this.getMessageSize() =
+    //        match this with
+    //        | PartitionerMsg m -> m.messageSize
+    //        | WorkerNodeMsg m -> m.messageSize
+
+    type DistributedProcessingMessageData =
+        | PartitionerMsg of PartitionerMessage // A message sent from worker node to partitioner.
+        | WorkerNodeMsg of WorkerNodeMessage // A message sent from partitioner to worker node.
 
         static member maxInfoLength = 500
 
@@ -313,16 +398,36 @@ module Primitives =
             | WorkerNodeMsg m -> m.messageSize
 
 
-    type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
-    type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
+    //type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
+    //type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
     //type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
 
+    type DistributedProcessingMessage = Message<DistributedProcessingMessageData>
+    type DistributedProcessingMessageInfo = MessageInfo<DistributedProcessingMessageData>
 
-    type PartitionerMessageInfo<'P> =
+
+    //type PartitionerMessageInfo<'P> =
+    //    {
+    //        partitionerRecipient : PartitionerId
+    //        deliveryType : MessageDeliveryType
+    //        messageData : PartitionerMessage<'P>
+    //    }
+
+    //    member this.getMessageInfo() =
+    //        {
+    //            recipientInfo =
+    //                {
+    //                    recipient = this.partitionerRecipient.messagingClientId
+    //                    deliveryType = this.deliveryType
+    //                }
+    //            messageData = this.messageData |> PartitionerMsg |> UserMsg
+    //        }
+
+    type PartitionerMessageInfo =
         {
             partitionerRecipient : PartitionerId
             deliveryType : MessageDeliveryType
-            messageData : PartitionerMessage<'P>
+            messageData : PartitionerMessage
         }
 
         member this.getMessageInfo() =
@@ -402,3 +507,11 @@ module Primitives =
         | OdeSolver
         | FredholmSolver
         | UserDefinedSolver
+
+
+module PartitionerAndWorker =
+    let x = 1
+
+
+module GeneratorAndSolver =
+    let x = 1

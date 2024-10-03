@@ -16,6 +16,7 @@ open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Primitives
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 module ServiceInfo =
 
@@ -188,7 +189,7 @@ module ServiceInfo =
     let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
     let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
-    let workerNodeProxy = WorkerNodeProxy<SolverData>.create solverRunner
+    let workerNodeProxy = WorkerNodeProxy.create solverRunner
 
     let getMessageSize _ = SmallSize
 
@@ -199,7 +200,7 @@ module ServiceInfo =
             storageType = MsSqlDatabase
         }
 
-    let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData<SolverData, ProgressData<TestProgressData>>> getLogger getMessageSize messagingClientProxyInfo
+    let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
 
     let messagingClientData =
         {

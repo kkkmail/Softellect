@@ -52,7 +52,7 @@ module Program =
     //    //    UnknownException
     //    0
 
-    let main<'D, 'P> workerNodeProgramName (data : WorkerNodeRunnerData<'D, 'P>) argv =
+    let main workerNodeProgramName (data : WorkerNodeRunnerData) argv =
         //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
@@ -61,7 +61,7 @@ module Program =
             failwith ""
 
         let configureServices (services : IServiceCollection) =
-            let runner = new WorkerNodeRunner<'D, 'P>(data)
+            let runner = new WorkerNodeRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
 
         let programData =

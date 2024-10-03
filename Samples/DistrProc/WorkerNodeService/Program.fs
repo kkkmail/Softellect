@@ -3,7 +3,7 @@
 open Softellect.DistributedProcessing.WorkerNodeService.Program
 open Softellect.Samples.DistrProc.ServiceInfo.Primitives
 open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Program =
 
@@ -17,4 +17,4 @@ module Program =
                 tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
             }
 
-        main<SolverData, ProgressData<TestProgressData>> "WorkerNodeSvc" data args
+        main "WorkerNodeSvc" data args

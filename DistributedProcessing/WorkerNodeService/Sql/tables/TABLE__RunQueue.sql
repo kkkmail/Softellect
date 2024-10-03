@@ -2,35 +2,35 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	print 'Creating table dbo.RunQueue ...'
 
 	CREATE TABLE dbo.RunQueue(
-		runQueueId uniqueidentifier NOT NULL,
-		runQueueOrder bigint IDENTITY(1,1) NOT NULL,
+		runQueueId uniqueidentifier not null,
+		runQueueOrder bigint IDENTITY(1,1) not null,
 
-		-- A human readable model type id to give a hint of what's running.
+		-- A solver id to determine which solver should run the model.
 		-- This is needed because the modelData is stored in a zipped binary format.
-		modelTypeId int NOT NULL, 
+		solverId uniqueidentifier not null,
 
 		-- All the initial data that is needed to run the calculation.
 		-- It is designed to be huge, and so zipped binary format is used.
-		modelData varbinary(max) NOT NULL,
+		modelData varbinary(max) not null,
 
-		runQueueStatusId int NOT NULL,
+		runQueueStatusId int not null,
 		processId int NULL,
-		notificationTypeId int NOT NULL,
-		errorMessage nvarchar(max) NULL,
-		progress decimal(18, 14) NOT NULL,
+		notificationTypeId int not null,
+		errorMessage nvarchar(max) null,
+		progress decimal(18, 14) not null,
 
 		-- Additional progress data (if any) used for further analysis and / or for earlier termination.
 		-- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
 		progressData nvarchar(max) NULL,
 
-		callCount bigint NOT NULL,
+		callCount bigint not null,
 
 		 -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
-		relativeInvariant float NOT NULL,
+		relativeInvariant float not null,
 
-		createdOn datetime NOT NULL,
-		startedOn datetime NULL,
-		modifiedOn datetime NOT NULL,
+		createdOn datetime not null,
+		startedOn datetime null,
+		modifiedOn datetime not null,
 	 CONSTRAINT PK_WorkerNodeRunModelData PRIMARY KEY CLUSTERED 
 	(
 		runQueueId ASC
@@ -53,9 +53,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
 	REFERENCES dbo.RunQueueStatus (runQueueStatusId)
 	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_RunQueueStatus
 
-	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_ModelType FOREIGN KEY(modelTypeId)
-	REFERENCES dbo.ModelType (modelTypeId)
-	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_ModelType
+	ALTER TABLE dbo.RunQueue  WITH CHECK ADD  CONSTRAINT FK_RunQueue_Solver FOREIGN KEY(solverId)
+	REFERENCES dbo.Solver (solverId)
+	ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_Solver
 
 end else begin
 	print 'Table dbo.RunQueue already exists ...'

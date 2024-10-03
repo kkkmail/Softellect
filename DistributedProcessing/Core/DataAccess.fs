@@ -23,9 +23,10 @@ open Softellect.Sys.DataAccess
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 
 // ==========================================
+// Blank #if template blocks
 
 #if PARTITIONER
 #endif
@@ -43,6 +44,21 @@ open Softellect.DistributedProcessing.Primitives
 #endif
 
 // ==========================================
+// Open declarations
+
+#if PARTITIONER
+#endif
+
+#if SOLVER_RUNNER
+open Softellect.DistributedProcessing.Primitives.SolverRunner
+open Softellect.DistributedProcessing.SolverRunner.Primitives
+#endif
+
+#if WORKER_NODE
+#endif
+
+// ==========================================
+// Module declarations
 
 #if PARTITIONER
 module PartitionerService =
@@ -57,29 +73,12 @@ module WorkerNodeService =
 #endif
 
 // ==========================================
+// Code
 
-    /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
-    /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
-    let private serializationFormat = BinaryZippedFormat
-
-
-    /// The progress data should be human readable, so that a query can be run to check the detailed progress.
-    /// JSON is supported by MSSQL and so it is a good choice.
-    let private progressSerializationFormat = JSonFormat
-
+#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#endif
 
 #if PARTITIONER
-
-    type RunQueue<'P> =
-        {
-            runQueueId : RunQueueId
-            //info : RunQueueInfo
-            runQueueStatus : RunQueueStatus
-            workerNodeIdOpt : WorkerNodeId option
-            progressData : ProgressData<'P>
-            createdOn : DateTime
-        }
-
 
     let connectionStringKey = ConfigKey "PartitionerService"
 
@@ -89,16 +88,10 @@ module WorkerNodeService =
 
 #endif
 
+#if SOLVER_RUNNER
+#endif
+
 #if SOLVER_RUNNER || WORKER_NODE
-
-    type RunQueue<'P> =
-        {
-            runQueueId : RunQueueId
-            runQueueStatus : RunQueueStatus
-            progressData : ProgressData<'P>
-            createdOn : DateTime
-        }
-
 
     /// Both WorkerNodeService and SolverRunner use the same database.
     let private connectionStringKey = ConfigKey "WorkerNodeService"
@@ -134,6 +127,8 @@ module WorkerNodeService =
 
 #if SOLVER_RUNNER
 
+    /// The data is stored as serialized ModelBinaryData.
+    /// Here we need to load it as ModelBinaryData, and then elevate to ModelData<'D>.
     let tryLoadRunQueue<'D> (i : RunQueueId) =
         let elevate e = e |> TryLoadRunQueueErr
         let toError e = e |> elevate |> Error
@@ -156,10 +151,12 @@ module WorkerNodeService =
                     try
                         match RunQueueStatus.tryCreate s with
                         | Some st ->
-                            match v |> tryDeserialize<ModelData<'D>> serializationFormat with
-                            | Ok v -> Ok (v, st)
+                            match v |> tryDeserialize<ModelBinaryData> serializationFormat with
+                            | Ok b ->
+                                match ModelData<'D>.tryFromModelBinaryData b with
+                                | Ok d -> Ok (d, st)
+                                | Error e -> toError (SerializationErr e)
                             | Error e -> toError (SerializationErr e)
-                            //(v |> deserialize serializationFormat, st) |> Ok
                         | None -> toError (InvalidRunQueueStatus (i, s))
                     with
                     | e -> toError (ExnWhenTryLoadRunQueue (i, e))
@@ -287,18 +284,19 @@ module WorkerNodeService =
         let g() =
             printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
             let ctx = getDbContext getConnectionString
+            let p = pd.toProgressData()
 
             let progressData =
-                match pd.progressDetailed with
-                | Some pd -> jsonSerialize pd
+                match p.progressDetailed with
+                | Some d -> serializeProgress d
                 | None -> null
 
             let r = ctx.Procedures.TryUpdateProgressRunQueue.Invoke(
                                         ``@runQueueId`` = q.value,
-                                        ``@progress`` = pd.progressData.progress,
+                                        ``@progress`` = p.progressInfo.progress,
                                         ``@progressData`` = progressData,
-                                        ``@callCount`` = pd.progressData.callCount,
-                                        ``@relativeInvariant`` = pd.progressData.relativeInvariant.value)
+                                        ``@callCount`` = p.progressInfo.callCount,
+                                        ``@relativeInvariant`` = p.progressInfo.relativeInvariant.value)
 
             r.ResultSet |> bindIntScalar x q
 
@@ -400,7 +398,7 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelData<'D>) =
+    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelBinaryData) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.value,
                             ModelData = (w |> serialize serializationFormat),
@@ -412,7 +410,7 @@ module WorkerNodeService =
 
 
     /// Saves intocoming model data into a database fur further processing.
-    let saveModelData<'D> (r : RunQueueId) (w : ModelData<'D>) =
+    let saveModelData<'D> (r : RunQueueId) (w : ModelBinaryData) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveRunQueueDbErr |> elevate

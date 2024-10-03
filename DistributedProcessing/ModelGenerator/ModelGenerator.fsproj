@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.DistributedProcessing.SolverRunner</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.ModelGenerator</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -9,12 +9,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.400.2</Version>
     <PackageVersion>8.0.400.2</PackageVersion>
-    <Description>Softellect Solver Runner ...</Description>
+    <Description>Softellect Model Generator ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
     <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <DefineConstants>SOLVER_RUNNER</DefineConstants>
+    <DefineConstants>MODEL_GENERATOR</DefineConstants>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
@@ -32,31 +32,14 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="..\Core\Primitives2.fs" Link="Primitives2.fs" />
-    <Compile Include="Primitives.fs" />
-    <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
-    <Compile Include="CommandLine.fs" />
-    <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
-    <Compile Include="NoSql.fs" />
-    <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
-    <Compile Include="Proxy1.fs" />
-    <Compile Include="OdeSolver.fs" />
-    <Compile Include="Runner.fs" />
-    <Compile Include="Implementation.fs" />
-    <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
     <ProjectReference Include="..\Core\Core.fsproj" />
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="alglib.net" Version="3.19.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
-    <PackageReference Include="Softellect.OdePackInterop" Version="8.0.400.1" />
     <PackageReference Update="FSharp.Core" Version="8.0.400" />
   </ItemGroup>
 

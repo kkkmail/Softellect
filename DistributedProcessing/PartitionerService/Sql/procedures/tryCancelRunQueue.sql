@@ -8,7 +8,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 
 
-create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max))
+create procedure dbo.tryCancelRunQueue (@runQueueId uniqueidentifier, @errorMessage nvarchar(max) = null)
 as
 begin
 	declare @rowCount int
