@@ -1,9 +1,10 @@
-﻿namespace Softellect.Samples.Msg.WcfWorker
+﻿namespace Softellect.Samples.DistrProc.MessagingService
 
 open Softellect.Messaging.Service
 open Softellect.MessagingService.Program
 open Softellect.Samples.DistrProc.ServiceInfo.Primitives
 open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Program =
 
@@ -15,4 +16,4 @@ module Program =
                 messagingServiceAccessInfo = messagingServiceAccessInfo
             }
 
-        main<TestMessageData> "MsgWorker" data args
+        main<DistributedProcessingMessageData> "MsgWorker" data args

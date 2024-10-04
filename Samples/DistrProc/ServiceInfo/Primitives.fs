@@ -10,42 +10,43 @@ open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 
 module Primitives =
+    let x = 1
 
-    let dataVersion = MessagingDataVersion 2
+    //let dataVersion = MessagingDataVersion 2
 
-    type SolverDataOne =
-        | SolverDataOne of int[]
-
-
-    type SolverDataTwo =
-        | SolverDataTwo of int[]
+    //type SolverDataOne =
+    //    | SolverDataOne of int[]
 
 
-    type ProgressDataOne =
-        | ProgressDataOne of int
+    //type SolverDataTwo =
+    //    | SolverDataTwo of int[]
 
 
-    type ProgressDataTwo =
-        | ProgressDataTwo of int
+    //type ProgressDataOne =
+    //    | ProgressDataOne of int
 
 
-    type SolverData =
-        | DataOne of SolverDataOne
-        | DataTwo of SolverDataTwo
+    //type ProgressDataTwo =
+    //    | ProgressDataTwo of int
 
 
-    type TestProgressData = unit
-    type TestMessageData = DistributedProcessingMessageData
-    type TestRunnerData = WorkerNodeRunnerData
-    type TestMessage = DistributedProcessingMessage
+    //type SolverData =
+    //    | DataOne of SolverDataOne
+    //    | DataTwo of SolverDataTwo
 
 
-    let tryRunSolverProcessOne (r : RunQueueId) : DistributedProcessingUnitResult =
-        failwith ""
+    //type TestProgressData = unit
+    //type TestMessageData = DistributedProcessingMessageData
+    //type TestRunnerData = WorkerNodeRunnerData
+    //type TestMessage = DistributedProcessingMessage
 
 
-    let tryRunSolverProcessTwo (r : RunQueueId) : DistributedProcessingUnitResult =
-        failwith ""
+    //let tryRunSolverProcessOne (r : RunQueueId) : DistributedProcessingUnitResult =
+    //    failwith ""
+
+
+    //let tryRunSolverProcessTwo (r : RunQueueId) : DistributedProcessingUnitResult =
+    //    failwith ""
 
     // ===============
 

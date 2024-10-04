@@ -212,6 +212,6 @@ module ServiceInfo =
 
     // Messaging Service
 
-    let serviceProxy :  MessagingServiceProxy<TestMessageData> = createMessagingServiceProxy getLogger dataVersion
+    let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy getLogger dataVersion
     let messagingServiceAccessInfo = loadMessagingServiceAccessInfo dataVersion
 

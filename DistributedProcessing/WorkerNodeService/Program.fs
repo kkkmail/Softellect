@@ -56,8 +56,7 @@ module Program =
     //    //    UnknownException
     //    0
 
-    [<EntryPoint>]
-    let main argv =
+    let workerNodeMain argv =
         //let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
         let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
         let getLogger = fun _ -> Logger.defaultValue
