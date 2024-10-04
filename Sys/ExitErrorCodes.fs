@@ -34,3 +34,6 @@ module ExitErrorCodes =
 
     [<Literal>]
     let NotProcessedCancellation = -10
+
+    [<Literal>]
+    let InvalidSolverId = -11

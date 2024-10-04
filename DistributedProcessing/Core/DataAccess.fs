@@ -141,19 +141,19 @@ module WorkerNodeService =
                 query {
                     for q in ctx.Dbo.RunQueue do
                     where (q.RunQueueId = i.value)
-                    select (Some (q.ModelData, q.RunQueueStatusId))
+                    select (Some (q.ModelData, q.RunQueueStatusId, q.SolverId))
                     exactlyOneOrDefault
                 }
 
             match x with
-            | Some (v, s) ->
+            | Some (v, s, q) ->
                 let w() =
                     try
                         match RunQueueStatus.tryCreate s with
                         | Some st ->
-                            match v |> tryDeserialize<ModelBinaryData> serializationFormat with
+                            match v |> tryDeserializeData<ModelBinaryData> with
                             | Ok b ->
-                                match ModelData<'D>.tryFromModelBinaryData b with
+                                match ModelData<'D>.tryFromModelBinaryData (SolverId q) b with
                                 | Ok d -> Ok (d, st)
                                 | Error e -> toError (SerializationErr e)
                             | Error e -> toError (SerializationErr e)
@@ -401,7 +401,7 @@ module WorkerNodeService =
     let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelBinaryData) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.value,
-                            ModelData = (w |> serialize serializationFormat),
+                            ModelData = (w |> serializeData),
                             RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
                             CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
@@ -421,6 +421,28 @@ module WorkerNodeService =
             ctx.SubmitUpdates()
 
             Ok()
+
+        tryDbFun fromDbError g
+
+
+    let tryGetSolverName (r : RunQueueId) =
+        let elevate e = e |> TryGetSolverNameErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
+                    where (q.RunQueueId = r.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 

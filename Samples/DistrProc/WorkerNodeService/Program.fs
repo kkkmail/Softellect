@@ -14,7 +14,7 @@ module Program =
                 workerNodeServiceInfo = workerNodeServiceInfo
                 workerNodeProxy = workerNodeProxy
                 messagingClientData = messagingClientData
-                tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
+                //tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
             }
 
-        main "WorkerNodeSvc" data args
+        main args

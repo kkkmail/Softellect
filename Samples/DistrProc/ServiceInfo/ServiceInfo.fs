@@ -186,10 +186,10 @@ module ServiceInfo =
 
     // Worker Node Service
 
-    let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
+    //let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
     let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
-    let workerNodeProxy = WorkerNodeProxy.create solverRunner
+    let workerNodeProxy = WorkerNodeProxy.create ()
 
     let getMessageSize _ = SmallSize
 

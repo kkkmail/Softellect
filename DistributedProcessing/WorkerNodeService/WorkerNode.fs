@@ -90,9 +90,10 @@ module WorkerNode =
                 match proxy.saveModelData r d with
                 | Ok() ->
                     printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' - OK."
-                    let result = proxy.onRunModel r
-                    printfn $"    onProcessMessage: onRunModel with runQueueId: '{r}' - %A{result}."
-                    result
+                    //let result = proxy.onRunModel r
+                    //printfn $"    onProcessMessage: onRunModel with runQueueId: '{r}' - %A{result}."
+                    //result
+                    Ok()
                 | Error e ->
                     printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
                     let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
@@ -129,6 +130,8 @@ module WorkerNode =
     type WorkerNodeRunner(i : WorkerNodeRunnerData) =
         let mutable callCount = -1
         let mutable started = false
+        do printfn "WorkerNodeRunner: Load numberOfCores..."
+        let numberOfCores = 5
         let partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
         let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
@@ -194,7 +197,12 @@ module WorkerNode =
             if not started
             then
                 match i.workerNodeProxy.loadAllActiveRunQueueId() with
-                | Ok m -> m |> List.map i.workerNodeProxy.onProcessMessageProxy.onRunModel |> foldUnitResults
+                | Ok m ->
+                    m
+                    //|> List.map i.workerNodeProxy.onProcessMessageProxy.onRunModel
+                    |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
+                    |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
+                    |> foldUnitResults
                 | Error e -> Error e
             else Ok()
 
@@ -228,8 +236,8 @@ module WorkerNode =
 
 
         let sr n (q : RunQueueId) =
-            match i.tryRunSolverProcess n q with
-            | Ok() -> Ok()
+            match i.workerNodeProxy.tryRunSolverProcess n q with
+            | Ok _ -> Ok() // The solver will store PID in the database.
             | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
 
         //let tryStartX() =

@@ -48,6 +48,7 @@ module Primitives =
         {
             solverInputParams : SolverInputParams
             solverOutputParams : SolverOutputParams
+            solverId : SolverId
             modelData : 'D
         }
 
@@ -55,15 +56,16 @@ module Primitives =
             {
                 solverInputParams = d.solverInputParams
                 solverOutputParams = d.solverOutputParams
-                modelData = d.modelData |> serialize serializationFormat
+                modelData = d.modelData |> serializeData
             }
 
-        static member tryFromModelBinaryData (m : ModelBinaryData) =
-            match tryDeserialize<'D> serializationFormat m.modelData with
+        static member tryFromModelBinaryData solverId (m : ModelBinaryData) =
+            match tryDeserializeData<'D> m.modelData with
             | Ok modelData ->
                 {
                     solverInputParams = m.solverInputParams
                     solverOutputParams = m.solverOutputParams
+                    solverId = solverId
                     modelData = modelData
                 } |> Ok
             | Error e -> Error e

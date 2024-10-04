@@ -165,6 +165,18 @@ module Errors =
         | TryGetAvailableWorkerNodeDbErr of DbError
 
 
+    type TryGetSolverNameError =
+        | TryGetSolverNameDbErr of DbError
+
+
+    type TryRunSolverProcessError =
+        | FailedToRunSolverProcessErr of RunQueueId
+        | FailedToRunSolverProcessWithExErr of (RunQueueId * exn)
+        | CannotRunSolverProcessErr of RunQueueId
+        | CannotLoadSolverNameErr of RunQueueId
+        | FailedToLoadSolverNameErr of RunQueueId
+
+
     type OnRunModelError =
         | CannotRunModelErr of RunQueueId
         | CannotDeleteRunQueueErr of RunQueueId
@@ -365,10 +377,12 @@ module Errors =
         | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
 
         | WorkerNodeWcfErr of WorkerNodeWcfError
+        | TryGetSolverNameErr of TryGetSolverNameError
 
         // Solver runner errors
         | OnSaveChartsErr of OnSaveChartsError
         | OnUpdateProgressErr of OnUpdateProgressError
+        | TryRunSolverProcessErr of TryRunSolverProcessError
 
         static member addError a b =
             match a, b with

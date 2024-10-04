@@ -4,14 +4,18 @@ open Argu
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Messaging.Primitives
-open Softellect.DistributedProcessing.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.CommandLine
 open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
+open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.Sys.Logging
+open Softellect.Messaging.ServiceProxy
+open Softellect.Messaging.Client
 
 module Program =
 
@@ -52,7 +56,40 @@ module Program =
     //    //    UnknownException
     //    0
 
-    let main workerNodeProgramName (data : WorkerNodeRunnerData) argv =
+    [<EntryPoint>]
+    let main argv =
+        //let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
+        let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
+        let getLogger = fun _ -> Logger.defaultValue
+        let getMessageSize _ = SmallSize
+
+        let messagingClientProxyInfo =
+            {
+                messagingClientId = workerNodeServiceInfo.messagingClientAccessInfo.msgClientId
+                messagingDataVersion = messagingDataVersion
+                storageType = MsSqlDatabase
+            }
+
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+
+        let messagingClientData =
+            {
+                msgAccessInfo = workerNodeServiceInfo.messagingClientAccessInfo
+                msgClientProxy = msgClientProxy
+                logOnError = true
+            }
+
+
+        let proxy = WorkerNodeProxy.create ()
+
+        let data : WorkerNodeRunnerData =
+            {
+                workerNodeServiceInfo = workerNodeServiceInfo
+                workerNodeProxy = proxy
+                messagingClientData = messagingClientData
+                //tryRunSolverProcess = tryRunSolverProcess
+            }
+
         //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
@@ -73,4 +110,4 @@ module Program =
                 configureServices = Some configureServices
             }
 
-        main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeProgramName programData argv
+        main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv

@@ -23,17 +23,25 @@ module Common =
     let SolverRunnerProcessName = "SolverRunner"
 
 
+    /// The version of the messaging data is fixed as we are sending the data as byte array.
+    let messagingDataVersion = MessagingDataVersion 1
+
+
     /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
     /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
-    let serializationFormat = BinaryZippedFormat
+    let private serializationFormat = BinaryZippedFormat
 
 
     /// The progress data should be human readable, so that a query can be run to check the detailed progress.
     /// JSON is supported by MSSQL and so it is a good choice.
-    let progressSerializationFormat = JSonFormat
+    let private progressSerializationFormat = JSonFormat
 
     let serializeProgress = jsonSerialize
     let deserializeProgress<'T> = jsonDeserialize<'T>
+
+    let serializeData x = serialize serializationFormat x
+    let deserializeData x = deserialize serializationFormat x
+    let tryDeserializeData<'A> x = tryDeserialize<'A> serializationFormat x
 
 
     let defaultNoOfOutputPoints = 1000
@@ -193,6 +201,18 @@ module Common =
 
         member this.value = let (WorkerNodeName v) = this in v
         static member newName() = $"{Guid.NewGuid()}".Replace("-", "") |> WorkerNodeName
+
+
+    type SolverId =
+        | SolverId of Guid
+
+        member this.value = let (SolverId v) = this in v
+
+
+    type SolverName =
+        | SolverName of string
+
+        member this.value = let (SolverName v) = this in v
 
 
     type SolverRunnerInfo =

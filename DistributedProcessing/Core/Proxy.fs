@@ -162,12 +162,66 @@ module WorkerNodeService =
 #endif
 
 #if WORKER_NODE
+
+    /// Tries to run a solver with a given RunQueueId if it not already running and if the number
+    /// of running solvers is less than a given allowed max value.
+    let tryRunSolverProcess tryGetSolverName n (q : RunQueueId) =
+        let fileName = SolverRunnerName
+        let elevate f = f |> TryRunSolverProcessErr |> Error
+
+        match tryGetSolverName q with
+        | Ok (Some (SolverName name)) ->
+            let run() =
+                // TODO kk:20210511 - Build command line using Argu.
+                let args = $"q {q}"
+
+                try
+                    let procStartInfo =
+                        ProcessStartInfo(
+                            RedirectStandardOutput = false,
+                            RedirectStandardError = false,
+                            UseShellExecute = true,
+                            FileName = getExeName (Some name) fileName,
+                            Arguments = args
+                        )
+
+                    procStartInfo.WorkingDirectory <- getAssemblyLocation()
+                    procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                    let p = new Process(StartInfo = procStartInfo)
+                    let started = p.Start()
+
+                    if started
+                    then
+                        p.PriorityClass <- ProcessPriorityClass.Idle
+                        let processId = p.Id |> ProcessId
+                        printfn $"Started: {p.ProcessName} with pid: {processId}."
+                        Ok processId
+                    else
+                        printfn $"Failed to start process: {fileName}."
+                        q |> FailedToRunSolverProcessErr |> elevate
+                with
+                | ex ->
+                    printfn $"Failed to start process: {fileName} with exception: {ex}."
+                    (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+
+            // Decrease max value by one to account for the solver to be started.
+            match checkRunning (Some (n - 1)) q with
+            | CanRun -> run()
+            | e ->
+                printfn $"Can't run run queue with id %A{q}: %A{e}."
+                q |> CannotRunSolverProcessErr |> elevate
+        | Ok None -> q |> CannotLoadSolverNameErr |> elevate
+        | Error e ->
+            printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
+            q |> FailedToLoadSolverNameErr |> elevate
+
+
     type OnProcessMessageProxy =
         {
             saveModelData : RunQueueId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
-            onRunModel : RunQueueId -> DistributedProcessingUnitResult
+            //onRunModel : RunQueueId -> DistributedProcessingUnitResult
         }
 
 
@@ -175,21 +229,24 @@ module WorkerNodeService =
         {
             onProcessMessageProxy : OnProcessMessageProxy
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+            //tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
+            tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             //logCrit : SolverRunnerCriticalError -> UnitResult
         }
 
-        static member create sr : WorkerNodeProxy =
+        static member create () : WorkerNodeProxy =
             {
                 onProcessMessageProxy =
                     {
                         saveModelData = saveModelData
                         requestCancellation = tryRequestCancelRunQueue
                         notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
-                        onRunModel = sr
+                        //onRunModel = sr
                     }
 
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 //logCrit = saveSolverRunnerErrFs name
+                tryRunSolverProcess = tryRunSolverProcess tryGetSolverName
             }
 
 
@@ -200,54 +257,8 @@ module WorkerNodeService =
             //messageProcessorProxy : DistributedProcessingMessageProcessorProxy
             //messageProcessor : IMessageProcessor<DistributedProcessingMessageData>
             messagingClientData : MessagingClientData<DistributedProcessingMessageData>
-            tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
+            //tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
-
-
-    /// Tries to run a solver with a given RunQueueId if it not already running and if the number
-    /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess n (RunQueueId q) =
-        let fileName = SolverRunnerName
-
-        let run() =
-            // TODO kk:20210511 - Build command line using Argu.
-            let args = $"q {q}"
-
-            try
-                let procStartInfo =
-                    ProcessStartInfo(
-                        RedirectStandardOutput = false,
-                        RedirectStandardError = false,
-                        UseShellExecute = true,
-                        FileName = getExeName fileName,
-                        Arguments = args
-                    )
-
-                procStartInfo.WorkingDirectory <- getAssemblyLocation()
-                procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
-                let p = new Process(StartInfo = procStartInfo)
-                let started = p.Start()
-
-                if started
-                then
-                    p.PriorityClass <- ProcessPriorityClass.Idle
-                    let processId = p.Id |> ProcessId
-                    printfn $"Started: {p.ProcessName} with pid: {processId}."
-                    Some processId
-                else
-                    printfn $"Failed to start process: {fileName}."
-                    None
-            with
-            | ex ->
-                printfn $"Failed to start process: {fileName} with exception: {ex}."
-                None
-
-        // Decrease max value by one to account for the solver to be started.
-        match checkRunning (Some (n - 1)) (RunQueueId q) with
-        | CanRun -> run()
-        | e ->
-            printfn $"Can't run run queue with id {q}: %A{e}."
-            None
 
 
     //type OnRegisterProxy<'D, 'P> =

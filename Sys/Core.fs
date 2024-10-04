@@ -446,9 +446,16 @@ module Core =
         x
 
 
-    let getExeName exeName =
+    /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory.
+    /// Optional folder parameter allows to specify a different folder.
+    /// If folder starts with a backslash, then it is considered a relative path.
+    let getExeName folder exeName =
         let location = getAssemblyLocation()
-        location + @"\" + exeName
+        match folder with
+        | None -> location + @"\" + exeName
+        | Some (f : string) ->
+            let x = if f.StartsWith(@"\") then location + f else f
+            x + @"\" + exeName
 
 
     /// http://codebetter.com/matthewpodwysocki/2010/02/05/using-and-abusing-the-f-dynamic-lookup-operator/
