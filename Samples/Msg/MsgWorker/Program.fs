@@ -15,4 +15,4 @@ module Program =
                 messagingServiceAccessInfo = echMessagingServiceAccessInfo
             }
 
-        main<EchoMessageData> "MsgWorker" data args
+        messagingMain<EchoMessageData> "MsgWorker" data args

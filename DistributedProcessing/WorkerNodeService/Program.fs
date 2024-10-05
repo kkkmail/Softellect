@@ -110,4 +110,4 @@ module Program =
             }
 
         printfn $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
-        main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv
+        wcfMain<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv

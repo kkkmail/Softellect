@@ -16,4 +16,4 @@ module Program =
                 messagingServiceAccessInfo = messagingServiceAccessInfo
             }
 
-        main<DistributedProcessingMessageData> "MsgWorker" data args
+        messagingMain<DistributedProcessingMessageData> "MsgWorker" data args

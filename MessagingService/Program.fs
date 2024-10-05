@@ -8,7 +8,7 @@ open Softellect.Wcf.Program
 
 module Program =
 
-    let main<'D> messagingProgramName data argv =
+    let messagingMain<'D> messagingProgramName data argv =
         printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
@@ -24,4 +24,4 @@ module Program =
                 configureServices = None
             }
 
-        main<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv
+        wcfMain<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv

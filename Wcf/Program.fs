@@ -73,7 +73,7 @@ module Program =
                 webBuilder.UseStartup(fun _ -> WcfStartup<'IWcfService, 'WcfService>(data.serviceAccessInfo)) |> ignore)
 
 
-    let main<'IService, 'IWcfService, 'WcfService
+    let wcfMain<'IService, 'IWcfService, 'WcfService
         when 'IService :> IHostedService and 'IService : not struct
         and 'IWcfService : not struct
         and 'WcfService : not struct> programName data argv =
