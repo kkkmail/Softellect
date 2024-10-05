@@ -5,6 +5,16 @@
     <UserSecretsId>dotnet-WebWorker-95C137F0-7E45-4E5A-A849-5D20AA4EAE88</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
   
   <ItemGroup>
     <Compile Include="Worker.fs" />

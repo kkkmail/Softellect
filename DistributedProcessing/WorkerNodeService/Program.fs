@@ -109,4 +109,5 @@ module Program =
                 configureServices = Some configureServices
             }
 
+        printfn $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
         main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv

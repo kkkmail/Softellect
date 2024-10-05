@@ -2,6 +2,7 @@
 open Newtonsoft.Json.Linq
 
 open System
+open System.Collections.Generic
 open System.IO
 open Newtonsoft.Json
 open Argu
@@ -57,6 +58,15 @@ module AppSettings =
         | e -> Error e
 
 
+    //let tryOpenJson fileName =
+    //    try
+    //        let json = File.ReadAllText(fileName)
+    //        let jsonObj = JsonConvert.DeserializeObject<Dictionary<string, obj>>(json)
+    //        Ok jsonObj
+    //    with
+    //    | e -> Error e
+
+
     let trySaveJson fileName jsonObj =
         try
             let output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented)
@@ -66,17 +76,37 @@ module AppSettings =
         | e -> Error e
 
 
-    let tryGetString jsonObj (ConfigSection section) (ConfigKey key) =
-        try
-            let sectionObj = jsonObj?(section)
+    //let tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
+    //    try
+    //        //let sectionObj = jsonObj?(section)
+    //        let sectionObj = jsonObj.[section]
 
-            if sectionObj = null
-            then Ok None
-            else
-                let value = (sectionObj?(key))
-                match box value with
+    //        if sectionObj = null
+    //        then Ok None
+    //        else
+    //            //let value = (sectionObj?(key))
+    //            let value = (sectionObj :?> Newtonsoft.Json.Linq.JObject).[key]
+
+    //            match box value with
+    //            | null -> Ok None
+    //            | _ -> value.ToString() |> Some |> Ok
+    //    with
+    //    | e -> Error e
+
+
+    let tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
+        try
+            // Safely try to get the section
+            match jsonObj.TryGetValue(section) with
+            | true, sectionObj ->
+                match sectionObj :?> Newtonsoft.Json.Linq.JObject with
                 | null -> Ok None
-                | _ -> value.ToString() |> Some |> Ok
+                | sectionJObj ->
+                    // Safely try to get the key in the section
+                    match sectionJObj.TryGetValue(key) with
+                    | true, value when value <> null -> value.ToString() |> Some |> Ok
+                    | _ -> Ok None
+            | _ -> Ok None
         with
         | e -> Error e
 
@@ -202,7 +232,7 @@ module AppSettings =
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
-    type AppSettingsProvider private (fileName, jsonObj) =
+    type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject) =
         member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
         member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
         member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
@@ -229,7 +259,7 @@ module AppSettings =
         static member tryCreate fileName =
             let fullFileName = getFileName fileName
             match tryOpenJson fullFileName with
-            | Ok jsonObj -> (fileName, jsonObj) |> AppSettingsProvider |> Ok
+            | Ok jsonObj -> (fileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject)) |> AppSettingsProvider |> Ok
             | Error e -> Error e
 
 
