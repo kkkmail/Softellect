@@ -21,7 +21,7 @@ open Softellect.DistributedProcessing.Primitives.Common
 module ServiceInfo =
 
     // Flip to false to use in memory lists for messaging service storage and to true to use local database.
-    let useLocalDatabase = true
+    //let useLocalDatabase = true
     let dataVersion = MessagingDataVersion 1
 
     //type EchoMessagingClient = MessagingClient<EchoMessageData>
