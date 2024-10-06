@@ -81,12 +81,11 @@ module Program =
 
         let proxy = WorkerNodeProxy.create ()
 
-        let data : WorkerNodeRunnerData =
+        let data =
             {
                 workerNodeServiceInfo = workerNodeServiceInfo
                 workerNodeProxy = proxy
                 messagingClientData = messagingClientData
-                //tryRunSolverProcess = tryRunSolverProcess
             }
 
         //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."

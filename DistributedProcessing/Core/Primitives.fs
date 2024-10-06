@@ -127,7 +127,7 @@ module Common =
         {
             progress : decimal // Progress in the range [0.0, 1.0]
             callCount : int64
-            t : EvolutionTime // Evolution time of the system. May coincide with callCount in some cases.
+            evolutionTime : EvolutionTime // Evolution time of the system. May coincide with callCount in some cases.
             relativeInvariant : RelativeInvariant // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
         }
@@ -136,7 +136,7 @@ module Common =
             {
                 progress = 0.0m
                 callCount = 0L
-                t = EvolutionTime.defaultValue
+                evolutionTime = EvolutionTime.defaultValue
                 relativeInvariant = RelativeInvariant.defaultValue
                 errorMessageOpt = None
             }
@@ -334,6 +334,13 @@ module Common =
         }
 
 
+    type PartitionerInfo =
+        {
+            partitionerId : PartitionerId
+            resultLocation : FolderName
+        }
+
+
     //type ProgressUpdateInfo<'P> =
     //    {
     //        runQueueId : RunQueueId
@@ -514,6 +521,26 @@ module Common =
                 msgClientId = this.workerNodeInfo.workerNodeId.messagingClientId
                 msgSvcAccessInfo = this.messagingServiceAccessInfo
             }
+
+
+    type PartitionerServiceInfo =
+        {
+            partitionerInfo : PartitionerInfo
+            partitionerServiceAccessInfo : ServiceAccessInfo
+            messagingServiceAccessInfo : MessagingServiceAccessInfo
+        }
+
+        member this.messagingClientAccessInfo =
+            {
+                msgClientId = this.partitionerInfo.partitionerId.messagingClientId
+                msgSvcAccessInfo = this.messagingServiceAccessInfo
+            }
+
+
+    type TryRunModelResult =
+        | WorkScheduled
+        | NoWork
+        | NoAvailableWorkerNodes
 
 
     type CheckRunningResult =

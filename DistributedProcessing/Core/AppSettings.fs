@@ -22,8 +22,15 @@ open Softellect.Messaging.AppSettings
 //open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 
 // ==========================================
+// Blank #if template blocks
 
 #if PARTITIONER
+#endif
+
+#if MODEL_GENERATOR
+#endif
+
+#if PARTITIONER || MODEL_GENERATOR
 #endif
 
 #if SOLVER_RUNNER || WORKER_NODE
@@ -35,13 +42,18 @@ open Softellect.Messaging.AppSettings
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
 // ==========================================
+// Module declarations
 
 #if PARTITIONER
 module PartitionerService =
+#endif
+
+#if MODEL_GENERATOR
+module ModelGenerator =
 #endif
 
 #if SOLVER_RUNNER
@@ -53,15 +65,78 @@ module WorkerNodeService =
 #endif
 
 // ==========================================
-#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+// Code
+
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 
     let partitionerIdKey = ConfigKey "PartitionerId"
+    let resultLocationKey = ConfigKey "ResultLocation"
 
 
     let getPartitionerId (provider : AppSettingsProvider) d =
         match provider.tryGetGuid partitionerIdKey with
         | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
         | _ -> d
+
+
+    let getFolderName (provider : AppSettingsProvider) key d =
+        match provider.tryGetString key with
+        | Ok (Some p) ->
+            match FolderName.tryCreate p with
+            | Ok f -> f
+            | Error _ -> d
+        | _ -> d
+
+#endif
+
+#if PARTITIONER || MODEL_GENERATOR
+
+    [<Literal>]
+    let PartitionerWcfServiceName = "PartitionerWcfService"
+
+
+    let partitionerServiceAccessInfoKey = ConfigKey "PartitionerServiceAccessInfo"
+
+
+    type ServiceAccessInfo with
+        static member defaultPartitionerValue =
+            {
+                netTcpServiceAddress = ServiceAddress localHost
+                netTcpServicePort = defaultPartitionerNetTcpServicePort
+                netTcpServiceName = PartitionerWcfServiceName |> ServiceName
+                netTcpSecurityMode = NoSecurity
+            }
+            |> NetTcpServiceInfo
+
+
+    let loadPartitionerInfo (provider : AppSettingsProvider) =
+        let w =
+            {
+                partitionerId = getPartitionerId provider defaultPartitionerId
+                resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
+            }
+
+        w
+
+
+    let loadPartitonerServiceInfo messagingDataVersion =
+        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+
+        match providerRes with
+        | Ok provider ->
+            let m = loadMessagingServiceAccessInfo messagingDataVersion
+            let w = loadPartitionerInfo provider
+            let i = getServiceAccessInfo providerRes partitionerServiceAccessInfoKey ServiceAccessInfo.defaultPartitionerValue
+
+            let partitionerSvcInfo =
+                {
+                    partitionerInfo = w
+                    partitionerServiceAccessInfo = i
+                    messagingServiceAccessInfo = m
+                }
+
+            partitionerSvcInfo
+        | Error e -> failwith $"Cannot load settings. Error: '{e}'."
 
 #endif
 
@@ -164,11 +239,5 @@ module WorkerNodeService =
 
             workerNodeSvcInfo
         | Error e -> failwith $"Cannot load settings. Error: '{e}'."
-
-
-#endif
-
-#if WORKER_NODE
-
 
 #endif

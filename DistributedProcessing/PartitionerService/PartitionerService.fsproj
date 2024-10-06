@@ -60,7 +60,7 @@
     <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
     <Compile Include="CommandLine.fs" />
     <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
-    <Compile Include="Proxy.fs" />
+    <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
     <Compile Include="Partitioner.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

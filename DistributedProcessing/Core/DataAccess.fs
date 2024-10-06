@@ -8,6 +8,7 @@ open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
+open Softellect.Sys.Errors
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
@@ -31,6 +32,12 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if PARTITIONER
 #endif
 
+#if MODEL_GENERATOR
+#endif
+
+#if PARTITIONER || MODEL_GENERATOR
+#endif
+
 #if SOLVER_RUNNER || WORKER_NODE
 #endif
 
@@ -40,13 +47,15 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
 // ==========================================
 // Open declarations
 
 #if PARTITIONER
+open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.Sys
 #endif
 
 #if SOLVER_RUNNER
@@ -64,6 +73,10 @@ open Softellect.DistributedProcessing.SolverRunner.Primitives
 module PartitionerService =
 #endif
 
+#if MODEL_GENERATOR
+module ModelGenerator =
+#endif
+
 #if SOLVER_RUNNER
 module SolverRunner =
 #endif
@@ -73,13 +86,14 @@ module WorkerNodeService =
 #endif
 
 // ==========================================
-// Code
+// Database access
 
-#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
-#if PARTITIONER
+#if PARTITIONER || MODEL_GENERATOR
 
+    /// Both partitioner and ModelGenerator use the same database.
     let connectionStringKey = ConfigKey "PartitionerService"
 
 
@@ -102,7 +116,7 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI"
@@ -121,8 +135,104 @@ module WorkerNodeService =
     let private getDbContext (c : unit -> ConnectionString) = c().value |> Db.GetDataContext
 
 
-    //type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
-    //type private MessageEntity = DbContext.``dbo.MessageEntity``
+    type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
+    type private MessageEntity = DbContext.``dbo.MessageEntity``
+
+#endif
+
+// ==========================================
+// Code
+
+#if PARTITIONER
+
+    let private mapRunQueue (r: RunQueueEntity) =
+        let elevate e = e |> MapRunQueueErr
+        let toError e = e |> elevate |> Error
+        //let fromDbError e = e |> MapRunQueueDbErr |> elevate
+
+        let runQueueId = RunQueueId r.RunQueueId
+
+        match RunQueueStatus.tryCreate r.RunQueueStatusId with
+        | Some s ->
+            {
+                runQueueId = runQueueId
+                runQueueStatus = s
+                solverId = SolverId r.SolverId
+                workerNodeIdOpt = r.WorkerNodeId |> Option.bind (fun e -> e |> MessagingClientId |> WorkerNodeId |> Some)
+
+                progressData =
+                    {
+                        progressInfo =
+                            {
+                                progress = r.Progress
+                                callCount = r.CallCount
+                                evolutionTime = EvolutionTime r.EvolutionTime
+                                relativeInvariant = RelativeInvariant r.RelativeInvariant
+                                errorMessageOpt = r.ErrorMessage |> Option.map ErrorMessage
+                            }
+
+                        progressDetailed = None 
+                    }
+
+                createdOn = r.CreatedOn
+            }
+            |> Ok
+        | None -> toError (CannotMapRunQueue runQueueId)
+
+
+    /// Loads first not started RunQueue.
+    /// We may or may not have a RunQueue to process.
+    let tryLoadFirstRunQueue () =
+        let elevate e = e |> TryLoadFirstRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryLoadFirstRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId = 0 && q.Progress = 0.0m && q.WorkerNodeId = None)
+                    sortBy q.RunQueueOrder
+                    //where (q.RunQueueId = i.value)
+                    select (Some q)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v ->
+                match mapRunQueue v with
+                | Ok r -> Ok (Some r)
+                | Error e -> Error e
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    ///// Loads RunQueue by runQueueId.
+    //let tryLoadRunQueue c (q : RunQueueId) =
+    //    let elevate e = e |> TryLoadRunQueueErr
+    //    //let toError e = e |> elevate |> Error
+    //    let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
+    //
+    //    let g() =
+    //        let ctx = getDbContext c
+    //
+    //        let x =
+    //            query {
+    //                for r in ctx.Dbo.RunQueue do
+    //                join cr in ctx.Clm.RunQueue on (r.RunQueueId = cr.RunQueueId)
+    //                join m in ctx.Clm.ModelData on (cr.ModelDataId = m.ModelDataId)
+    //                join t in ctx.Clm.Task on (m.TaskId = t.TaskId)
+    //                where (r.RunQueueId = q.value)
+    //                select (r, cr, t.DefaultValueId)
+    //            }
+    //
+    //        mapRunQueueResults x |> List.tryHead |> Ok
+    //
+    //    tryDbFun fromDbError g |> Rop.unwrapResultOption
+
 #endif
 
 #if SOLVER_RUNNER

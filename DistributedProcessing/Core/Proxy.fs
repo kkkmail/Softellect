@@ -27,14 +27,16 @@ open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
 
-#if WORKER_NODE
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
-open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
-#endif
-
 // ==========================================
+// Blank #if template blocks
 
 #if PARTITIONER
+#endif
+
+#if MODEL_GENERATOR
+#endif
+
+#if PARTITIONER || MODEL_GENERATOR
 #endif
 
 #if SOLVER_RUNNER || WORKER_NODE
@@ -46,10 +48,30 @@ open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 #if WORKER_NODE
 #endif
 
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#endif
+
 // ==========================================
+// Open declarations
+
+#if WORKER_NODE
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
+#endif
+
+#if PARTITIONER
+open Softellect.DistributedProcessing.PartitionerService.Primitives
+#endif
+
+// ==========================================
+// Module declarations
 
 #if PARTITIONER
 module PartitionerService =
+#endif
+
+#if MODEL_GENERATOR
+module ModelGenerator =
 #endif
 
 #if SOLVER_RUNNER
@@ -61,31 +83,60 @@ module WorkerNodeService =
 #endif
 
 // ==========================================
+// To make a compiler happy.
 
-    // To make a compiler happy.
+#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
     let private dummy = 0
+#endif
 
 // ==========================================
+// Code
 
 #if PARTITIONER
+
+    type PartitionerProxy =
+        {
+            sendRunModelMessage : DistributedProcessingMessageInfo -> DistributedProcessingUnitResult
+            tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue option>
+            tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
+            upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
+            runModel : RunQueue -> DistributedProcessingUnitResult
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
+            sendRequestResultsMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
+            tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
+            upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult
+            loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
+            saveCharts : ChartInfo -> DistributedProcessingUnitResult
+        }
+
+        static member create () : PartitionerProxy =
+            {
+                sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
+                tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
+                tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
+                upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
+                runModel = failwith "PartitionerProxy: runModel is not implemented yet."
+                tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
+                sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
+                tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
+                tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
+                upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
+                loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
+                saveCharts = failwith "PartitionerProxy: saveCharts is not implemented yet."
+            }
+
+
+    type PartitionerContext =
+        {
+            partitionerServiceInfo : PartitionerServiceInfo
+            partitionerProxy : PartitionerProxy
+            messagingClientData : MessagingClientData<DistributedProcessingMessageData>
+        }
+
 #endif
 
 #if SOLVER_RUNNER || WORKER_NODE
-    //type SendMessageProxy<'D, 'P> =
-    //    {
-    //        partitionerId : PartitionerId
-    //        sendMessage : DistributedProcessingMessageInfo<'D, 'P> -> MessagingUnitResult
-    //    }
-
-
-    //type OnUpdateProgressProxy<'D, 'P> =
-    //    {
-    //        // Was called tryDeleteWorkerNodeRunModelData.
-    //        tryDeleteRunQueue : unit -> DistributedProcessingUnitResult
-    //        tryUpdateProgressData : ProgressData<'P> -> DistributedProcessingUnitResult
-    //        sendMessageProxy : SendMessageProxy<'D, 'P>
-    //    }
-
 
     /// Returns CanRun when a given RunQueueId is NOT used by any of the running solvers
     /// except the current one and when a number of running solvers is less than a maximum allowed value.
@@ -216,61 +267,30 @@ module WorkerNodeService =
             q |> FailedToLoadSolverNameErr |> elevate
 
 
-    type OnProcessMessageProxy =
+    type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
-            //onRunModel : RunQueueId -> DistributedProcessingUnitResult
-        }
-
-
-    type WorkerNodeProxy =
-        {
-            onProcessMessageProxy : OnProcessMessageProxy
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-            //tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
-            //logCrit : SolverRunnerCriticalError -> UnitResult
         }
 
         static member create () : WorkerNodeProxy =
             {
-                onProcessMessageProxy =
-                    {
-                        saveModelData = saveModelData
-                        requestCancellation = tryRequestCancelRunQueue
-                        notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
-                        //onRunModel = sr
-                    }
-
+                saveModelData = saveModelData
+                requestCancellation = tryRequestCancelRunQueue
+                notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
-                //logCrit = saveSolverRunnerErrFs name
                 tryRunSolverProcess = tryRunSolverProcess tryGetSolverName
             }
 
 
-    type WorkerNodeRunnerData =
+    type WorkerNodeRunnerContext =
         {
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy
-            //messageProcessorProxy : DistributedProcessingMessageProcessorProxy
-            //messageProcessor : IMessageProcessor<DistributedProcessingMessageData>
             messagingClientData : MessagingClientData<DistributedProcessingMessageData>
-            //tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingUnitResult
         }
 
-
-    //type OnRegisterProxy<'D, 'P> =
-    //    {
-    //        workerNodeInfo : WorkerNodeInfo
-    //        sendMessageProxy : SendMessageProxy<'D, 'P>
-    //    }
-
-
-    //type OnStartProxy =
-    //    {
-    //        loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-    //        onRunModel : RunQueueId -> DistributedProcessingUnitResult
-    //    }
 #endif

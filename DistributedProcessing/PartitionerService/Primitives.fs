@@ -9,6 +9,7 @@ module Primitives =
         {
             runQueueId : RunQueueId
             runQueueStatus : RunQueueStatus
+            solverId : SolverId
             workerNodeIdOpt : WorkerNodeId option
             progressData : ProgressData
             createdOn : DateTime

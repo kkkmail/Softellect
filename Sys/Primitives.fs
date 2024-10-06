@@ -2,6 +2,8 @@
 
 open System
 open System.Net
+open System.IO
+open System.Text.RegularExpressions
 
 /// Collection of various primitive abstractions.
 module Primitives =
@@ -59,6 +61,48 @@ module Primitives =
 
 
     let localHost = Ip4 "127.0.0.1"
+
+
+    /// An encapsulation of a folder name.
+    type FolderName =
+        | FolderName of string
+
+        member this.value = let (FolderName v) = this in v
+
+        static member tryCreate (s: string) : Result<FolderName, string> =
+            let invalidChars = Path.GetInvalidPathChars()
+
+            // Regex for three or more consecutive dots
+            let consecutiveDots = Regex(@"\.{3,}")
+
+            // List of reserved names in Windows (e.g., "CON", "PRN", etc.)
+            let reservedNames = 
+                [ "CON"; "PRN"; "AUX"; "NUL"; "COM1"; "COM2"; "COM3"; "COM4"; "COM5"; "COM6"; "COM7"; "COM8"; "COM9"; "LPT1"; "LPT2"; "LPT3"; "LPT4"; "LPT5"; "LPT6"; "LPT7"; "LPT8"; "LPT9" ]
+
+            // Function to check if the name is a reserved Windows name
+            let isReservedName (name: string) =
+                reservedNames |> List.exists (fun reserved -> String.Equals(name, reserved, StringComparison.OrdinalIgnoreCase))
+
+            // Check for invalid conditions
+            if String.IsNullOrWhiteSpace(s) then
+                Error $"Folder name cannot be empty or whitespace."
+            elif s.IndexOfAny(invalidChars) >= 0 then
+                let invalidInFolder = s.ToCharArray() |> Array.filter (fun c -> invalidChars |> Array.contains c)
+                Error $"Folder name contains invalid characters: {String(invalidInFolder)}"
+            elif s.Contains("\\\\") then
+                // Disallow multiple consecutive backslashes
+                Error $"Folder name cannot contain consecutive backslashes (\\\\)."
+            elif consecutiveDots.IsMatch(s) then
+                // Disallow more than two consecutive dots
+                Error $"Folder name cannot contain more than two consecutive dots (...)."
+            elif isReservedName s then
+                // Disallow reserved names
+                let r = String.Join(", ", reservedNames)
+                Error $"Folder name cannot be a reserved name (e.g., {r})."
+            else
+                Ok (FolderName s)
+
+        static member defaultResultLocation = FolderName "C:\\Results"
 
 
     type VersionNumber =

@@ -91,12 +91,6 @@ module Proxy1 =
     //    }
 
 
-    //type TryRunModelResult =
-    //    | WorkScheduled
-    //    | NoWork
-    //    | NoAvailableWorkerNodes
-
-
     //type TryRunAllModelsProxy =
     //    {
     //        tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>

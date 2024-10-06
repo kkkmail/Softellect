@@ -278,7 +278,7 @@ module Runner =
                     {
                         progress = calculateProgress i t
                         callCount = ncbd.progressData.progressInfo.callCount + 1L
-                        t = t
+                        evolutionTime = t
                         relativeInvariant = u.solverProxy.getInvariant modelData t x
                         errorMessageOpt = None
                     }

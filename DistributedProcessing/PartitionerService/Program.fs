@@ -13,7 +13,6 @@ namespace Softellect.DistributedProcessing.PartitionerService
 //open Softellect.DistributedProcessing.WorkerNodeService.Proxy
 
 module Program =
-    let x = 1
 
     ////type WorkerNodeProgramData<'D, 'P> =
     ////    {
@@ -74,3 +73,7 @@ module Program =
     //        }
 
     //    main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeProgramName programData argv
+
+    let partitionerMain argv =
+
+        0
