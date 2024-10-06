@@ -318,6 +318,7 @@ module Client =
         // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
             let logger = getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
+            printfn $"onTryProcessMessage - starting, callCount = {callCount}."
 
             let retVal =
                 if incrementCount() = 0
@@ -325,6 +326,7 @@ module Client =
                     match proxy.tryPickIncomingMessage() with
                     | Ok (Some m) ->
                         try
+                            printfn $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
                             let r = f m
 
                             match proxy.tryDeleteMessage m.messageDataInfo.messageId with
@@ -342,13 +344,17 @@ module Client =
             decrementCount() |> ignore
 
             match retVal.errorOpt, d.logOnError with
-            | Some e, true -> logger.logError $"%A{e}"
+            | Some e, true ->
+                printfn $"onTryProcessMessage - Error: %A{e}."
+                logger.logError $"%A{e}"
             | _ -> ignore()
 
+            printfn $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
             retVal
 
         // Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
         let onProcessMessages (f : Message<'D> -> MessagingUnitResult) : MessagingUnitResult =
+            printfn "onProcessMessages - Starting..."
             let elevate e = e |> OnGetMessagesErr
             let addError f e = ((elevate f) + e) |> Error
             let toError e = e |> elevate |> Error
@@ -366,6 +372,7 @@ module Client =
                     | BusyProcessing -> toError BusyProcessingErr
 
             let result = doFold [for _ in 1..maxNumberOfMessages -> ()] (Ok())
+            printfn $"onProcessMessages - result = %A{result}."
             result
 
         interface IMessageProcessor<'D> with

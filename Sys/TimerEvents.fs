@@ -84,28 +84,29 @@ module TimerEvents =
             }
 
 
-    type TimerEventHandler<'E> (i : TimerEventHandlerInfo<'E>) =
+    type TimerEventHandler<'E> (i0 : TimerEventHandlerInfo<'E>) =
         let mutable counter = -1
         let mutable lastStartedAt = DateTime.Now
-        let handlerId = i.timerEventInfo.handlerId |> Option.defaultValue (Guid.NewGuid())
-        let refreshInterval = i.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
+        let handlerId = i0.timerEventInfo.handlerId |> Option.defaultValue (Guid.NewGuid())
+        let refreshInterval = i0.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
+        let firstDelay = i0.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
+        let i = { i0 with timerEventInfo.handlerId = Some handlerId; timerEventInfo.refreshInterval = Some refreshInterval; timerEventInfo.firstDelay = Some firstDelay }
         let logger = i.timerProxy.getLogger (LoggerName $"{nameof(TimerEventHandler)}<{typedefof<'E>.Name}>: {handlerId}")
-        let firstDelay = i.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
         let logError e = logger.logError $"%A{(i.timerProxy.toErr e)}"
         let logWarn e = logger.logWarn $"%A{(i.timerProxy.toErr e)}"
         let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.timerEventInfo.handlerName}"
 //        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
-        do (printfn $"TimerEventHandler: %A{i} - starting.")
+        //do (printfn $"TimerEventHandler: %A{i} - starting.")
 
         let g() =
             try
                 match i.timerProxy.eventHandler() with
                 | Ok() ->
 //                    logger.logDebugString "proxy.eventHandler() - succeeded."
-                    printfn $"TimerEventHandler: %A{i} - succeeded."
+                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
                     ()
                 | Error e ->
-                    printfn $"TimerEventHandler: %A{i} - FAILED, error: '%A{e}'."
+                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - FAILED, error: '%A{e}'."
                     logger.logError $"%A{e}"
             with
             | e ->
@@ -138,7 +139,7 @@ module TimerEvents =
 
         member _.start() =
             try
-                printfn $"TimerEventHandler: %A{i} - starting timer."
+                printfn $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
             | e ->
@@ -151,7 +152,7 @@ module TimerEvents =
 
         member _.stop() =
             try
-                printfn $"TimerEventHandler: %A{i} - stopping timer."
+                printfn $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
             | e ->

@@ -130,10 +130,10 @@ module WorkerNode =
     type WorkerNodeRunner(i : WorkerNodeRunnerData) =
         let mutable callCount = -1
         let mutable started = false
-        do printfn "WorkerNodeRunner: Load numberOfCores..."
-        let numberOfCores = 5
+        let numberOfCores = i.workerNodeServiceInfo.workerNodeInfo.noOfCores
         let partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
         let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
+        let mutable eventHandlers = []
 
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
@@ -155,7 +155,7 @@ module WorkerNode =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"onGetMessagesProxy - error: '{e}'."
+                    printfn $"WorkerNodeRunner - error: '{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
@@ -193,18 +193,16 @@ module WorkerNode =
         //        WorkerNodeRunnerState.defaultValue |> loop
         //        )
 
-        let onStartImpl() =
-            if not started
-            then
-                match i.workerNodeProxy.loadAllActiveRunQueueId() with
-                | Ok m ->
-                    m
-                    //|> List.map i.workerNodeProxy.onProcessMessageProxy.onRunModel
-                    |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
-                    |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
-                    |> foldUnitResults
-                | Error e -> Error e
-            else Ok()
+        let startSolvers() =
+            match i.workerNodeProxy.loadAllActiveRunQueueId() with
+            | Ok m ->
+                m
+                |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
+                |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
+                |> foldUnitResults
+            | Error e -> Error e
+
+        let onStartImpl() = if not started then startSolvers() else Ok()
 
         let onRegisterImpl() =
             let result =
@@ -233,7 +231,6 @@ module WorkerNode =
                 |> messageProcessor.sendMessage
 
             result
-
 
         let sr n (q : RunQueueId) =
             match i.workerNodeProxy.tryRunSolverProcess n q with
@@ -267,7 +264,7 @@ module WorkerNode =
 
             match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
             | false ->
-                printfn "createServiceImpl: Registering..."
+                printfn "WorkerNodeRunner: Registering..."
                 match onRegisterImpl >-> onStartImpl |> evaluate with
                 | Ok() ->
                     match messageProcessor.tryStart() with
@@ -283,22 +280,25 @@ module WorkerNode =
                         do h.start()
 
                         // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
-                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - start"
+                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError startSolvers "WorkerNodeRunner - start solvers"
                         //let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
                         let s = TimerEventHandler i2
                         do s.start()
+                        eventHandlers<- [h; s]
 
                         Ok ()
                     | Error e -> UnableToStartMessagingClientErr e |> Error 
                 | Error e -> Error e
             | true ->
-                printfn "createServiceImpl: Unregistering..."
+                printfn "WorkerNodeRunner: Unregistering..."
                 match onUnregisterImpl() with
-                | Ok() -> failwith "createServiceImpl for inactive worker node is not implemented yet."
+                | Ok() -> failwith "WorkerNodeRunner - onUnregisterImpl for inactive worker node is not implemented yet."
                 | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
         let onTryStop() =
-            failwith "onTryStop is not implemented yet. Stop all timers before exiting."
+            printfn "WorkerNodeRunner - stopping timers."
+            eventHandlers |> List.iter (fun h -> h.stop())
+            Ok()
 
         //member _.start() = onStartImpl()
         //member _.register() = onRegisterImpl()
