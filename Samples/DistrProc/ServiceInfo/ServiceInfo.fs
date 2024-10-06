@@ -22,7 +22,7 @@ module ServiceInfo =
 
     // Flip to false to use in memory lists for messaging service storage and to true to use local database.
     //let useLocalDatabase = true
-    let dataVersion = MessagingDataVersion 1
+    //let dataVersion = MessagingDataVersion 1
 
     //type EchoMessagingClient = MessagingClient<EchoMessageData>
 
@@ -188,7 +188,7 @@ module ServiceInfo =
 
     //let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
     let getLogger = fun _ -> Logger.defaultValue
-    let workerNodeServiceInfo = loadWorkerNodeServiceInfo dataVersion
+    let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
     let workerNodeProxy = WorkerNodeProxy.create ()
 
     let getMessageSize _ = SmallSize
@@ -196,7 +196,7 @@ module ServiceInfo =
     let messagingClientProxyInfo =
         {
             messagingClientId = workerNodeServiceInfo.messagingClientAccessInfo.msgClientId
-            messagingDataVersion = dataVersion
+            messagingDataVersion = messagingDataVersion
             storageType = MsSqlDatabase
         }
 
@@ -212,6 +212,6 @@ module ServiceInfo =
 
     // Messaging Service
 
-    let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy getLogger dataVersion
-    let messagingServiceAccessInfo = loadMessagingServiceAccessInfo dataVersion
+    let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy getLogger messagingDataVersion
+    let messagingServiceAccessInfo = loadMessagingServiceAccessInfo messagingDataVersion
 

@@ -23,7 +23,7 @@ module Common =
     let SolverRunnerProcessName = "SolverRunner"
 
 
-    /// The version of the messaging data is fixed as we are sending the data as byte array.
+    /// The version of the messaging data is fixed because we are sending the data as byte array.
     let messagingDataVersion = MessagingDataVersion 1
 
 
