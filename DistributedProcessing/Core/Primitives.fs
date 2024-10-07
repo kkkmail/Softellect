@@ -468,6 +468,24 @@ module Common =
             }
 
 
+    type WorkerNodeMessageInfo =
+        {
+            workerNodeRecipient : WorkerNodeId
+            deliveryType : MessageDeliveryType
+            messageData : WorkerNodeMessage
+        }
+
+        member this.getMessageInfo() =
+            {
+                recipientInfo =
+                    {
+                        recipient = this.workerNodeRecipient.messagingClientId
+                        deliveryType = this.deliveryType
+                    }
+                messageData = this.messageData |> WorkerNodeMsg |> UserMsg
+            }
+
+
         //member q.modelCommandLineParam = q.info.modelCommandLineParam
 
         //static member fromModelCommandLineParam modelDataId defaultValueId p =

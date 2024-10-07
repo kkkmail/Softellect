@@ -108,6 +108,8 @@ module WorkerNodeService =
             upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult
             loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             saveCharts : ChartInfo -> DistributedProcessingUnitResult
+            sendCancelRunQueueMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
+            loadModelData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
         }
 
         static member create () : PartitionerProxy =
@@ -124,6 +126,8 @@ module WorkerNodeService =
                 upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
                 loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
                 saveCharts = failwith "PartitionerProxy: saveCharts is not implemented yet."
+                sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
+                loadModelData = failwith "PartitionerProxy: loadModelData is not implemented yet."
             }
 
 

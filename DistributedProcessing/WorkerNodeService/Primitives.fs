@@ -44,20 +44,3 @@ module Primitives =
     //                }
     //            messageData = this.messageData |> WorkerNodeMsg |> UserMsg
     //        }
-
-    type WorkerNodeMessageInfo =
-        {
-            workerNodeRecipient : WorkerNodeId
-            deliveryType : MessageDeliveryType
-            messageData : WorkerNodeMessage
-        }
-
-        member this.getMessageInfo() =
-            {
-                recipientInfo =
-                    {
-                        recipient = this.workerNodeRecipient.messagingClientId
-                        deliveryType = this.deliveryType
-                    }
-                messageData = this.messageData |> WorkerNodeMsg |> UserMsg
-            }

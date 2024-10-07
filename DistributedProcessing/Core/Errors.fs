@@ -231,7 +231,7 @@ module Errors =
 
 // Model runner errors
     type RunModelRunnerError =
-        | MessagingRunnerErr of MessagingError
+        | MessagingRunnerErr
         | MissingWorkerNodeRunnerErr of RunQueueId
         | UnableToLoadModelDataRunnerErr of RunQueueId // * ModelDataId
 

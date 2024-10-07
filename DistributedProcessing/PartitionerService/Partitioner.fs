@@ -67,16 +67,16 @@ open Softellect.DistributedProcessing.Proxy.PartitionerService
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Sys.TimerEvents
-
+open Softellect.Sys.Rop
 
 module Partitioner =
-    let x = 1
 
-    //let private printDebug s = printfn $"{s}"
+    let private printDebug s = printfn $"{s}"
 //    let private printDebug s = ()
 
-    let private toError g f = f |> g |> ModelRunnerErr |> Error
-    let private addError g f e = ((f |> g |> ModelRunnerErr) + e) |> Error
+    let private toError g f = f |> g |> Error
+    let private addError g f e = ((f |> g) + e) |> Error
+    let private combineUnitResults = combineUnitResults DistributedProcessingError.addError
     //let private maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
 
     //type OnProcessMessageType = OnProcessMessageType<unit>
@@ -84,12 +84,24 @@ module Partitioner =
     //let onGetMessages = onGetMessages<unit>
 
 
-    let runModel (proxy : PartitionerProxy) (q : RunQueue) : DistributedProcessingUnitResult =
-        match q.toMessageInfoOpt proxy.loadModelData proxy.controlData with
+    let private toMessageInfoOpt getModelData w (q : RunQueue) =
+        match getModelData q.runQueueId with
+        | Ok m ->
+            {
+                workerNodeRecipient = w
+                deliveryType = GuaranteedDelivery
+                messageData = (q.runQueueId, m) |> RunModelWrkMsg
+            }.getMessageInfo()
+            |> Some |> Ok
+        | Error e -> Error e
+
+
+    let runModel (proxy : PartitionerProxy) w (q : RunQueue) : DistributedProcessingUnitResult =
+        match toMessageInfoOpt proxy.loadModelData w q with
         | Ok (Some m) ->
             match proxy.sendRunModelMessage m with
             | Ok v -> Ok v
-            | Error e -> MessagingRunnerErr e |> toError RunModelRunnerErr
+            | Error e -> addError RunModelRunnerErr MessagingRunnerErr e
         | Ok None -> q.runQueueId |> MissingWorkerNodeRunnerErr |> toError RunModelRunnerErr
         | Error e -> (addError RunModelRunnerErr) (UnableToLoadModelDataRunnerErr q.runQueueId) e
 
@@ -174,7 +186,7 @@ module Partitioner =
                                 deliveryType = GuaranteedDelivery
                             }
 
-                        messageData = (q, c) |> RequestResultWrkMsg |> WorkerNodeMsg |> UserMsg
+                        messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
                     }
                     |> proxy.sendRequestResultsMessage
 
