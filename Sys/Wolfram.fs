@@ -154,5 +154,5 @@ module Wolfram =
 
                 $"""{caseName}{sep}{allFieldsStr}"""
             | _ -> x.ToString()
-        inner x ""
 
+        inner x ""

@@ -231,3 +231,8 @@ module Primitives =
     type Chart =
         | HtmlChart of HtmlChart
         | BinaryChart of BinaryChart
+
+        member c.fileName =
+            match c with
+            | HtmlChart h -> h.fileName
+            | BinaryChart b -> b.fileName

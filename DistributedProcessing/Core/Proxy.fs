@@ -61,6 +61,7 @@ open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 
 #if PARTITIONER
 open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.DataAccess.PartitionerService
 #endif
 
 // ==========================================
@@ -109,7 +110,7 @@ module WorkerNodeService =
             loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             saveCharts : ChartInfo -> DistributedProcessingUnitResult
             sendCancelRunQueueMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
-            loadModelData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
+            loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
         }
 
         static member create () : PartitionerProxy =
@@ -127,7 +128,7 @@ module WorkerNodeService =
                 loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
                 saveCharts = failwith "PartitionerProxy: saveCharts is not implemented yet."
                 sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
-                loadModelData = failwith "PartitionerProxy: loadModelData is not implemented yet."
+                loadModelBinaryData = loadModelBinaryData
             }
 
 

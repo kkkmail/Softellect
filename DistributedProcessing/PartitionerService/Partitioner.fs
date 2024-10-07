@@ -84,8 +84,8 @@ module Partitioner =
     //let onGetMessages = onGetMessages<unit>
 
 
-    let private toMessageInfoOpt getModelData w (q : RunQueue) =
-        match getModelData q.runQueueId with
+    let private toMessageInfoOpt loadModelBinaryData w (q : RunQueue) =
+        match loadModelBinaryData q.runQueueId with
         | Ok m ->
             {
                 workerNodeRecipient = w
@@ -97,7 +97,7 @@ module Partitioner =
 
 
     let runModel (proxy : PartitionerProxy) w (q : RunQueue) : DistributedProcessingUnitResult =
-        match toMessageInfoOpt proxy.loadModelData w q with
+        match toMessageInfoOpt proxy.loadModelBinaryData w q with
         | Ok (Some m) ->
             match proxy.sendRunModelMessage m with
             | Ok v -> Ok v
@@ -366,7 +366,7 @@ module Partitioner =
                 Ok()
             | SaveChartsPrtMsg c ->
                 printfn $"    onProcessMessage: saveCharts: %A{c}."
-                Ok()
+                proxy.saveCharts c
             | RegisterWorkerNodePrtMsg w ->
                 printfn $"    onProcessMessage: register: %A{w}."
                 Ok()

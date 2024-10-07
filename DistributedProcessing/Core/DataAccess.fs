@@ -56,6 +56,7 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if PARTITIONER
 open Softellect.DistributedProcessing.PartitionerService.Primitives
 open Softellect.Sys
+open System.IO
 #endif
 
 #if SOLVER_RUNNER
@@ -144,6 +145,62 @@ module WorkerNodeService =
 // Code
 
 #if PARTITIONER
+
+    let saveLocalChartInfo d (c : ChartInfo) =
+        try
+            let getFileName (name : string) =
+                match d with
+                | Some (f, g) -> Path.Combine(f, g.ToString(), Path.GetFileName name)
+                | None -> name
+
+            let saveChart (f : string) (c : Chart) =
+                let folder = Path.GetDirectoryName f
+                Directory.CreateDirectory(folder) |> ignore
+
+                match c with
+                | HtmlChart h -> File.WriteAllText(f, h.htmlContent)
+                | BinaryChart b -> File.WriteAllBytes(f, b.binaryContent)
+
+            c.charts
+            |> List.map (fun e -> saveChart (getFileName e.fileName) e)
+            |> ignore
+            Ok ()
+        with
+        | e -> e |> SaveChartsExn |> Error
+
+
+    /// TODO kk:20241007 - Change errors???
+    let loadModelBinaryData (i : RunQueueId) =
+        let elevate e = e |> TryLoadRunQueueErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueId = i.value)
+                    select (Some (q.ModelData))
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v ->
+                let w() =
+                    try
+                        match v |> tryDeserializeData<ModelBinaryData> with
+                        | Ok b -> Ok b
+                        | Error e -> toError (SerializationErr e)
+                    with
+                    | e -> toError (ExnWhenTryLoadRunQueue (i, e))
+
+                tryDbFun fromDbError w
+            | None -> toError (UnableToFindRunQueue i)
+
+        tryDbFun fromDbError g
+
 
     let private mapRunQueue (r: RunQueueEntity) =
         let elevate e = e |> MapRunQueueErr
