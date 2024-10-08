@@ -105,6 +105,13 @@ module Primitives =
         static member defaultResultLocation = FolderName "C:\\Results"
 
 
+    /// An encapsulation of a file name.
+    type FileName =
+        | FileName of string
+
+        member this.value = let (FileName v) = this in v
+
+
     type VersionNumber =
         | VersionNumber of string
 
@@ -217,14 +224,14 @@ module Primitives =
     type HtmlChart =
         {
             htmlContent: string
-            fileName : string
+            fileName : FileName
         }
 
 
     type BinaryChart =
         {
             binaryContent: byte[]
-            fileName : string
+            fileName : FileName
         }
 
 

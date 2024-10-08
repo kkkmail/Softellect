@@ -361,6 +361,7 @@ module Errors =
         | OnRunModelErr of OnRunModelError
         | UnableToStartMessagingClientErr of MessagingError
         | UnableToCreateWorkerNodeServiceErr
+        | SendRunModelMessageErr of MessagingError
 
         // Model runner errors
         | RunModelRunnerErr of RunModelRunnerError
@@ -383,6 +384,9 @@ module Errors =
         | OnSaveChartsErr of OnSaveChartsError
         | OnUpdateProgressErr of OnUpdateProgressError
         | TryRunSolverProcessErr of TryRunSolverProcessError
+
+        // Some errors
+        | SaveChartsExn of exn
 
         static member addError a b =
             match a, b with

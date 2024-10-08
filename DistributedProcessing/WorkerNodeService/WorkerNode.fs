@@ -131,22 +131,20 @@ module WorkerNode =
                 | Ok() ->
                     match messageProcessor.tryStart() with
                     | Ok () ->
-                        let getMessages() =
+                        let processMessages() =
                             match messageProcessor.processMessages onProcessMessageImpl with
                             | Ok () -> Ok ()
                             | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
-                        let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "WorkerNodeRunner - getMessages"
-                            //                let h = TimerEventHandler(TimerEventHandlerInfo.defaultValue logger getMessages "WorkerNodeRunner - getMessages")
+                        let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError processMessages "WorkerNodeRunner - processMessages"
                         let h = TimerEventHandler i1
                         do h.start()
 
                         // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
                         let i2 = TimerEventHandlerInfo<DistributedProcessingError>.oneHourValue toError startSolvers "WorkerNodeRunner - start solvers"
-                        //let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
                         let s = TimerEventHandler i2
                         do s.start()
-                        eventHandlers<- [h; s]
+                        eventHandlers<- [ h; s ]
 
                         Ok ()
                     | Error e -> UnableToStartMessagingClientErr e |> Error 

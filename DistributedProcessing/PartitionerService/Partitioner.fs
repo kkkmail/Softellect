@@ -1,31 +1,5 @@
 ﻿namespace Softellect.DistributedProcessing.PartitionerService
 
-////open Primitives.GeneralPrimitives
-////open Primitives.SolverPrimitives
-//open Softellect.Sys.Rop
-//open Softellect.Messaging.Primitives
-//open Softellect.Messaging.Client
-//open Softellect.Messaging.Proxy
-
-////open Clm.ModelParams
-//open Softellect.Messaging.ServiceInfo
-////open ContGenServiceInfo.ServiceInfo
-////open ClmSys.ClmErrors
-////open ClmSys.ContGenPrimitives
-////open ClmSys.TimerEvents
-////open ClmSys.PartitionerData
-////open ServiceProxy.ModelRunnerProxy
-////open ClmSys.ModelRunnerErrors
-////open MessagingServiceInfo.ServiceInfo
-////open ClmSys.PartitionerPrimitives
-////open ClmSys.Logging
-////open DbData.DatabaseTypesDbo
-////open DbData.DatabaseTypesClm
-////open ServiceProxy.MsgProcessorProxy
-//open Softellect.Messaging.Errors
-//open Primitives
-////open ModelGenerator
-
 open System
 open Argu
 open System.Threading
@@ -56,7 +30,6 @@ open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.AppSettings.PartitionerService
 open Softellect.DistributedProcessing.PartitionerService.Primitives
 open Softellect.DistributedProcessing.Errors
-//open Softellect.DistributedProcessing.PartitionerService.
 open Softellect.Sys.AppSettings
 open Softellect.Sys
 open Softellect.Wcf.Common
@@ -68,6 +41,8 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
+open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.DataAccess.PartitionerService
 
 module Partitioner =
 
@@ -83,6 +58,26 @@ module Partitioner =
     //type OnGetMessagesProxy = OnGetMessagesProxy<unit>
     //let onGetMessages = onGetMessages<unit>
 
+    //type PartitionerProxy
+    //    with
+    //    static member create (ctx : PartitionerContext) : PartitionerProxy =
+    //        {
+    //            sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
+    //            tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
+    //            tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
+    //            upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
+    //            //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
+    //            tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
+    //            sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
+    //            tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
+    //            //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
+    //            upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
+    //            loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
+    //            saveCharts = saveLocalChartInfo (Some (ctx.partitionerServiceInfo.partitionerInfo.resultLocation, None))
+    //            sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
+    //            loadModelBinaryData = loadModelBinaryData
+    //        }
+
 
     let private toMessageInfoOpt loadModelBinaryData w (q : RunQueue) =
         match loadModelBinaryData q.runQueueId with
@@ -96,10 +91,16 @@ module Partitioner =
         | Error e -> Error e
 
 
-    let runModel (proxy : PartitionerProxy) w (q : RunQueue) : DistributedProcessingUnitResult =
-        match toMessageInfoOpt proxy.loadModelBinaryData w q with
+    let sendRunModelMessage (messageProcessor : IMessageProcessor<DistributedProcessingMessageData>) m =
+        match messageProcessor.sendMessage m with
+        | Ok v -> Ok v
+        | Error e -> SendRunModelMessageErr e |> Error
+
+
+    let private runModel messageProcessor (proxy : PartitionerProxy) workerNodeId (q : RunQueue) =
+        match toMessageInfoOpt proxy.loadModelBinaryData workerNodeId q with
         | Ok (Some m) ->
-            match proxy.sendRunModelMessage m with
+            match sendRunModelMessage messageProcessor m with
             | Ok v -> Ok v
             | Error e -> addError RunModelRunnerErr MessagingRunnerErr e
         | Ok None -> q.runQueueId |> MissingWorkerNodeRunnerErr |> toError RunModelRunnerErr
@@ -107,18 +108,18 @@ module Partitioner =
 
 
     /// Tries to run the first not scheduled run queue entry using the first available worker node.
-    let tryRunFirstModel (proxy : PartitionerProxy) =
+    let private tryRunFirstModel messageProcessor (proxy : PartitionerProxy) =
         let addError = addError TryRunFirstModelRunnerErr
 
         match proxy.tryLoadFirstRunQueue() with
         | Ok (Some q) ->
             match proxy.tryGetAvailableWorkerNode() with
-            | Ok (Some n) ->
-                let q1 = { q with workerNodeIdOpt = Some n; runQueueStatus = RunRequestedRunQueue }
+            | Ok (Some workerNodeId) ->
+                let q1 = { q with workerNodeIdOpt = Some workerNodeId; runQueueStatus = RunRequestedRunQueue }
 
                 match proxy.upsertRunQueue q1 with
                 | Ok() ->
-                    match proxy.runModel q1 with
+                    match runModel messageProcessor proxy workerNodeId q1 with
                     | Ok() -> Ok WorkScheduled
                     | Error e ->
                         match proxy.upsertRunQueue { q1 with runQueueStatus = FailedRunQueue } with
@@ -131,81 +132,82 @@ module Partitioner =
         | Error e -> addError TryLoadFirstRunQueueRunnerErr e
 
 
-    let tryCancelRunQueue (proxy : PartitionerProxy) (q, c) =
-        let addError = addError TryCancelRunQueueRunnerErr
-        let toError = toError TryCancelRunQueueRunnerErr
+    // These are for PartitionerAdm
+    //let tryCancelRunQueue (proxy : PartitionerProxy) (q, c) =
+    //    let addError = addError TryCancelRunQueueRunnerErr
+    //    let toError = toError TryCancelRunQueueRunnerErr
 
-        match proxy.tryLoadRunQueue q with
-        | Ok (Some r) ->
-            let r1 =
-                match r.workerNodeIdOpt with
-                | Some w ->
-                    let r11 =
-                        {
-                            recipientInfo =
-                                {
-                                    recipient = w.messagingClientId
-                                    deliveryType = GuaranteedDelivery
-                                }
+    //    match proxy.tryLoadRunQueue q with
+    //    | Ok (Some r) ->
+    //        let r1 =
+    //            match r.workerNodeIdOpt with
+    //            | Some w ->
+    //                let r11 =
+    //                    {
+    //                        recipientInfo =
+    //                            {
+    //                                recipient = w.messagingClientId
+    //                                deliveryType = GuaranteedDelivery
+    //                            }
 
-                            messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
-                        }
-                        |> proxy.sendCancelRunQueueMessage
+    //                        messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
+    //                    }
+    //                    |> proxy.sendCancelRunQueueMessage
 
-                    match r11 with
-                    | Ok v -> Ok v
-                    | Error e -> TryCancelRunQueueRunnerError.MessagingTryCancelRunQueueRunnerErr e |> toError
-                | None -> Ok()
+    //                match r11 with
+    //                | Ok v -> Ok v
+    //                | Error e -> TryCancelRunQueueRunnerError.MessagingTryCancelRunQueueRunnerErr e |> toError
+    //            | None -> Ok()
 
-            let r2 =
-                match r.runQueueStatus with
-                | NotStartedRunQueue -> { r with runQueueStatus = CancelledRunQueue } |> proxy.upsertRunQueue
-                | RunRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-                | InProgressRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-                | CancelRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-                | _ -> q |> TryCancelRunQueueRunnerError.InvalidRunQueueStatusRunnerErr |> toError
+    //        let r2 =
+    //            match r.runQueueStatus with
+    //            | NotStartedRunQueue -> { r with runQueueStatus = CancelledRunQueue } |> proxy.upsertRunQueue
+    //            | RunRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
+    //            | InProgressRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
+    //            | CancelRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
+    //            | _ -> q |> TryCancelRunQueueRunnerError.InvalidRunQueueStatusRunnerErr |> toError
 
-            combineUnitResults r1 r2
-        | Ok None -> toError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q)
-        | Error e -> addError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q) e
-
-
-    let tryRequestResults (proxy : PartitionerProxy) (q, c) =
-        let addError = addError TryRequestResultsRunnerErr
-        let toError = toError TryRequestResultsRunnerErr
-
-        match proxy.tryLoadRunQueue q with
-        | Ok (Some r) ->
-            match r.workerNodeIdOpt with
-            | Some w ->
-                let r1 =
-                    {
-                        recipientInfo =
-                            {
-                                recipient = w.messagingClientId
-                                deliveryType = GuaranteedDelivery
-                            }
-
-                        messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
-                    }
-                    |> proxy.sendRequestResultsMessage
-
-                match r1 with
-                | Ok v -> Ok v
-                | Error e -> MessagingTryRequestResultsRunnerErr e |> toError
-            | None -> Ok()
-        | Ok None -> toError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q)
-        | Error e -> addError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q) e
+    //        combineUnitResults r1 r2
+    //    | Ok None -> toError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q)
+    //    | Error e -> addError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q) e
 
 
-    let tryReset (proxy : PartitionerProxy) q =
-        proxy.tryResetRunQueue q
+    //let tryRequestResults (proxy : PartitionerProxy) (q, c) =
+    //    let addError = addError TryRequestResultsRunnerErr
+    //    let toError = toError TryRequestResultsRunnerErr
+
+    //    match proxy.tryLoadRunQueue q with
+    //    | Ok (Some r) ->
+    //        match r.workerNodeIdOpt with
+    //        | Some w ->
+    //            let r1 =
+    //                {
+    //                    recipientInfo =
+    //                        {
+    //                            recipient = w.messagingClientId
+    //                            deliveryType = GuaranteedDelivery
+    //                        }
+
+    //                    messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
+    //                }
+    //                |> proxy.sendRequestResultsMessage
+
+    //            match r1 with
+    //            | Ok v -> Ok v
+    //            | Error e -> MessagingTryRequestResultsRunnerErr e |> toError
+    //        | None -> Ok()
+    //    | Ok None -> toError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q)
+    //    | Error e -> addError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q) e
+
+
+    //let tryReset (proxy : PartitionerProxy) q =
+    //    proxy.tryResetRunQueue q
 
 
     /// Tries to run all available work items (run queue) on all available work nodes until one or the other is exhausted.
-    let tryRunAllModels (proxy : PartitionerProxy) =
+    let private tryRunAllModels messageProcessor (proxy : PartitionerProxy) =
         let rec doWork() =
-            match proxy.tryRunFirstModel() with
+            match tryRunFirstModel messageProcessor proxy with
             | Ok r ->
                 match r with
                 | WorkScheduled -> doWork()
@@ -216,7 +218,7 @@ module Partitioner =
         doWork()
 
 
-    let updateProgress (proxy : PartitionerProxy) (i : ProgressUpdateInfo) =
+    let private updateProgress (proxy : PartitionerProxy) (i : ProgressUpdateInfo) =
         printDebug $"updateProgress: i = %A{i}"
         let addError = addError UpdateProgressRunnerErr
         let toError = toError UpdateProgressRunnerErr
@@ -241,13 +243,13 @@ module Partitioner =
         | Error e -> addError (UnableToLoadRunQueueRunnerErr i.runQueueId) e
 
 
-    let register (proxy : PartitionerProxy) (r : WorkerNodeInfo) =
-        //printfn "register: r = %A" r
+    let private register (proxy : PartitionerProxy) (r : WorkerNodeInfo) =
+        printfn "register: r = %A" r
         proxy.upsertWorkerNodeInfo r |> bindError (addError RegisterRunnerErr (UnableToUpsertWorkerNodeInfoRunnerErr r.workerNodeId))
 
 
-    let unregister (proxy : PartitionerProxy) (r : WorkerNodeId) =
-        //printfn "unregister: r = %A" r
+    let private unregister (proxy : PartitionerProxy) (r : WorkerNodeId) =
+        printfn "unregister: r = %A" r
         let addError = addError UnregisterRunnerErr
 
         match proxy.loadWorkerNodeInfo r with
@@ -255,7 +257,7 @@ module Partitioner =
         | Error e -> addError (UnableToLoadWorkerNodeInfoRunnerErr r) e
 
 
-    let saveCharts (proxy : PartitionerProxy) (c : ChartInfo) =
+    let private saveCharts (proxy : PartitionerProxy) (c : ChartInfo) =
         printfn $"saveCharts: c.runQueueId = %A{c.runQueueId}"
         proxy.saveCharts c |> bindError (addError SaveChartsRunnerErr (UnableToSaveChartsRunnerErr c.runQueueId))
 
@@ -348,73 +350,52 @@ module Partitioner =
         match m.messageData with
         | UserMsg (PartitionerMsg x) ->
             match x with
-            //| RunModelWrkMsg (r, d) ->
-            //    printfn $"    onProcessMessage: runQueueId: '{r}'."
-
-            //    match proxy.saveModelData r d with
-            //    | Ok() ->
-            //        printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK."
-            //        Ok()
-            //    | Error e ->
-            //        printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
-            //        let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
-            //        e1 + e |> Error
-            //| CancelRunWrkMsg q -> q ||> proxy.requestCancellation
-            //| RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
-            | UpdateProgressPrtMsg p ->
-                printfn $"    onProcessMessage: updateProgress: %A{p}."
-                Ok()
-            | SaveChartsPrtMsg c ->
-                printfn $"    onProcessMessage: saveCharts: %A{c}."
-                proxy.saveCharts c
-            | RegisterWorkerNodePrtMsg w ->
-                printfn $"    onProcessMessage: register: %A{w}."
-                Ok()
-            | UnregisterWorkerNodePrtMsg w ->
-                printfn $"    onProcessMessage: unregister: %A{w}."
-                Ok()
+            | UpdateProgressPrtMsg p -> updateProgress proxy p
+            | SaveChartsPrtMsg c -> saveCharts proxy c
+            | RegisterWorkerNodePrtMsg w -> register proxy w
+            | UnregisterWorkerNodePrtMsg w -> unregister proxy w
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
-    type PartitionerRunner (i : PartitionerContext) =
+    type PartitionerRunner (ctx : PartitionerContext) =
         let mutable eventHandlers = []
 
-        let partitionerId = i.partitionerServiceInfo.partitionerInfo.partitionerId
-        let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
+        //let partitionerId = ctx.partitionerServiceInfo.partitionerInfo.partitionerId
+        let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(ctx.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
         let onProcessMessageImpl (m : DistributedProcessingMessage) =
-            let r = onProcessMessage i.partitionerProxy m
+            let r = onProcessMessage ctx.partitionerProxy m
 
             let r1 =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"WorkerNodeRunner - error: '{e}'."
+                    printfn $"PartitionerRunner - error: '{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
+
+        let distributeWork() = tryRunAllModels messageProcessor ctx.partitionerProxy
 
         let onTryStart() =
             let toError e = failwith $"Error: '{e}'."
 
             match messageProcessor.tryStart() with
             | Ok () ->
-                let getMessages() =
+                let processMessages() =
                     match messageProcessor.processMessages onProcessMessageImpl with
                     | Ok () -> Ok ()
                     | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
-                let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError getMessages "PartitionerRunner - getMessages"
-                    //                let h = TimerEventHandler(TimerEventHandlerInfo.defaultValue logger getMessages "WorkerNodeRunner - getMessages")
+                let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError processMessages "PartitionerRunner - processMessages"
                 let h = TimerEventHandler i1
                 do h.start()
 
-                //// Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
-                //let i2 = TimerEventHandlerInfo<DistributedProcessingError>.oneHourValue toError startSolvers "WorkerNodeRunner - start solvers"
-                ////let s = ClmEventHandler(ClmEventHandlerInfo.oneHourValue logger w.start "WorkerNodeRunner - start")
-                //let s = TimerEventHandler i2
-                //do s.start()
-                eventHandlers<- [ h ]
+                // Distribute work - change to oneHourValue or configurable value.
+                let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError distributeWork "PartitionerRunner - distributeWork"
+                let s = TimerEventHandler i2
+                do s.start()
+                eventHandlers<- [ h; s ]
 
                 Ok ()
             | Error e -> UnableToStartMessagingClientErr e |> Error 

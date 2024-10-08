@@ -97,39 +97,23 @@ module WorkerNodeService =
 
     type PartitionerProxy =
         {
-            sendRunModelMessage : DistributedProcessingMessageInfo -> DistributedProcessingUnitResult
+            saveCharts : ChartInfo -> DistributedProcessingUnitResult
+            loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
+            loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue option>
             tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
-            runModel : RunQueue -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
-            sendRequestResultsMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
-            tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
-            tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
             upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult
-            loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
-            saveCharts : ChartInfo -> DistributedProcessingUnitResult
-            sendCancelRunQueueMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
-            loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
-        }
 
-        static member create () : PartitionerProxy =
-            {
-                sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
-                tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
-                tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
-                upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
-                runModel = failwith "PartitionerProxy: runModel is not implemented yet."
-                tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
-                sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
-                tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
-                tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
-                upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
-                loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
-                saveCharts = failwith "PartitionerProxy: saveCharts is not implemented yet."
-                sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
-                loadModelBinaryData = loadModelBinaryData
-            }
+            //// Unclear
+            //sendRunModelMessage : DistributedProcessingMessageInfo -> DistributedProcessingUnitResult
+            ////runModel : RunQueue -> DistributedProcessingUnitResult
+            //sendRequestResultsMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
+            //tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            ////tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
+            //sendCancelRunQueueMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
+        }
 
 
     type PartitionerContext =

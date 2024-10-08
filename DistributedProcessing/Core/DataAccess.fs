@@ -148,9 +148,14 @@ module WorkerNodeService =
 
     let saveLocalChartInfo d (c : ChartInfo) =
         try
-            let getFileName (name : string) =
+            let getFileName (FileName name) =
                 match d with
-                | Some (f, g) -> Path.Combine(f, g.ToString(), Path.GetFileName name)
+                | Some (FolderName f, g) ->
+                    let fileName = Path.GetFileName name
+
+                    match g with
+                    | Some (FolderName e) -> Path.Combine(f, e, fileName)
+                    | None -> Path.Combine(f, fileName)
                 | None -> name
 
             let saveChart (f : string) (c : Chart) =
