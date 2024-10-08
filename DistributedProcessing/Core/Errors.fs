@@ -213,6 +213,10 @@ module Errors =
         | PingWcfErr of WcfError
 
 
+    type PartitionereWcfError =
+        | PrtPingWcfErr of WcfError
+
+
 //    type WorkerNodeServiceError =
 ////        | WorkerNodeWcfErr of WorkerNodeWcfError
 ////        | UnableToStartMessagingClientErr of MessagingError
@@ -387,6 +391,7 @@ module Errors =
 
         // Some errors
         | SaveChartsExn of exn
+        | PartitionerWcfErr of PartitionereWcfError
 
         static member addError a b =
             match a, b with

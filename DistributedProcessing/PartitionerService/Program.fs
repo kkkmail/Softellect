@@ -1,79 +1,74 @@
 namespace Softellect.DistributedProcessing.PartitionerService
 
-//open Argu
-//open Microsoft.Extensions.DependencyInjection
-//open Microsoft.Extensions.Hosting
-//open Softellect.Messaging.Primitives
-//open Softellect.DistributedProcessing.Primitives
-//open Softellect.DistributedProcessing.WorkerNodeService.Worker
-//open Softellect.DistributedProcessing.WorkerNodeService.CommandLine
-//open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
-//open Softellect.Sys.ExitErrorCodes
-//open Softellect.Wcf.Program
-//open Softellect.DistributedProcessing.WorkerNodeService.Proxy
+open Argu
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
+open Softellect.Messaging.Primitives
+open Softellect.DistributedProcessing.Primitives.Common
+//open Softellect.DistributedProcessing.PartitionerService.Worker
+open Softellect.DistributedProcessing.PartitionerService.CommandLine
+//open Softellect.DistributedProcessing.PartitionerService.Partitioner
+open Softellect.DistributedProcessing.AppSettings.PartitionerService
+open Softellect.Sys.ExitErrorCodes
+open Softellect.Wcf.Program
+open Softellect.DistributedProcessing.Proxy.PartitionerService
+open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.PartitionerService.Partitioner
+open Softellect.DistributedProcessing.DataAccess.PartitionerService
+open Softellect.Sys.Logging
+open Softellect.Messaging.ServiceProxy
+open Softellect.Messaging.Client
 
 module Program =
 
-    ////type WorkerNodeProgramData<'D, 'P> =
-    ////    {
-    ////        x : int
-    ////        y : DistributedProcessingMessageData<'D, 'P>
-    ////    }
-
-    ////let private createHostBuilder<'D, 'P> (v : MessagingDataVersion) =
-    ////    Host.CreateDefaultBuilder()
-    ////        .UseWindowsService()
-    ////        .ConfigureServices(fun hostContext services ->
-    ////            services.AddSingleton(v) |> ignore
-    ////            services.AddHostedService<MsgWorker<'D>>() |> ignore)
-
-
-    ////let main<'D, 'P> workerNodeProgramName data argv =
-    ////    //let runHost() = createHostBuilder<'D>(v).Build().Run()
-
-    ////    //try
-    ////    //    let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)
-    ////    //    let results = (parser.Parse argv).GetAllResults() |> MsgSvcArgs.fromArgu convertArgs
-
-    ////    //    let run p =
-    ////    //        getParams v p |> ignore
-    ////    //        runHost
-
-    ////    //    match MessagingServiceTask.tryCreate run (getSaveSettings v) results with
-    ////    //    | Some task -> task.run()
-    ////    //    | None ->  runHost()
-
-    ////    //    CompletedSuccessfully
-
-    ////    //with
-    ////    //| exn ->
-    ////    //    printfn $"%s{exn.Message}"
-    ////    //    UnknownException
-    ////    0
-
-    //let main<'D, 'P> workerNodeProgramName (data : WorkerNodeRunnerData<'D, 'P>) argv =
-    //    //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
-
-    //    let saveSettings() =
-    //        //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-    //        //printfn $"saveSettings - result: '%A{result}'."
-    //        failwith ""
-
-    //    let configureServices (services : IServiceCollection) =
-    //        let runner = new WorkerNodeRunner<'D, 'P>(data)
-    //        services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
-
-    //    let programData =
-    //        {
-    //            serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
-    //            getService = fun () -> new WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
-    //            getWcfService = fun service -> new WorkerNodeWcfService(service)
-    //            saveSettings = saveSettings
-    //            configureServices = Some configureServices
-    //        }
-
-    //    main<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeProgramName programData argv
-
     let partitionerMain argv =
+        let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
+        let getLogger = fun _ -> Logger.defaultValue
+        let getMessageSize _ = SmallSize
 
-        0
+        let messagingClientProxyInfo =
+            {
+                messagingClientId = partitionerServiceInfo.messagingClientAccessInfo.msgClientId
+                messagingDataVersion = messagingDataVersion
+                storageType = MsSqlDatabase
+            }
+
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+
+        let messagingClientData =
+            {
+                msgAccessInfo = partitionerServiceInfo.messagingClientAccessInfo
+                msgClientProxy = msgClientProxy
+                logOnError = true
+            }
+
+
+        let proxy = PartitionerProxy.create partitionerServiceInfo
+
+        let data =
+            {
+                partitionerServiceInfo = partitionerServiceInfo
+                partitionerProxy = proxy
+                messagingClientData = messagingClientData
+            }
+
+        let saveSettings() =
+            //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
+            //printfn $"saveSettings - result: '%A{result}'."
+            failwith ""
+
+        let configureServices (services : IServiceCollection) =
+            let runner = new PartitionerRunner(data)
+            services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
+
+        let programData =
+            {
+                serviceAccessInfo = data.partitionerServiceInfo.partitionerServiceAccessInfo
+                getService = fun () -> new PartitionerService(data.partitionerServiceInfo) :> IPartitionerService
+                getWcfService = fun service -> new PartitionerWcfService(service)
+                saveSettings = saveSettings
+                configureServices = Some configureServices
+            }
+
+        printfn $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
+        wcfMain<IPartitionerService, IPartitionerWcfService, PartitionerWcfService> partitionerServiceProgramName programData argv

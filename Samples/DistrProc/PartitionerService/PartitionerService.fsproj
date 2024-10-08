@@ -42,7 +42,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\MessagingService\MessagingService.fsproj" />
+      <ProjectReference Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerService.fsproj" />
     </ItemGroup>
 
 </Project>

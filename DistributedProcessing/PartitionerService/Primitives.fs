@@ -5,6 +5,10 @@ open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Primitives.Common
 
 module Primitives =
+
+    let partitionerServiceProgramName = "PartitionerService.exe"
+
+
     type RunQueue =
         {
             runQueueId : RunQueueId

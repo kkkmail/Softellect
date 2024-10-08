@@ -119,7 +119,7 @@ module WorkerNodeService =
         w
 
 
-    let loadPartitonerServiceInfo messagingDataVersion =
+    let loadPartitionerServiceInfo messagingDataVersion =
         let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
 
         match providerRes with

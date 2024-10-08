@@ -5,7 +5,6 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Softellect.Messaging.Primitives
-open Softellect.DistributedProcessing.Primitives.SolverRunner
 
 /// A SolverRunner operates on input data 'D and produces progress / output data 'P.
 /// Internally it uses a data type 'X to store the state of the computation and may produce chart data 'C.

@@ -56,8 +56,8 @@ module Program =
     //    //    UnknownException
     //    0
 
+
     let workerNodeMain argv =
-        //let solverRunner = fun _ -> failwith "solverRunner is not implemented yet."
         let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
         let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize
@@ -87,8 +87,6 @@ module Program =
                 workerNodeProxy = proxy
                 messagingClientData = messagingClientData
             }
-
-        //printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
             //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo

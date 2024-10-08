@@ -32,7 +32,6 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="..\Core\Primitives2.fs" Link="Primitives2.fs" />
     <Compile Include="Primitives.fs" />
     <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
     <Compile Include="CommandLine.fs" />

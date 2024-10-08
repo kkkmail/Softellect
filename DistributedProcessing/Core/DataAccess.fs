@@ -60,7 +60,6 @@ open System.IO
 #endif
 
 #if SOLVER_RUNNER
-open Softellect.DistributedProcessing.Primitives.SolverRunner
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 #endif
 

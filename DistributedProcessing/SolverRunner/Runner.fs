@@ -9,7 +9,6 @@ open Softellect.DistributedProcessing.Errors
 open System.Collections.Concurrent
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
-open Softellect.DistributedProcessing.Primitives.SolverRunner
 
 module Runner =
 

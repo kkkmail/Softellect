@@ -1,17 +1,8 @@
 ﻿namespace Softellect.Samples.DistrProc.PartitionerService
 
-open Softellect.Messaging.Service
-open Softellect.MessagingService.Program
+open Softellect.DistributedProcessing.PartitionerService.Program
 
 module Program =
 
     [<EntryPoint>]
-    let main args =
-        //let data =
-        //    {
-        //        messagingServiceProxy = serviceProxy
-        //        messagingServiceAccessInfo = echMessagingServiceAccessInfo
-        //    }
-
-        //main<EchoMessageData> "MsgWorker" data args
-        failwith ""
+    let main argv = partitionerMain argv

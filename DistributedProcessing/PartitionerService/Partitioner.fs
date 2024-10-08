@@ -58,25 +58,26 @@ module Partitioner =
     //type OnGetMessagesProxy = OnGetMessagesProxy<unit>
     //let onGetMessages = onGetMessages<unit>
 
-    //type PartitionerProxy
-    //    with
-    //    static member create (ctx : PartitionerContext) : PartitionerProxy =
-    //        {
-    //            sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
-    //            tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
-    //            tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
-    //            upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
-    //            //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
-    //            tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
-    //            sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
-    //            tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
-    //            //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
-    //            upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
-    //            loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
-    //            saveCharts = saveLocalChartInfo (Some (ctx.partitionerServiceInfo.partitionerInfo.resultLocation, None))
-    //            sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
-    //            loadModelBinaryData = loadModelBinaryData
-    //        }
+    type PartitionerProxy
+        with
+        static member create (i : PartitionerServiceInfo) : PartitionerProxy =
+            {
+                tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
+                tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
+                upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
+                //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
+                tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
+                //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
+                upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
+                loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
+                saveCharts = saveLocalChartInfo (Some (i.partitionerInfo.resultLocation, None))
+                loadModelBinaryData = loadModelBinaryData
+
+                //sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
+                //sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
+                //tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
+                //sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
+            }
 
 
     let private toMessageInfoOpt loadModelBinaryData w (q : RunQueue) =
@@ -292,56 +293,61 @@ module Partitioner =
     type IPartitionerService =
         inherit IHostedService
 
-        abstract tryCancelRunQueue : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
-        abstract tryRequestResults : RunQueueId -> DistributedProcessingUnitResult -> DistributedProcessingUnitResult
-        abstract tryReset : RunQueueId -> DistributedProcessingUnitResult
+        //abstract tryCancelRunQueue : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
+        //abstract tryRequestResults : RunQueueId -> DistributedProcessingUnitResult -> DistributedProcessingUnitResult
+        //abstract tryReset : RunQueueId -> DistributedProcessingUnitResult
+
+        /// To check if service is working.
+        abstract ping : unit -> DistributedProcessingUnitResult
 
 
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = PartitionerWcfServiceName)>]
     type IPartitionerWcfService =
+        //[<OperationContract(Name = "tryCancelRunQueue")>]
+        //abstract tryCancelRunQueue : q:byte[] -> byte[]
 
-        [<OperationContract(Name = "tryCancelRunQueue")>]
-        abstract tryCancelRunQueue : q:byte[] -> byte[]
+        //[<OperationContract(Name = "tryRequestResults")>]
+        //abstract tryRequestResults : q:byte[] -> byte[]
 
-        [<OperationContract(Name = "tryRequestResults")>]
-        abstract tryRequestResults : q:byte[] -> byte[]
+        //[<OperationContract(Name = "tryReset")>]
+        //abstract tryReset : q:byte[] -> byte[]
 
-        [<OperationContract(Name = "tryReset")>]
-        abstract tryReset : q:byte[] -> byte[]
-
-
-//    type PartitionerWcfService(w : IPartitionerService) =
-
-//        let toPingError f = f |> PingWcfErr |> PartitionerWcfErr
-
-//        let ping() = w.ping()
-
-//        interface IPartitionerWcfService with
-//            member _.ping b = tryReply ping toPingError b
+        [<OperationContract(Name = "ping")>]
+        abstract ping : q:byte[] -> byte[]
 
 
-//    type PartitionerService(w : PartitionerServiceInfo) =
 
-//        let ping() = failwith $"Not implemented yet - %A{w}"
+    type PartitionerWcfService(w : IPartitionerService) =
+        let toPingError f = f |> PrtPingWcfErr |> PartitionerWcfErr
 
-//        interface IPartitionerService with
-//            member _.ping() = ping()
+        let ping() = w.ping()
 
-//        interface IHostedService with
-//            member _.StartAsync(cancellationToken : CancellationToken) =
-//                async {
-//                    printfn "PartitionerService::StartAsync..."
-//                }
-//                |> Async.StartAsTask
-//                :> Task
+        interface IPartitionerWcfService with
+            member _.ping b = tryReply ping toPingError b
 
-//            member _.StopAsync(cancellationToken : CancellationToken) =
-//                async {
-//                    printfn "PartitionerService::StopAsync..."
-//                }
-//                |> Async.StartAsTask
-//                :> Task
+
+    type PartitionerService(w : PartitionerServiceInfo) =
+
+        let ping() = failwith $"Not implemented yet - %A{w}"
+
+        interface IPartitionerService with
+            member _.ping() = ping()
+
+        interface IHostedService with
+            member _.StartAsync(cancellationToken : CancellationToken) =
+                async {
+                    printfn "PartitionerService::StartAsync..."
+                }
+                |> Async.StartAsTask
+                :> Task
+
+            member _.StopAsync(cancellationToken : CancellationToken) =
+                async {
+                    printfn "PartitionerService::StopAsync..."
+                }
+                |> Async.StartAsTask
+                :> Task
 
 
     let onProcessMessage (proxy : PartitionerProxy) (m : DistributedProcessingMessage) =

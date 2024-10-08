@@ -26,21 +26,3 @@ module Primitives =
             progressData : ProgressData
             createdOn : DateTime
         }
-
-
-    //type WorkerNodeMessageInfo<'D> =
-    //    {
-    //        workerNodeRecipient : WorkerNodeId
-    //        deliveryType : MessageDeliveryType
-    //        messageData : WorkerNodeMessage<'D>
-    //    }
-
-    //    member this.getMessageInfo() =
-    //        {
-    //            recipientInfo =
-    //                {
-    //                    recipient = this.workerNodeRecipient.messagingClientId
-    //                    deliveryType = this.deliveryType
-    //                }
-    //            messageData = this.messageData |> WorkerNodeMsg |> UserMsg
-    //        }
