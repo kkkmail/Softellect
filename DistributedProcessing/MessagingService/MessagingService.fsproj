@@ -19,11 +19,21 @@
   </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Properties\launchSettings.json">
-          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-          <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </Content>
+        <None Include="..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\MessagingService\MessagingFunctions.ps1" Link="MessagingFunctions.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\MessagingService\Start-MessagingService.ps1" Link="Start-MessagingService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\MessagingService\Stop-MessagingService.ps1" Link="Stop-MessagingService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\MessagingService\Uninstall-MessagingService.ps1" Link="Uninstall-MessagingService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
         <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <Content Include="appsettings.json">
