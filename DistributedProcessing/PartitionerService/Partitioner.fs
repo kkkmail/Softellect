@@ -64,10 +64,10 @@ module Partitioner =
             {
                 tryLoadFirstRunQueue = tryLoadFirstRunQueue
                 tryGetAvailableWorkerNode = fun () -> tryGetAvailableWorkerNode i.partitionerInfo.lastAllowedNodeErr
-                upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
-                tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
-                upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
-                loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
+                upsertRunQueue = upsertRunQueue
+                tryLoadRunQueue = tryLoadRunQueue
+                upsertWorkerNodeInfo = upsertWorkerNodeInfo
+                loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo.partitionerId
                 saveCharts = saveLocalChartInfo (Some (i.partitionerInfo.resultLocation, None))
                 loadModelBinaryData = loadModelBinaryData
 
