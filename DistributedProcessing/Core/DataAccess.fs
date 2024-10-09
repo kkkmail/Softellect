@@ -573,7 +573,6 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-
 #endif
 
 #if SOLVER_RUNNER
