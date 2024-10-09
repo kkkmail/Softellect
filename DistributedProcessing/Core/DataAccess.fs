@@ -102,7 +102,7 @@ module WorkerNodeService =
 #if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
-#if PARTITIONER || MODEL_GENERATOR
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR
 
     /// Both partitioner and ModelGenerator use the same database.
     let connectionStringKey = ConfigKey "PartitionerService"
@@ -127,7 +127,7 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI"
@@ -148,6 +148,15 @@ module WorkerNodeService =
 
     type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     type private MessageEntity = DbContext.``dbo.MessageEntity``
+
+#endif
+
+// ==========================================
+// Specific Types
+
+#if PARTITIONER || PARTITIONER_ADM
+
+    type private WorkerNodeEntity = DbContext.``dbo.WorkerNodeEntity``
 
 #endif
 
@@ -278,6 +287,68 @@ module WorkerNodeService =
                 | Ok r -> Ok (Some r)
                 | Error e -> Error e
             | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    /// Gets the first available worker node to schedule work.
+    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) =
+        let elevate e = e |> TryGetAvailableWorkerNodeErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetAvailableWorkerNodeDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for r in ctx.Dbo.VwAvailableWorkerNode do
+                    where (r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
+                    sortByDescending r.NodePriority
+                    thenBy r.WorkLoad
+                    thenBy r.OrderId
+                    select (Some r)
+                    headOrDefault
+                }
+
+            match x with
+            | Some r -> r.WorkerNodeId |> MessagingClientId |> WorkerNodeId |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let private createWorkerNodeInfo p (r : WorkerNodeEntity) =
+        {
+            workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
+            workerNodeName = r.WorkerNodeName |> WorkerNodeName
+            noOfCores = r.NumberOfCores
+            partitionerId = p
+            nodePriority = r.NodePriority |> WorkerNodePriority
+            isInactive = r.IsInactive
+            lastErrorDateOpt = r.LastErrorOn
+        }
+
+
+    let loadWorkerNodeInfo p (i : WorkerNodeId) =
+        let elevate e = e |> LoadWorkerNodeInfoErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadWorkerNodeInfoDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for w in ctx.Dbo.WorkerNode do
+                    where (w.WorkerNodeId = i.value.value)
+                    select (Some w)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> createWorkerNodeInfo p |> Ok
+            | None -> UnableToLoadWorkerNodeErr i |> toError
 
         tryDbFun fromDbError g
 

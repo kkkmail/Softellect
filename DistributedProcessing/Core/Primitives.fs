@@ -338,6 +338,7 @@ module Common =
         {
             partitionerId : PartitionerId
             resultLocation : FolderName
+            lastAllowedNodeErr : LastAllowedNodeErr
         }
 
 

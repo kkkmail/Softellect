@@ -211,6 +211,54 @@ go
 
 
 
+drop view if exists vw_newid
+go
+
+
+create view vw_newid
+as
+select newid() as new_id
+go
+
+drop function if exists dbo.getAvailableWorkerNode
+go
+
+
+create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
+returns table
+as
+return
+(
+	with a as
+	(
+	select
+		workerNodeId
+		,nodePriority
+		,cast(
+			case
+				when numberOfCores <= 0 then 1
+				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
+			end as money) as workLoad
+		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
+	from WorkerNode w
+	where isInactive = 0
+	),
+	b as
+	(
+		select
+			a.*, 
+			c.new_id
+			from a
+			cross apply (select new_id from vw_newid) c
+	)
+	select top 1
+	workerNodeId
+	from b
+	where noErr = 0 and workLoad < 1
+	order by nodePriority desc, workLoad, new_id
+)
+go
+
 drop function if exists dbo.RunQueueStatus_NotStarted
 go
 create function dbo.RunQueueStatus_NotStarted() returns int as begin return 0 end
@@ -242,6 +290,34 @@ go
 drop function if exists dbo.RunQueueStatus_Cancelled
 go
 create function dbo.RunQueueStatus_Cancelled() returns int as begin return 6 end
+go
+
+drop view if exists vw_AvailableWorkerNode
+go
+
+
+create view vw_AvailableWorkerNode
+as
+with a as
+(
+select
+	workerNodeId
+	,nodePriority
+	,isnull(cast(
+		case
+			when numberOfCores <= 0 then 1
+			else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
+		end as money), 0) as workLoad
+	,case when lastErrorOn is null then null else datediff(minute, getdate(), lastErrorOn) end as lastErrMinAgo
+from WorkerNode w
+where isInactive = 0
+)
+select
+	a.*, 
+	c.new_id as OrderId
+	from a
+	cross apply (select new_id from vw_newid) c
+
 go
 
 drop procedure if exists dbo.deleteRunQueue

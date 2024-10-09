@@ -79,6 +79,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PartitionerAdm", "Distribut
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PartitionerAdm", "Samples\DistrProc\PartitionerAdm\PartitionerAdm.fsproj", "{B0E671D6-C7F1-4965-B7A3-356FA19A7E84}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ModelGenerator", "Samples\DistrProc\ModelGenerator\ModelGenerator.fsproj", "{24269341-FD62-4433-B5BF-EC6482F20E60}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -213,6 +215,10 @@ Global
 		{B0E671D6-C7F1-4965-B7A3-356FA19A7E84}.Debug|x64.Build.0 = Debug|x64
 		{B0E671D6-C7F1-4965-B7A3-356FA19A7E84}.Release|x64.ActiveCfg = Release|x64
 		{B0E671D6-C7F1-4965-B7A3-356FA19A7E84}.Release|x64.Build.0 = Release|x64
+		{24269341-FD62-4433-B5BF-EC6482F20E60}.Debug|x64.ActiveCfg = Debug|x64
+		{24269341-FD62-4433-B5BF-EC6482F20E60}.Debug|x64.Build.0 = Debug|x64
+		{24269341-FD62-4433-B5BF-EC6482F20E60}.Release|x64.ActiveCfg = Release|x64
+		{24269341-FD62-4433-B5BF-EC6482F20E60}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -246,6 +252,7 @@ Global
 		{6884E265-48D8-4C13-BE7D-8CF6FCECB5C0} = {F9C514B7-8DB8-4204-AA4C-DDF5F257BDFA}
 		{2FF8AD15-04C8-41F1-AF5A-23CA276FD7E8} = {F9C514B7-8DB8-4204-AA4C-DDF5F257BDFA}
 		{B0E671D6-C7F1-4965-B7A3-356FA19A7E84} = {B058BD13-C2C0-451A-83F2-50D993285078}
+		{24269341-FD62-4433-B5BF-EC6482F20E60} = {B058BD13-C2C0-451A-83F2-50D993285078}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7A2921D5-1F3D-48DF-A77D-B0C8D846BDB8}

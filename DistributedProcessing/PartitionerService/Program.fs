@@ -22,6 +22,7 @@ open Softellect.Messaging.Client
 module Program =
 
     let partitionerMain argv =
+        printfn $"partitionerMain - argv: %A{argv}."
         let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
         let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize

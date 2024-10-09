@@ -62,16 +62,17 @@ module Partitioner =
         with
         static member create (i : PartitionerServiceInfo) : PartitionerProxy =
             {
-                tryLoadFirstRunQueue = failwith "PartitionerProxy: tryLoadFirstRunQueue is not implemented yet."
-                tryGetAvailableWorkerNode = failwith "PartitionerProxy: tryGetAvailableWorkerNode is not implemented yet."
+                tryLoadFirstRunQueue = tryLoadFirstRunQueue
+                tryGetAvailableWorkerNode = fun () -> tryGetAvailableWorkerNode i.partitionerInfo.lastAllowedNodeErr
                 upsertRunQueue = failwith "PartitionerProxy: upsertRunQueue is not implemented yet."
-                //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
                 tryLoadRunQueue = failwith "PartitionerProxy: tryLoadRunQueue is not implemented yet."
-                //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
                 upsertWorkerNodeInfo = failwith "PartitionerProxy: upsertWorkerNodeInfo is not implemented yet."
                 loadWorkerNodeInfo = failwith "PartitionerProxy: loadWorkerNodeInfo is not implemented yet."
                 saveCharts = saveLocalChartInfo (Some (i.partitionerInfo.resultLocation, None))
                 loadModelBinaryData = loadModelBinaryData
+
+                //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
+                //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
 
                 //sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
                 //sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."

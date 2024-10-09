@@ -42,7 +42,7 @@ open Softellect.Messaging.AppSettings
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
 // ==========================================
@@ -50,6 +50,10 @@ open Softellect.Messaging.AppSettings
 
 #if PARTITIONER
 module PartitionerService =
+#endif
+
+#if PARTITIONER_ADM
+module PartitionerAdm =
 #endif
 
 #if MODEL_GENERATOR
@@ -67,7 +71,7 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 
     let partitionerIdKey = ConfigKey "PartitionerId"
     let resultLocationKey = ConfigKey "ResultLocation"
@@ -89,7 +93,7 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || MODEL_GENERATOR
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR
 
     [<Literal>]
     let PartitionerWcfServiceName = "PartitionerWcfService"
@@ -114,6 +118,7 @@ module WorkerNodeService =
             {
                 partitionerId = getPartitionerId provider defaultPartitionerId
                 resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
+                lastAllowedNodeErr = LastAllowedNodeErr.defaultValue
             }
 
         w
