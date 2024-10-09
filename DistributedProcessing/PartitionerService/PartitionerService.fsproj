@@ -9,10 +9,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.400.2</Version>
     <PackageVersion>8.0.400.2</PackageVersion>
-    <Description>Softellect WorkerNode Service ...</Description>
+    <Description>Softellect Partitioner Service ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/PartitionerService</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <DefineConstants>PARTITIONER</DefineConstants>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

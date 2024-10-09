@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.DistributedProcessing.ModelGenerator</AssemblyName>
+    <AssemblyName>Softellect.DistributedProcessing.PartitionerAdm</AssemblyName>
     <Platforms>x64</Platforms>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
@@ -9,12 +9,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Version>8.0.400.2</Version>
     <PackageVersion>8.0.400.2</PackageVersion>
-    <Description>Softellect Model Generator ...</Description>
+    <Description>Softellect Partitioner Administration ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/PartitionerAdm</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <DefineConstants>MODEL_GENERATOR</DefineConstants>
+    <DefineConstants>PARTITIONER_ADM</DefineConstants>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
@@ -28,23 +28,30 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
-  <ItemGroup />
-
   <ItemGroup>
-    <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json" />
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Compile Include="Primitives.fs" />
+    <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
+    <Compile Include="CommandLine.fs" />
+    <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
+    <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
 
+  <ItemGroup />
+
   <ItemGroup>
+    <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
     <ProjectReference Include="..\Core\Core.fsproj" />
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
     <PackageReference Update="FSharp.Core" Version="8.0.400" />
   </ItemGroup>
 

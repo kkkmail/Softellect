@@ -47,7 +47,7 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 #endif
 
 // ==========================================
@@ -73,6 +73,10 @@ open Softellect.DistributedProcessing.SolverRunner.Primitives
 module PartitionerService =
 #endif
 
+#if PARTITIONER_ADM
+module PartitionerAdm =
+#endif
+
 #if MODEL_GENERATOR
 module ModelGenerator =
 #endif
@@ -83,6 +87,13 @@ module SolverRunner =
 
 #if WORKER_NODE
 module WorkerNodeService =
+#endif
+
+// ==========================================
+// To make a compiler happy.
+
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+    let private dummy = 0
 #endif
 
 // ==========================================

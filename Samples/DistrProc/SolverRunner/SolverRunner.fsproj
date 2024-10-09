@@ -20,18 +20,13 @@
   </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="appsettings.Development.json">
-          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        <Content Include="..\..\..\DistributedProcessing\WorkerNodeService\appsettings.json" Link="appsettings.json">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </Content>
-        <Content Include="appsettings.json">
-          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
         </Content>
         <Compile Include="Program.fs" />
     </ItemGroup>
+
+    <ItemGroup />
 
     <ItemGroup>
       <PackageReference Update="FSharp.Core" Version="8.0.400" />
