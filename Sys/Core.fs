@@ -50,6 +50,83 @@ module Core =
     let unZip (b : byte[]) = b |> unZipBytes |> fromByteArray
 
 
+    // Zips the contents of the specified folder and all subfolders.
+    let zipFolder (f : FolderName) : Result<byte[], string> =
+        try
+            let folderPath = f.value
+
+            if not (Directory.Exists(folderPath)) then
+                Error $"Folder {folderPath} does not exist."
+            else
+                use memoryStream = new MemoryStream()
+                use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
+
+                let rec zipFiles folderPath archiveFolder =
+                    let directory = DirectoryInfo(folderPath)
+
+                    for file in directory.GetFiles() do
+                        let entryName = Path.Combine(archiveFolder, file.Name)
+                        let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
+                        use entryStream = entry.Open()
+                        use fileStream = file.OpenRead()
+                        fileStream.CopyTo(entryStream)
+
+                    for subfolder in directory.GetDirectories() do
+                        let subfolderArchivePath = Path.Combine(archiveFolder, subfolder.Name)
+                        zipFiles subfolder.FullName subfolderArchivePath
+
+                zipFiles folderPath ""
+
+                // Get the byte[] from the memory stream
+                memoryStream.Position <- 0L
+                let resultBytes = memoryStream.ToArray()
+                Ok resultBytes
+        with
+        | ex -> Error ex.Message
+
+
+    // Unzips the byte[] into the specified folder. Overwrites files if overwrite is true.
+    let unzipToFolder (b : byte[]) (f : FolderName) (overwrite : bool) : Result<unit, string> =
+        try
+            let folderPath = f.value
+
+            if not (Directory.Exists(folderPath)) then
+                Directory.CreateDirectory(folderPath) |> ignore
+
+            use memoryStream = new MemoryStream(b)
+            use archive = new ZipArchive(memoryStream, ZipArchiveMode.Read)
+
+            // Define a helper function to handle each entry and return a result
+            let processEntry (entry: ZipArchiveEntry) =
+                let filePath = Path.Combine(folderPath, entry.FullName)
+
+                if File.Exists(filePath) && not overwrite then
+                    let fileName = Path.GetFileName(filePath)
+                    Error $"File {fileName} already exists."
+                else
+                    // Ensure the directory exists for the entry
+                    let entryDirectory = Path.GetDirectoryName(filePath)
+                    if not (String.IsNullOrEmpty(entryDirectory)) && not (Directory.Exists(entryDirectory)) then
+                        Directory.CreateDirectory(entryDirectory) |> ignore
+
+                    // Extract the file
+                    use entryStream = entry.Open()
+                    use fileStream = File.Create(filePath)
+                    entryStream.CopyTo(fileStream)
+
+                    Ok ()
+
+            // Process each entry, folding over the results
+            archive.Entries
+            |> Seq.fold (fun acc entry ->
+                match acc with
+                | Ok () -> processEntry entry  // Only process if no error yet
+                | Error e -> Error e) (Ok ())  // Skip further processing on error
+
+        with
+        | ex -> Error ex.Message
+
+
     let toAsync (f : unit-> unit) = async { do f() }
 
 

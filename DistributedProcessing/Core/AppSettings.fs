@@ -75,6 +75,7 @@ module WorkerNodeService =
 
     let partitionerIdKey = ConfigKey "PartitionerId"
     let resultLocationKey = ConfigKey "ResultLocation"
+    let solverLocationKey = ConfigKey "SolverLocation"
 
 
     let getPartitionerId (provider : AppSettingsProvider) d =
@@ -226,20 +227,24 @@ module WorkerNodeService =
         w
 
 
+    let loadWorkerNodeLocalInto provider =
+        {
+            resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
+            solverLocation = getFolderName provider solverLocationKey FolderName.defaultSolverLocation
+        }
+
+
     let loadWorkerNodeServiceInfo messagingDataVersion : WorkerNodeServiceInfo =
         let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
 
         match providerRes with
         | Ok provider ->
-            let m = loadMessagingServiceAccessInfo messagingDataVersion
-            let w = loadWorkerNodeInfo provider
-            let i = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey ServiceAccessInfo.defaultWorkerNodeValue
-
             let workerNodeSvcInfo =
                 {
-                    workerNodeInfo = w
-                    workerNodeServiceAccessInfo = i
-                    messagingServiceAccessInfo = m
+                    workerNodeInfo = loadWorkerNodeInfo provider
+                    workerNodeLocalInto = loadWorkerNodeLocalInto provider
+                    workerNodeServiceAccessInfo = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey ServiceAccessInfo.defaultWorkerNodeValue
+                    messagingServiceAccessInfo = loadMessagingServiceAccessInfo messagingDataVersion
                 }
 
             workerNodeSvcInfo

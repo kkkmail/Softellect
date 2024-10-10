@@ -103,6 +103,7 @@ module Primitives =
                 Ok (FolderName s)
 
         static member defaultResultLocation = FolderName "C:\\Results"
+        static member defaultSolverLocation = FolderName "C:\\Solvers"
 
 
     /// An encapsulation of a file name.

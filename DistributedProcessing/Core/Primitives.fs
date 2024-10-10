@@ -341,6 +341,14 @@ module Common =
         }
 
 
+    /// Additional worker node related information, which is not needed by partitioner.
+    type WorkerNodeLocalInto =
+        {
+            resultLocation : FolderName
+            solverLocation : FolderName
+        }
+
+
     type PartitionerInfo =
         {
             partitionerId : PartitionerId
@@ -538,6 +546,7 @@ module Common =
     type WorkerNodeServiceInfo =
         {
             workerNodeInfo : WorkerNodeInfo
+            workerNodeLocalInto : WorkerNodeLocalInto
             workerNodeServiceAccessInfo : ServiceAccessInfo
             messagingServiceAccessInfo : MessagingServiceAccessInfo
         }

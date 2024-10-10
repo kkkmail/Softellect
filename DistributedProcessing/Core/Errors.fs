@@ -137,6 +137,14 @@ module Errors =
         | SaveSolverDbErr of DbError
 
 
+    type MapSolverError =
+        | MapSolverDbErr of DbError
+
+
+    type SetSolverDeployedError =
+        | SetSolverDeployedDbErr of DbError
+
+
     type DeleteRunQueueError =
         | DeleteRunQueueEntryErr of RunQueueId
         | DeleteRunQueueDbErr of DbError
@@ -393,6 +401,9 @@ module Errors =
         | OnUpdateProgressErr of OnUpdateProgressError
         | TryRunSolverProcessErr of TryRunSolverProcessError
         | SaveSolverErr of SaveSolverError
+        | MapSolverErr of MapSolverError
+        | SetSolverDeployedErr of SetSolverDeployedError
+        | SolverNotFound of SolverId
 
         // Some errors
         | SaveChartsExn of exn

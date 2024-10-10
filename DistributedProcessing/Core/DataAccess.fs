@@ -983,16 +983,46 @@ module WorkerNodeService =
 #if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
 
     let private mapSolver (s : SolverEntity) =
-        //let elevate e = e |> MapSolverErr
-        //let toError e = e |> elevate |> Error
-        //let fromDbError e = e |> MapSolverDbErr |> elevate
-
         {
             solverId = SolverId s.SolverId
             solverName = SolverName s.SolverName
             description = s.Description
             solverData = s.SolverData
         }
+
+
+    let tryLoadSolver (solverId : SolverId) =
+        let elevate e = e |> MapSolverErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> MapSolverDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            match ctx.Dbo.Solver |> Seq.tryFind (fun s -> s.SolverId = solverId.value) with
+            | Some s ->
+                let solver = mapSolver s
+                Ok solver
+            | None -> Error (SolverNotFound solverId)
+
+        tryDbFun fromDbError g
+
+
+    let setSolverDeployed (solverId : SolverId) =
+        let elevate e = e |> SetSolverDeployedErr
+        let fromDbError e = e |> SetSolverDeployedDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let solverRow = ctx.Dbo.Solver |> Seq.tryFind (fun s -> s.SolverId = solverId.value)
+        
+            match solverRow with
+            | Some row ->
+                row.IsDeployed <- true
+                ctx.SubmitUpdates()
+                Ok ()
+            | None -> Error (SolverNotFound solverId) // Return appropriate error if solver is not found
+
+        tryDbFun fromDbError g
 
 
     let private addSolverRow (ctx : DbContext) (s : Solver) =
