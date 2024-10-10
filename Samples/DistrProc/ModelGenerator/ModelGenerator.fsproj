@@ -26,11 +26,10 @@
         <Compile Include="Program.fs" />
     </ItemGroup>
 
-    <ItemGroup />
-
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
       <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+      <ProjectReference Include="..\..\..\DistributedProcessing\ModelGenerator\ModelGenerator.fsproj" />
       <PackageReference Update="FSharp.Core" Version="8.0.401" />
     </ItemGroup>
 

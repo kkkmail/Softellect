@@ -5,4 +5,4 @@ open Softellect.DistributedProcessing.MessagingService.Program
 module Program =
 
     [<EntryPoint>]
-    let main args = messagingServiceMain "MessagingService" args
+    let main args = messagingServiceMain "DistributedProcessingMessagingService" args

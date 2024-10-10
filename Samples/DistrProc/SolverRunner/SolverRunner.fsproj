@@ -26,14 +26,13 @@
         <Compile Include="Program.fs" />
     </ItemGroup>
 
-    <ItemGroup />
-
     <ItemGroup>
       <PackageReference Update="FSharp.Core" Version="8.0.401" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
+      <ProjectReference Include="..\..\..\DistributedProcessing\SolverRunner\SolverRunner.fsproj" />
     </ItemGroup>
 
 </Project>

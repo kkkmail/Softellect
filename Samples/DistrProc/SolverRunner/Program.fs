@@ -1,20 +1,16 @@
 ﻿namespace Softellect.Samples.DistrProc.SolverRunner
 
-//open Softellect.DistributedProcessing.WorkerNodeService.Program
-//open Softellect.Samples.DistrProc.ServiceInfo.Primitives
-//open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
+open System
+open Softellect.DistributedProcessing.SolverRunner.Program
+open Softellect.DistributedProcessing.Primitives.Common
 
 module Program =
-    let x = 1
 
-    //[<EntryPoint>]
-    //let main args =
-    //    let data : TestRunnereData =
-    //        {
-    //            workerNodeServiceInfo = workerNodeServiceInfo
-    //            workerNodeProxy = workerNodeProxy
-    //            messagingClientData = messagingClientData
-    //            tryRunSolverProcess = fun _ _ -> failwith "tryRunSolverProcess is not implemented yet."
-    //        }
+    let solverId = "4B18CC64-CFB9-4417-93B8-16116010BBBE" |> Guid.Parse |> SolverId
 
-    //    main<SolverData, ProgressData> "WorkerNodeSvc" data args
+
+    [<EntryPoint>]
+    let main argv =
+        // Call solverRunnerMain<'D, 'P, 'X, 'C>
+        let userProxy = failwith "SolverRunner is not implemented yet"
+        solverRunnerMain<unit, unit, unit, unit> solverId userProxy argv
