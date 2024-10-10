@@ -267,6 +267,7 @@ module WorkerNodeService =
             notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
+            saveSolver : Solver -> DistributedProcessingUnitResult
         }
 
         static member create () : WorkerNodeProxy =
@@ -276,6 +277,7 @@ module WorkerNodeService =
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 tryRunSolverProcess = tryRunSolverProcess tryGetSolverName
+                saveSolver = saveSolver
             }
 
 

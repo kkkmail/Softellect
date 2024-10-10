@@ -58,6 +58,7 @@ module WorkerNode =
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
             | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
+            | UpdateSolverWrkMsg s -> failwith "UpdateSolverWrkMsg is not implemented yet"
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 

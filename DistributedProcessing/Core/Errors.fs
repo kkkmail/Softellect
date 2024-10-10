@@ -133,6 +133,10 @@ module Errors =
         | SaveRunQueueDbErr of DbError
 
 
+    type SaveSolverError =
+        | SaveSolverDbErr of DbError
+
+
     type DeleteRunQueueError =
         | DeleteRunQueueEntryErr of RunQueueId
         | DeleteRunQueueDbErr of DbError
@@ -388,6 +392,7 @@ module Errors =
         | OnSaveChartsErr of OnSaveChartsError
         | OnUpdateProgressErr of OnUpdateProgressError
         | TryRunSolverProcessErr of TryRunSolverProcessError
+        | SaveSolverErr of SaveSolverError
 
         // Some errors
         | SaveChartsExn of exn

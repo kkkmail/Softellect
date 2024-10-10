@@ -211,6 +211,15 @@ module Common =
         member this.value = let (SolverName v) = this in v
 
 
+    type Solver =
+        {
+            solverId : SolverId
+            solverName : SolverName
+            description : string option
+            solverData : byte[] option
+        }
+
+
     type SolverRunnerInfo =
         {
             runQueueId : RunQueueId
@@ -283,12 +292,14 @@ module Common =
         | RunModelWrkMsg of (RunQueueId * ModelBinaryData)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
+        | UpdateSolverWrkMsg of Solver
 
         member this.messageSize =
             match this with
             | RunModelWrkMsg _ -> LargeSize
             | CancelRunWrkMsg _ -> SmallSize
             | RequestChartsWrkMsg _ -> SmallSize
+            | UpdateSolverWrkMsg _ -> LargeSize
 
 
     /// Number of minutes for worker node errors to expire before the node can be again included in work distribution.

@@ -154,6 +154,12 @@ module WorkerNodeService =
 // ==========================================
 // Specific Types
 
+#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+
+    type private SolverEntity = DbContext.``dbo.SolverEntity``
+
+#endif
+
 #if PARTITIONER || PARTITIONER_ADM
 
     type private WorkerNodeEntity = DbContext.``dbo.WorkerNodeEntity``
@@ -973,3 +979,46 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 #endif
+
+#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+
+    let private mapSolver (s : SolverEntity) =
+        //let elevate e = e |> MapSolverErr
+        //let toError e = e |> elevate |> Error
+        //let fromDbError e = e |> MapSolverDbErr |> elevate
+
+        {
+            solverId = SolverId s.SolverId
+            solverName = SolverName s.SolverName
+            description = s.Description
+            solverData = s.SolverData
+        }
+
+
+    let private addSolverRow (ctx : DbContext) (s : Solver) =
+        let row = ctx.Dbo.Solver.Create(
+                            SolverId = s.solverId.value,
+                            SolverName = s.solverName.value,
+                            Description = s.description,
+                            SolverData = s.solverData)
+
+        row
+
+
+    /// Saves intocoming solver into a database fur further processing.
+    let saveSolver (s : Solver) =
+        let elevate e = e |> SaveSolverErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> SaveSolverDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let row = addSolverRow ctx s
+            ctx.SubmitUpdates()
+
+            Ok()
+
+        tryDbFun fromDbError g
+
+#endif
+
