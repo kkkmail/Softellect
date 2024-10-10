@@ -31,7 +31,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Platform\Platform.fsproj" />
     <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
     <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
     <ProjectReference Include="..\WcfServiceInfo\WcfServiceInfo.fsproj" />
