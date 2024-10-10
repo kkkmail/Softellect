@@ -45,14 +45,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SQLProvider" Version="1.3.46" />
+    <PackageReference Include="SQLProvider" Version="1.4.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
-    <PackageReference Update="FSharp.Core" Version="8.0.400" />
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.7" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Update="FSharp.Core" Version="8.0.401" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="8.0.10" />
   </ItemGroup>
 
 </Project>

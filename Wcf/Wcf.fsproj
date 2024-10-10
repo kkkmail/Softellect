@@ -53,9 +53,9 @@
     <PackageReference Include="CoreWCF.Http" Version="1.6.0" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0" />
     <PackageReference Include="CoreWCF.Primitives" Version="1.6.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.0" />
-    <PackageReference Update="FSharp.Core" Version="8.0.400" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+    <PackageReference Update="FSharp.Core" Version="8.0.401" />
   </ItemGroup>
 
 </Project>
