@@ -21,10 +21,6 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "NetCoreService", "Samples\W
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Messaging", "Messaging\Messaging.fsproj", "{1252B389-8912-4BDB-A05A-4C85456880CD}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MessagingData", "MessagingData\MessagingData.fsproj", "{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}"
-EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Data", "Data\Data.fsproj", "{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}"
-EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgServiceInfo", "Samples\Msg\MsgServiceInfo\MsgServiceInfo.fsproj", "{DA5F569B-8CD3-49D2-BEFE-D1AC90780178}"
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "MsgClientOne", "Samples\Msg\MsgClientOne\MsgClientOne.fsproj", "{90DC5C7B-47C0-4A4C-8747-497883C353DB}"
@@ -115,14 +111,6 @@ Global
 		{1252B389-8912-4BDB-A05A-4C85456880CD}.Debug|x64.Build.0 = Debug|x64
 		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|x64.ActiveCfg = Release|x64
 		{1252B389-8912-4BDB-A05A-4C85456880CD}.Release|x64.Build.0 = Release|x64
-		{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}.Debug|x64.ActiveCfg = Debug|x64
-		{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}.Debug|x64.Build.0 = Debug|x64
-		{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}.Release|x64.ActiveCfg = Release|x64
-		{73AA0DAC-A8E1-40BD-9558-F8A2ECE013BF}.Release|x64.Build.0 = Release|x64
-		{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}.Debug|x64.ActiveCfg = Debug|x64
-		{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}.Debug|x64.Build.0 = Debug|x64
-		{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}.Release|x64.ActiveCfg = Release|x64
-		{9D99B774-1A75-4E13-B65F-C5F9CE6DD3BA}.Release|x64.Build.0 = Release|x64
 		{DA5F569B-8CD3-49D2-BEFE-D1AC90780178}.Debug|x64.ActiveCfg = Debug|x64
 		{DA5F569B-8CD3-49D2-BEFE-D1AC90780178}.Debug|x64.Build.0 = Debug|x64
 		{DA5F569B-8CD3-49D2-BEFE-D1AC90780178}.Release|x64.ActiveCfg = Release|x64

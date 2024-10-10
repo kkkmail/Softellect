@@ -50,6 +50,7 @@
     <Compile Include="TimerEvents.fs" />
     <Compile Include="ServiceInstaller.fs" />
     <Compile Include="AppSettings.fs" />
+    <Compile Include="DynamicSql.fs" />
     <Compile Include="DataAccess.fs" />
     <Compile Include="Wolfram.fs" />
   </ItemGroup>
@@ -63,6 +64,7 @@
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="FsPickler.Json" Version="5.3.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="System.ServiceModel.Http" Version="8.0.0" />
