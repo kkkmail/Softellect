@@ -1,2 +1,2 @@
 # Must match value in F#
-[string] $global:messagingDataVersion = "2"
+[string] $global:messagingDataVersion = "1"

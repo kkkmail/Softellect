@@ -1,8 +1,8 @@
 ﻿namespace Softellect.Samples.DistrProc.SolverRunner
 
-open Softellect.DistributedProcessing.WorkerNodeService.Program
-open Softellect.Samples.DistrProc.ServiceInfo.Primitives
-open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
+//open Softellect.DistributedProcessing.WorkerNodeService.Program
+//open Softellect.Samples.DistrProc.ServiceInfo.Primitives
+//open Softellect.Samples.DistrProc.ServiceInfo.ServiceInfo
 
 module Program =
     let x = 1

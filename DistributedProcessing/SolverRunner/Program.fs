@@ -4,6 +4,7 @@ open Argu
 open Softellect.DistributedProcessing.SolverRunner.CommandLine
 open Softellect.DistributedProcessing.SolverRunner.Implementation
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.DistributedProcessing.VersionInfo
 
 module Program =
 

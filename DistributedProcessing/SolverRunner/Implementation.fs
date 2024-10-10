@@ -2,40 +2,14 @@
 
 open System
 open Softellect.Sys.Primitives
-open Softellect.Sys.Errors
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
-
 open Argu
 open Softellect.Sys.Rop
-//open ClmSys.ClmErrors
-//open ClmSys.GeneralErrors
-//open ClmSys.ExitErrorCodes
-//open ClmSys.GeneralPrimitives
-//open ClmSys.SolverRunnerPrimitives
-//open Primitives.GeneralPrimitives
-//open Primitives.SolverPrimitives
-//open ServiceProxy.SolverProcessProxy
-//open SolverRunner.SolverRunnerCommandLine
-//open NoSql.FileSystemTypes
-//open DbData.Configuration
-//open DbData.WorkerNodeDatabaseTypes
-open Softellect.Sys
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Client
-//open ClmSys.WorkerNodeData
-//open ContGenServiceInfo.ServiceInfo
-//open WorkerNodeServiceInfo.ServiceInfo
-//open MessagingServiceInfo.ServiceInfo
-//open ClmSys.ContGenPrimitives
-//open ClmSys.WorkerNodePrimitives
-//open ServiceProxy.SolverRunner
-//open SolverRunner.SolverRunnerTasks
-//open DbData.MsgSvcDatabaseTypes
 open System.Diagnostics
-//open Primitives.VersionInfo
-//open Primitives.SolverRunnerErrors
 open Softellect.Messaging.DataAccess
 open Softellect.Sys.ExitErrorCodes
 open Softellect.DistributedProcessing.Proxy.SolverRunner
@@ -45,6 +19,7 @@ open Softellect.DistributedProcessing.SolverRunner.NoSql
 open Softellect.DistributedProcessing.SolverRunner.Runner
 open Softellect.Sys.Core
 open Softellect.DistributedProcessing.AppSettings.SolverRunner
+open Softellect.DistributedProcessing.VersionInfo
 
 
 module Implementation =

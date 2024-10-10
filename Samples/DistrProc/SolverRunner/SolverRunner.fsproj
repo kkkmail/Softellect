@@ -34,7 +34,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
-      <ProjectReference Include="..\ServiceInfo\ServiceInfo.fsproj" />
     </ItemGroup>
 
 </Project>

@@ -16,6 +16,7 @@ open Softellect.DistributedProcessing.WorkerNodeService.Primitives
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
+open Softellect.DistributedProcessing.VersionInfo
 
 module Program =
 

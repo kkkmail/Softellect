@@ -23,10 +23,6 @@ module Common =
     let SolverRunnerProcessName = "SolverRunner"
 
 
-    /// The version of the messaging data is fixed because we are sending the data as byte array.
-    let messagingDataVersion = MessagingDataVersion 1
-
-
     /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
     /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
     let private serializationFormat = BinaryZippedFormat

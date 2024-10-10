@@ -52,6 +52,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\MessagingService\MessagingService.fsproj" />
+      <ProjectReference Include="..\Core\Core.fsproj" />
     </ItemGroup>
 
 </Project>
