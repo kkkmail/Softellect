@@ -1,10 +1,7 @@
 namespace Softellect.Tests.SysTests
 
-open System
 open Xunit
-open System
 open System.IO
-open Xunit
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
 
@@ -14,13 +11,26 @@ module CoreTests =
     let private ensureFolderIsEmpty (FolderName folder) =
         try
             if Directory.Exists(folder) then
-                Directory.GetFiles(folder) |> Array.iter File.Delete
-                Directory.GetDirectories(folder) |> Array.iter Directory.Delete
+                // Recursively delete all files and subdirectories in the folder
+                let rec deleteDirectoryContents (dir: string) =
+                    // Delete all files in the directory
+                    Directory.GetFiles(dir) |> Array.iter File.Delete
+
+                    // Recursively delete subdirectories
+                    Directory.GetDirectories(dir)
+                    |> Array.iter (fun subDir ->
+                        deleteDirectoryContents subDir
+                        Directory.Delete(subDir))
+
+                deleteDirectoryContents folder
             else
+                // Create the directory if it doesn't exist
                 Directory.CreateDirectory(folder) |> ignore
             true
         with
-        | _ -> false
+        | ex -> 
+            printfn "Error while clearing folder: %s" ex.Message
+            false
 
 
     // Helper function to create a test folder structure
