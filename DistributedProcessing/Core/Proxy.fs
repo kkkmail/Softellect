@@ -268,6 +268,9 @@ module WorkerNodeService =
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
+            unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
+            setSolverDeployed : SolverId -> DistributedProcessingUnitResult
+            loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
         static member create () : WorkerNodeProxy =
@@ -278,6 +281,9 @@ module WorkerNodeService =
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 tryRunSolverProcess = tryRunSolverProcess tryGetSolverName
                 saveSolver = saveSolver
+                unpackSolver = unpackSolver
+                setSolverDeployed = setSolverDeployed
+                loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
             }
 
 

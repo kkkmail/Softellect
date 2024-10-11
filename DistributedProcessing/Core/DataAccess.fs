@@ -991,19 +991,26 @@ module WorkerNodeService =
         }
 
 
+    let private processSolver (solverId : SolverId) m f =
+        let ctx = getDbContext getConnectionString
+
+        let x =
+            query {
+                for s in ctx.Dbo.Solver do
+                where (s.SolverId = solverId.value)
+                select (Some s)
+                exactlyOneOrDefault
+            }
+
+        match x with
+        | Some s -> m ctx s
+        | None -> f ctx
+
+
     let tryLoadSolver (solverId : SolverId) =
         let elevate e = e |> MapSolverErr
-        let toError e = e |> elevate |> Error
         let fromDbError e = e |> MapSolverDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            match ctx.Dbo.Solver |> Seq.tryFind (fun s -> s.SolverId = solverId.value) with
-            | Some s ->
-                let solver = mapSolver s
-                Ok solver
-            | None -> Error (SolverNotFound solverId)
-
+        let g() = processSolver solverId (fun _ s -> mapSolver s |> Ok) (fun _ -> Error (SolverNotFound solverId))
         tryDbFun fromDbError g
 
 
@@ -1012,15 +1019,13 @@ module WorkerNodeService =
         let fromDbError e = e |> SetSolverDeployedDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext getConnectionString
-            let solverRow = ctx.Dbo.Solver |> Seq.tryFind (fun s -> s.SolverId = solverId.value)
-        
-            match solverRow with
-            | Some row ->
-                row.IsDeployed <- true
-                ctx.SubmitUpdates()
-                Ok ()
-            | None -> Error (SolverNotFound solverId) // Return appropriate error if solver is not found
+            processSolver
+                solverId
+                (fun ctx s ->
+                    s.IsDeployed <- true
+                    ctx.SubmitUpdates()
+                    Ok())
+                (fun _ -> Error (SolverNotFound solverId))
 
         tryDbFun fromDbError g
 
@@ -1035,20 +1040,62 @@ module WorkerNodeService =
         row
 
 
-    /// Saves intocoming solver into a database fur further processing.
-    let saveSolver (s : Solver) =
+    /// Saves intocoming solver into a database for further processing.
+    let saveSolver (solver : Solver) =
         let elevate e = e |> SaveSolverErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> SaveSolverDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext getConnectionString
-            let row = addSolverRow ctx s
-            ctx.SubmitUpdates()
+            processSolver
+                solver.solverId
+                (fun ctx s ->
+                    s.SolverName <- solver.solverName.value
+                    s.Description <- solver.description
+                    s.SolverData <- solver.solverData
+                    s.IsDeployed <- false
 
-            Ok()
+                    ctx.SubmitUpdates()
+                    Ok())
+                (fun ctx ->
+                    let _ = addSolverRow ctx solver
+
+                    ctx.SubmitUpdates()
+                    Ok ())
 
         tryDbFun fromDbError g
+
+
+    let loadAllNotDeployedSolverId () =
+        let elevate e = e |> LoadAllNotDeployedSolverIdErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllNotDeployedSolverIdDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.IsDeployed = false)
+                    select s.SolverId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map SolverId
+            |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let unpackSolver folderName (solver : Solver) =
+        match solver.solverData with
+        | Some data ->
+            match unzipToFolder data folderName true with
+            | Ok _ -> Ok ()
+            | Error e -> UnableToDeploySolver (solver.solverId, folderName, e) |> SaveSolverErr |> Error
+        | None -> Ok()
 
 #endif
 

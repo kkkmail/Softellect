@@ -46,6 +46,10 @@ module Errors =
         | LoadAllActiveRunQueueIdDbErr of DbError
 
 
+    type LoadAllNotDeployedSolverIdError =
+        | LoadAllNotDeployedSolverIdDbErr of DbError
+
+
     type TryStartRunQueueError =
         | TryStartRunQueueDbErr of DbError
         | CannotStartRunQueue of RunQueueId
@@ -135,6 +139,7 @@ module Errors =
 
     type SaveSolverError =
         | SaveSolverDbErr of DbError
+        | UnableToDeploySolver of (SolverId * FolderName * string)
 
 
     type MapSolverError =
@@ -404,6 +409,7 @@ module Errors =
         | MapSolverErr of MapSolverError
         | SetSolverDeployedErr of SetSolverDeployedError
         | SolverNotFound of SolverId
+        | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
 
         // Some errors
         | SaveChartsExn of exn

@@ -39,8 +39,23 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let onProcessMessage proxy (m : DistributedProcessingMessage) =
+    let private processSolver proxy f s =
+        printfn $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
+
+        match proxy.saveSolver s with
+        | Ok() ->
+            match proxy.unpackSolver f s with
+            | Ok () ->
+                match proxy.setSolverDeployed s.solverId with
+                | Ok () -> Ok()
+                | Error e -> Error e
+            | Error e -> e |> Error
+        | Error e -> Error e
+
+
+    let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
         printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}."
+        let proxy = i.workerNodeProxy
 
         match m.messageData with
         | UserMsg (WorkerNodeMsg x) ->
@@ -58,7 +73,7 @@ module WorkerNode =
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
             | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
-            | UpdateSolverWrkMsg s -> failwith "UpdateSolverWrkMsg is not implemented yet"
+            | UpdateSolverWrkMsg s -> processSolver proxy i.workerNodeServiceInfo.workerNodeLocalInto.solverLocation s
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
@@ -71,7 +86,7 @@ module WorkerNode =
         let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
         let onProcessMessageImpl (m : DistributedProcessingMessage) =
-            let r = onProcessMessage i.workerNodeProxy m
+            let r = onProcessMessage i m
 
             let r1 =
                 match r with
