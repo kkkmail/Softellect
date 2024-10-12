@@ -139,7 +139,8 @@ module Errors =
 
     type SaveSolverError =
         | SaveSolverDbErr of DbError
-        | UnableToDeploySolver of (SolverId * FolderName * string)
+        | UnableToDeploySolverErr of (SolverId * FolderName * string)
+        | UnableToZipSolverErr of (SolverId * FolderName * string)
 
 
     type MapSolverError =

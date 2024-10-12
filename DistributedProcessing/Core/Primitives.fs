@@ -589,11 +589,3 @@ module Common =
         | OdeSolver
         | FredholmSolver
         | UserDefinedSolver
-
-
-module PartitionerAndWorker =
-    let x = 1
-
-
-module GeneratorAndSolver =
-    let x = 1

@@ -10,6 +10,7 @@ module Program =
     let partitionerAdmMain programName argv =
         let parser = ArgumentParser.Create<PartitionerAdmArgs>(programName = programName)
         let results = (parser.Parse argv).GetAllResults()
+        let proxy = PartitionerAdmProxy.create()
 
         results
         |> List.iter (fun r ->
@@ -26,7 +27,8 @@ module Program =
                             | Description description -> printfn $"Description: '{description}'."
                         )
 
-                    addSolver r |> ignore
+                    let result = addSolver proxy r
+                    printfn $"%A{result}"
                 | Test testArgs ->
                     let r = testArgs.GetAllResults()
 

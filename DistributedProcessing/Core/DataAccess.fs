@@ -1094,7 +1094,7 @@ module WorkerNodeService =
         | Some data ->
             match unzipToFolder data folderName true with
             | Ok _ -> Ok ()
-            | Error e -> UnableToDeploySolver (solver.solverId, folderName, e) |> SaveSolverErr |> Error
+            | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
         | None -> Ok()
 
 #endif
