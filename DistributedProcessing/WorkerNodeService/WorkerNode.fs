@@ -73,7 +73,7 @@ module WorkerNode =
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
             | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
-            | UpdateSolverWrkMsg s -> processSolver proxy i.workerNodeServiceInfo.workerNodeLocalInto.solverLocation s
+            | UpdateSolverWrkMsg s -> processSolver proxy (i.workerNodeServiceInfo.workerNodeLocalInto.solverLocation.combine s.solverName.folderName) s
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
@@ -163,7 +163,7 @@ module WorkerNode =
                         eventHandlers<- [ h; s ]
 
                         Ok ()
-                    | Error e -> UnableToStartMessagingClientErr e |> Error 
+                    | Error e -> UnableToStartMessagingClientErr e |> Error
                 | Error e -> Error e
             | true ->
                 printfn "WorkerNodeRunner: Unregistering..."
@@ -180,13 +180,13 @@ module WorkerNode =
             member _.StartAsync(cancellationToken: CancellationToken) =
                 match onTryStart() with
                 | Ok () -> Task.CompletedTask
-                | Error e -> 
+                | Error e ->
                     printfn $"Error during start: %A{e}."
                     Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with
                 | Ok () -> Task.CompletedTask
-                | Error e -> 
+                | Error e ->
                     printfn $"Error during stop: %A{e}."
                     Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.

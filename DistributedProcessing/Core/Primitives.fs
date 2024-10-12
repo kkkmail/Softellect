@@ -209,6 +209,7 @@ module Common =
         | SolverName of string
 
         member this.value = let (SolverName v) = this in v
+        member this.folderName = this.value |> FolderName
 
 
     type Solver =
@@ -415,7 +416,7 @@ module Common =
 
 
     /// The decision was that we want strongly typed messages rather than untyped messages.
-    /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>) 
+    /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>)
     /// and WorkerNodes send messages to Partitioner (PartitionerMessage<'P>).
     /// Single type could be used, but it seems inconvenient, as both partitioner and worker node would have to perform exhaustive pattern matching.
     //type DistributedProcessingMessageData<'D, 'P> =

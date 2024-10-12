@@ -143,6 +143,10 @@ module Errors =
         | UnableToZipSolverErr of (SolverId * FolderName * string)
 
 
+    type SendSolverError =
+        | UnableToSendSolverErr of (SolverId * WorkerNodeId * MessagingError)
+
+
     type MapSolverError =
         | MapSolverDbErr of DbError
 
@@ -407,6 +411,7 @@ module Errors =
         | OnUpdateProgressErr of OnUpdateProgressError
         | TryRunSolverProcessErr of TryRunSolverProcessError
         | SaveSolverErr of SaveSolverError
+        | SendSolverErr of SendSolverError
         | MapSolverErr of MapSolverError
         | SetSolverDeployedErr of SetSolverDeployedError
         | SolverNotFound of SolverId

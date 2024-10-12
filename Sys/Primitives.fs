@@ -68,6 +68,7 @@ module Primitives =
         | FolderName of string
 
         member this.value = let (FolderName v) = this in v
+        member this.combine (subFolder : FolderName) = Path.Combine(this.value, subFolder.value) |> FolderName
 
         static member tryCreate (s: string) : Result<FolderName, string> =
             let invalidChars = Path.GetInvalidPathChars()
@@ -76,7 +77,7 @@ module Primitives =
             let consecutiveDots = Regex(@"\.{3,}")
 
             // List of reserved names in Windows (e.g., "CON", "PRN", etc.)
-            let reservedNames = 
+            let reservedNames =
                 [ "CON"; "PRN"; "AUX"; "NUL"; "COM1"; "COM2"; "COM3"; "COM4"; "COM5"; "COM6"; "COM7"; "COM8"; "COM9"; "LPT1"; "LPT2"; "LPT3"; "LPT4"; "LPT5"; "LPT6"; "LPT7"; "LPT8"; "LPT9" ]
 
             // Function to check if the name is a reserved Windows name
@@ -135,7 +136,7 @@ module Primitives =
         member this.value = let (ServicePort v) = this in v
         member a.serialize() = $"{a.value}"
 
-        static member tryDeserialize (s : string) = 
+        static member tryDeserialize (s : string) =
             match Int32.TryParse s with
             | (true, i) -> i |> ServicePort |> Some
             | _ -> None

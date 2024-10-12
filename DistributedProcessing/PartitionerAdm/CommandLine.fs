@@ -7,8 +7,8 @@ module CommandLine =
 
     /// See: https://fsprojects.github.io/Argu/tutorial.html
     [<CliPrefix(CliPrefix.Dash)>]
-    type SolverArgs =
-        | [<Mandatory>] [<AltCommandLine("-i")>] Id of Guid
+    type AddSolverArgs =
+        | [<Mandatory>] [<AltCommandLine("-i")>] SolverId of Guid
         | [<Mandatory>] [<AltCommandLine("-n")>] Name of string
         | [<Mandatory>] [<AltCommandLine("-s")>] Folder of string
         | [<Unique>]    [<AltCommandLine("-d")>] Description of string
@@ -16,28 +16,29 @@ module CommandLine =
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
-                | Id _ -> "solver id."
+                | SolverId _ -> "solver id."
                 | Name _ -> "solver name."
                 | Folder _ -> "solver folder."
                 | Description _ -> "solver description."
 
 
-    and TestArgs =
-        | [<Mandatory>] [<AltCommandLine("-t")>] TestId of Guid
+    and SendSolverArgs =
+        | [<Mandatory>] [<AltCommandLine("-i")>] SolverId of Guid
+        | [<Mandatory>] [<AltCommandLine("-w")>] WorkerNodeId of Guid
 
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
-                | TestId _ -> "id."
+                | SolverId _ -> "solver id."
+                | WorkerNodeId _ -> "worker node id."
 
 
     and PartitionerAdmArgs =
-        | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddSolver of ParseResults<SolverArgs>
-        | [<Unique>] [<CliPrefix(CliPrefix.None)>] Test of ParseResults<TestArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddSolver of ParseResults<AddSolverArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendSolver of ParseResults<SendSolverArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
                 | AddSolver _ -> "add a solver."
-                | Test _ -> "test."
-
+                | SendSolver _ -> "send a solver to a worker node."
