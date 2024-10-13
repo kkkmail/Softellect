@@ -6,13 +6,16 @@ open Softellect.Sys.Primitives
 
 module Program =
 
-    let generateModel<'I, 'D> (userProxy : UserProxy<'I, 'D>) solverId input =
+    let generateModel<'I, 'D> (userProxy : UserProxy<'I, 'D>) solverId argv =
         let ctx =
             {
                 userProxy = userProxy
                 systemProxy = SystemProxy.create()
                 solverId = solverId
             }
+
+        // Get the initial data out of command line parameters.
+        let input = ctx.userProxy.getInitialData argv
 
         let modelData =
             {

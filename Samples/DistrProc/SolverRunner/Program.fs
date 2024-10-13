@@ -3,14 +3,12 @@
 open System
 open Softellect.DistributedProcessing.SolverRunner.Program
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Samples.DistrProc.Core.Primitives
 
 module Program =
 
-    let solverId = "4B18CC64-CFB9-4417-93B8-16116010BBBE" |> Guid.Parse |> SolverId
-
-
     [<EntryPoint>]
     let main argv =
-        // Call solverRunnerMain<'D, 'P, 'X, 'C>
         let userProxy = failwith "SolverRunner is not implemented yet"
-        solverRunnerMain<unit, unit, unit, unit> solverId userProxy argv
+        // Call solverRunnerMain<'D, 'P, 'X, 'C>
+        solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId userProxy argv

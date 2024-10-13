@@ -230,7 +230,6 @@ module Common =
 
     type SolverInputParams =
         {
-            //started : DateTime
             startTime : EvolutionTime
             endTime : EvolutionTime
         }

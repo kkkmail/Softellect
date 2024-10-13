@@ -304,6 +304,7 @@ module WorkerNodeService =
 
     type UserProxy<'I, 'D> =
         {
+            getInitialData : string[] -> 'I
             generateModel : 'I -> 'D
             getSolverInputParams : 'I -> SolverInputParams
             getSolverOutputParams : 'I -> SolverOutputParams
