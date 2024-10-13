@@ -39,7 +39,7 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let private processSolver proxy f s =
+    let private processSolver proxy f (s : Solver) =
         printfn $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
 
         match proxy.saveSolver s with

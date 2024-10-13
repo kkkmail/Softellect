@@ -5,4 +5,6 @@ open Softellect.DistributedProcessing.ModelGenerator.Program
 module Program =
 
     [<EntryPoint>]
-    let main argv = modelGeneratorMain argv
+    let main argv =
+        //modelGeneratorMain<'D, 'P, 'X, 'C> solverId argv
+        0

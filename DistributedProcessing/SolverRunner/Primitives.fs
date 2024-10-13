@@ -25,51 +25,6 @@ module Primitives =
         member _.cancellationType = ct
 
 
-    type ProgressUpdateInfo<'P> =
-        {
-            runQueueId : RunQueueId
-            updatedRunQueueStatus : RunQueueStatus option
-            progressData : ProgressData<'P>
-        }
-
-        member p.toProgressUpdateInfo() : ProgressUpdateInfo =
-            {
-                runQueueId = p.runQueueId
-                updatedRunQueueStatus = p.updatedRunQueueStatus
-                progressData = p.progressData.toProgressData()
-            }
-
-
-    /// All data that we need in order to run a model.
-    /// The underlying model data is of type 'D.
-    /// And we have solver input parameters and solver output parameters to control the evolution and what we output.
-    type ModelData<'D> =
-        {
-            solverInputParams : SolverInputParams
-            solverOutputParams : SolverOutputParams
-            solverId : SolverId
-            modelData : 'D
-        }
-
-        member d.toModelBinaryData() : ModelBinaryData =
-            {
-                solverInputParams = d.solverInputParams
-                solverOutputParams = d.solverOutputParams
-                modelData = d.modelData |> serializeData
-            }
-
-        static member tryFromModelBinaryData solverId (m : ModelBinaryData) =
-            match tryDeserializeData<'D> m.modelData with
-            | Ok modelData ->
-                {
-                    solverInputParams = m.solverInputParams
-                    solverOutputParams = m.solverOutputParams
-                    solverId = solverId
-                    modelData = modelData
-                } |> Ok
-            | Error e -> Error e
-
-
     type RunQueue<'P> =
         {
             runQueueId : RunQueueId

@@ -34,7 +34,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="VersionInfo.fs" />
-    <Compile Include="Primitives.fs" />
+    <Compile Include="Common.fs" />
     <Compile Include="Errors.fs" />
   </ItemGroup>
 
