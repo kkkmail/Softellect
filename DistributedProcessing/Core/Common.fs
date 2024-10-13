@@ -290,7 +290,7 @@ module Common =
     //        | RequestChartsWrkMsg _ -> SmallSize
 
     type WorkerNodeMessage =
-        | RunModelWrkMsg of (RunQueueId * ModelBinaryData)
+        | RunModelWrkMsg of (RunQueueId * SolverId * ModelBinaryData)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
         | UpdateSolverWrkMsg of Solver

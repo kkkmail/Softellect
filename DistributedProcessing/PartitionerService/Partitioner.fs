@@ -87,7 +87,7 @@ module Partitioner =
             {
                 workerNodeRecipient = w
                 deliveryType = GuaranteedDelivery
-                messageData = (q.runQueueId, m) |> RunModelWrkMsg
+                messageData = (q.runQueueId, q.solverId, m) |> RunModelWrkMsg
             }.getMessageInfo()
             |> Some |> Ok
         | Error e -> Error e

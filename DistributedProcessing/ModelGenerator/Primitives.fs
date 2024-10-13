@@ -1,27 +1,8 @@
 ﻿namespace Softellect.DistributedProcessing.ModelGenerator
 
+open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Primitives
 
 module Primitives =
-
-    type UserProxy<'I, 'D> =
-        {
-            generateModel : 'I -> 'D
-            getSolverInputParams : 'I -> SolverInputParams
-            getSolverOutputParams : 'I -> SolverOutputParams
-        }
-
-    type SystemProxy =
-        {
-            x : int
-        }
-
-        static member create() : SystemProxy = failwith ""
-
-
-    type  ModelGeneratorContext<'I, 'D> =
-        {
-            userProxy : UserProxy<'I, 'D>
-            systemProxy : SystemProxy
-            solverId : SolverId
-        }
+    let x = 1

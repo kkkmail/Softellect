@@ -36,8 +36,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Compile Include="Primitives.fs" />
-    <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
     <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
+    <Compile Include="..\Core\Proxy.fs">
+      <Link>Proxy.fs</Link>
+    </Compile>
     <Compile Include="Program.fs" />
   </ItemGroup>
 

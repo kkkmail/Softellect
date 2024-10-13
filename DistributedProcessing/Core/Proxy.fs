@@ -54,14 +54,18 @@ open Softellect.DistributedProcessing.Primitives.Common
 // ==========================================
 // Open declarations
 
-#if WORKER_NODE
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
-open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
-#endif
-
 #if PARTITIONER
 open Softellect.DistributedProcessing.PartitionerService.Primitives
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
+#endif
+
+#if MODEL_GENERATOR
+open Softellect.DistributedProcessing.DataAccess.ModelGenerator
+#endif
+
+#if WORKER_NODE
+open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 #endif
 
 // ==========================================
@@ -262,7 +266,7 @@ module WorkerNodeService =
 
     type WorkerNodeProxy =
         {
-            saveModelData : RunQueueId -> ModelBinaryData -> DistributedProcessingUnitResult
+            saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
@@ -292,6 +296,35 @@ module WorkerNodeService =
             workerNodeServiceInfo : WorkerNodeServiceInfo
             workerNodeProxy : WorkerNodeProxy
             messagingClientData : MessagingClientData<DistributedProcessingMessageData>
+        }
+
+#endif
+
+#if MODEL_GENERATOR
+
+    type UserProxy<'I, 'D> =
+        {
+            generateModel : 'I -> 'D
+            getSolverInputParams : 'I -> SolverInputParams
+            getSolverOutputParams : 'I -> SolverOutputParams
+        }
+
+    type SystemProxy =
+        {
+            saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
+        }
+
+        static member create() : SystemProxy =
+            {
+                saveModelData = saveModelData
+            }
+
+
+    type  ModelGeneratorContext<'I, 'D> =
+        {
+            userProxy : UserProxy<'I, 'D>
+            systemProxy : SystemProxy
+            solverId : SolverId
         }
 
 #endif

@@ -60,10 +60,10 @@ module WorkerNode =
         match m.messageData with
         | UserMsg (WorkerNodeMsg x) ->
             match x with
-            | RunModelWrkMsg (r, d) ->
+            | RunModelWrkMsg (r, s, d) ->
                 printfn $"    onProcessMessage: runQueueId: '{r}'."
 
-                match proxy.saveModelData r d with
+                match proxy.saveModelData r s d with
                 | Ok() ->
                     printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK."
                     Ok()

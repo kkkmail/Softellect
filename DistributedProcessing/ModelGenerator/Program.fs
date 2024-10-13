@@ -1,21 +1,32 @@
 ﻿namespace Softellect.DistributedProcessing.ModelGenerator
 
-open Softellect.DistributedProcessing.ModelGenerator.Primitives
+open Softellect.DistributedProcessing.Proxy.ModelGenerator
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Primitives
 
 module Program =
 
-    let generatorModel<'I, 'D, 'P, 'X, 'C> (userProxy : UserProxy<'I, 'D>) solverId input =
+    let generateModel<'I, 'D> (userProxy : UserProxy<'I, 'D>) solverId input =
+        let ctx =
+            {
+                userProxy = userProxy
+                systemProxy = SystemProxy.create()
+                solverId = solverId
+            }
+
         let modelData =
             {
-                solverInputParams = userProxy.getSolverInputParams input
-                solverOutputParams = userProxy.getSolverOutputParams input
-                solverId = solverId
-                modelData = userProxy.generateModel input
+                solverInputParams = ctx.userProxy.getSolverInputParams input
+                solverOutputParams = ctx.userProxy.getSolverOutputParams input
+                solverId = ctx.solverId
+                modelData = ctx.userProxy.generateModel input
             }
 
         let binaryData = modelData.toModelBinaryData()
+        let runQueueId = RunQueueId.getNewId()
 
-
-        let ctx = { userProxy = userProxy; systemProxy = SystemProxy.create(); solverId = solverId }
-        failwith "modelGeneratorMain is not implemented yet"
+        match ctx.systemProxy.saveModelData runQueueId ctx.solverId binaryData with
+        | Ok() -> Ok()
+        | Error e ->
+            printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - ERROR: '{e}'."
+            Error e

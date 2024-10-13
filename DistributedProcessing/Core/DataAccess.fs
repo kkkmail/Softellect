@@ -148,6 +148,7 @@ module WorkerNodeService =
 
     type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     type private MessageEntity = DbContext.``dbo.MessageEntity``
+    type private ModelDataEntity = DbContext.``dbo.ModelDataEntity``
 
 #endif
 
@@ -211,8 +212,9 @@ module WorkerNodeService =
             let x =
                 query {
                     for q in ctx.Dbo.RunQueue do
+                    join m in ctx.Dbo.ModelData on (q.RunQueueId = m.RunQueueId)
                     where (q.RunQueueId = i.value)
-                    select (Some (q.ModelData))
+                    select (Some (m.ModelData))
                     exactlyOneOrDefault
                 }
 
@@ -596,8 +598,9 @@ module WorkerNodeService =
             let x =
                 query {
                     for q in ctx.Dbo.RunQueue do
+                    join m in ctx.Dbo.ModelData on (q.RunQueueId = m.RunQueueId)
                     where (q.RunQueueId = i.value)
-                    select (Some (q.ModelData, q.RunQueueStatusId, q.SolverId))
+                    select (Some (m.ModelData, q.RunQueueStatusId, q.SolverId))
                     exactlyOneOrDefault
                 }
 
@@ -760,6 +763,40 @@ module WorkerNodeService =
 
 #endif
 
+#if MODEL_GENERATOR || WORKER_NODE
+
+    let private addRunQueueRow (ctx : DbContext) (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
+        let row = ctx.Dbo.RunQueue.Create(
+                            RunQueueId = r.value,
+                            SolverId = s.value,
+                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
+                            CreatedOn = DateTime.Now,
+                            ModifiedOn = DateTime.Now)
+
+        let md = ctx.Dbo.ModelData.Create(
+                            RunQueueId = r.value,
+                            ModelData = (w |> serializeData))
+
+        (row, md)
+
+
+    /// Saves a new model data into a database fur further processing.
+    let saveModelData (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
+        let elevate e = e |> SaveRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            addRunQueueRow ctx r s w |> ignore
+            ctx.SubmitUpdates()
+
+            Ok()
+
+        tryDbFun fromDbError g
+
+#endif
+
 #if WORKER_NODE
 
     let tryLoadSolverRunners () =
@@ -850,33 +887,6 @@ module WorkerNodeService =
             |> Seq.toList
             |> List.map RunQueueId
             |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let private addRunQueueRow<'D> (ctx : DbContext) (r : RunQueueId) (w : ModelBinaryData) =
-        let row = ctx.Dbo.RunQueue.Create(
-                            RunQueueId = r.value,
-                            ModelData = (w |> serializeData),
-                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
-                            CreatedOn = DateTime.Now,
-                            ModifiedOn = DateTime.Now)
-
-        row
-
-
-    /// Saves intocoming model data into a database fur further processing.
-    let saveModelData<'D> (r : RunQueueId) (w : ModelBinaryData) =
-        let elevate e = e |> SaveRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let row = addRunQueueRow ctx r w
-            ctx.SubmitUpdates()
-
-            Ok()
 
         tryDbFun fromDbError g
 
