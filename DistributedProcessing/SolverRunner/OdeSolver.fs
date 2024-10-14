@@ -25,6 +25,7 @@ module OdeSolver =
         let g v = if v < eps then 0.0 else v
         [| for i in 0..(neq - 1) -> g (NativePtr.get x i) |]
 
+
     let private toArray (neq : int) (x : nativeptr<double>) : double[] = [| for i in 0..(neq - 1) -> NativePtr.get x i |]
 
 
@@ -36,7 +37,7 @@ module OdeSolver =
                                 x : nativeptr<double>,
                                 dx : nativeptr<double>) : unit =
 
-        let x1 = makeNonNegativeByRef odeParams.solverType.correction neq x
+        let x1 = makeNonNegativeByRef odeParams.odeSolverType.correction neq x
         let et = decimal t |> EvolutionTime
         tryCallBack.invoke et x1
 
@@ -76,7 +77,7 @@ module OdeSolver =
 
         // (data : SolverData<'D, 'P, double[]>)
         // c
-        match n.solverType with
+        match n.odeSolverType with
         | AlgLib CashCarp ->
             //n.logger.logDebugString "nSolve: Using Cash - Carp Alglib solver."
 

@@ -31,5 +31,5 @@ module Program =
         match ctx.systemProxy.saveModelData runQueueId ctx.solverId binaryData with
         | Ok() -> Ok()
         | Error e ->
-            printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - ERROR: '{e}'."
+            printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', ERROR: '%A{e}'."
             Error e

@@ -304,8 +304,8 @@ module WorkerNodeService =
 
     type UserProxy<'I, 'D> =
         {
-            getInitialData : string[] -> 'I
-            generateModel : 'I -> 'D
+            getInitialData : string[] -> 'I // Generates "input" parameters out of command line arguments.
+            generateModel : 'I -> 'D // Generates model data out of "input" parameters. This can be huge.
             getSolverInputParams : 'I -> SolverInputParams
             getSolverOutputParams : 'I -> SolverOutputParams
         }
