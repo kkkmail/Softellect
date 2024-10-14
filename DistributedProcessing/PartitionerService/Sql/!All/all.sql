@@ -744,6 +744,7 @@ go
 		( values
 			  (0, 'NotStarted')
 			, (1, 'Inactive')
+			, (7, 'RunRequested')
 			, (2, 'InProgress')
 			, (3, 'Completed')
 			, (4, 'Failed')

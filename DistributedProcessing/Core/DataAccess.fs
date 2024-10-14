@@ -284,9 +284,8 @@ module WorkerNodeService =
                     for q in ctx.Dbo.RunQueue do
                     where (q.RunQueueStatusId = 0 && q.Progress = 0.0m && q.WorkerNodeId = None)
                     sortBy q.RunQueueOrder
-                    //where (q.RunQueueId = i.value)
                     select (Some q)
-                    exactlyOneOrDefault
+                    headOrDefault
                 }
 
             match x with
