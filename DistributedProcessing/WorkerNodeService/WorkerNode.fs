@@ -73,7 +73,7 @@ module WorkerNode =
                     e1 + e |> Error
             | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
             | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
-            | UpdateSolverWrkMsg s -> processSolver proxy (i.workerNodeServiceInfo.workerNodeLocalInto.solverLocation.combine s.solverName.folderName) s
+            | UpdateSolverWrkMsg s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 
@@ -92,19 +92,23 @@ module WorkerNode =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"WorkerNodeRunner - error: '{e}'."
+                    printfn $"WorkerNodeRunner - ERROR: '{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
 
         let startSolvers() =
+            printfn "startSolvers: Starting."
             match i.workerNodeProxy.loadAllActiveRunQueueId() with
             | Ok m ->
+                printfn $"startSolvers: m = '%A{m}'."
                 m
                 |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
                 |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
                 |> foldUnitResults
-            | Error e -> Error e
+            | Error e ->
+                printfn $"startSolvers: ERROR: '%A{e}'."
+                Error e
 
         let onStartImpl() = if not started then startSolvers() else Ok()
 
@@ -157,7 +161,8 @@ module WorkerNode =
                         do h.start()
 
                         // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
-                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.oneHourValue toError startSolvers "WorkerNodeRunner - start solvers"
+                        // Use oneHourValue
+                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError startSolvers "WorkerNodeRunner - start solvers"
                         let s = TimerEventHandler i2
                         do s.start()
                         eventHandlers<- [ h; s ]

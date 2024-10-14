@@ -80,7 +80,7 @@ module Program =
             }
 
 
-        let proxy = WorkerNodeProxy.create ()
+        let proxy = WorkerNodeProxy.create workerNodeServiceInfo.workerNodeLocalInto
 
         let data =
             {
@@ -92,7 +92,7 @@ module Program =
         let saveSettings() =
             //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
             //printfn $"saveSettings - result: '%A{result}'."
-            failwith ""
+            failwith "saveSettings is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
             let runner = new WorkerNodeRunner(data)

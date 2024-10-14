@@ -213,15 +213,21 @@ module WorkerNodeService =
 
     /// Tries to run a solver with a given RunQueueId if it not already running and if the number
     /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess tryGetSolverName n (q : RunQueueId) =
+    let tryRunSolverProcess tryGetSolverLocation n (q : RunQueueId) =
+        printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
+
         let fileName = SolverRunnerName
         let elevate f = f |> TryRunSolverProcessErr |> Error
 
-        match tryGetSolverName q with
-        | Ok (Some (SolverName name)) ->
+        match tryGetSolverLocation q with
+        | Ok (Some (FolderName folderName)) ->
+            printfn $"tryRunSolverProcess: folderName = '{folderName}'."
+
             let run() =
                 // TODO kk:20210511 - Build command line using Argu.
                 let args = $"q {q}"
+                let exeName = getExeName (Some folderName) fileName
+                printfn $"tryRunSolverProcess: exeName = '{exeName}'."
 
                 try
                     let procStartInfo =
@@ -229,11 +235,11 @@ module WorkerNodeService =
                             RedirectStandardOutput = false,
                             RedirectStandardError = false,
                             UseShellExecute = true,
-                            FileName = getExeName (Some name) fileName,
+                            FileName = exeName,
                             Arguments = args
                         )
 
-                    procStartInfo.WorkingDirectory <- getAssemblyLocation()
+                    procStartInfo.WorkingDirectory <- folderName // getAssemblyLocation()
                     procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
                     let p = new Process(StartInfo = procStartInfo)
                     let started = p.Start()
@@ -264,6 +270,17 @@ module WorkerNodeService =
             q |> FailedToLoadSolverNameErr |> elevate
 
 
+    let getSolverLocation (i : WorkerNodeLocalInto) (solverName : SolverName) =
+        i.solverLocation.combine solverName.folderName
+
+
+    let private tryGetSolverLocation (i : WorkerNodeLocalInto) q =
+        match tryGetSolverName q with
+        | Ok (Some s) -> getSolverLocation i s |> Some |> Ok
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -277,13 +294,13 @@ module WorkerNodeService =
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
-        static member create () : WorkerNodeProxy =
+        static member create (i : WorkerNodeLocalInto) : WorkerNodeProxy =
             {
                 saveModelData = saveModelData
                 requestCancellation = tryRequestCancelRunQueue
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess tryGetSolverName
+                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i)
                 saveSolver = saveSolver
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed

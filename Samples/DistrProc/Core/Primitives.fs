@@ -71,15 +71,23 @@ module Primitives =
         }
 
 
-    /// That's 'D in the type signature.
-    type TestSolverData =
+    type TestDerivativeData =
         {
             sigma : double
             rho : double
             beta : double
         }
 
-        member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
+
+    /// That's 'D in the type signature.
+    type TestSolverData =
+        {
+            derivativeData : TestDerivativeData
+            initialValues : double[]
+        }
+
+        member d.derivativeCalculator =
+            DerivativeCalculator.lorenzSystem d.derivativeData.sigma d.derivativeData.rho d.derivativeData.beta
 
         member d.odeParams =
             {
@@ -93,9 +101,13 @@ module Primitives =
             let rnd = Random(i.seedValue)
 
             {
-                sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
-                rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
-                beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
+                derivativeData =
+                    {
+                        sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
+                        rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
+                        beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
+                    }
+                initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
             }
 
 
@@ -109,5 +121,5 @@ module Primitives =
     /// That's 'C in the type signature.
     type TestChartData =
         {
-            x : int
+            dummy : unit
         }

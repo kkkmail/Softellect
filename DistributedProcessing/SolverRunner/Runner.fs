@@ -8,7 +8,6 @@ open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
 open System.Collections.Concurrent
 open Softellect.Sys.TimerEvents
-open Softellect.Sys.Rop
 
 module Runner =
 
@@ -18,7 +17,7 @@ module Runner =
     ///// which is not allowed by IL design.
     //let mutable private needsCallBackData = NeedsCallBackData.defaultValue
 
-    let private needsCallBackDataDictionary = new ConcurrentDictionary<RunQueueId, NeedsCallBackData>()
+    let private needsCallBackDataDictionary = ConcurrentDictionary<RunQueueId, NeedsCallBackData>()
 
 
     let private getNeedsCallBackData runQueueId =
@@ -237,7 +236,7 @@ module Runner =
 
         match u.chartGenerator.generateCharts modelData t cd with
         | Some c -> s.callBackProxy.chartCallBack.invoke c
-        | None -> ignore()
+        | None -> ()
 
 
     let private notifyOfCharts ctx =
@@ -373,7 +372,7 @@ module Runner =
         try
             try
                 // Run the computation from the initial data till the end and report progress on the way.
-                let (tEnd, xEnd) = u.solverRunner.invoke (t0, x0) tryCallBack
+                let tEnd, xEnd = u.solverRunner.invoke (t0, x0) tryCallBack
 
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd

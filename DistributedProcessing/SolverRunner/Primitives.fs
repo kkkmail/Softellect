@@ -19,7 +19,7 @@ module Primitives =
     /// to perform early termination from deep inside C# ODE solver.
     /// There seems to be no other easy and clean way. Revisit if that changes.
     type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
-        inherit System.Exception ()
+        inherit Exception ()
 
         member _.progressData = pd
         member _.cancellationType = ct
@@ -207,7 +207,7 @@ module Primitives =
 
 
     type SolverRunner<'X> =
-        | SolverRunner of ((EvolutionTime * 'X) -> TryCallBack<'X> -> (EvolutionTime * 'X))
+        | SolverRunner of (EvolutionTime * 'X -> TryCallBack<'X> -> EvolutionTime * 'X)
 
         member r.invoke = let (SolverRunner v) = r in v
 
@@ -255,7 +255,7 @@ module Primitives =
     /// Everything that we need to know how to run the solver and report progress.
     /// It seems convenient to separate evolution time (whatever it means) and a computation state, 'X
     /// The overall data consists of the model data & related data, which can be serialized / deserialized,
-    // the user proxy (must be implemented outside the library), and the system proxy (implemented in the library).
+    /// the user proxy (must be implemented outside the library), and the system proxy (implemented in the library).
     type SolverRunnerContext<'D, 'P, 'X, 'C> =
         {
             runnerData : RunnerData<'D>

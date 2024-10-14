@@ -196,7 +196,7 @@ module Implementation =
     //        }
 
 
-    let runSolverProcess<'D, 'P, 'X, 'C> solverId userProxy (results : ParseResults<SolverRunnerArguments>) : int =
+    let runSolverProcess<'D, 'P, 'X, 'C> solverId getUserProxy (results : ParseResults<SolverRunnerArguments>) : int =
         let logCrit = saveSolverRunnerErrFs SolverProgramName
 
         match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
@@ -240,7 +240,7 @@ module Implementation =
                                     {
                                         runnerData = data
                                         systemProxy = proxy
-                                        userProxy = userProxy
+                                        userProxy = getUserProxy w.modelData
                                     }
 
                                 // The call below does not return until the run is completed OR cancelled in some way.
