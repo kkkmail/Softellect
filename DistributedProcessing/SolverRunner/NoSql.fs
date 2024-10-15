@@ -1,6 +1,13 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
+open Softellect.DistributedProcessing.Errors
+open Softellect.Sys.FileSystemTypes
+open System
+
 module NoSql =
 
-    let saveSolverRunnerErrFs _ _ = failwith "saveSolverRunnerErrFs is not implemented yet."
+    let solverRunnerErrTblName = TableName "SolverRunnerErr"
 
+
+    let saveSolverRunnerErrFs serviceName (r : SolverRunnerCriticalError) =
+        saveErrData<SolverRunnerCriticalError, Guid> serviceName solverRunnerErrTblName r.errorId.value r

@@ -11,10 +11,6 @@ module Program =
 
     [<EntryPoint>]
     let main argv =
-        // let solverData = TestSolverData.create { seedValue = 0 }
-        //
-        // let solverRunner = createOdeSolver inputParams solverData.odeParams
-
         let chartGenerator =
             {
                 getChartData = fun _ _ _ -> { dummy = () }

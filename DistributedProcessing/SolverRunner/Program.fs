@@ -8,10 +8,10 @@ open Softellect.DistributedProcessing.VersionInfo
 
 module Program =
 
-    let solverRunnerMain<'D, 'P, 'X, 'C> solverId userProxy argv =
+    let solverRunnerMain<'D, 'P, 'X, 'C> solverId getUserProxy argv =
         printfn $"solverRunnerMain<{typeof<'D>.Name}, {typeof<'P>.Name}, {typeof<'X>.Name}, {typeof<'X>.Name}> - messagingDataVersion = '{messagingDataVersion}', argv: %A{argv}."
 
         let parser = ArgumentParser.Create<SolverRunnerArguments>(programName = SolverProgramName)
         let results = parser.Parse argv
 
-        runSolverProcess<'D, 'P, 'X, 'C> solverId userProxy results
+        runSolverProcess<'D, 'P, 'X, 'C> solverId getUserProxy results

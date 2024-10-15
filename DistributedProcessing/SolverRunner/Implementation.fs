@@ -51,7 +51,9 @@ module Implementation =
 
     let private tryStartRunQueue q =
         let pid = Process.GetCurrentProcess().Id |> ProcessId
-        tryStartRunQueue q pid
+        let result = tryStartRunQueue q pid
+        printfn $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
+        result
 
 
     let private getAllowedSolvers i =
@@ -115,7 +117,7 @@ module Implementation =
                 progressData = pd
             }
 
-        //printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, progress = %A{p.progressData}."
+        printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
         let t, completed = toDeliveryType p
         let r0 = tryUpdateProgress<'P> p.runQueueId p.progressData
 
@@ -141,7 +143,7 @@ module Implementation =
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
 
-        printfn $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, result = %A{result}."
+        printfn $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
         result
 
 
@@ -201,6 +203,9 @@ module Implementation =
 
         match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
         | Some q ->
+            let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
+            printfn $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+
             let exitWithLogCrit e x =
                 printfn $"runSolver: ERROR: {e}, exit code: {x}."
                 SolverRunnerCriticalError.create q e |> logCrit |> ignore
@@ -247,7 +252,9 @@ module Implementation =
                                 runSover<'D, 'P, 'X, 'C> ctx
                                 printfn "runSolver: Call to solver.run() completed."
                                 CompletedSuccessfully
-                            | Error e -> exitWithLogCrit e UnknownException
+                            | Error e ->
+                                printfn $"runSolver: ERROR: {e}."
+                                exitWithLogCrit e UnknownException
                         | CancelRequestedRunQueue ->
                             // If we got here that means that the solver was terminated before it had a chance to process cancellation.
                             // At this point we have no choice but abort the calculation because there is no data available to continue.
