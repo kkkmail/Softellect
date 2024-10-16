@@ -246,12 +246,12 @@ module Partitioner =
 
 
     let private register (proxy : PartitionerProxy) (r : WorkerNodeInfo) =
-        printfn "register: r = %A" r
+        printfn $"register: r = %A{r}"
         proxy.upsertWorkerNodeInfo r |> bindError (addError RegisterRunnerErr (UnableToUpsertWorkerNodeInfoRunnerErr r.workerNodeId))
 
 
     let private unregister (proxy : PartitionerProxy) (r : WorkerNodeId) =
-        printfn "unregister: r = %A" r
+        printfn $"unregister: r = %A{r}"
         let addError = addError UnregisterRunnerErr
 
         match proxy.loadWorkerNodeInfo r with
@@ -318,7 +318,6 @@ module Partitioner =
         abstract ping : q:byte[] -> byte[]
 
 
-
     type PartitionerWcfService(w : IPartitionerService) =
         let toPingError f = f |> PrtPingWcfErr |> PartitionerWcfErr
 
@@ -352,7 +351,7 @@ module Partitioner =
 
 
     let onProcessMessage (proxy : PartitionerProxy) (m : DistributedProcessingMessage) =
-        printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}."
+        printfn $"onProcessMessage: Starting. messageId: '{m.messageDataInfo.messageId}', info: '{(m.messageData.getInfo())}'."
 
         match m.messageData with
         | UserMsg (PartitionerMsg x) ->
@@ -377,7 +376,7 @@ module Partitioner =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"PartitionerRunner - error: '{e}'."
+                    printfn $"PartitionerRunner (onProcessMessageImpl) - ERROR processing message: messageId = '%A{m.messageDataInfo.messageId}', error = '%A{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
@@ -405,7 +404,7 @@ module Partitioner =
                 eventHandlers<- [ h; s ]
 
                 Ok ()
-            | Error e -> UnableToStartMessagingClientErr e |> Error 
+            | Error e -> UnableToStartMessagingClientErr e |> Error
 
         let onTryStop() =
             printfn "PartitionerRunner - stopping timers."
@@ -416,13 +415,13 @@ module Partitioner =
             member _.StartAsync(cancellationToken: CancellationToken) =
                 match onTryStart() with
                 | Ok () -> Task.CompletedTask
-                | Error e -> 
+                | Error e ->
                     printfn $"Error during start: %A{e}."
                     Task.FromException(new Exception($"Failed to start PartitionerRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with
                 | Ok () -> Task.CompletedTask
-                | Error e -> 
+                | Error e ->
                     printfn $"Error during stop: %A{e}."
                     Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.

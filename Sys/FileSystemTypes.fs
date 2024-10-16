@@ -8,7 +8,7 @@ open Softellect.Sys.Errors
 
 module FileSystemTypes =
     let private serializationFormat = BinaryZippedFormat
-    let private serializationErrFormat = XmlFormat
+    let private serializationErrFormat = JSonFormat
 
     /// TODO kk:20241015 - Make it configurable.
     /// The folder where the files are stored.
@@ -63,7 +63,7 @@ module FileSystemTypes =
         tryRopFun (fun e -> e |> GeneralFileExn |> FileErr) w
 
 
-    /// Loads the data if successfull and returns an error if an object is not found OR any error occurs.
+    /// Loads the data if successfully loaded and returns an error if an object is not found OR any error occurs.
     let loadData<'T, 'A> serviceName tableName (objectId : 'A) =
         match tryLoadData<'T, 'A> serviceName tableName objectId with
         | Ok (Some r) -> Ok r

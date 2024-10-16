@@ -240,11 +240,12 @@ module Primitives =
         }
 
 
-    /// A model data and supportting data that is needed to run the solver.
+    /// A model data and supporting data that is needed to run the solver.
     type RunnerData<'D> =
         {
             runQueueId : RunQueueId
             partitionerId : PartitionerId
+            workerNodeId : WorkerNodeId
             messagingDataVersion : MessagingDataVersion
             modelData : ModelData<'D>
             started : DateTime

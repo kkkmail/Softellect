@@ -12,6 +12,7 @@ module Primitives =
     /// Treat all values of u less than this as zero.
     let correctionValue = 1.0e-12
 
+
     /// https://en.wikipedia.org/wiki/Harmonic_oscillator
     /// Interesting values: k = 1, c = 0.1
     let dampedHarmonicOscillator (k: double) (c: double) (t: double) (x: double[]) (i: int): double =
@@ -32,6 +33,7 @@ module Primitives =
         | 1 -> x.[0] * (rho - x.[2]) - x.[1]         // dx2/dt = x1 * (rho - x3) - x2
         | 2 -> x.[0] * x.[1] - beta * x.[2]          // dx3/dt = x1 * x2 - beta * x3
         | _ -> failwith "Invalid index"
+
 
     /// https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations
     /// Interesting values: alpha = 2/3, beta = 4/3, gamma = 1, delta = 1

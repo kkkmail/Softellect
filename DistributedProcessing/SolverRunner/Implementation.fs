@@ -76,7 +76,7 @@ module Implementation =
                 deliveryType = GuaranteedDelivery
                 messageData = i |> SaveChartsPrtMsg
             }.getMessageInfo()
-            |> sendMessage data.messagingDataVersion data.partitionerId.messagingClientId
+            |> sendMessage data.messagingDataVersion data.workerNodeId.messagingClientId
 
         match result with
         | Ok v -> Ok v
@@ -127,7 +127,7 @@ module Implementation =
                 deliveryType = t
                 messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
             }.getMessageInfo()
-            |> sendMessage data.messagingDataVersion data.partitionerId.messagingClientId
+            |> sendMessage data.messagingDataVersion data.workerNodeId.messagingClientId
 
         let r1 =
             match r11 with
@@ -233,6 +233,7 @@ module Implementation =
                                     {
                                         runQueueId = q
                                         partitionerId = i.workerNodeInfo.partitionerId
+                                        workerNodeId = i.workerNodeInfo.workerNodeId
                                         messagingDataVersion = messagingDataVersion
                                         modelData = w
                                         started = DateTime.Now
