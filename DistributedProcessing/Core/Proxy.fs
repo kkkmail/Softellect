@@ -211,7 +211,7 @@ module WorkerNodeService =
 
 #if WORKER_NODE
 
-    /// Tries to run a solver with a given RunQueueId if it not already running and if the number
+    /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
     let tryRunSolverProcess tryGetSolverLocation n (q : RunQueueId) =
         printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
@@ -225,9 +225,9 @@ module WorkerNodeService =
 
             let run() =
                 // TODO kk:20210511 - Build command line using Argu.
-                let args = $"q {q}"
+                let args = $"q {q.value}"
                 let exeName = getExeName (Some folderName) fileName
-                printfn $"tryRunSolverProcess: exeName = '{exeName}'."
+                printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
                 try
                     let procStartInfo =
@@ -240,7 +240,8 @@ module WorkerNodeService =
                         )
 
                     procStartInfo.WorkingDirectory <- folderName // getAssemblyLocation()
-                    procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                    //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                    procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
                     let p = new Process(StartInfo = procStartInfo)
                     let started = p.Start()
 
@@ -272,6 +273,7 @@ module WorkerNodeService =
 
     let getSolverLocation (i : WorkerNodeLocalInto) (solverName : SolverName) =
         i.solverLocation.combine solverName.folderName
+        //FolderName @"C:\GitHub\Softellect\Samples\DistrProc\WorkerNodeService\bin\x64\Debug\net8.0"
 
 
     let private tryGetSolverLocation (i : WorkerNodeLocalInto) q =

@@ -494,7 +494,7 @@ module Core =
         x
 
 
-    /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory.
+    /// Gets the full file name located in the folder where the assembly normally resides on disk or the installation folder.
     /// Optional folder parameter allows to specify a different folder.
     /// If folder starts with a backslash, then it is considered a relative path.
     let getExeName folder exeName =
