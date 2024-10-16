@@ -1,24 +1,24 @@
 . ./Functions.ps1
-. ./MessagingVersionInfo.ps1
-. ./MessagingServiceName.ps1
+. ./PartitionerVersionInfo.ps1
+. ./PartitionerServiceName.ps1
 
 
-function InstallMessagingService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
+function InstallPartitionerService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
 {
-    InstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+    InstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
 }
 
-function UninstallMessagingService([string] $messagingDataVersion = "")
+function UninstallPartitionergService([string] $messagingDataVersion = "")
 {
-    UninstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    UninstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
 }
 
-function StartMessagingService([string] $messagingDataVersion = "")
+function StartPartitionerService([string] $messagingDataVersion = "")
 {
-    StartSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    StartSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
 }
 
-function StopMessagingService([string] $messagingDataVersion = "")
+function StopPartitionerService([string] $messagingDataVersion = "")
 {
-    StopSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    StopSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
 }

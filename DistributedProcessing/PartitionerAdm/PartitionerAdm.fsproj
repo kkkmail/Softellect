@@ -29,10 +29,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json" />
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json" />
     <Compile Include="Primitives.fs" />
     <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
     <Compile Include="CommandLine.fs" />

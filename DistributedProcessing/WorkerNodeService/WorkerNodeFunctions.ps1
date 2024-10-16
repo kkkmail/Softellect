@@ -1,24 +1,26 @@
+# We need workerNodeServiceName but messagingDataVersion here.
+
 . ./Functions.ps1
-. ./MessagingVersionInfo.ps1
-. ./MessagingServiceName.ps1
+. ./WorkerNodeVersionInfo.ps1
+. ./WorkerNodeerviceName.ps1
 
 
-function InstallMessagingService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
+function InstallWorkerNodeService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
 {
-    InstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+    InstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
 }
 
-function UninstallMessagingService([string] $messagingDataVersion = "")
+function UninstallWorkerNodeService([string] $messagingDataVersion = "")
 {
-    UninstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    UninstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
 }
 
-function StartMessagingService([string] $messagingDataVersion = "")
+function StartWorkerNodeService([string] $messagingDataVersion = "")
 {
-    StartSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    StartSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
 }
 
-function StopMessagingService([string] $messagingDataVersion = "")
+function StopWorkerNodeService([string] $messagingDataVersion = "")
 {
-    StopSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+    StopSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
 }

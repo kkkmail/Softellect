@@ -20,6 +20,9 @@
   </PropertyGroup>
 
     <ItemGroup>
+        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\DistributedProcessing\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

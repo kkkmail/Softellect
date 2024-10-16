@@ -40,6 +40,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="NamingConventions.fs" />
+    <Compile Include="VersionInfo.fs" />
     <Compile Include="ExitErrorCodes.fs" />
     <Compile Include="Primitives.fs" />
     <Compile Include="Errors.fs" />

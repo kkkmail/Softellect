@@ -19,6 +19,12 @@
   </PropertyGroup>
 
     <ItemGroup>
+        <None Include="..\..\README.md" Link="README.md">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\Functions.ps1" Link="Functions.ps1">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

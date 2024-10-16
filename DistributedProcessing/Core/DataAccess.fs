@@ -23,6 +23,7 @@ open Softellect.Sys.Retry
 open Softellect.Sys.DataAccess
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
+open Softellect.Sys.VersionInfo
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
 

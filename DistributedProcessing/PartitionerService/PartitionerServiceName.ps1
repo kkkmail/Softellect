@@ -1,1 +1,1 @@
-[string] $global:messagingServiceName = "MessagingService"
+[string] $global:partitionerServiceName = "PartitionerService"

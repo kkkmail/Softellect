@@ -22,6 +22,9 @@
     <ItemGroup>
         <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
+        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\DistributedProcessing\PartitionerService\Install-PartitionerService.ps1" Link="Install-PartitionerService.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
