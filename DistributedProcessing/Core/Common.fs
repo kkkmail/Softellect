@@ -5,7 +5,6 @@ open Softellect.Messaging.Primitives
 open Softellect.Sys.Errors
 open Softellect.Wcf.Common
 open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.Client
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 
@@ -92,8 +91,8 @@ module Common =
 
     /// Was ResultNotificationType
     type ChartNotificationType =
-        | RegularChartGeneration
-        | ForceChartGeneration
+        | RegularChartGeneration // The chart engine will decide whether to generate the chart or not.
+        | ForceChartGeneration   // The chart engine will generate the chart.
 
         member n.value =
             match n with
@@ -643,55 +642,55 @@ module Common =
     type DerivativeCalculator =
         | OneByOne of (double -> double[] -> int -> double)
         | FullArray of (double -> double[] -> double[])
-    
+
         member d.calculate t x =
             match d with
             | OneByOne f -> x |> Array.mapi (fun i _ -> f t x i)
             | FullArray f -> f t x
-    
+
     type AlgLibMethod =
         | CashCarp
-    
-    
+
+
     type OdePackMethod =
         | Adams
         | Bdf
-    
+
         member t.value =
             match t with
             | Adams -> 1
             | Bdf -> 2
-    
-    
+
+
     type CorrectorIteratorType =
         | Functional
         | ChordWithDiagonalJacobian
-    
+
         member t.value =
             match t with
             | Functional -> 0
             | ChordWithDiagonalJacobian -> 3
-    
-    
+
+
     type NegativeValuesCorrectorType =
         | DoNotCorrect
         | UseNonNegative of double
-    
+
         member nc.value =
             match nc with
             | DoNotCorrect -> 0
             | UseNonNegative _ -> 1
-    
+
         member nc.correction =
             match nc with
             | DoNotCorrect -> 0.0
             | UseNonNegative c -> c
-    
-    
+
+
     type OdeSolverType =
         | AlgLib of AlgLibMethod
         | OdePack of OdePackMethod * CorrectorIteratorType * NegativeValuesCorrectorType
-    
+
         member t.correction =
             match t with
             | AlgLib _ -> 0.0

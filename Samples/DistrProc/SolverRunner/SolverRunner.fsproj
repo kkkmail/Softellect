@@ -27,6 +27,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Plotly.NET" Version="5.1.0" />
+      <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Update="FSharp.Core" Version="8.0.401" />
     </ItemGroup>
 

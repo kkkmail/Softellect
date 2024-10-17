@@ -127,5 +127,8 @@ module Primitives =
     /// That's 'C in the type signature.
     type TestChartData =
         {
-            dummy : unit
+            t : double
+            x : double
+            y : double
+            z : double
         }
