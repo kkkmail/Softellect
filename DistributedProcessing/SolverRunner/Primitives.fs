@@ -125,10 +125,10 @@ module Primitives =
             //addChartData : 'C -> unit
 
             /// A function to call to generate all lightweight ("evolution") charts.
-            generateCharts : 'D -> ChartNotificationType -> list<ChartSliceData<'C>> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
+            generateCharts : RunQueueId -> 'D -> ChartNotificationType -> list<ChartSliceData<'C>> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
 
             /// A function to call to generate heavy charts.
-            generateDetailedCharts : 'D -> EvolutionTime -> 'X -> list<Chart>
+            generateDetailedCharts : RunQueueId -> 'D -> EvolutionTime -> 'X -> list<Chart>
         }
 
 
@@ -144,7 +144,7 @@ module Primitives =
 
         //    /// A function to call in order to generate and store a detailed chart data point.
         //    /// This is to collect "heavy", e.g., 3D data at some predetermined intervals.
-        //    /// A heavy chart should be send back one by one. if any post processing is needed,
+        //    /// A heavy chart should be sent back one by one. If any post-processing is needed,
         //    /// then it should be done by partitioner.
         //    chartDetailedCallBack : (CallBackType -> CallBackData<'P, 'X> -> unit)
         //}

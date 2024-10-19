@@ -216,7 +216,7 @@ module Runner =
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
-        let c = u.chartGenerator.generateDetailedCharts modelData t x
+        let c = u.chartGenerator.generateDetailedCharts ctx.runnerData.runQueueId modelData t x
         s.callBackProxy.chartCallBack.invoke c
 
 
@@ -228,18 +228,25 @@ module Runner =
 
 
     let private notifyCharts ctx t =
+        printfn $"notifyCharts: t = %A{t}"
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
         let cd = s.getChartData()
 
-        match u.chartGenerator.generateCharts modelData t cd with
-        | Some c -> s.callBackProxy.chartCallBack.invoke c
-        | None -> ()
+        match u.chartGenerator.generateCharts ctx.runnerData.runQueueId modelData t cd with
+        | Some c ->
+            printfn $"notifyCharts: c = %A{c}"
+            s.callBackProxy.chartCallBack.invoke c
+        | None ->
+            printfn $"notifyCharts: No charts to generate."
+            ()
 
 
-    let private notifyOfCharts ctx =
+    /// Sends "on-request" charts to the user.
+    let private notifyRequestedCharts ctx =
+        printfn $"notifyOfCharts: ctx = %A{ctx}"
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runQueueId
 
@@ -249,11 +256,15 @@ module Runner =
             let r1 = notifyCharts ctx t
             let r2 = s.clearNotification runQueueId
             // let r = combineUnitResults (DistributedProcessingError.addError) r1 r2
+            printfn $"notifyOfCharts: r1 = %A{r1}, r2 = %A{r2}"
             Ok()
-        | None -> Ok()
+        | None ->
+            printfn $"notifyOfCharts: No notification to process."
+            Ok()
 
 
     let private tryCallBack ctx (ncbd : NeedsCallBackData) (t : EvolutionTime) x =
+        printfn $"tryCallBack: t = %A{t}, x = %A{x}"
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -330,7 +341,7 @@ module Runner =
     //    chartResult
 
 
-    let runSover<'D, 'P, 'X, 'C> (ctx : SolverRunnerContext<'D, 'P, 'X, 'C>) =
+    let runSolver<'D, 'P, 'X, 'C> (ctx : SolverRunnerContext<'D, 'P, 'X, 'C>) =
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -365,7 +376,7 @@ module Runner =
         updateNeedsCallBackData d.modelData.solverInputParams.startTime x0
         notifyAll ctx RegularCallBack pd0 t0 x0
 
-        let i = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue TimerEventErr (fun () -> notifyOfCharts ctx) "runSover - notifyOfCharts"
+        let i = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue TimerEventErr (fun () -> notifyRequestedCharts ctx) "runSolver - notifyOfCharts"
         let h = TimerEventHandler i
         do h.start()
 
@@ -377,11 +388,12 @@ module Runner =
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
-                notifyOfCharts ctx |> ignore
+                notifyCharts ctx RegularChartGeneration
 
                 //(tEnd, xEnd)
             with
             | :? ComputationAbortedException<'P> as ex ->
+                printfn $"runSolver: ComputationAbortedException: %A{ex}"
                 let pd = ex.progressData
 
                 match ex.cancellationType with
@@ -391,8 +403,10 @@ module Runner =
                 | AbortCalculation e ->
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
             | ex ->
+                printfn $"runSolver: Exception: %A{ex}"
                 let ncbd = getNeedsCallBackData d.runQueueId
                 let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
                 notifyProgress s (Some $"{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
+            printfn $"runSolver: Stopping timers."
             h.stop()

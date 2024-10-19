@@ -62,7 +62,7 @@ module Implementation =
 
 
     let private onSaveCharts<'D, 'P> (data : RunnerData<'D>) c =
-        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}."
+        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}, c = %A{c}."
 
         let i =
             {
@@ -250,7 +250,7 @@ module Implementation =
                                     }
 
                                 // The call below does not return until the run is completed OR cancelled in some way.
-                                runSover<'D, 'P, 'X, 'C> ctx
+                                runSolver<'D, 'P, 'X, 'C> ctx
                                 printfn "runSolver: Call to solver.run() completed."
                                 CompletedSuccessfully
                             | Error e ->

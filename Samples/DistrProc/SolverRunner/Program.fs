@@ -61,9 +61,10 @@ module Program =
         |> HtmlChart
 
 
-    let getChart (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
-        let chart = Chart.Line(c |> List.map (fun x -> x.t, x.chartData.x))
-        [ getHtmlChart (FileName "") (toDescription "Heading" "Text") chart ] |> Some
+    let getChart (q : RunQueueId) (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
+        printfn $"getChart - q: '%A{q}', c: '%A{c}'."
+        let chart = Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x))
+        [ getHtmlChart (FileName $"{q.value}") (toDescription "Heading" "Text") chart ] |> Some
 
 
     [<EntryPoint>]
@@ -73,8 +74,8 @@ module Program =
                 let chartGenerator =
                     {
                         getChartData = fun _ t (x : double[]) -> { t = double t.value; x = x[0]; y = x[1]; z = x[2] }
-                        generateCharts = fun _ _ c -> getChart c
-                        generateDetailedCharts = fun _ _ _ -> []
+                        generateCharts = fun q _ _ c -> getChart q c
+                        generateDetailedCharts = fun _ _ _ _ -> []
                     }
 
                 let getUserProxy (solverData : TestSolverData) =

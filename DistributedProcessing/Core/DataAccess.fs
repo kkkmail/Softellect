@@ -174,6 +174,8 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalChartInfo d (c : ChartInfo) =
+        printfn $"saveLocalChartInfo - d: '%A{d}', c: '%A{c}'."
+
         try
             let getFileName (FileName name) =
                 match d with
@@ -188,6 +190,7 @@ module WorkerNodeService =
             let saveChart (f : string) (c : Chart) =
                 let folder = Path.GetDirectoryName f
                 Directory.CreateDirectory(folder) |> ignore
+                printfn $"saveLocalChartInfo - saveChart - f: '%A{f}', c: '%A{c}'."
 
                 match c with
                 | HtmlChart h -> File.WriteAllText(f, h.htmlContent)
@@ -198,7 +201,9 @@ module WorkerNodeService =
             |> ignore
             Ok ()
         with
-        | e -> e |> SaveChartsExn |> Error
+        | e ->
+            printfn $"saveLocalChartInfo - e: '%A{e}'."
+            e |> SaveChartsExn |> Error
 
 
     /// TODO kk:20241007 - Change errors???
@@ -261,7 +266,7 @@ module WorkerNodeService =
                                 errorMessageOpt = r.ErrorMessage |> Option.map ErrorMessage
                             }
 
-                        progressDetailed = None 
+                        progressDetailed = None
                     }
 
                 createdOn = r.CreatedOn
@@ -428,7 +433,7 @@ module WorkerNodeService =
         let elevate e = e |> TryLoadRunQueueErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
-    
+
         let g() =
             let ctx = getDbContext getConnectionString
 
@@ -1108,4 +1113,3 @@ module WorkerNodeService =
         | None -> Ok()
 
 #endif
-
