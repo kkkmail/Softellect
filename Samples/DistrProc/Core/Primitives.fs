@@ -1,7 +1,6 @@
 ﻿namespace Softellect.Samples.DistrProc.Core
 
 open System
-open System.Threading
 open Softellect.DistributedProcessing.Primitives.Common
 
 module Primitives =
@@ -77,23 +76,12 @@ module Primitives =
         }
 
 
-    type TestDerivativeData =
-        {
-            sigma : double
-            rho : double
-            beta : double
-        }
-
-
     /// That's 'D in the type signature.
     type TestSolverData =
         {
-            derivativeData : TestDerivativeData
+            derivativeCalculator : DerivativeCalculator
             initialValues : double[]
         }
-
-        member d.derivativeCalculator =
-            DerivativeCalculator.lorenzSystem d.derivativeData.sigma d.derivativeData.rho d.derivativeData.beta
 
         member d.odeParams =
             {
@@ -103,18 +91,122 @@ module Primitives =
                 derivative = d.derivativeCalculator
             }
 
+
+    type DampedHarmonicOscillatorData =
+        {
+            k: double
+            c: double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.dampedHarmonicOscillator d.k d.c
+
         static member create i =
             let rnd = Random(i.seedValue)
 
             {
-                derivativeData =
+                derivativeCalculator =
+                    {
+                        k = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
+                        c = 0.1 + (rnd.NextDouble() - 0.5) * 0.01
+                    }.derivativeCalculator
+                initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+            }
+
+
+    type LorenzSystemData =
+        {
+            sigma : double
+            rho : double
+            beta : double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
+
+        static member create i =
+            let rnd = Random(i.seedValue)
+
+            {
+                derivativeCalculator =
                     {
                         sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
                         rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
                         beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
-                    }
+                    }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
             }
+
+
+    type LotkaVolterraData =
+        {
+            alpha : double
+            beta : double
+            gamma : double
+            delta : double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.lotkaVolterra d.alpha d.beta d.gamma d.delta
+
+        static member create i =
+            let rnd = Random(i.seedValue)
+
+            {
+                derivativeCalculator =
+                    {
+                        alpha = 2.0 / 3.0 + (rnd.NextDouble() - 0.5) * 0.1
+                        beta = 4.0 / 3.0 + (rnd.NextDouble() - 0.5) * 0.1
+                        gamma = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
+                        delta = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
+                    }.derivativeCalculator
+                initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+            }
+
+
+    type TestDerivativeData =
+        | DampedHarmonicOscillator of DampedHarmonicOscillatorData
+        | LorenzSystem of LorenzSystemData
+        | LotkaVolterra of LotkaVolterraData
+
+        member d.derivativeCalculator =
+            match d with
+            | DampedHarmonicOscillator d -> d.derivativeCalculator
+            | LorenzSystem d -> d.derivativeCalculator
+            | LotkaVolterra d -> d.derivativeCalculator
+
+        static member create i = LotkaVolterraData.create i
+
+
+    type TestSolverData
+        with
+        static member create i = LotkaVolterraData.create i
+
+    // type TestSolverData =
+    //     {
+    //         derivativeData : TestDerivativeData
+    //         initialValues : double[]
+    //     }
+    //
+    //     member d.derivativeCalculator = d.derivativeData.derivativeCalculator
+    //
+    //     member d.odeParams =
+    //         {
+    //             stepSize = 0.0
+    //             absoluteTolerance = AbsoluteTolerance.defaultValue
+    //             odeSolverType = OdePack (Bdf, ChordWithDiagonalJacobian, UseNonNegative correctionValue)
+    //             derivative = d.derivativeCalculator
+    //         }
+    //
+    //     static member create i =
+    //         let rnd = Random(i.seedValue)
+    //
+    //         {
+    //             derivativeData =
+    //                 {
+    //                     sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
+    //                     rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
+    //                     beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
+    //                 }
+    //             initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+    //         }
 
 
     /// That's 'P in the type signature.
@@ -128,7 +220,5 @@ module Primitives =
     type TestChartData =
         {
             t : double
-            x : double
-            y : double
-            z : double
+            x : double[]
         }

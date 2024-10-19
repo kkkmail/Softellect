@@ -229,6 +229,7 @@ module Runner =
 
     let private notifyCharts ctx t =
         printfn $"notifyCharts: t = %A{t}"
+
         let u = ctx.userProxy
         let s = ctx.systemProxy
 

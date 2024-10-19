@@ -11,8 +11,6 @@ open Softellect.Sys.Primitives
 
 open Plotly.NET
 open Giraffe.ViewEngine
-open Plotly.NET.GenericChartExtensions
-
 
 module Program =
 
@@ -53,17 +51,36 @@ module Program =
         result
 
 
+    let toHtmlFileName (FileName fileName) =
+        if fileName.EndsWith(".html", StringComparison.OrdinalIgnoreCase) then fileName
+        else fileName + ".html"
+        |> FileName
+
+
     let getHtmlChart fileName d ch =
         {
             htmlContent = toEmbeddedHtmlWithDescription d ch
-            fileName = fileName
+            fileName = toHtmlFileName fileName
         }
         |> HtmlChart
 
 
     let getChart (q : RunQueueId) (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
         printfn $"getChart - q: '%A{q}', c: '%A{c}'."
-        let chart = Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x))
+
+        let charts =
+            match c |> List.tryHead with
+            | Some h ->
+                h.chartData.x
+                |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x[i])))
+            | None -> [||]
+            // [
+            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x))
+            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.y))
+            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.z))
+            // ]
+
+        let chart = Chart.combine charts
         [ getHtmlChart (FileName $"{q.value}") (toDescription "Heading" "Text") chart ] |> Some
 
 
@@ -73,7 +90,7 @@ module Program =
             try
                 let chartGenerator =
                     {
-                        getChartData = fun _ t (x : double[]) -> { t = double t.value; x = x[0]; y = x[1]; z = x[2] }
+                        getChartData = fun _ t (x : double[]) -> { t = double t.value; x = x }
                         generateCharts = fun q _ _ c -> getChart q c
                         generateDetailedCharts = fun _ _ _ _ -> []
                     }

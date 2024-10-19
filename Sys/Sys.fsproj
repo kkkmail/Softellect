@@ -74,7 +74,7 @@
     <PackageReference Include="System.ServiceModel.Primitives" Version="8.0.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
     <PackageReference Update="FSharp.Core" Version="8.0.401" />
-    <PackageReference Include="SQLProvider" Version="1.4.0" />
+    <PackageReference Include="SQLProvider" Version="1.4.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
