@@ -62,13 +62,13 @@ module Implementation =
 
 
     let private onSaveCharts<'D, 'P> (data : RunnerData<'D>) c =
-        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}, c = %A{c}."
-
         let i =
             {
                 charts = c
                 runQueueId = data.runQueueId
             }
+
+        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
 
         let result =
             {

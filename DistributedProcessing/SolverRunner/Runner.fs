@@ -193,6 +193,7 @@ module Runner =
 
 
     let private notifyProgress s cb pd =
+        printfn $"notifyProgress: cb = %A{cb}, pd = %A{pd}."
         s.callBackProxy.progressCallBack.invoke cb pd
 
 
@@ -238,7 +239,7 @@ module Runner =
 
         match u.chartGenerator.generateCharts ctx.runnerData.runQueueId modelData t cd with
         | Some c ->
-            printfn $"notifyCharts: c = %A{c}"
+            printfn $"notifyCharts: c.Length = %A{c.Length}"
             s.callBackProxy.chartCallBack.invoke c
         | None ->
             printfn $"notifyCharts: No charts to generate."
@@ -247,7 +248,7 @@ module Runner =
 
     /// Sends "on-request" charts to the user.
     let private notifyRequestedCharts ctx =
-        printfn $"notifyOfCharts: ctx = %A{ctx}"
+        printfn $"notifyOfCharts: Starting."
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runQueueId
 
@@ -265,7 +266,7 @@ module Runner =
 
 
     let private tryCallBack ctx (ncbd : NeedsCallBackData) (t : EvolutionTime) x =
-        printfn $"tryCallBack: t = %A{t}, x = %A{x}"
+        // printfn $"tryCallBack: t = %A{t}, x = %A{x}"
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -394,7 +395,7 @@ module Runner =
                 //(tEnd, xEnd)
             with
             | :? ComputationAbortedException<'P> as ex ->
-                printfn $"runSolver: ComputationAbortedException: %A{ex}"
+                printfn $"runSolver: ComputationAbortedException: %A{ex}."
                 let pd = ex.progressData
 
                 match ex.cancellationType with

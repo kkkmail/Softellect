@@ -66,7 +66,7 @@ module Program =
 
 
     let getChart (q : RunQueueId) (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
-        printfn $"getChart - q: '%A{q}', c: '%A{c}'."
+        printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
             match c |> List.tryHead with
@@ -74,11 +74,6 @@ module Program =
                 h.chartData.x
                 |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x[i])))
             | None -> [||]
-            // [
-            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x))
-            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.y))
-            //     Chart.Line(c |> List.map (fun c -> c.t, c.chartData.z))
-            // ]
 
         let chart = Chart.combine charts
         [ getHtmlChart (FileName $"{q.value}") (toDescription "Heading" "Text") chart ] |> Some
