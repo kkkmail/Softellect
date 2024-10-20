@@ -54,7 +54,7 @@ module WorkerNode =
 
 
     let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
-        printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}."
+        printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}, info: '{m.messageData.getInfo()}'."
         let proxy = i.workerNodeProxy
 
         match m.messageData with
@@ -71,8 +71,16 @@ module WorkerNode =
                     printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
                     let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
                     e1 + e |> Error
-            | CancelRunWrkMsg q -> q ||> proxy.requestCancellation
-            | RequestChartsWrkMsg q -> q ||> proxy.notifyOfResults
+            | CancelRunWrkMsg q ->
+                printfn $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}'."
+                let result = q ||> proxy.requestCancellation
+                printfn $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                result
+            | RequestChartsWrkMsg q ->
+                printfn $"    onProcessMessage: RequestChartsWrkMsg with runQueueId: '%A{q}'."
+                let result = q ||> proxy.notifyOfResults
+                printfn $"    onProcessMessage: RequestChartsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                result
             | UpdateSolverWrkMsg s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 

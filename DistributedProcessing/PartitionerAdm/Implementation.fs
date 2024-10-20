@@ -30,18 +30,18 @@ module Implementation =
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
-            createMessage : MessagingClientId -> MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
         }
 
-        static member create () =
+        static member create (p : PartitionerId) =
             {
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
-                createMessage = createMessage messagingDataVersion
+                createMessage = createMessage messagingDataVersion p.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 tryResetRunQueue = tryResetRunQueue
             }
@@ -61,7 +61,7 @@ module Implementation =
                 let w = loadPartitionerInfo provider
 
                 {
-                    partitionerAdmProxy = PartitionerAdmProxy.create()
+                    partitionerAdmProxy = PartitionerAdmProxy.create w.partitionerId
                     partitionerInfo = w
                 }
             | Error e -> failwith $"ERROR: {e}"
@@ -76,7 +76,7 @@ module Implementation =
                 deliveryType = GuaranteedDelivery
                 messageData = UpdateSolverWrkMsg solver
             }.getMessageInfo()
-            |> ctx.partitionerAdmProxy.createMessage ctx.partitionerInfo.partitionerId.messagingClientId
+            |> ctx.partitionerAdmProxy.createMessage
             |> ctx.partitionerAdmProxy.saveMessage
 
         result
@@ -134,6 +134,8 @@ module Implementation =
         let addError = addError TryCancelRunQueueRunnerErr
         let toError = toError TryCancelRunQueueRunnerErr
 
+        printfn $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
+
         match ctx.partitionerAdmProxy.tryLoadRunQueue q with
         | Ok (Some r) ->
             let r1 =
@@ -149,7 +151,7 @@ module Implementation =
 
                             messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
                         }
-                        |> ctx.partitionerAdmProxy.createMessage w.messagingClientId
+                        |> ctx.partitionerAdmProxy.createMessage
                         |> ctx.partitionerAdmProxy.saveMessage
 
                     match r11 with
@@ -188,7 +190,7 @@ module Implementation =
 
                         messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
                     }
-                    |> ctx.partitionerAdmProxy.createMessage w.messagingClientId
+                    |> ctx.partitionerAdmProxy.createMessage
                     |> ctx.partitionerAdmProxy.saveMessage
 
                 match r1 with
@@ -218,4 +220,6 @@ module Implementation =
                     match n with
                     | Some v -> tryRequestResults ctx q v
                     | None -> Ok ()
-        | None -> Ok ()
+        | None ->
+            printfn $"modifyRunQueue: No runQueueId to modify found."
+            Ok ()
