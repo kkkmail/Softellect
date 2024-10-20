@@ -65,14 +65,14 @@ module Program =
         |> HtmlChart
 
 
-    let getChart (q : RunQueueId) (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
+    let getChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) : list<Softellect.Sys.Primitives.Chart> option =
         printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
             match c |> List.tryHead with
             | Some h ->
                 h.chartData.x
-                |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x[i])))
+                |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x[i]), Name = d.chartLabels[i]))
             | None -> [||]
 
         let chart = Chart.combine charts
@@ -86,7 +86,7 @@ module Program =
                 let chartGenerator =
                     {
                         getChartData = fun _ t (x : double[]) -> { t = double t.value; x = x }
-                        generateCharts = fun q _ _ c -> getChart q c
+                        generateCharts = fun q d _ c -> getChart q d c
                         generateDetailedCharts = fun _ _ _ _ -> []
                     }
 

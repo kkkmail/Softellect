@@ -81,6 +81,7 @@ module Primitives =
         {
             derivativeCalculator : DerivativeCalculator
             initialValues : double[]
+            chartLabels : string[]
         }
 
         member d.odeParams =
@@ -110,6 +111,7 @@ module Primitives =
                         c = 0.1 + (rnd.NextDouble() - 0.5) * 0.01
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+                chartLabels = [| "Velocity"; "Acceleration" |]
             }
 
 
@@ -133,6 +135,7 @@ module Primitives =
                         beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+                chartLabels = [| "x"; "y"; "z" |]
             }
 
 
@@ -158,6 +161,7 @@ module Primitives =
                         delta = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
+                chartLabels = [| "Prey"; "Predator" |]
             }
 
 
