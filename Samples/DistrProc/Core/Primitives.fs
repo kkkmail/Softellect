@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Samples.DistrProc.Core
 
 open System
+open System.Threading
 open Softellect.DistributedProcessing.Primitives.Common
 
 module Primitives =
@@ -54,6 +55,26 @@ module Primitives =
         static member lotkaVolterra alpha beta gamma delta =
             lotkaVolterra alpha beta gamma delta |> OneByOne
 
+        member d.delayed n =
+            match n with
+            | None -> d
+            | Some (e : int) ->
+                match d with
+                | OneByOne f ->
+                    let g t x i =
+                        if i = 0
+                        then
+                            printfn $"Sleeping for {e} ms..."
+                            Thread.Sleep(e)
+                        f t x i
+                    OneByOne g
+                | FullArray f ->
+                    let g t x =
+                        printfn $"Sleeping for {e} ms..."
+                        Thread.Sleep(e)
+                        f t x
+                    FullArray g
+
 
     let inputParams =
         {
@@ -73,6 +94,7 @@ module Primitives =
     type TestInitialData =
         {
             seedValue : int
+            delay : int option
         }
 
 
@@ -101,7 +123,7 @@ module Primitives =
 
         member d.derivativeCalculator = DerivativeCalculator.dampedHarmonicOscillator d.k d.c
 
-        static member create i =
+        static member create i n =
             let rnd = Random(i.seedValue)
 
             {
@@ -124,7 +146,7 @@ module Primitives =
 
         member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
 
-        static member create i =
+        static member create i n =
             let rnd = Random(i.seedValue)
 
             {
@@ -181,36 +203,9 @@ module Primitives =
 
     type TestSolverData
         with
-        static member create i = LotkaVolterraData.create i
-
-    // type TestSolverData =
-    //     {
-    //         derivativeData : TestDerivativeData
-    //         initialValues : double[]
-    //     }
-    //
-    //     member d.derivativeCalculator = d.derivativeData.derivativeCalculator
-    //
-    //     member d.odeParams =
-    //         {
-    //             stepSize = 0.0
-    //             absoluteTolerance = AbsoluteTolerance.defaultValue
-    //             odeSolverType = OdePack (Bdf, ChordWithDiagonalJacobian, UseNonNegative correctionValue)
-    //             derivative = d.derivativeCalculator
-    //         }
-    //
-    //     static member create i =
-    //         let rnd = Random(i.seedValue)
-    //
-    //         {
-    //             derivativeData =
-    //                 {
-    //                     sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
-    //                     rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
-    //                     beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
-    //                 }
-    //             initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
-    //         }
+        static member create n i =
+            let data = LotkaVolterraData.create i
+            { data with derivativeCalculator = data.derivativeCalculator.delayed n }
 
 
     /// That's 'P in the type signature.

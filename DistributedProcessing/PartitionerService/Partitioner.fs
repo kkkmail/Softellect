@@ -28,7 +28,7 @@ open Softellect.Wcf.Common
 
 open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.AppSettings.PartitionerService
-open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.Errors
 open Softellect.Sys.AppSettings
 open Softellect.Sys
@@ -41,7 +41,7 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
-open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
 
 module Partitioner =
@@ -132,78 +132,6 @@ module Partitioner =
             | Error e -> addError UnableToGetWorkerNodeRunnerErr e
         | Ok None -> Ok NoWork
         | Error e -> addError TryLoadFirstRunQueueRunnerErr e
-
-
-    // These are for PartitionerAdm
-    //let tryCancelRunQueue (proxy : PartitionerProxy) (q, c) =
-    //    let addError = addError TryCancelRunQueueRunnerErr
-    //    let toError = toError TryCancelRunQueueRunnerErr
-
-    //    match proxy.tryLoadRunQueue q with
-    //    | Ok (Some r) ->
-    //        let r1 =
-    //            match r.workerNodeIdOpt with
-    //            | Some w ->
-    //                let r11 =
-    //                    {
-    //                        recipientInfo =
-    //                            {
-    //                                recipient = w.messagingClientId
-    //                                deliveryType = GuaranteedDelivery
-    //                            }
-
-    //                        messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
-    //                    }
-    //                    |> proxy.sendCancelRunQueueMessage
-
-    //                match r11 with
-    //                | Ok v -> Ok v
-    //                | Error e -> TryCancelRunQueueRunnerError.MessagingTryCancelRunQueueRunnerErr e |> toError
-    //            | None -> Ok()
-
-    //        let r2 =
-    //            match r.runQueueStatus with
-    //            | NotStartedRunQueue -> { r with runQueueStatus = CancelledRunQueue } |> proxy.upsertRunQueue
-    //            | RunRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-    //            | InProgressRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-    //            | CancelRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> proxy.upsertRunQueue
-    //            | _ -> q |> TryCancelRunQueueRunnerError.InvalidRunQueueStatusRunnerErr |> toError
-
-    //        combineUnitResults r1 r2
-    //    | Ok None -> toError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q)
-    //    | Error e -> addError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q) e
-
-
-    //let tryRequestResults (proxy : PartitionerProxy) (q, c) =
-    //    let addError = addError TryRequestResultsRunnerErr
-    //    let toError = toError TryRequestResultsRunnerErr
-
-    //    match proxy.tryLoadRunQueue q with
-    //    | Ok (Some r) ->
-    //        match r.workerNodeIdOpt with
-    //        | Some w ->
-    //            let r1 =
-    //                {
-    //                    recipientInfo =
-    //                        {
-    //                            recipient = w.messagingClientId
-    //                            deliveryType = GuaranteedDelivery
-    //                        }
-
-    //                    messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
-    //                }
-    //                |> proxy.sendRequestResultsMessage
-
-    //            match r1 with
-    //            | Ok v -> Ok v
-    //            | Error e -> MessagingTryRequestResultsRunnerErr e |> toError
-    //        | None -> Ok()
-    //    | Ok None -> toError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q)
-    //    | Error e -> addError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q) e
-
-
-    //let tryReset (proxy : PartitionerProxy) q =
-    //    proxy.tryResetRunQueue q
 
 
     /// Tries to run all available work items (run queue) on all available work nodes until one or the other is exhausted.

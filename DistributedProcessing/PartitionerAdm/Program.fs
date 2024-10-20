@@ -1,9 +1,9 @@
 namespace Softellect.DistributedProcessing.PartitionerAdm
 
 open Argu
-open System
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.PartitionerAdm.Implementation
+open Softellect.Sys.ExitErrorCodes
 
 module Program =
 
@@ -18,38 +18,8 @@ module Program =
                     match r with
                     | AddSolver addSolverArgs -> addSolver ctx (addSolverArgs.GetAllResults())
                     | SendSolver sendSolverArgs -> sendSolver ctx (sendSolverArgs.GetAllResults())
+                    | ModifyRunQueue modifyRunQueueArgs -> modifyRunQueue ctx (modifyRunQueueArgs.GetAllResults())
                 )
 
         retVal |> List.map (fun x -> printfn $"%A{x}") |> ignore
-        0
-
-
-        //results
-        //|> List.iter (fun r ->
-        //        match r with
-        //        | AddSolver solverArgs ->
-        //            let r = solverArgs.GetAllResults()
-
-        //            r
-        //            |> List.iter (fun x ->
-        //                    match x with
-        //                    | SolverArgs.Id id -> printfn $"SolverId: '{id}'."
-        //                    | Name name -> printfn $"Name: '{name}'."
-        //                    | Folder folder -> printfn $"Folder: '{folder}'."
-        //                    | Description description -> printfn $"Description: '{description}'."
-        //                )
-
-        //            let result = addSolver proxy r
-        //            printfn $"%A{result}"
-        //        | Test testArgs ->
-        //            let r = testArgs.GetAllResults()
-
-        //            r
-        //            |> List.iter (fun x ->
-        //                    match x with
-        //                    | TestArgs.Id id -> printfn $"Id: {id}."
-        //                )
-        //    )
-        //|> ignore
-
-        //0
+        CompletedSuccessfully

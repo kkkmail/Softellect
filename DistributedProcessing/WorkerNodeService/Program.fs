@@ -12,7 +12,7 @@ open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.DistributedProcessing.Primitives.WorkerNodeService
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client

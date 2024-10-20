@@ -1,27 +1,27 @@
 ﻿namespace Softellect.Samples.DistrProc.ModelGenerator
 
+open Argu
 open Softellect.DistributedProcessing.ModelGenerator.Program
-open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Samples.DistrProc.Core.Primitives
 open Softellect.Sys.ExitErrorCodes
 open Softellect.DistributedProcessing.Proxy.ModelGenerator
-open System
+open Softellect.Samples.DistrProc.ModelGenerator.CommandLine
 
 module Program =
-    /// Expects zero ro one command line parameters.
-    /// If one parameter is supplied, then it is expected to be an integer random seed.
+
     [<EntryPoint>]
     let main argv =
 
-        let seedValue =
-            match argv with
-            | [| seed |] -> int seed
-            | _ -> Random().Next()
+        let parser = ArgumentParser.Create<ModelGeneratorArgs>(programName = ProgramName)
+        let parsedResults = parser.Parse argv
+        let seedValue = parsedResults.GetResult(SeedValue)
+        let delay = parsedResults.TryGetResult(Delay)
+        let i = { seedValue = seedValue; delay = delay }
 
         let proxy =
             {
-                getInitialData = fun _ -> { seedValue = seedValue }
-                generateModel = TestSolverData.create
+                getInitialData = fun _ -> i
+                generateModel = TestSolverData.create i.delay
                 getSolverInputParams = fun _ -> inputParams
                 getSolverOutputParams = fun _ -> outputParams
             }

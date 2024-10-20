@@ -12,7 +12,7 @@ open Softellect.DistributedProcessing.AppSettings.PartitionerService
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.PartitionerService
-open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.PartitionerService.Partitioner
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
 open Softellect.Sys.Logging

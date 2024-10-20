@@ -55,9 +55,13 @@ open Softellect.DistributedProcessing.Primitives.Common
 // Open declarations
 
 #if PARTITIONER
-open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.Sys
 open System.IO
+#endif
+
+#if PARTITIONER_ADM
+open Softellect.DistributedProcessing.Primitives.PartitionerAdm
 #endif
 
 #if SOLVER_RUNNER
@@ -65,6 +69,7 @@ open Softellect.DistributedProcessing.SolverRunner.Primitives
 #endif
 
 #if WORKER_NODE
+open Softellect.DistributedProcessing.Primitives.WorkerNodeService
 #endif
 
 // ==========================================
@@ -171,74 +176,7 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if PARTITIONER
-
-    let saveLocalChartInfo d (c : ChartInfo) =
-        printfn $"saveLocalChartInfo - d: '%A{d}', c: '%A{c}'."
-
-        try
-            let getFileName (FileName name) =
-                match d with
-                | Some (FolderName f, g) ->
-                    let fileName = Path.GetFileName name
-
-                    match g with
-                    | Some (FolderName e) -> Path.Combine(f, e, fileName)
-                    | None -> Path.Combine(f, fileName)
-                | None -> name
-
-            let saveChart (f : string) (c : Chart) =
-                let folder = Path.GetDirectoryName f
-                Directory.CreateDirectory(folder) |> ignore
-                printfn $"saveLocalChartInfo - saveChart - f: '%A{f}', c: '%A{c}'."
-
-                match c with
-                | HtmlChart h -> File.WriteAllText(f, h.htmlContent)
-                | BinaryChart b -> File.WriteAllBytes(f, b.binaryContent)
-
-            c.charts
-            |> List.map (fun e -> saveChart (getFileName e.fileName) e)
-            |> ignore
-            Ok ()
-        with
-        | e ->
-            printfn $"saveLocalChartInfo - e: '%A{e}'."
-            e |> SaveChartsExn |> Error
-
-
-    /// TODO kk:20241007 - Change errors???
-    let loadModelBinaryData (i : RunQueueId) =
-        let elevate e = e |> TryLoadRunQueueErr
-        let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    join m in ctx.Dbo.ModelData on (q.RunQueueId = m.RunQueueId)
-                    where (q.RunQueueId = i.value)
-                    select (Some (m.ModelData))
-                    exactlyOneOrDefault
-                }
-
-            match x with
-            | Some v ->
-                let w() =
-                    try
-                        match v |> tryDeserializeData<ModelBinaryData> with
-                        | Ok b -> Ok b
-                        | Error e -> toError (SerializationErr e)
-                    with
-                    | e -> toError (ExnWhenTryLoadRunQueue (i, e))
-
-                tryDbFun fromDbError w
-            | None -> toError (UnableToFindRunQueue i)
-
-        tryDbFun fromDbError g
-
+#if PARTITIONER || PARTITIONER_ADM
 
     let private mapRunQueue (r: RunQueueEntity) =
         let elevate e = e |> MapRunQueueErr
@@ -273,159 +211,6 @@ module WorkerNodeService =
             }
             |> Ok
         | None -> toError (CannotMapRunQueue runQueueId)
-
-
-    /// Loads first not started RunQueue.
-    /// We may or may not have a RunQueue to process.
-    let tryLoadFirstRunQueue () =
-        let elevate e = e |> TryLoadFirstRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryLoadFirstRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = 0 && q.Progress = 0.0m && q.WorkerNodeId = None)
-                    sortBy q.RunQueueOrder
-                    select (Some q)
-                    headOrDefault
-                }
-
-            match x with
-            | Some v ->
-                match mapRunQueue v with
-                | Ok r -> Ok (Some r)
-                | Error e -> Error e
-            | None -> Ok None
-
-        tryDbFun fromDbError g
-
-
-    /// Gets the first available worker node to schedule work.
-    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) =
-        let elevate e = e |> TryGetAvailableWorkerNodeErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryGetAvailableWorkerNodeDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for r in ctx.Dbo.VwAvailableWorkerNode do
-                    where (r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
-                    sortByDescending r.NodePriority
-                    thenBy r.WorkLoad
-                    thenBy r.OrderId
-                    select (Some r)
-                    headOrDefault
-                }
-
-            match x with
-            | Some r -> r.WorkerNodeId |> MessagingClientId |> WorkerNodeId |> Some |> Ok
-            | None -> Ok None
-
-        tryDbFun fromDbError g
-
-
-    let private createWorkerNodeInfo p (r : WorkerNodeEntity) =
-        {
-            workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
-            workerNodeName = r.WorkerNodeName |> WorkerNodeName
-            noOfCores = r.NumberOfCores
-            partitionerId = p
-            nodePriority = r.NodePriority |> WorkerNodePriority
-            isInactive = r.IsInactive
-            lastErrorDateOpt = r.LastErrorOn
-        }
-
-
-    let loadWorkerNodeInfo p (i : WorkerNodeId) =
-        let elevate e = e |> LoadWorkerNodeInfoErr
-        let toError e = e |> elevate |> Error
-        let fromDbError e = e |> LoadWorkerNodeInfoDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for w in ctx.Dbo.WorkerNode do
-                    where (w.WorkerNodeId = i.value.value)
-                    select (Some w)
-                    exactlyOneOrDefault
-                }
-
-            match x with
-            | Some v -> v |> createWorkerNodeInfo p |> Ok
-            | None -> UnableToLoadWorkerNodeErr i |> toError
-
-        tryDbFun fromDbError g
-
-
-    let private updateWorkerNodeRow (r : WorkerNodeEntity) (w : WorkerNodeInfo) =
-        r.WorkerNodeName <- w.workerNodeName.value
-        r.NumberOfCores <- w.noOfCores
-        r.NodePriority <- w.nodePriority.value
-        r.ModifiedOn <- DateTime.Now
-        r.LastErrorOn <- w.lastErrorDateOpt
-
-        Ok()
-
-
-    let private addWorkerNodeRow (ctx : DbContext) (w : WorkerNodeInfo) =
-        let row = ctx.Dbo.WorkerNode.Create(
-                            WorkerNodeId = w.workerNodeId.value.value,
-                            WorkerNodeName = w.workerNodeName.value,
-                            NumberOfCores = w.noOfCores,
-                            NodePriority = w.nodePriority.value,
-                            LastErrorOn = w.lastErrorDateOpt,
-                            ModifiedOn = DateTime.Now)
-
-        row
-
-
-    let upsertWorkerNodeInfo (w : WorkerNodeInfo) =
-        let elevate e = e |> UpsertWorkerNodeInfoErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> UpsertWorkerNodeInfoDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for r in ctx.Dbo.WorkerNode do
-                    where (r.WorkerNodeId = w.workerNodeId.value.value)
-                    select (Some r)
-                    exactlyOneOrDefault
-                }
-
-            let result =
-                match x with
-                | Some v -> updateWorkerNodeRow v w
-                | None -> addWorkerNodeRow ctx w |> ignore; Ok()
-
-            ctx.SubmitUpdates()
-            result
-
-        tryDbFun fromDbError g
-
-
-    let upsertWorkerNodeErr p i =
-        let elevate e = e |> UpsertWorkerNodeErrErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
-
-        let g() =
-            match loadWorkerNodeInfo p i with
-            | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
-            | Error e -> Error e
-
-        tryDbFun fromDbError g
 
 
     /// Loads RunQueue by runQueueId.
@@ -585,6 +370,249 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+#endif
+
+#if PARTITIONER
+
+    let saveLocalChartInfo d (c : ChartInfo) =
+        printfn $"saveLocalChartInfo - d: '%A{d}', c: '%A{c}'."
+
+        try
+            let getFileName (FileName name) =
+                match d with
+                | Some (FolderName f, g) ->
+                    let fileName = Path.GetFileName name
+
+                    match g with
+                    | Some (FolderName e) -> Path.Combine(f, e, fileName)
+                    | None -> Path.Combine(f, fileName)
+                | None -> name
+
+            let saveChart (f : string) (c : Chart) =
+                let folder = Path.GetDirectoryName f
+                Directory.CreateDirectory(folder) |> ignore
+                printfn $"saveLocalChartInfo - saveChart - f: '%A{f}', c: '%A{c}'."
+
+                match c with
+                | HtmlChart h -> File.WriteAllText(f, h.htmlContent)
+                | BinaryChart b -> File.WriteAllBytes(f, b.binaryContent)
+
+            c.charts
+            |> List.map (fun e -> saveChart (getFileName e.fileName) e)
+            |> ignore
+            Ok ()
+        with
+        | e ->
+            printfn $"saveLocalChartInfo - e: '%A{e}'."
+            e |> SaveChartsExn |> Error
+
+
+    /// TODO kk:20241007 - Change errors???
+    let loadModelBinaryData (i : RunQueueId) =
+        let elevate e = e |> TryLoadRunQueueErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryLoadRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    join m in ctx.Dbo.ModelData on (q.RunQueueId = m.RunQueueId)
+                    where (q.RunQueueId = i.value)
+                    select (Some (m.ModelData))
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v ->
+                let w() =
+                    try
+                        match v |> tryDeserializeData<ModelBinaryData> with
+                        | Ok b -> Ok b
+                        | Error e -> toError (SerializationErr e)
+                    with
+                    | e -> toError (ExnWhenTryLoadRunQueue (i, e))
+
+                tryDbFun fromDbError w
+            | None -> toError (UnableToFindRunQueue i)
+
+        tryDbFun fromDbError g
+
+
+    /// Loads first not started RunQueue.
+    /// We may or may not have a RunQueue to process.
+    let tryLoadFirstRunQueue () =
+        let elevate e = e |> TryLoadFirstRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryLoadFirstRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    where (q.RunQueueStatusId = 0 && q.Progress = 0.0m && q.WorkerNodeId = None)
+                    sortBy q.RunQueueOrder
+                    select (Some q)
+                    headOrDefault
+                }
+
+            match x with
+            | Some v ->
+                match mapRunQueue v with
+                | Ok r -> Ok (Some r)
+                | Error e -> Error e
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    /// Gets the first available worker node to schedule work.
+    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) =
+        let elevate e = e |> TryGetAvailableWorkerNodeErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetAvailableWorkerNodeDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for r in ctx.Dbo.VwAvailableWorkerNode do
+                    where (r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
+                    sortByDescending r.NodePriority
+                    thenBy r.WorkLoad
+                    thenBy r.OrderId
+                    select (Some r)
+                    headOrDefault
+                }
+
+            match x with
+            | Some r -> r.WorkerNodeId |> MessagingClientId |> WorkerNodeId |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let private createWorkerNodeInfo p (r : WorkerNodeEntity) =
+        {
+            workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
+            workerNodeName = r.WorkerNodeName |> WorkerNodeName
+            noOfCores = r.NumberOfCores
+            partitionerId = p
+            nodePriority = r.NodePriority |> WorkerNodePriority
+            isInactive = r.IsInactive
+            lastErrorDateOpt = r.LastErrorOn
+        }
+
+
+    let loadWorkerNodeInfo p (i : WorkerNodeId) =
+        let elevate e = e |> LoadWorkerNodeInfoErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadWorkerNodeInfoDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for w in ctx.Dbo.WorkerNode do
+                    where (w.WorkerNodeId = i.value.value)
+                    select (Some w)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> createWorkerNodeInfo p |> Ok
+            | None -> UnableToLoadWorkerNodeErr i |> toError
+
+        tryDbFun fromDbError g
+
+
+    let private updateWorkerNodeRow (r : WorkerNodeEntity) (w : WorkerNodeInfo) =
+        r.WorkerNodeName <- w.workerNodeName.value
+        r.NumberOfCores <- w.noOfCores
+        r.NodePriority <- w.nodePriority.value
+        r.ModifiedOn <- DateTime.Now
+        r.LastErrorOn <- w.lastErrorDateOpt
+
+        Ok()
+
+
+    let private addWorkerNodeRow (ctx : DbContext) (w : WorkerNodeInfo) =
+        let row = ctx.Dbo.WorkerNode.Create(
+                            WorkerNodeId = w.workerNodeId.value.value,
+                            WorkerNodeName = w.workerNodeName.value,
+                            NumberOfCores = w.noOfCores,
+                            NodePriority = w.nodePriority.value,
+                            LastErrorOn = w.lastErrorDateOpt,
+                            ModifiedOn = DateTime.Now)
+
+        row
+
+
+    let upsertWorkerNodeInfo (w : WorkerNodeInfo) =
+        let elevate e = e |> UpsertWorkerNodeInfoErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> UpsertWorkerNodeInfoDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for r in ctx.Dbo.WorkerNode do
+                    where (r.WorkerNodeId = w.workerNodeId.value.value)
+                    select (Some r)
+                    exactlyOneOrDefault
+                }
+
+            let result =
+                match x with
+                | Some v -> updateWorkerNodeRow v w
+                | None -> addWorkerNodeRow ctx w |> ignore; Ok()
+
+            ctx.SubmitUpdates()
+            result
+
+        tryDbFun fromDbError g
+
+
+    let upsertWorkerNodeErr p i =
+        let elevate e = e |> UpsertWorkerNodeErrErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+
+        let g() =
+            match loadWorkerNodeInfo p i with
+            | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
+            | Error e -> Error e
+
+        tryDbFun fromDbError g
+
+#endif
+
+#if PARTITIONER_ADM
+
+    /// Tries to reset RunQueue.
+    let tryResetRunQueue (q : RunQueueId) =
+        let elevate e = e |> TryResetRunQueueErr
+        let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryResetRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryResetRunQueue.Invoke q.value
+            let m = r.ResultSet |> mapIntScalar
+
+            match m with
+            | Some 1 -> Ok ()
+            | _ -> toError (ResetRunQueueEntryErr q)
+
+        tryDbFun fromDbError g
 
 #endif
 

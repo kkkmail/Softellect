@@ -55,7 +55,7 @@ open Softellect.DistributedProcessing.Primitives.Common
 // Open declarations
 
 #if PARTITIONER
-open Softellect.DistributedProcessing.PartitionerService.Primitives
+open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
 #endif
 
@@ -64,7 +64,7 @@ open Softellect.DistributedProcessing.DataAccess.ModelGenerator
 #endif
 
 #if WORKER_NODE
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.DistributedProcessing.Primitives.WorkerNodeService
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 #endif
 

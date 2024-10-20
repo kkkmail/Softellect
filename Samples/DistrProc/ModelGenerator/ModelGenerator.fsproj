@@ -23,6 +23,7 @@
         <Content Include="..\..\..\DistributedProcessing\PartitionerService\appsettings.json" Link="appsettings.json">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Compile Include="CommandLine.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

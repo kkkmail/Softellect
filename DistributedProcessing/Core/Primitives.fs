@@ -1,4 +1,4 @@
-namespace Softellect.DistributedProcessing.Proxy
+namespace Softellect.DistributedProcessing.Primitives
 
 open System
 open System.Threading
@@ -58,13 +58,9 @@ open Softellect.DistributedProcessing.Primitives.Common
 // Open declarations
 
 #if WORKER_NODE
-open Softellect.DistributedProcessing.WorkerNodeService.Primitives
-open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
 #endif
 
 #if PARTITIONER
-open Softellect.DistributedProcessing.PartitionerService.Primitives
-open Softellect.DistributedProcessing.DataAccess.PartitionerService
 #endif
 
 // ==========================================
@@ -100,5 +96,41 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if MODEL_GENERATOR || SOLVER_RUNNER
+#if PARTITIONER
+    let partitionerServiceProgramName = "PartitionerService.exe"
+#endif
+
+#if WORKER_NODE
+    let workerNodeServiceProgramName = "WorkerNodeService.exe"
+
+
+    let defaultWorkerNodeNetTcpServicePort = 20000 + defaultServicePort |> ServicePort
+    let defaultWorkerNodeHttpServicePort = defaultWorkerNodeNetTcpServicePort.value + 1 |> ServicePort
+    let defaultWorkerNodeServiceAddress = localHost |> ServiceAddress
+#endif
+
+#if PARTITIONER || PARTITIONER_ADM
+
+    type RunQueue =
+        {
+            runQueueId : RunQueueId
+            runQueueStatus : RunQueueStatus
+            solverId : SolverId
+            workerNodeIdOpt : WorkerNodeId option
+            progressData : ProgressData
+            createdOn : DateTime
+        }
+
+#endif
+
+#if WORKER_NODE
+
+    type RunQueue =
+        {
+            runQueueId : RunQueueId
+            runQueueStatus : RunQueueStatus
+            progressData : ProgressData
+            createdOn : DateTime
+        }
+
 #endif

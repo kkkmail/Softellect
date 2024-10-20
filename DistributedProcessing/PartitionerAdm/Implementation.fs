@@ -2,7 +2,11 @@
 
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.DistributedProcessing.Primitives.PartitionerAdm
+open Softellect.Messaging.Errors
 open Softellect.Messaging.Primitives
+open Softellect.Messaging.ServiceInfo
+open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
@@ -16,16 +20,30 @@ open Softellect.DistributedProcessing.AppSettings.PartitionerAdm
 
 module Implementation =
 
+    let private toError g f = f |> g |> Error
+    let private addError g f e = ((f |> g) + e) |> Error
+
+
     type PartitionerAdmProxy =
         {
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
+            upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
+            createMessage : MessagingClientId -> MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+            tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
         }
 
         static member create () =
             {
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
+                tryLoadRunQueue = tryLoadRunQueue
+                upsertRunQueue = upsertRunQueue
+                createMessage = createMessage messagingDataVersion
+                saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
+                tryResetRunQueue = tryResetRunQueue
             }
 
 
@@ -49,7 +67,7 @@ module Implementation =
             | Error e -> failwith $"ERROR: {e}"
 
 
-    let private sendSolverImpl (solver : Solver) (p : PartitionerId) w =
+    let private sendSolverImpl (ctx : PartitionerAdmContext) (solver : Solver) w =
         printfn $"sendSolver: {solver.solverName}."
 
         let result =
@@ -58,8 +76,8 @@ module Implementation =
                 deliveryType = GuaranteedDelivery
                 messageData = UpdateSolverWrkMsg solver
             }.getMessageInfo()
-            |> createMessage messagingDataVersion p.messagingClientId
-            |> saveMessage<DistributedProcessingMessageData> messagingDataVersion
+            |> ctx.partitionerAdmProxy.createMessage ctx.partitionerInfo.partitionerId.messagingClientId
+            |> ctx.partitionerAdmProxy.saveMessage
 
         result
 
@@ -100,7 +118,7 @@ module Implementation =
 
             match ctx.partitionerAdmProxy.tryLoadSolver s with
             | Ok solver ->
-                match sendSolverImpl solver ctx.partitionerInfo.partitionerId w with
+                match sendSolverImpl ctx solver w with
                 | Ok () ->
                     printfn $"sendSolver: solver with id '{s}' was sent to worker node '{w}'."
                     Ok ()
@@ -109,3 +127,95 @@ module Implementation =
                 printfn $"sendSolver: error: {e}."
                 Error e
         | _ -> failwith "sendSolver: Invalid arguments."
+
+
+
+    let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
+        let addError = addError TryCancelRunQueueRunnerErr
+        let toError = toError TryCancelRunQueueRunnerErr
+
+        match ctx.partitionerAdmProxy.tryLoadRunQueue q with
+        | Ok (Some r) ->
+            let r1 =
+                match r.workerNodeIdOpt with
+                | Some w ->
+                    let r11 =
+                        {
+                            recipientInfo =
+                                {
+                                    recipient = w.messagingClientId
+                                    deliveryType = GuaranteedDelivery
+                                }
+
+                            messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
+                        }
+                        |> ctx.partitionerAdmProxy.createMessage w.messagingClientId
+                        |> ctx.partitionerAdmProxy.saveMessage
+
+                    match r11 with
+                    | Ok v -> Ok v
+                    | Error e -> TryCancelRunQueueRunnerError.MessagingTryCancelRunQueueRunnerErr e |> toError
+                | None -> Ok()
+
+            let r2 =
+                match r.runQueueStatus with
+                | NotStartedRunQueue -> { r with runQueueStatus = CancelledRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
+                | RunRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
+                | InProgressRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
+                | CancelRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
+                | _ -> q |> TryCancelRunQueueRunnerError.InvalidRunQueueStatusRunnerErr |> toError
+
+            Rop.combineUnitResults (+) r1 r2
+        | Ok None -> toError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q)
+        | Error e -> addError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q) e
+
+
+    let tryRequestResults (ctx : PartitionerAdmContext) q c =
+        let addError = addError TryRequestResultsRunnerErr
+        let toError = toError TryRequestResultsRunnerErr
+
+        match ctx.partitionerAdmProxy.tryLoadRunQueue q with
+        | Ok (Some r) ->
+            match r.workerNodeIdOpt with
+            | Some w ->
+                let r1 =
+                    {
+                        recipientInfo =
+                            {
+                                recipient = w.messagingClientId
+                                deliveryType = GuaranteedDelivery
+                            }
+
+                        messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
+                    }
+                    |> ctx.partitionerAdmProxy.createMessage w.messagingClientId
+                    |> ctx.partitionerAdmProxy.saveMessage
+
+                match r1 with
+                | Ok v -> Ok v
+                | Error e -> MessagingTryRequestResultsRunnerErr e |> toError
+            | None -> Ok()
+        | Ok None -> toError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q)
+        | Error e -> addError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q) e
+
+
+    let tryResetIfFailed (ctx : PartitionerAdmContext) q =
+        ctx.partitionerAdmProxy.tryResetRunQueue q
+
+
+    let modifyRunQueue (ctx : PartitionerAdmContext) (x : list<ModifyRunQueueArgs>) =
+        match tryGetRunQueueIdToModify x with
+        | Some q ->
+            let n = getResultNotificationTypeOpt x
+            let r = getResetIfFailed x
+
+            match getCancellationTypeOpt x with
+            | Some c -> tryCancelRunQueue ctx q c
+            | None ->
+                match r with
+                | true -> tryResetIfFailed ctx q
+                | false ->
+                    match n with
+                    | Some v -> tryRequestResults ctx q v
+                    | None -> Ok ()
+        | None -> Ok ()
