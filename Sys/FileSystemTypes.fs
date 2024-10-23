@@ -95,3 +95,41 @@ module FileSystemTypes =
     /// Write-once error objects.
     let saveErrData<'T, 'A> serviceName tableName (objectId : 'A) (t : 'T) =
         saveDataImpl<'T, 'A> serializationErrFormat serviceName tableName objectId t
+
+    /// Tries to delete object if it exists.
+    let tryDeleteData<'T, 'A> serviceName tableName (objectId : 'A) =
+        let w() =
+            try
+                match getFileName serializationFormat serviceName tableName objectId with
+                | Ok f ->
+                    if File.Exists f then File.Delete f
+                    Ok ()
+                | Error e -> Error e
+            with
+            | e -> e |> DeleteFileExn |> FileErr |> Error
+        tryRopFun (fun e -> e |> GeneralFileExn |> FileErr) w
+
+
+    let getObjectIds<'A> serviceName tableName (creator : string -> 'A) =
+        let w() =
+            try
+                match getFolderName serviceName tableName with
+                | Ok folder ->
+                    Directory.GetFiles(folder, "*." + serializationFormat.fileExtension)
+                    |> List.ofArray
+                    |> List.map (fun e -> Path.GetFileNameWithoutExtension e)
+                    |> List.map creator
+                    |> Ok
+                | Error e -> Error e
+            with
+            | e -> e |> GetObjectIdsExn |> FileErr |> Error
+        tryRopFun (fun e -> e |> GeneralFileExn |> FileErr) w
+
+
+    let loadObjects<'T, 'A> serviceName tableName (creator : string -> 'A) =
+        match getObjectIds serviceName tableName creator with
+        | Ok i ->
+            i
+            |> List.map (loadData<'T, 'A> serviceName tableName)
+            |> Ok
+        | Error e -> Error e

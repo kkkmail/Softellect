@@ -9,7 +9,6 @@ open Softellect.Sys.Primitives
 module Wolfram =
 
     let private baseIndent = "  "
-    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
     let isDiscriminatedUnion obj = FSharpType.IsUnion(obj.GetType())
     let isRecord obj = FSharpType.IsRecord(obj.GetType())
     let isArray obj = obj <> null && obj.GetType().IsArray

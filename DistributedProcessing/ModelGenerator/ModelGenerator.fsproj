@@ -12,7 +12,7 @@
     <Description>Softellect Model Generator ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNodeService</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/ModelGenerator</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <DefineConstants>MODEL_GENERATOR</DefineConstants>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

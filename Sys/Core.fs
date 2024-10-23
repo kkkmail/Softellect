@@ -169,7 +169,8 @@ module Core =
     //let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
 
 
-    let joinStrings (s : string) (v : string[]) = String.Join(s, v)
+    // let joinStrings (s : string) (v : string[]) = String.Join(s, v)
+    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
 
 
     // TODO kk:20240824 - Does not work. Delete in 180 days if not fixed.
