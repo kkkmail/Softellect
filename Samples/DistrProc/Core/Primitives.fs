@@ -76,12 +76,6 @@ module Primitives =
                     FullArray g
 
 
-    let inputParams =
-        {
-            startTime = EvolutionTime 0m
-            endTime = EvolutionTime 1_000m
-        }
-
     let outputParams =
         {
             noOfOutputPoints = 4_000
@@ -95,6 +89,8 @@ module Primitives =
         {
             seedValue : int
             delay : int option
+            evolutionTime : EvolutionTime
+            modelId : int
         }
 
 
@@ -102,9 +98,16 @@ module Primitives =
     type TestSolverData =
         {
             derivativeCalculator : DerivativeCalculator
+            evolutionTime : EvolutionTime
             initialValues : double[]
             chartLabels : string[]
         }
+
+        member d.inputParams =
+            {
+                startTime = EvolutionTime 0m
+                endTime = d.evolutionTime
+            }
 
         member d.odeParams =
             {
@@ -123,7 +126,7 @@ module Primitives =
 
         member d.derivativeCalculator = DerivativeCalculator.dampedHarmonicOscillator d.k d.c
 
-        static member create i n =
+        static member create i =
             let rnd = Random(i.seedValue)
 
             {
@@ -134,6 +137,7 @@ module Primitives =
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Velocity"; "Acceleration" |]
+                evolutionTime = i.evolutionTime
             }
 
 
@@ -146,7 +150,7 @@ module Primitives =
 
         member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
 
-        static member create i n =
+        static member create i =
             let rnd = Random(i.seedValue)
 
             {
@@ -158,6 +162,7 @@ module Primitives =
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "x"; "y"; "z" |]
+                evolutionTime = i.evolutionTime
             }
 
 
@@ -184,6 +189,7 @@ module Primitives =
                     }.derivativeCalculator
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Prey"; "Predator" |]
+                evolutionTime = i.evolutionTime
             }
 
 
@@ -203,9 +209,14 @@ module Primitives =
 
     type TestSolverData
         with
-        static member create n i =
-            let data = LotkaVolterraData.create i
-            { data with derivativeCalculator = data.derivativeCalculator.delayed n }
+        static member create i =
+            let data =
+                match i.modelId with
+                | 1 -> LotkaVolterraData.create i
+                | 2 -> DampedHarmonicOscillatorData.create i
+                | 3 -> LorenzSystemData.create i
+                | _ -> failwith $"Invalid model id: {i.modelId}."
+            { data with derivativeCalculator = data.derivativeCalculator.delayed i.delay }
 
 
     /// That's 'P in the type signature.

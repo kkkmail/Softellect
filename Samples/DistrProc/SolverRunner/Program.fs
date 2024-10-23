@@ -136,44 +136,72 @@ module Program =
 
 
     let getWolframData (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
-        let data =
-            [
-                $"t = {{0, 1, 2, 3, 4, 5}};"
-                $"x1 = {{0, 1, 2, 3, 4, 5}};"
-                $"x2 = {{5, 4, 3, 2, 1, 0}};"
-                $"tx1 = Table[{{t[[i]], x1[[i]]}}, {{i, 1, Length[t]}}];"
-                $"tx2 = Table[{{t[[i]], x2[[i]]}}, {{i, 1, Length[t]}}];"
-                $"legends = {{\"Prey\", \"Predator\"}};"
-                $"outputFile = \"{outputFolder}{(getOutputFileName q)}.png\";"
-                $"Export[outputFile, ListLinePlot[{{tx1, tx2}}, Frame -> True, GridLines -> Automatic, PlotLegends -> legends], \"PNG\"];"
-            ]
-            |> joinStrings Nl
+        let c1 = c |>  List.rev
 
-        data
+        match c1 |> List.tryHead with
+        | Some h ->
+            let t = c1 |> List.map(fun e -> double e.t)
+            let legends = d.chartLabels
+
+            let x =
+                h.chartData.x
+                |> Array.mapi (fun i  _ -> c1 |> List.map (fun e -> e.chartData.x[i]))
+
+            let xValues = x |> Array.mapi(fun i e -> $"x{i} = {(toWolframNotation e)};") |> List.ofArray
+            let txValues = x |> Array.mapi(fun i e -> $"tx{i} = Table[{{t[[i]], x{i}[[i]]}}, {{i, 1, Length[t]}}];") |> List.ofArray
+            let txVar = x |> Array.mapi(fun i _ -> $"tx{i}") |> joinStrings ", "
+
+            let data =
+                [
+                    $"t = {(toWolframNotation t)};"
+                ]
+                @
+                xValues
+                @
+                txValues
+                @
+                [
+                    $"legends = {(toWolframNotation legends)};"
+                    $"outputFile = \"{outputFolder}{(getOutputFileName q)}.png\";"
+                    $"Export[outputFile, ListLinePlot[{{{txVar}}}, Frame -> True, PlotRange -> All, GridLines -> Automatic, PlotLegends -> legends], \"PNG\"];"
+                ]
+                |> joinStrings Nl
+
+            Some data
+        | None -> None
 
 
     let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
-        let data = getWolframData q d c
-        let request =
-            {
-                content = data
-                inputFolder = inputFolder
-                inputFileName = getInputFileName q
-                outputFolder = outputFolder
-                outputFileName = getOutputFileName q
-                extension = "png"
-            }
+        try
+            match getWolframData q d c with
+            | Some data ->
+                let request =
+                    {
+                        content = data
+                        inputFolder = inputFolder
+                        inputFileName = getInputFileName q
+                        outputFolder = outputFolder
+                        outputFileName = getOutputFileName q
+                        extension = "png"
+                    }
 
-        match runMathematicaScript request with
-        | Ok v ->
-            {
-                binaryContent = v
-                fileName = FileName (request.outputFileName + "." + request.extension)
-            }
-            |> BinaryChart
-            |> Some
-        | Error e ->
-            printfn $"getWolframChart - Error: %A{e}."
+                match runMathematicaScript request with
+                | Ok v ->
+                    {
+                        binaryContent = v
+                        fileName = FileName (request.outputFileName + "." + request.extension)
+                    }
+                    |> BinaryChart
+                    |> Some
+                | Error e ->
+                    printfn $"getWolframChart - Error: %A{e}."
+                    None
+            | None ->
+                printfn $"getWolframChart - Cannot get data for: %A{q}."
+                None
+        with
+        | e ->
+            printfn $"getWolframChart - Exception: %A{e}."
             None
 
 
@@ -209,7 +237,7 @@ module Program =
                     }
 
                 let getUserProxy (solverData : TestSolverData) =
-                    let solverRunner = createOdeSolver inputParams solverData.odeParams
+                    let solverRunner = createOdeSolver solverData.inputParams solverData.odeParams
 
                     let solverProxy =
                         {

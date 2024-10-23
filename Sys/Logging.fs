@@ -1,6 +1,8 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
 
 /// TODO kk:20240824 - Needs reworking as it is clumsy and subsequently it is not used at all.
 module Logging =
@@ -111,6 +113,14 @@ module Logging =
                 logInfo = printfn "INFO: %A, %A" DateTime.Now
                 logDebug = fun _ -> ()
             }
+
+
+        static member getCallerName([<Optional; DefaultParameterValue(false)>] ?addTimeStamp: bool, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?memberName: string) =
+            let memberName = defaultArg memberName ""
+            let a = defaultArg addTimeStamp false
+
+            if a then $"{memberName}__{DateTime.Now:yyyyMMdd_HHmm}"
+            else $"{memberName}"
 
 
     type GetLogger = LoggerName -> Logger
