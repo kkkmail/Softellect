@@ -9,6 +9,7 @@ open Softellect.Samples.DistrProc.Core.Primitives
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.SolverRunner.OdeSolver
 open Softellect.Sys.Primitives
+open Softellect.Sys.Core
 open Wolfram.NETLink
 open Plotly.NET
 open Giraffe.ViewEngine
