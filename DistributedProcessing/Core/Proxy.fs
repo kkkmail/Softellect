@@ -321,10 +321,18 @@ module WorkerNodeService =
 
 #if MODEL_GENERATOR
 
+    /// 'I is "data" (no functions), 'D is a context (a mist of data and functions).
     type UserProxy<'I, 'D> =
         {
-            getInitialData : string[] -> 'I // Generates "input" parameters out of command line arguments.
-            generateModel : 'I -> 'D // Generates model data out of "input" parameters. This can be huge.
+            /// Generates "input" parameters out of command line arguments and other parameters.
+            /// The caller is responsible for baking everything in.
+            /// This function could be slow for huge models and that's the reason of passing it as function rather than data.
+            /// The resulting data can be huge.
+            getInitialData : unit -> 'I
+
+            /// Generates model context out of "input" parameters. This can be huge.
+            generateModelContext : 'I -> 'D
+
             getSolverInputParams : 'I -> SolverInputParams
             getSolverOutputParams : 'I -> SolverOutputParams
         }

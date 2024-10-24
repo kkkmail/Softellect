@@ -136,7 +136,7 @@ module Program =
     let getOutputFileName (q : RunQueueId) = $"{q.value}"
 
 
-    let getWolframData (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
+    let getWolframData (q : RunQueueId) (d : TestSolverContext) (c : list<ChartSliceData<TestChartData>>) =
         let c1 = c |>  List.rev
 
         match c1 |> List.tryHead with
@@ -172,7 +172,7 @@ module Program =
         | None -> None
 
 
-    let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
+    let getWolframChart (q : RunQueueId) (d : TestSolverContext) (c : list<ChartSliceData<TestChartData>>) =
         try
             match getWolframData q d c with
             | Some data ->
@@ -206,7 +206,7 @@ module Program =
             None
 
 
-    let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
+    let getCharts (q : RunQueueId) (d : TestSolverContext) (c : list<ChartSliceData<TestChartData>>) =
         printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
@@ -237,7 +237,7 @@ module Program =
                         generateDetailedCharts = fun _ _ _ _ -> []
                     }
 
-                let getUserProxy (solverData : TestSolverData) =
+                let getUserProxy (solverData : TestSolverContext) =
                     let solverRunner = createOdeSolver solverData.inputParams solverData.odeParams
 
                     let solverProxy =
@@ -255,7 +255,7 @@ module Program =
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>
                 printfn "Calling solverRunnerMain..."
-                solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
+                solverRunnerMain<TestSolverContext, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->
                 Console.WriteLine($"Exception: %A{e}.")

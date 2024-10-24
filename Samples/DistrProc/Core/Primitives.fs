@@ -84,7 +84,7 @@ module Primitives =
         }
 
 
-    /// That's 'I in the type signature.
+    /// That's 'I in the type signature. This is just data, no functions, as it must be serializable.
     type TestInitialData =
         {
             seedValue : int
@@ -94,8 +94,8 @@ module Primitives =
         }
 
 
-    /// That's 'D in the type signature.
-    type TestSolverData =
+    /// That's 'D in the type signature. This is a mix of data and functions.
+    type TestSolverContext =
         {
             derivativeCalculator : DerivativeCalculator
             evolutionTime : EvolutionTime
@@ -207,7 +207,7 @@ module Primitives =
         static member create i = LotkaVolterraData.create i
 
 
-    type TestSolverData
+    type TestSolverContext
         with
         static member create i =
             let data =

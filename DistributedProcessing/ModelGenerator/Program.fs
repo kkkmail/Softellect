@@ -6,7 +6,8 @@ open Softellect.Sys.Primitives
 
 module Program =
 
-    let generateModel<'I, 'D> (userProxy : UserProxy<'I, 'D>) solverId argv =
+    /// Parameter solverId is passed first, so that it can be baked in and then reused with different proxies (= models).
+    let generateModel<'I, 'D> solverId (userProxy : UserProxy<'I, 'D>) =
         let ctx =
             {
                 userProxy = userProxy
@@ -14,15 +15,15 @@ module Program =
                 solverId = solverId
             }
 
-        // Get the initial data out of command line parameters.
-        let input = ctx.userProxy.getInitialData argv
+        // Get the initial data out of command line parameters and other data.
+        let input = ctx.userProxy.getInitialData()
 
         let modelData =
             {
                 solverInputParams = ctx.userProxy.getSolverInputParams input
                 solverOutputParams = ctx.userProxy.getSolverOutputParams input
                 solverId = ctx.solverId
-                modelData = ctx.userProxy.generateModel input
+                modelData = ctx.userProxy.generateModelContext input
             }
 
         let binaryData = modelData.toModelBinaryData()
