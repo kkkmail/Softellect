@@ -66,8 +66,8 @@ module OdeSolver =
         failwith "fDoNotCorrect is not implemented yet."
 
 
-    let private createUseNonNegativeInterop n c = Interop.F(fun m t y dy -> fUseNonNegative(n, c, &m, &t, y, dy))
-    let private createDoNotCorrectInterop n c = Interop.F(fun m t y dy -> fDoNotCorrect(n, c, &m, &t, y, dy))
+    let createUseNonNegativeInterop n c = Interop.F(fun m t y dy -> fUseNonNegative(n, c, &m, &t, y, dy))
+    let createDoNotCorrectInterop n c = Interop.F(fun m t y dy -> fDoNotCorrect(n, c, &m, &t, y, dy))
 
 
     /// F# wrapper around various ODE solvers.
