@@ -30,7 +30,7 @@ module Program =
 
         let inputParams =
             {
-                startTime = EvolutionTime 0m
+                startTime = EvolutionTime.defaultValue
                 endTime = evolutionTime
             }
 

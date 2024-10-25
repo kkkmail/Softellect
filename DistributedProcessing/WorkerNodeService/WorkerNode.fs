@@ -150,7 +150,9 @@ module WorkerNode =
             | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
 
         let onTryStart() =
-            let toError e = failwith $"Error: '{e}'."
+            let toError e =
+                printfn $"Error: '{e}'."
+                TimerEventErr e
 
             match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
             | false ->
