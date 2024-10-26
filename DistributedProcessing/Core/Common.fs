@@ -697,7 +697,7 @@ module Common =
             | OdePack (_, _, nc) -> nc.correction
 
 
-    type OdeParams =
+    type OdeContext =
         {
             //startTime : double
             //endTime : double

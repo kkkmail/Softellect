@@ -109,7 +109,7 @@ module Primitives =
                 endTime = d.evolutionTime
             }
 
-        member d.odeParams =
+        member d.odeContext =
             {
                 stepSize = 0.0
                 absoluteTolerance = AbsoluteTolerance.defaultValue
@@ -193,18 +193,18 @@ module Primitives =
             }
 
 
-    type TestDerivativeData =
-        | DampedHarmonicOscillator of DampedHarmonicOscillatorData
-        | LorenzSystem of LorenzSystemData
-        | LotkaVolterra of LotkaVolterraData
-
-        member d.derivativeCalculator =
-            match d with
-            | DampedHarmonicOscillator d -> d.derivativeCalculator
-            | LorenzSystem d -> d.derivativeCalculator
-            | LotkaVolterra d -> d.derivativeCalculator
-
-        static member create i = LotkaVolterraData.create i
+    // type TestDerivativeData =
+    //     | DampedHarmonicOscillator of DampedHarmonicOscillatorData
+    //     | LorenzSystem of LorenzSystemData
+    //     | LotkaVolterra of LotkaVolterraData
+    //
+    //     member d.derivativeCalculator =
+    //         match d with
+    //         | DampedHarmonicOscillator d -> d.derivativeCalculator
+    //         | LorenzSystem d -> d.derivativeCalculator
+    //         | LotkaVolterra d -> d.derivativeCalculator
+    //
+    //     static member create i = LotkaVolterraData.create i
 
 
     type TestSolverContext

@@ -237,8 +237,8 @@ module Program =
                         generateDetailedCharts = fun _ _ _ _ -> []
                     }
 
-                let getUserProxy (solverData : TestSolverContext) =
-                    let solverRunner = createOdeSolver solverData.inputParams solverData.odeParams
+                let getUserProxy (solverContext : TestSolverContext) =
+                    let solverRunner = createOdeSolver solverContext.inputParams solverContext.odeContext
 
                     let solverProxy =
                         {
