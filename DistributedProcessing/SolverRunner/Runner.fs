@@ -350,6 +350,7 @@ module Runner =
 
         let runQueueId = d.runQueueId
         let modelData = d.modelData.modelData
+        printfn $"runSolver: Starting runQueueId: '%A{runQueueId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData = '%A{modelData}'."
 
         let getProgressData t x =
             {

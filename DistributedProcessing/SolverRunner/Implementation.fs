@@ -149,7 +149,7 @@ module Implementation =
     let private createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
         let updater = AsyncUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>>(ChartDataUpdater<'C>(), ()) :> IAsyncUpdater<ChartSliceData<'C>, ChartData<'C>>
 
-        let proxy : SystemProxy<'D, 'P, 'X, 'C> =
+        let proxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
             {
                 callBackProxy =
                     {
@@ -166,7 +166,7 @@ module Implementation =
         proxy
 
 
-    type SystemProxy<'D, 'P, 'X, 'C>
+    type SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
         with
         static member create (data : RunnerData<'D>) = createSystemProxy<'D, 'P, 'X, 'C> data
 
@@ -201,7 +201,7 @@ module Implementation =
     //        }
 
 
-    type SystemContext<'D, 'P, 'X, 'C>
+    type SolverRunnerSystemContext<'D, 'P, 'X, 'C>
         with
         static member create () =
             {
@@ -228,7 +228,7 @@ module Implementation =
             }
 
 
-    let runSolverProcess<'D, 'P, 'X, 'C> (ctx: SystemContext<'D, 'P, 'X, 'C>) getUserProxy (data : SolverRunnerData) =
+    let runSolverProcess<'D, 'P, 'X, 'C> (ctx: SolverRunnerSystemContext<'D, 'P, 'X, 'C>) getUserProxy (data : SolverRunnerData) =
         let logCrit = ctx.logCrit
         let q = data.runQueueId
 

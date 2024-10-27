@@ -19,7 +19,7 @@ module Program =
         match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
         | Some q ->
             let forceRun = results.TryGetResult ForceRun |> Option.defaultValue false
-            let ctx = SystemContext<'D, 'P, 'X, 'C>.create()
+            let ctx = SolverRunnerSystemContext<'D, 'P, 'X, 'C>.create()
             let data = SolverRunnerData.create solverId q forceRun
             runSolverProcess<'D, 'P, 'X, 'C> ctx getUserProxy data
         | None ->

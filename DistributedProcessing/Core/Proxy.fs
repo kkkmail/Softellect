@@ -1,6 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing.Proxy
 
 open System
+open System.IO
 open System.Threading
 open System.Diagnostics
 open System.Management
@@ -213,7 +214,7 @@ module WorkerNodeService =
 
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess tryGetSolverLocation n (q : RunQueueId) =
+    let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
         printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
         let fileName = SolverRunnerName
@@ -223,10 +224,18 @@ module WorkerNodeService =
         | Ok (Some (FolderName folderName)) ->
             printfn $"tryRunSolverProcess: folderName = '{folderName}'."
 
+            // TODO kk:20210511 - Build command line using Argu.
             let run() =
-                // TODO kk:20210511 - Build command line using Argu.
-                let args = $"q {q.value}"
-                let exeName = getExeName (Some folderName) fileName
+                let (exeName, args) =
+                    let e = getExeName (Some folderName) fileName
+
+                    match o with
+                    | None -> e, $"q {q.value}"
+                    | Some (FolderName f) ->
+                        let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
+                        let a = $"/c {e} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
+                        ("cmd.exe", a)
+
                 printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
                 try
@@ -302,7 +311,7 @@ module WorkerNodeService =
                 requestCancellation = tryRequestCancelRunQueue
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i)
+                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i) i.solverOutputLocation
                 saveSolver = saveSolver
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed
@@ -322,7 +331,7 @@ module WorkerNodeService =
 #if MODEL_GENERATOR
 
     /// 'I is "data" (no functions), 'D is a context (a mist of data and functions).
-    type UserProxy<'I, 'D> =
+    type ModelGeneratorUserProxy<'I, 'D> =
         {
             /// Generates "input" parameters out of command line arguments and other parameters.
             /// The caller is responsible for baking everything in.
@@ -337,12 +346,12 @@ module WorkerNodeService =
             getSolverOutputParams : 'I -> SolverOutputParams
         }
 
-    type SystemProxy =
+    type ModelGeneratorSystemProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
         }
 
-        static member create() : SystemProxy =
+        static member create() : ModelGeneratorSystemProxy =
             {
                 saveModelData = saveModelData
             }
@@ -350,8 +359,8 @@ module WorkerNodeService =
 
     type  ModelGeneratorContext<'I, 'D> =
         {
-            userProxy : UserProxy<'I, 'D>
-            systemProxy : SystemProxy
+            userProxy : ModelGeneratorUserProxy<'I, 'D>
+            systemProxy : ModelGeneratorSystemProxy
             solverId : SolverId
         }
 

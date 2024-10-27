@@ -261,5 +261,5 @@ module Program =
                 Console.WriteLine($"Exception: %A{e}.")
                 CriticalError
 
-        Console.ReadLine() |> ignore
+        // Console.ReadLine() |> ignore
         retVal

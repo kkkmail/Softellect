@@ -345,6 +345,7 @@ module Common =
         {
             resultLocation : FolderName
             solverLocation : FolderName
+            solverOutputLocation : FolderName option
         }
 
 

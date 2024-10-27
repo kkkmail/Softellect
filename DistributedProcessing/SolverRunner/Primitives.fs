@@ -224,7 +224,7 @@ module Primitives =
 
 
     /// A user proxy to run the solver. Must be implemented by the user.
-    type UserProxy<'D, 'P, 'X, 'C> =
+    type SolverRunnerUserProxy<'D, 'P, 'X, 'C> =
         {
             solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
             solverProxy : SolverProxy<'D, 'P, 'X>
@@ -233,7 +233,7 @@ module Primitives =
 
 
     /// A system proxy to run the solver. Is implemented by the system but can be overridden.
-    type SystemProxy<'D, 'P, 'X, 'C> =
+    type SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
         {
             callBackProxy : CallBackProxy<'P>
             addChartData : ChartSliceData<'C> -> unit
@@ -263,13 +263,13 @@ module Primitives =
     type SolverRunnerContext<'D, 'P, 'X, 'C> =
         {
             runnerData : RunnerData<'D>
-            systemProxy : SystemProxy<'D, 'P, 'X, 'C>
-            userProxy : UserProxy<'D, 'P, 'X, 'C>
+            systemProxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
+            userProxy : SolverRunnerUserProxy<'D, 'P, 'X, 'C>
         }
 
 
     /// A system context that is needed to create the solver.
-    type SystemContext<'D, 'P, 'X, 'C> =
+    type SolverRunnerSystemContext<'D, 'P, 'X, 'C> =
         {
             logCrit : SolverRunnerCriticalError -> UnitResult<SysError>
             workerNodeServiceInfo : WorkerNodeServiceInfo
@@ -277,11 +277,12 @@ module Primitives =
             getAllowedSolvers : WorkerNodeInfo -> int
             checkRunning : int option -> RunQueueId -> CheckRunningResult
             tryStartRunQueue : RunQueueId -> DistributedProcessingUnitResult
-            createSystemProxy : RunnerData<'D> -> SystemProxy<'D, 'P, 'X, 'C>
+            createSystemProxy : RunnerData<'D> -> SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
             runSolver : SolverRunnerContext<'D, 'P, 'X, 'C> -> unit
         }
 
 
+    /// A data to run the solver.
     type SolverRunnerData =
         {
             solverId : SolverId

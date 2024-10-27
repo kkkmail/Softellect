@@ -76,12 +76,22 @@ module WorkerNodeService =
     let partitionerIdKey = ConfigKey "PartitionerId"
     let resultLocationKey = ConfigKey "ResultLocation"
     let solverLocationKey = ConfigKey "SolverLocation"
+    let solverOutputLocationKey = ConfigKey "SolverOutputLocation"
 
 
     let getPartitionerId (provider : AppSettingsProvider) d =
         match provider.tryGetGuid partitionerIdKey with
         | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
         | _ -> d
+
+
+    let tryGetFolderName (provider : AppSettingsProvider) key =
+        match provider.tryGetString key with
+        | Ok (Some p) when p <> "" ->
+            match FolderName.tryCreate p with
+            | Ok f -> Some f
+            | Error _ -> None
+        | _ -> None
 
 
     let getFolderName (provider : AppSettingsProvider) key d =
@@ -231,6 +241,7 @@ module WorkerNodeService =
         {
             resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
             solverLocation = getFolderName provider solverLocationKey FolderName.defaultSolverLocation
+            solverOutputLocation = tryGetFolderName provider solverOutputLocationKey
         }
 
 
