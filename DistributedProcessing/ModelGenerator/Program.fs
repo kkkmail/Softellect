@@ -7,11 +7,11 @@ open Softellect.Sys.Primitives
 module Program =
 
     /// Parameter solverId is passed first, so that it can be baked in and then reused with different proxies (= models).
-    let generateModel<'I, 'D> solverId (userProxy : UserProxy<'I, 'D>) =
+    let generateModel<'I, 'D> (systemProxy : SystemProxy) solverId (userProxy : UserProxy<'I, 'D>) =
         let ctx =
             {
                 userProxy = userProxy
-                systemProxy = SystemProxy.create()
+                systemProxy = systemProxy
                 solverId = solverId
             }
 
@@ -30,7 +30,7 @@ module Program =
         let runQueueId = RunQueueId.getNewId()
 
         match ctx.systemProxy.saveModelData runQueueId ctx.solverId binaryData with
-        | Ok() -> Ok()
+        | Ok() -> Ok binaryData
         | Error e ->
             printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', ERROR: '%A{e}'."
             Error e

@@ -1,10 +1,13 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
+open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Softellect.Messaging.Primitives
+open Softellect.Sys.Rop
 
 /// A SolverRunner operates on input data 'D and produces progress / output data 'P.
 /// Internally it uses a data type 'X to store the state of the computation and may produce chart data 'C.
@@ -262,4 +265,28 @@ module Primitives =
             runnerData : RunnerData<'D>
             systemProxy : SystemProxy<'D, 'P, 'X, 'C>
             userProxy : UserProxy<'D, 'P, 'X, 'C>
+        }
+
+
+    /// A system context that is needed to create the solver.
+    type SystemContext<'D, 'P, 'X, 'C> =
+        {
+            logCrit : SolverRunnerCriticalError -> UnitResult<SysError>
+            workerNodeServiceInfo : WorkerNodeServiceInfo
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<(ModelData<'D> * RunQueueStatus)>
+            getAllowedSolvers : WorkerNodeInfo -> int
+            checkRunning : int option -> RunQueueId -> CheckRunningResult
+            tryStartRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            createSystemProxy : RunnerData<'D> -> SystemProxy<'D, 'P, 'X, 'C>
+            runSolver : SolverRunnerContext<'D, 'P, 'X, 'C> -> unit
+        }
+
+
+    type SolverRunnerData =
+        {
+            solverId : SolverId
+            runQueueId : RunQueueId
+            forceRun : bool
+            messagingDataVersion : MessagingDataVersion
+            cancellationCheckFreq : TimeSpan
         }

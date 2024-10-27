@@ -34,7 +34,7 @@ module Program =
                 endTime = evolutionTime
             }
 
-        let proxy =
+        let userProxy =
             {
                 getInitialData = fun () -> i
                 generateModelContext = TestSolverContext.create
@@ -42,7 +42,9 @@ module Program =
                 getSolverOutputParams = fun _ -> outputParams
             }
 
-        let result = generateModel<TestInitialData, TestSolverContext> solverId proxy
+        let systemProxy = SystemProxy.create()
+
+        let result = generateModel<TestInitialData, TestSolverContext> systemProxy solverId userProxy
         printfn $"result: '%A{result}'."
 
         CompletedSuccessfully

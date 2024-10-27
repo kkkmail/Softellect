@@ -5,7 +5,6 @@ open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.Errors
-open Argu
 open Softellect.Sys.Rop
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Client
@@ -14,7 +13,6 @@ open Softellect.Messaging.DataAccess
 open Softellect.Sys.ExitErrorCodes
 open Softellect.DistributedProcessing.Proxy.SolverRunner
 open Softellect.DistributedProcessing.DataAccess.SolverRunner
-open Softellect.DistributedProcessing.SolverRunner.CommandLine
 open Softellect.DistributedProcessing.SolverRunner.NoSql
 open Softellect.DistributedProcessing.SolverRunner.Runner
 open Softellect.Sys.Core
@@ -168,6 +166,11 @@ module Implementation =
         proxy
 
 
+    type SystemProxy<'D, 'P, 'X, 'C>
+        with
+        static member create (data : RunnerData<'D>) = createSystemProxy<'D, 'P, 'X, 'C> data
+
+
     //let private tryLoadWorkerNodeSettings () = tryLoadWorkerNodeSettings None None
     //let private name = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
 
@@ -198,78 +201,101 @@ module Implementation =
     //        }
 
 
-    let runSolverProcess<'D, 'P, 'X, 'C> solverId getUserProxy (results : ParseResults<SolverRunnerArguments>) : int =
-        let logCrit = saveSolverRunnerErrFs SolverProgramName
+    type SystemContext<'D, 'P, 'X, 'C>
+        with
+        static member create () =
+            {
+                logCrit = saveSolverRunnerErrFs SolverProgramName
+                workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
+                tryLoadRunQueue = tryLoadRunQueue<'D>
+                getAllowedSolvers = getAllowedSolvers
+                checkRunning = checkRunning
+                tryStartRunQueue = tryStartRunQueue
+                createSystemProxy = createSystemProxy
+                runSolver = runSolver
+            }
 
-        match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
-        | Some q ->
-            let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
-            printfn $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
 
-            let exitWithLogCrit e x =
-                printfn $"runSolver: ERROR: {e}, exit code: {x}."
-                SolverRunnerCriticalError.create q e |> logCrit |> ignore
-                x
+    type SolverRunnerData
+        with
+        static member create solverId runQueueId forceRun =
+            {
+                runQueueId = runQueueId
+                solverId = solverId
+                forceRun = forceRun
+                cancellationCheckFreq = TimeSpan.FromMinutes 5.0
+                messagingDataVersion = messagingDataVersion
+            }
 
-            let i = loadWorkerNodeServiceInfo messagingDataVersion
 
-            match tryLoadRunQueue<'D> q with
-            | Ok (w, st) ->
-                let allowedSolvers =
-                    match results.TryGetResult ForceRun |> Option.defaultValue false with
-                    | false -> getAllowedSolvers i.workerNodeInfo |> Some
-                    | true -> None
+    let runSolverProcess<'D, 'P, 'X, 'C> (ctx: SystemContext<'D, 'P, 'X, 'C>) getUserProxy (data : SolverRunnerData) =
+        let logCrit = ctx.logCrit
+        let q = data.runQueueId
 
-                match w.solverId = solverId with
-                | true ->
-                    match checkRunning allowedSolvers q with
-                    | CanRun ->
-                        match st with
-                        | NotStartedRunQueue | InProgressRunQueue ->
-                            match tryStartRunQueue q with
-                            | Ok() ->
-                                printfn $"runSolver: Starting solver with runQueueId: {q}."
-                                let data : RunnerData<'D> =
-                                    {
-                                        runQueueId = q
-                                        partitionerId = i.workerNodeInfo.partitionerId
-                                        workerNodeId = i.workerNodeInfo.workerNodeId
-                                        messagingDataVersion = messagingDataVersion
-                                        modelData = w
-                                        started = DateTime.Now
-                                        cancellationCheckFreq = TimeSpan.FromMinutes 5.0
-                                    }
+        let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
+        printfn $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
 
-                                let proxy = createSystemProxy<'D, 'P, 'X, 'C> data
+        let exitWithLogCrit e x =
+            printfn $"runSolver: ERROR: {e}, exit code: {x}."
+            SolverRunnerCriticalError.create q e |> logCrit |> ignore
+            x
 
-                                let ctx =
-                                    {
-                                        runnerData = data
-                                        systemProxy = proxy
-                                        userProxy = getUserProxy w.modelData
-                                    }
+        let i = ctx.workerNodeServiceInfo
 
-                                // The call below does not return until the run is completed OR cancelled in some way.
-                                runSolver<'D, 'P, 'X, 'C> ctx
-                                printfn "runSolver: Call to solver.run() completed."
-                                CompletedSuccessfully
-                            | Error e ->
-                                printfn $"runSolver: ERROR: {e}."
-                                exitWithLogCrit e UnknownException
-                        | CancelRequestedRunQueue ->
-                            // If we got here that means that the solver was terminated before it had a chance to process cancellation.
-                            // At this point we have no choice but abort the calculation because there is no data available to continue.
-                            let errMessage = "The solver was terminated before processing cancellation. Aborting."
-                            //let p0 = ProgressData.defaultValue
-                            //let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
-                            //getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
-                            exitWithLogCrit errMessage NotProcessedCancellation
-                        | _ -> exitWithLogCrit ($"Invalid run queue status: {st}") InvalidRunQueueStatus
-                    | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
-                    | TooManyRunning n -> exitWithLogCrit (TooManyRunning n) TooManySolversRunning
-                    | GetProcessesByNameExn e -> exitWithLogCrit e CriticalError
-                | false -> exitWithLogCrit ($"Invalid solverId: {w.solverId}, expected: {solverId}") InvalidSolverId
-            | Error e -> exitWithLogCrit e DatabaseErrorOccurred
-        | None ->
-            printfn "runSolver - invalid command line arguments."
-            InvalidCommandLineArgs
+        match ctx.tryLoadRunQueue q with
+        | Ok (w, st) ->
+            let allowedSolvers =
+                match data.forceRun with
+                | false -> ctx.getAllowedSolvers i.workerNodeInfo |> Some
+                | true -> None
+
+            match w.solverId = data.solverId with
+            | true ->
+                match ctx.checkRunning allowedSolvers q with
+                | CanRun ->
+                    match st with
+                    | NotStartedRunQueue | InProgressRunQueue ->
+                        match ctx.tryStartRunQueue q with
+                        | Ok() ->
+                            printfn $"runSolver: Starting solver with runQueueId: {q}."
+                            let data : RunnerData<'D> =
+                                {
+                                    runQueueId = q
+                                    partitionerId = i.workerNodeInfo.partitionerId
+                                    workerNodeId = i.workerNodeInfo.workerNodeId
+                                    messagingDataVersion = data.messagingDataVersion
+                                    modelData = w
+                                    started = DateTime.Now
+                                    cancellationCheckFreq = data.cancellationCheckFreq
+                                }
+
+                            let proxy = ctx.createSystemProxy data
+
+                            let ctxr =
+                                {
+                                    runnerData = data
+                                    systemProxy = proxy
+                                    userProxy = getUserProxy w.modelData
+                                }
+
+                            // The call below does not return until the run is completed OR cancelled in some way.
+                            ctx.runSolver ctxr
+                            printfn "runSolver: Call to solver.run() completed."
+                            CompletedSuccessfully
+                        | Error e ->
+                            printfn $"runSolver: ERROR: {e}."
+                            exitWithLogCrit e UnknownException
+                    | CancelRequestedRunQueue ->
+                        // If we got here that means that the solver was terminated before it had a chance to process cancellation.
+                        // At this point we have no choice but abort the calculation because there is no data available to continue.
+                        let errMessage = "The solver was terminated before processing cancellation. Aborting."
+                        //let p0 = ProgressData.defaultValue
+                        //let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
+                        //getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
+                        exitWithLogCrit errMessage NotProcessedCancellation
+                    | _ -> exitWithLogCrit $"Invalid run queue status: {st}" InvalidRunQueueStatus
+                | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
+                | TooManyRunning n -> exitWithLogCrit (TooManyRunning n) TooManySolversRunning
+                | GetProcessesByNameExn e -> exitWithLogCrit e CriticalError
+            | false -> exitWithLogCrit $"Invalid solverId: {w.solverId}, expected: {data.solverId}" InvalidSolverId
+        | Error e -> exitWithLogCrit e DatabaseErrorOccurred
