@@ -339,8 +339,8 @@ module WorkerNodeService =
             /// The resulting data can be huge.
             getInitialData : unit -> 'I
 
-            /// Generates model context out of "input" parameters. This can be huge.
-            generateModelContext : 'I -> 'D
+            /// Generates model data out of "input" parameters. This can be huge.
+            generateModelData : 'I -> 'D
 
             getSolverInputParams : 'I -> SolverInputParams
             getSolverOutputParams : 'I -> SolverOutputParams

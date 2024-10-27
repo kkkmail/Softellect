@@ -30,7 +30,7 @@ module OdeSolver =
 
 
     let private fUseNonNegative (
-                                odeParams : OdeContext,
+                                odeParams : OdeParams,
                                 tryCallBack : TryCallBack<double[]>,
                                 neq : byref<int>,
                                 t : byref<double>,
@@ -49,7 +49,7 @@ module OdeSolver =
 
 
     let private fDoNotCorrect (
-                                odeParams : OdeContext,
+                                odeParams : OdeParams,
                                 tryCallBack : TryCallBack<double[]>,
                                 neq : byref<int>,
                                 t : byref<double>,

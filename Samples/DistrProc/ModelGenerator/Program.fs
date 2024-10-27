@@ -37,14 +37,14 @@ module Program =
         let userProxy =
             {
                 getInitialData = fun () -> i
-                generateModelContext = TestSolverContext.create
+                generateModelData = TestSolverData.create
                 getSolverInputParams = fun _ -> inputParams
                 getSolverOutputParams = fun _ -> outputParams
             }
 
         let systemProxy = ModelGeneratorSystemProxy.create()
 
-        let result = generateModel<TestInitialData, TestSolverContext> systemProxy solverId userProxy
+        let result = generateModel<TestInitialData, TestSolverData> systemProxy solverId userProxy
         printfn $"result: '%A{result}'."
 
         CompletedSuccessfully

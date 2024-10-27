@@ -6,7 +6,8 @@ open Softellect.Sys.Primitives
 
 module Program =
 
-    /// Parameter solverId is passed first, so that it can be baked in and then reused with different proxies (= models).
+    /// Parameters systemProxy and solverId are passed first, so that they can be baked in and then reused
+    /// with different proxies (= models).
     let generateModel<'I, 'D> (systemProxy : ModelGeneratorSystemProxy) solverId (userProxy : ModelGeneratorUserProxy<'I, 'D>) =
         let ctx =
             {
@@ -23,7 +24,7 @@ module Program =
                 solverInputParams = ctx.userProxy.getSolverInputParams input
                 solverOutputParams = ctx.userProxy.getSolverOutputParams input
                 solverId = ctx.solverId
-                modelData = ctx.userProxy.generateModelContext input
+                modelData = ctx.userProxy.generateModelData input
             }
 
         printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData: '%A{modelData}'."
