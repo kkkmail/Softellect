@@ -1,3 +1,4 @@
+@echo off
 copy /b /y .\DistributedProcessing\Core\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\DistributedProcessing\MessagingService\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\DistributedProcessing\ModelGenerator\bin\x64\Release\*.nupkg  ..\Packages\

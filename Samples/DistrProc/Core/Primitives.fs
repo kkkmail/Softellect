@@ -76,6 +76,48 @@ module Primitives =
                     FullArray g
 
 
+    type DampedHarmonicOscillatorData =
+        {
+            k: double
+            c: double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.dampedHarmonicOscillator d.k d.c
+
+
+    type LorenzSystemData =
+        {
+            sigma : double
+            rho : double
+            beta : double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
+
+
+    type LotkaVolterraData =
+        {
+            alpha : double
+            beta : double
+            gamma : double
+            delta : double
+        }
+
+        member d.derivativeCalculator = DerivativeCalculator.lotkaVolterra d.alpha d.beta d.gamma d.delta
+
+
+    type TestDerivativeData =
+        | DampedHarmonicOscillator of DampedHarmonicOscillatorData
+        | LorenzSystem of LorenzSystemData
+        | LotkaVolterra of LotkaVolterraData
+
+        member d.derivativeCalculator =
+            match d with
+            | DampedHarmonicOscillator d -> d.derivativeCalculator
+            | LorenzSystem d -> d.derivativeCalculator
+            | LotkaVolterra d -> d.derivativeCalculator
+
+
     let outputParams =
         {
             noOfOutputPoints = 4_000
@@ -97,7 +139,8 @@ module Primitives =
     /// That's 'D in the type signature. This is a mix of data and functions.
     type TestSolverData =
         {
-            derivativeCalculator : DerivativeCalculator
+            derivativeData : TestDerivativeData
+            delay : int option
             evolutionTime : EvolutionTime
             initialValues : double[]
             chartLabels : string[]
@@ -114,97 +157,68 @@ module Primitives =
                 stepSize = 0.0
                 absoluteTolerance = AbsoluteTolerance.defaultValue
                 odeSolverType = OdePack (Bdf, ChordWithDiagonalJacobian, UseNonNegative correctionValue)
-                derivative = d.derivativeCalculator
+                derivative = d.derivativeData.derivativeCalculator.delayed d.delay
             }
 
 
-    type DampedHarmonicOscillatorData =
-        {
-            k: double
-            c: double
-        }
-
-        member d.derivativeCalculator = DerivativeCalculator.dampedHarmonicOscillator d.k d.c
-
+    type DampedHarmonicOscillatorData
+        with
         static member create i =
             let rnd = Random(i.seedValue)
 
             {
-                derivativeCalculator =
+                derivativeData =
                     {
                         k = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
                         c = 0.1 + (rnd.NextDouble() - 0.5) * 0.01
-                    }.derivativeCalculator
+                    }
+                    |> DampedHarmonicOscillator
+                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Velocity"; "Acceleration" |]
                 evolutionTime = i.evolutionTime
             }
 
 
-    type LorenzSystemData =
-        {
-            sigma : double
-            rho : double
-            beta : double
-        }
-
-        member d.derivativeCalculator = DerivativeCalculator.lorenzSystem d.sigma d.rho d.beta
-
+    type LorenzSystemData
+        with
         static member create i =
             let rnd = Random(i.seedValue)
 
             {
-                derivativeCalculator =
+                derivativeData =
                     {
                         sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
                         rho = 28.0 + (rnd.NextDouble() - 0.5) * 2.0
                         beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
-                    }.derivativeCalculator
+                    }
+                    |> LorenzSystem
+                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "x"; "y"; "z" |]
                 evolutionTime = i.evolutionTime
             }
 
 
-    type LotkaVolterraData =
-        {
-            alpha : double
-            beta : double
-            gamma : double
-            delta : double
-        }
-
-        member d.derivativeCalculator = DerivativeCalculator.lotkaVolterra d.alpha d.beta d.gamma d.delta
-
+    type LotkaVolterraData
+        with
         static member create i =
             let rnd = Random(i.seedValue)
 
             {
-                derivativeCalculator =
+                derivativeData =
                     {
                         alpha = 2.0 / 3.0 + (rnd.NextDouble() - 0.5) * 0.1
                         beta = 4.0 / 3.0 + (rnd.NextDouble() - 0.5) * 0.1
                         gamma = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
                         delta = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
-                    }.derivativeCalculator
+                    }
+                    |> LotkaVolterra
+                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Prey"; "Predator" |]
                 evolutionTime = i.evolutionTime
             }
-
-
-    // type TestDerivativeData =
-    //     | DampedHarmonicOscillator of DampedHarmonicOscillatorData
-    //     | LorenzSystem of LorenzSystemData
-    //     | LotkaVolterra of LotkaVolterraData
-    //
-    //     member d.derivativeCalculator =
-    //         match d with
-    //         | DampedHarmonicOscillator d -> d.derivativeCalculator
-    //         | LorenzSystem d -> d.derivativeCalculator
-    //         | LotkaVolterra d -> d.derivativeCalculator
-    //
-    //     static member create i = LotkaVolterraData.create i
 
 
     type TestSolverData
@@ -216,7 +230,8 @@ module Primitives =
                 | 2 -> DampedHarmonicOscillatorData.create i
                 | 3 -> LorenzSystemData.create i
                 | _ -> failwith $"Invalid model id: {i.modelId}."
-            { data with derivativeCalculator = data.derivativeCalculator.delayed i.delay }
+
+            data
 
 
     /// That's 'P in the type signature.
