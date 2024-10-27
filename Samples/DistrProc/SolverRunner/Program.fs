@@ -232,9 +232,9 @@ module Program =
             try
                 let chartGenerator =
                     {
-                        getChartData = fun _ t (x : double[]) -> { t = double t.value; x = x }
+                        getChartData = fun _ t (x : double[]) -> { x = x }
                         generateCharts = fun q d _ c -> getCharts q d c
-                        generateDetailedCharts = fun _ _ _ _ -> []
+                        generateDetailedCharts = fun _ _ _ _ -> None
                     }
 
                 let getUserProxy (solverData : TestSolverData) =

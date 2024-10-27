@@ -139,9 +139,8 @@ module Primitives =
     /// That's 'D in the type signature. This is a mix of data and functions.
     type TestSolverData =
         {
+            initialData : TestInitialData
             derivativeData : TestDerivativeData
-            delay : int option
-            evolutionTime : EvolutionTime
             initialValues : double[]
             chartLabels : string[]
         }
@@ -149,7 +148,7 @@ module Primitives =
         member d.inputParams =
             {
                 startTime = EvolutionTime 0m
-                endTime = d.evolutionTime
+                endTime = d.initialData.evolutionTime
             }
 
         member d.odeParams =
@@ -157,7 +156,7 @@ module Primitives =
                 stepSize = 0.0
                 absoluteTolerance = AbsoluteTolerance.defaultValue
                 odeSolverType = OdePack (Bdf, ChordWithDiagonalJacobian, UseNonNegative correctionValue)
-                derivative = d.derivativeData.derivativeCalculator.delayed d.delay
+                derivative = d.derivativeData.derivativeCalculator.delayed d.initialData.delay
             }
 
 
@@ -167,16 +166,15 @@ module Primitives =
             let rnd = Random(i.seedValue)
 
             {
+                initialData = i
                 derivativeData =
                     {
                         k = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
                         c = 0.1 + (rnd.NextDouble() - 0.5) * 0.01
                     }
                     |> DampedHarmonicOscillator
-                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Velocity"; "Acceleration" |]
-                evolutionTime = i.evolutionTime
             }
 
 
@@ -186,6 +184,7 @@ module Primitives =
             let rnd = Random(i.seedValue)
 
             {
+                initialData = i
                 derivativeData =
                     {
                         sigma = 10.0 + (rnd.NextDouble() - 0.5) * 1.0
@@ -193,10 +192,8 @@ module Primitives =
                         beta = (8.0 / 3.0) + (rnd.NextDouble() - 0.5) * 0.1
                     }
                     |> LorenzSystem
-                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "x"; "y"; "z" |]
-                evolutionTime = i.evolutionTime
             }
 
 
@@ -206,6 +203,7 @@ module Primitives =
             let rnd = Random(i.seedValue)
 
             {
+                initialData = i
                 derivativeData =
                     {
                         alpha = 2.0 / 3.0 + (rnd.NextDouble() - 0.5) * 0.1
@@ -214,10 +212,8 @@ module Primitives =
                         delta = 1.0 + (rnd.NextDouble() - 0.5) * 0.1
                     }
                     |> LotkaVolterra
-                delay = i.delay
                 initialValues = [| 10.0 + (rnd.NextDouble() - 0.5) * 1.0; 10.0 + (rnd.NextDouble() - 0.5) * 1.0 |]
                 chartLabels = [| "Prey"; "Predator" |]
-                evolutionTime = i.evolutionTime
             }
 
 
@@ -244,6 +240,5 @@ module Primitives =
     /// That's 'C in the type signature.
     type TestChartData =
         {
-            t : double
             x : double[]
         }

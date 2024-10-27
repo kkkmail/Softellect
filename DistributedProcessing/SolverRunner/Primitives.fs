@@ -37,6 +37,7 @@ module Primitives =
         }
 
 
+    /// A try call back wrapper.
     type TryCallBack<'X> =
         | TryCallBack of (EvolutionTime -> 'X -> unit)
 
@@ -130,8 +131,9 @@ module Primitives =
             /// A function to call to generate all lightweight ("evolution") charts.
             generateCharts : RunQueueId -> 'D -> ChartNotificationType -> list<ChartSliceData<'C>> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
 
-            /// A function to call to generate heavy charts.
-            generateDetailedCharts : RunQueueId -> 'D -> EvolutionTime -> 'X -> list<Chart>
+            /// A function to call to generate heavy charts if any.
+            /// If you don't need heavy charts, then return None.
+            generateDetailedCharts : RunQueueId -> 'D -> EvolutionTime -> 'X -> list<Chart> option
         }
 
 
@@ -209,6 +211,9 @@ module Primitives =
         }
 
 
+    /// The main solver runner function.
+    /// It takes initial evolution time and computation state and returns the final evolution time and computation state.
+    /// It will try to call back with progress data and chart data when it finds it necessary based on the parameters.
     type SolverRunner<'X> =
         | SolverRunner of (EvolutionTime * 'X -> TryCallBack<'X> -> EvolutionTime * 'X)
 

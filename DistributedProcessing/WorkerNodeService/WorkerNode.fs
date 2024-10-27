@@ -193,7 +193,7 @@ module WorkerNode =
 
         interface IHostedService with
 
-            /// TODO kk:20241027 - If solvers some failed to start then we need to send a message to Partitioner to notify it.
+            /// TODO kk:20241027 - If some solvers failed to start then we need to send a message to Partitioner to notify it.
             member _.StartAsync(cancellationToken: CancellationToken) =
                 match onTryStart() with
                 | Ok () -> Task.CompletedTask

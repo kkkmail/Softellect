@@ -217,8 +217,13 @@ module Runner =
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
-        let c = u.chartGenerator.generateDetailedCharts ctx.runnerData.runQueueId modelData t x
-        s.callBackProxy.chartCallBack.invoke c
+        match u.chartGenerator.generateDetailedCharts ctx.runnerData.runQueueId modelData t x with
+        | Some c ->
+            printfn $"notifyChartsDetailed: c.Length = %A{c.Length}"
+            s.callBackProxy.chartCallBack.invoke c
+        | None ->
+            printfn $"notifyChartsDetailed: No charts to generate."
+            ()
 
 
     let private notifyAll ctx cb pd t x =
