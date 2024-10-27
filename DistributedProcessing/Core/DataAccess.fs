@@ -136,7 +136,7 @@ module WorkerNodeService =
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
 
     [<Literal>]
-    let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI"
+    let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
     let private getConnectionStringImpl() = getConnectionString AppSettingsFile connectionStringKey ConnectionStringValue
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)

@@ -2,6 +2,7 @@
 
 open System
 open System.Data.SQLite
+open System.IO
 open FSharp.Data.Sql
 open System.Data
 open System.Data.SqlClient
@@ -10,6 +11,7 @@ open Softellect.Sys.Retry
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
+open Softellect.Sys.Core
 
 module DataAccess =
 
@@ -17,8 +19,23 @@ module DataAccess =
     let AppConfigFile : string = __SOURCE_DIRECTORY__ + @"\app.config"
 
 
-    let getConnectionString fileName connKey defaultValue =
-        match AppSettingsProvider.tryCreate fileName with
+    // let getConnectionString fileName connKey defaultValue =
+    //     match AppSettingsProvider.tryCreate fileName with
+    //     | Ok provider ->
+    //         match provider.tryGetConnectionString connKey with
+    //         | Ok (Some EmptyString) -> defaultValue
+    //         | Ok (Some s) -> s
+    //         | _ -> defaultValue
+    //     | _ -> defaultValue
+    //     |> ConnectionString
+
+
+    let getConnectionString (fileName : string) connKey defaultValue =
+        let fullPath =
+            if Path.IsPathRooted(fileName) then fileName
+            else Path.Combine(getAssemblyLocation(), fileName)
+
+        match AppSettingsProvider.tryCreate fullPath with
         | Ok provider ->
             match provider.tryGetConnectionString connKey with
             | Ok (Some EmptyString) -> defaultValue
@@ -30,9 +47,9 @@ module DataAccess =
 
     let buildConnectionString (key : string) : string =
         [
-            Some $"Server=localhost;Database=%s{key};Integrated Security=SSPI"
+            Some $"Server=localhost;Database=%s{key};Integrated Security=SSPI;TrustServerCertificate=yes;"
         ]
-        |> List.pick (fun x -> x)
+        |> List.pick id
 
 
     let openConnIfClosed (conn : SqlConnection) =
