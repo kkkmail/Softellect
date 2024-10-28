@@ -75,21 +75,6 @@ module Primitives =
 
 
     type ChartData<'C> = list<ChartSliceData<'C>>
-        //{
-        //    //initData : 'D // TODO kk:20240927 - Store more (like tEnd)???
-        //    allChartData : list<ChartSliceData<'C>>
-        //}
-
-        /// Last calculated value of tEnd.
-        //member cd.tLast =
-        //    match cd.allChartData |> List.tryHead with
-        //    | Some c -> c.t
-        //    | None -> 0.0m
-
-
-        //member cd.progress =
-        //    let tEnd = cd.initData.tEnd
-        //    min (max (if tEnd > 0.0m then cd.tLast / tEnd else 0.0m) 0.0m) 1.0m
 
 
     type ChartDataUpdater<'C> () =
@@ -98,20 +83,6 @@ module Primitives =
             member _.add a m = a :: m
 
 
-    ///// An evolution-like call-back data.
-    ///// Evolution time is inside ProgressData
-    //type CallBackData<'P, 'X> =
-    //    {
-    //        progressData : ProgressData<'P>
-    //        x : 'X
-    //    }
-
-
-    /// A function to call in order to notify about progress.
-    //type ProgressCallBack<'P, 'X> =
-    //    | ProgressCallBack of (CallBackType -> CallBackData<'P, 'X> -> unit)
-    //type ProgressCallBack<'P> =
-    //    | ProgressCallBack of (CallBackType -> ProgressData<'P> -> unit)
     type ProgressCallBack<'P> =
         | ProgressCallBack of (CallBackType -> ProgressData<'P> -> unit)
 
@@ -142,18 +113,6 @@ module Primitives =
 
         member r.invoke = let (ChartCallBack v) = r in v
 
-        //{
-
-        //    ///
-        //    chartCallBack : (CallBackType -> CallBackData<'P, 'X> -> unit)
-
-        //    /// A function to call in order to generate and store a detailed chart data point.
-        //    /// This is to collect "heavy", e.g., 3D data at some predetermined intervals.
-        //    /// A heavy chart should be sent back one by one. If any post-processing is needed,
-        //    /// then it should be done by partitioner.
-        //    chartDetailedCallBack : (CallBackType -> CallBackData<'P, 'X> -> unit)
-        //}
-
 
     /// A function to call to check if cancellation is requested.
     type CheckCancellation =
@@ -162,20 +121,7 @@ module Primitives =
         member r.invoke = let (CheckCancellation v) = r in v
 
 
-    //type CheckCancellation =
-    //    {
-    //        invoke : RunQueueId -> CancellationType option
-    //        checkFreq : TimeSpan // How often to check if cancellation is requested.
-    //    }
-
-    //    static member defaultValue =
-    //        {
-    //            invoke = fun _ -> None
-    //            checkFreq = TimeSpan.FromMinutes(5.0)
-    //        }
-
-
-    /// An addition [past] data needed to determine if a call back is needed.
+    /// An additional [past] data needed to determine if a call back is needed.
     type NeedsCallBackData =
         {
             progressData : ProgressData

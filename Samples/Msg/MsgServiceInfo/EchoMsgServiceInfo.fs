@@ -6,7 +6,6 @@ open System.Threading
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.AppSettings
-open Softellect.Messaging.DataAccess
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives

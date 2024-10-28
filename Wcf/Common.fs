@@ -4,11 +4,9 @@ open System
 
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
-open Softellect.Sys.Logging
 open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open System.Xml
-
 
 /// See https://stackoverflow.com/questions/53536450/merging-discriminated-unions-in-f
 module Common =
@@ -46,23 +44,14 @@ module Common =
         | NetTcpCommunication of WcfSecurityMode
 
         member c.serialize() = jsonSerialize c
-            //serialize
-            //match c with
-            //| HttpCommunication -> nameof(HttpCommunication)
-            //| NetTcpCommunication s -> $"{nameof(NetTcpCommunication)}:{s}"
 
-        static member tryCreate s = 
+        static member tryCreate s =
             try
                 jsonDeserialize<WcfCommunicationType> s |> Some
             with
             | e ->
                 printfn $"tryCreate: Exception: '%A{e}'."
                 None
-
-            //match s with
-            //| nameof(HttpCommunication) -> Some HttpCommunication
-            //| nameof(NetTcpCommunication) -> Some NetTcpCommunication
-            //| _ -> None
 
         member c.value = c.ToString()
 

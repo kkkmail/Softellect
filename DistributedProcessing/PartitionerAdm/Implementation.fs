@@ -3,14 +3,12 @@
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Primitives.PartitionerAdm
-open Softellect.Messaging.Errors
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
-open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.PartitionerAdm

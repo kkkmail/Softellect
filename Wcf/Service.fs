@@ -1,23 +1,14 @@
 ﻿namespace Softellect.Wcf
 
 open System
-open System.Net
 open CoreWCF
 open CoreWCF.Configuration
-open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
-open System.Threading
 open Microsoft.FSharp.Core.Operators
-open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
-
-open Softellect.Wcf.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
-open System.Threading.Tasks
 
 module Service =
 

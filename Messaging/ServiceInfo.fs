@@ -7,7 +7,6 @@ open Softellect.Sys.Rop
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
-open Softellect.Sys.Logging
 open Softellect.Messaging.Errors
 open Softellect.Messaging.VersionInfo
 open Microsoft.Extensions.Hosting

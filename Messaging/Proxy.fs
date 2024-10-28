@@ -2,7 +2,6 @@
 
 open System
 
-open Softellect.Sys.Rop
 open Softellect.Sys.Logging
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors

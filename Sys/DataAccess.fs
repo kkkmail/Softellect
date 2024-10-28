@@ -19,17 +19,6 @@ module DataAccess =
     let AppConfigFile : string = __SOURCE_DIRECTORY__ + @"\app.config"
 
 
-    // let getConnectionString fileName connKey defaultValue =
-    //     match AppSettingsProvider.tryCreate fileName with
-    //     | Ok provider ->
-    //         match provider.tryGetConnectionString connKey with
-    //         | Ok (Some EmptyString) -> defaultValue
-    //         | Ok (Some s) -> s
-    //         | _ -> defaultValue
-    //     | _ -> defaultValue
-    //     |> ConnectionString
-
-
     let getConnectionString (fileName : string) connKey defaultValue =
         let fullPath =
             if Path.IsPathRooted(fileName) then fileName
@@ -74,13 +63,6 @@ module DataAccess =
     //let addError g f e = ((f |> g |> DbErr) + e) |> Error
     let mapException f e = e |> DbExn |> f
     let mapExceptionToError f e = e |> DbExn |> f |> Error
-
-
-    ///// Maps missing value (None) to DbErr.
-    //let mapDbError f i v =
-    //    v
-    //    |> Option.map Ok
-    //    |> Option.defaultValue (i |> f |> DbErr |> Error)
 
 
     let tryDbFun f g =

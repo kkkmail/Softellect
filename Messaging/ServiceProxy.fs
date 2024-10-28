@@ -1,22 +1,18 @@
 ﻿namespace Softellect.Messaging
 
 open Softellect.Messaging.Primitives
-open Softellect.Sys.Logging
-open Softellect.Sys.Primitives
 open Softellect.Messaging.Proxy
 open Softellect.Messaging.DataAccess
 
 module ServiceProxy =
 
     type MessagingClientStorageType =
-        //| MsSqlDatabase of (unit -> ConnectionString)
         //| SqliteDatabase of SqliteConnectionString
         | MsSqlDatabase
 
 
     type MessagingClientProxyInfo =
         {
-            //messagingClientName : MessagingClientName
             messagingClientId : MessagingClientId
             messagingDataVersion : MessagingDataVersion
             storageType : MessagingClientStorageType

@@ -319,9 +319,6 @@ module Core =
 
           updater.init i |> loop)
 
-        //member _.addContent p = AddContent p |> chat.Post
-        //member _.getContent () = chat.PostAndReply GetContent
-
         interface IAsyncUpdater<'A, 'S> with
             member _.addContent p = AddContent p |> chat.Post
             member _.getContent () = chat.PostAndReply GetContent

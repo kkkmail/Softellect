@@ -19,7 +19,6 @@ open Softellect.Sys.Core
 open Softellect.DistributedProcessing.AppSettings.SolverRunner
 open Softellect.DistributedProcessing.VersionInfo
 
-
 module Implementation =
 
     [<Literal>]
@@ -34,17 +33,10 @@ module Implementation =
     let AllowedOverhead = 0.20
 
 
-    //let private toError g f = f |> g |> SolverRunnerErr |> Error
-    //let private addError g f e = ((f |> g |> SolverRunnerErr) + e) |> Error
-
-    //let runSolver solverProxy w = failwith "runSolver is not implemented yet"
-
-
     // Send the message directly to local database.
     let private sendMessage messagingDataVersion m i =
         createMessage messagingDataVersion m i
         |> saveMessage<DistributedProcessingMessageData> messagingDataVersion
-        //|> bindError (fun e -> MessagingErr e |> SendMessageErr |> Error)
 
 
     let private tryStartRunQueue q =
@@ -79,7 +71,6 @@ module Implementation =
         match result with
         | Ok v -> Ok v
         | Error e -> OnSaveChartsErr (SendChartMessageErr (data.partitionerId.messagingClientId, data.runQueueId, e)) |> Error
-        //|> Rop.bindError (addError OnSaveChartsErr (SendChartMessageErr (proxy.partitionerId.messagingClientId, c.runQueueId)))
 
 
     let private toDeliveryType (p : ProgressUpdateInfo<'P>) =
@@ -131,13 +122,11 @@ module Implementation =
             match r11 with
             | Ok v -> Ok v
             | Error e -> OnUpdateProgressErr (UnableToSendProgressMsgErr p.runQueueId) |> Error
-            //|> Rop.bindError (addError OnUpdateProgressErr (UnableToSendProgressMsgErr p.runQueueId))
 
         let result =
             if completed
             then
                 let r2 = deleteRunQueue p.runQueueId
-//                let r2 = Ok()
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
 
@@ -169,36 +158,6 @@ module Implementation =
     type SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
         with
         static member create (data : RunnerData<'D>) = createSystemProxy<'D, 'P, 'X, 'C> data
-
-
-    //let private tryLoadWorkerNodeSettings () = tryLoadWorkerNodeSettings None None
-    //let private name = WorkerNodeServiceName.netTcpServiceName.value.value |> MessagingClientName
-
-
-    //type SolverRunnerProxy<'P>
-    //    with
-    //    static member create logCrit (proxy : OnUpdateProgressProxy<'D, 'P>) =
-    //        let checkCancellation q = tryCheckCancellation q |> Rop.toOption |> Option.bind id
-    //        let checkNotification q = tryCheckNotification q |> Rop.toOption |> Option.bind id
-    //        let clearNotification q = tryClearNotification q
-
-    //        {
-    //            solverUpdateProxy =
-    //                {
-    //                    updateProgress = onUpdateProgress proxy
-    //                    checkCancellation = checkCancellation
-    //                    logCrit = logCrit
-    //                }
-
-    //            solverNotificationProxy =
-    //                {
-    //                    checkNotificationRequest = checkNotification
-    //                    clearNotificationRequest = clearNotification
-    //                }
-
-    //            saveCharts = onSaveCharts proxy.sendMessageProxy
-    //            logCrit = logCrit
-    //        }
 
 
     type SolverRunnerSystemContext<'D, 'P, 'X, 'C>

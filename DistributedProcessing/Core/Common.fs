@@ -249,16 +249,6 @@ module Common =
             }
 
 
-    /// All data that we need in order to run a model.
-    /// The underlying model data is of type 'D.
-    /// And we have solver input parameters and solver output parameters to control the evolution and what we output.
-    //type ModelData<'D> =
-    //    {
-    //        solverInputParams : SolverInputParams
-    //        solverOutputParams : SolverOutputParams
-    //        modelData : 'D
-    //    }
-
     type ModelBinaryData =
         {
             solverInputParams : SolverInputParams
@@ -266,26 +256,6 @@ module Common =
             modelData : byte[]
         }
 
-
-    ///// 'D is the model data.
-    //type WorkerNodeRunModelData<'D> =
-    //    {
-    //        runQueueId : RunQueueId
-    //        modelData : 'D
-    //    }
-
-
-    //type WorkerNodeMessage<'D> =
-    //    //| RunModelWrkMsg of WorkerNodeRunModelData<'D>
-    //    | RunModelWrkMsg of (RunQueueId * ModelData<'D>)
-    //    | CancelRunWrkMsg of (RunQueueId * CancellationType)
-    //    | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
-
-    //    member this.messageSize =
-    //        match this with
-    //        | RunModelWrkMsg _ -> LargeSize
-    //        | CancelRunWrkMsg _ -> SmallSize
-    //        | RequestChartsWrkMsg _ -> SmallSize
 
     type WorkerNodeMessage =
         | RunModelWrkMsg of (RunQueueId * SolverId * ModelBinaryData)
@@ -307,24 +277,6 @@ module Common =
 
         member this.value = let (LastAllowedNodeErr v) = this in v
         static member defaultValue = LastAllowedNodeErr 60<minute>
-
-
-    //type WorkerNodeState =
-    //    | NotStartedWorkerNode
-    //    | StartedWorkerNode
-
-
-    //type WorkerNodeRunnerState =
-    //    {
-    //        workerNodeState : WorkerNodeState
-    //    }
-
-    //    static member maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
-
-    //    static member defaultValue =
-    //        {
-    //            workerNodeState = NotStartedWorkerNode
-    //        }
 
 
     /// Information about a worker node to be passed to partitioner.
@@ -357,14 +309,6 @@ module Common =
         }
 
 
-    //type ProgressUpdateInfo<'P> =
-    //    {
-    //        runQueueId : RunQueueId
-    //        updatedRunQueueStatus : RunQueueStatus option
-    //        progressData : ProgressData<'P>
-    //    }
-
-
     type ProgressUpdateInfo =
         {
             runQueueId : RunQueueId
@@ -380,26 +324,6 @@ module Common =
         }
 
 
-    //type ChartGenerationResult =
-    //    | GeneratedCharts of ChartInfo
-    //    | NotGeneratedCharts
-
-
-    /// Generic type parameter 'P is the type of additional progress data.
-    /// It should account for intermediate progress data and final progress data.
-    //type PartitionerMessage<'P> =
-    //    | UpdateProgressPrtMsg of ProgressUpdateInfo<'P>
-    //    | SaveChartsPrtMsg of ChartInfo
-    //    | RegisterWorkerNodePrtMsg of WorkerNodeInfo
-    //    | UnregisterWorkerNodePrtMsg of WorkerNodeId
-
-    //    member this.messageSize =
-    //        match this with
-    //        | UpdateProgressPrtMsg _ -> SmallSize
-    //        | SaveChartsPrtMsg _ -> MediumSize
-    //        | RegisterWorkerNodePrtMsg _ -> SmallSize
-    //        | UnregisterWorkerNodePrtMsg _ -> SmallSize
-
     type PartitionerMessage =
         | UpdateProgressPrtMsg of ProgressUpdateInfo
         | SaveChartsPrtMsg of ChartInfo
@@ -414,21 +338,6 @@ module Common =
             | UnregisterWorkerNodePrtMsg _ -> SmallSize
 
 
-    /// The decision was that we want strongly typed messages rather than untyped messages.
-    /// Partitioner sends messages to WorkerNodes (WorkerNodeMessage<'D>)
-    /// and WorkerNodes send messages to Partitioner (PartitionerMessage<'P>).
-    /// Single type could be used, but it seems inconvenient, as both partitioner and worker node would have to perform exhaustive pattern matching.
-    //type DistributedProcessingMessageData<'D, 'P> =
-    //    | PartitionerMsg of PartitionerMessage<'P> // A message sent from worker node to partitioner.
-    //    | WorkerNodeMsg of WorkerNodeMessage<'D> // A message sent from partitioner to worker node.
-
-    //    static member maxInfoLength = 500
-
-    //    member this.getMessageSize() =
-    //        match this with
-    //        | PartitionerMsg m -> m.messageSize
-    //        | WorkerNodeMsg m -> m.messageSize
-
     type DistributedProcessingMessageData =
         | PartitionerMsg of PartitionerMessage // A message sent from worker node to partitioner.
         | WorkerNodeMsg of WorkerNodeMessage // A message sent from partitioner to worker node.
@@ -441,30 +350,9 @@ module Common =
             | WorkerNodeMsg m -> m.messageSize
 
 
-    //type DistributedProcessingMessage<'D, 'P> = Message<DistributedProcessingMessageData<'D, 'P>>
-    //type DistributedProcessingMessageInfo<'D, 'P> = MessageInfo<DistributedProcessingMessageData<'D, 'P>>
-    //type DistributedProcessingMessageProcessorProxy<'D, 'P> = MessageProcessorProxy<DistributedProcessingMessageData<'D, 'P>>
-
     type DistributedProcessingMessage = Message<DistributedProcessingMessageData>
     type DistributedProcessingMessageInfo = MessageInfo<DistributedProcessingMessageData>
 
-
-    //type PartitionerMessageInfo<'P> =
-    //    {
-    //        partitionerRecipient : PartitionerId
-    //        deliveryType : MessageDeliveryType
-    //        messageData : PartitionerMessage<'P>
-    //    }
-
-    //    member this.getMessageInfo() =
-    //        {
-    //            recipientInfo =
-    //                {
-    //                    recipient = this.partitionerRecipient.messagingClientId
-    //                    deliveryType = this.deliveryType
-    //                }
-    //            messageData = this.messageData |> PartitionerMsg |> UserMsg
-    //        }
 
     type PartitionerMessageInfo =
         {
@@ -500,39 +388,6 @@ module Common =
                     }
                 messageData = this.messageData |> WorkerNodeMsg |> UserMsg
             }
-
-
-        //member q.modelCommandLineParam = q.info.modelCommandLineParam
-
-        //static member fromModelCommandLineParam modelDataId defaultValueId p =
-        //    {
-        //        runQueueId = Guid.NewGuid() |> RunQueueId
-
-        //        info =
-        //            {
-        //                modelDataId = modelDataId
-        //                defaultValueId = defaultValueId
-        //                modelCommandLineParam = p
-        //            }
-
-        //        runQueueStatus = NotStartedRunQueue
-        //        workerNodeIdOpt = None
-        //        progressData = ClmProgressData.defaultValue
-        //        createdOn = DateTime.Now
-        //    }
-
-        //override r.ToString() =
-        //    let (ModelDataId modelDataId) = r.info.modelDataId
-        //    let (ClmDefaultValueId defaultValueId) = r.info.defaultValueId
-        //    let (RunQueueId runQueueId) = r.runQueueId
-        //    let s = (DateTime.Now - r.createdOn).ToString("d\.hh\:mm")
-
-        //    let estCompl =
-        //        match r.runQueueStatus, r.progressData.estimateEndTime r.createdOn with
-        //        | InProgressRunQueue, Some e -> " ETC: " + e.ToString("yyyy-MM-dd.HH:mm") + ";"
-        //        | _ -> EmptyString
-
-        //    $"{{ T: %s{s};%s{estCompl} DF: %A{defaultValueId}; MDID: %A{modelDataId}; PID: %A{runQueueId}; %A{r.progressData.progressData.progress} }}"
 
 
     type WorkerNodeServiceName =
@@ -700,22 +555,8 @@ module Common =
 
     type OdeParams =
         {
-            //startTime : double
-            //endTime : double
             stepSize : double
             absoluteTolerance : AbsoluteTolerance
             odeSolverType : OdeSolverType
             derivative : DerivativeCalculator
         }
-
-
-    //type NSolveParam =
-    //    {
-    //        odeParams : OdeParams
-    //        runQueueId : RunQueueId
-    //        initialValues : double[]
-    //        derivative : DerivativeCalculator
-    //        callBackInfo : CallBackInfo
-    //        started : DateTime
-    //        logger : Logger<int>
-    //    }

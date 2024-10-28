@@ -58,15 +58,6 @@ module AppSettings =
         | e -> Error e
 
 
-    //let tryOpenJson fileName =
-    //    try
-    //        let json = File.ReadAllText(fileName)
-    //        let jsonObj = JsonConvert.DeserializeObject<Dictionary<string, obj>>(json)
-    //        Ok jsonObj
-    //    with
-    //    | e -> Error e
-
-
     let trySaveJson fileName jsonObj =
         try
             let output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented)
@@ -74,24 +65,6 @@ module AppSettings =
             Ok()
         with
         | e -> Error e
-
-
-    //let tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
-    //    try
-    //        //let sectionObj = jsonObj?(section)
-    //        let sectionObj = jsonObj.[section]
-
-    //        if sectionObj = null
-    //        then Ok None
-    //        else
-    //            //let value = (sectionObj?(key))
-    //            let value = (sectionObj :?> Newtonsoft.Json.Linq.JObject).[key]
-
-    //            match box value with
-    //            | null -> Ok None
-    //            | _ -> value.ToString() |> Some |> Ok
-    //    with
-    //    | e -> Error e
 
 
     let tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
@@ -204,14 +177,6 @@ module AppSettings =
         match tryGetFromJson<'T> jsonObj section key with
         | Ok (Some v) -> v
         | _ -> defaultValue
-
-
-    //let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
-    //    try
-    //        jsonObj?(section)?(key) <- $"{value}"
-    //        Ok()
-    //    with
-    //    | e -> Error e
 
 
     let trySet jsonObj (ConfigSection section) (ConfigKey key) value =

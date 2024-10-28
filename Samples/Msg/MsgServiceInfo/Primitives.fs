@@ -2,8 +2,6 @@
 
 open System
 open Softellect.Messaging.Primitives
-open Softellect.Sys.Logging
-open Softellect.Messaging.Errors
 
 module Primitives =
 

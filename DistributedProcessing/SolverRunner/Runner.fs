@@ -11,12 +11,6 @@ open Softellect.Sys.TimerEvents
 
 module Runner =
 
-    ///// Note that it is compiled into a static variable, which means that you cannot run many instances of the solver in parallel.
-    ///// Currently this is not an issue since parallel running is not needed (by design).
-    ///// Note (2) - it cannot be moved inside nSolve because that will require moving fUseNonNegative inside nSolve for ODE solver,
-    ///// which is not allowed by IL design.
-    //let mutable private needsCallBackData = NeedsCallBackData.defaultValue
-
     let private needsCallBackDataDictionary = ConcurrentDictionary<RunQueueId, NeedsCallBackData>()
 
 
@@ -164,12 +158,6 @@ module Runner =
         else ncbd, None
 
 
-    //let private estCompl d (t : EvolutionTime) =
-    //    match estimateEndTime (calculateProgress d t) d.started with
-    //    | Some e -> " est. compl.: " + e.ToShortDateString() + ", " + e.ToShortTimeString() + ","
-    //    | None -> EmptyString
-
-
     let private calculateProgressDataWithErr (ncbd : NeedsCallBackData) (t : EvolutionTime) v =
         // n.logger.logDebugString $"calculateProgressDataWithErr: Called with t = {t}, v = {v}."
 
@@ -282,10 +270,6 @@ module Runner =
         let o = d.modelData.solverOutputParams
         let c = s.callBackProxy.checkCancellation
 
-        //let d0 = needsCallBackData
-        // n.logger.logDebugString $"tryCallBack - starting: t = {t}, needsCallBackData = {d0}."
-        //let pd = { d0.progressData with callCount = d0.progressData.callCount + 1L; progress = calculateProgress n t }
-
         let progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x) // Calculates detailed progress.
 
         let pd =
@@ -304,18 +288,13 @@ module Runner =
         let ncbd1 = { ncbd with progressData = pd.toProgressData() }
         let ncbd2, ct = checkCancellation runQueueId d.cancellationCheckFreq c ncbd1
 
-        //let cbd = { progressData = pd; x = x }
-        // n.logger.logDebugString $"    tryCallBack: t = {t}, d = {d}, cbd = {cbd}."
-
         match ct with
         | Some v ->
             notifyAll ctx (v |> CancelledCalculation |> FinalCallBack) pd t x
             let progressDataWithErr = { pd with progressInfo = calculateProgressDataWithErr ncbd1 t v }
             raise (ComputationAbortedException<'P> (progressDataWithErr, v))
         | None ->
-            // let c, v = n.callBackInfo.needsCallBack.invoke d t
             let ncbd3, v = (needsCallBack i o).invoke ncbd2 t
-            // n.logger.logDebugString $"    tryCallBack: t = {t}, setting needsCallBackData to c = {c}, v = {v}."
 
             match v with
             | None -> ()
@@ -330,22 +309,6 @@ module Runner =
                 | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
             ncbd3
-
-
-    //let notifyOfCharts d t =
-    //    printfn $"notifyOfCharts: t = %A{t}"
-    //    let charts = d.callBackInfo.chartCallBack.generateCharts()
-    //
-    //    let chartResult =
-    //        {
-    //            runQueueId = d.runQueueId
-    //            charts = charts
-    //        }
-    //        |> plotAllResults t
-    //        |> proxy.saveCharts
-    //
-    //    printfn $"notifyOfResults completed with result: %A{chartResult}"
-    //    chartResult
 
 
     let runSolver<'D, 'P, 'X, 'C> (ctx : SolverRunnerContext<'D, 'P, 'X, 'C>) =

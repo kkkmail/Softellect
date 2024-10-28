@@ -1,38 +1,15 @@
 ﻿namespace Softellect.DistributedProcessing.PartitionerService
 
 open System
-open Argu
 open System.Threading
 open System.Threading.Tasks
-open System.ServiceModel
 open Microsoft.Extensions.Hosting
-open Microsoft.Extensions.Logging
-
-open Softellect.Sys
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
-open Softellect.Sys.AppSettings
-open Softellect.Wcf.Common
-open Softellect.Wcf.Client
-open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.AppSettings
-open Softellect.Sys.AppSettings
-open Softellect.Wcf.AppSettings
-
-open Softellect.Sys.Primitives
-open Softellect.Messaging.Primitives
-open Softellect.Messaging.AppSettings
 open Softellect.Messaging.Errors
-open Softellect.Sys.AppSettings
-open Softellect.Wcf.Common
-
-open Softellect.DistributedProcessing.Primitives
 open Softellect.DistributedProcessing.AppSettings.PartitionerService
 open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.Errors
-open Softellect.Sys.AppSettings
-open Softellect.Sys
-open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open CoreWCF
 open Softellect.DistributedProcessing.Primitives.Common
@@ -41,22 +18,15 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
-open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
 
 module Partitioner =
 
     let private printDebug s = printfn $"{s}"
-//    let private printDebug s = ()
 
     let private toError g f = f |> g |> Error
     let private addError g f e = ((f |> g) + e) |> Error
     let private combineUnitResults = combineUnitResults DistributedProcessingError.addError
-    //let private maxMessages = [ for _ in 1..maxNumberOfMessages -> () ]
-
-    //type OnProcessMessageType = OnProcessMessageType<unit>
-    //type OnGetMessagesProxy = OnGetMessagesProxy<unit>
-    //let onGetMessages = onGetMessages<unit>
 
     type PartitionerProxy
         with
@@ -70,14 +40,6 @@ module Partitioner =
                 loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo.partitionerId
                 saveCharts = saveLocalChartInfo (Some (i.partitionerInfo.resultLocation, None))
                 loadModelBinaryData = loadModelBinaryData
-
-                //runModel = failwith "PartitionerProxy: runModel is not implemented yet."
-                //tryRunFirstModel = failwith "PartitionerProxy: tryRunFirstModel is not implemented yet."
-
-                //sendRunModelMessage = failwith "PartitionerProxy: sendRunModelMessage is not implemented yet."
-                //sendRequestResultsMessage = failwith "PartitionerProxy: sendRequestResultsMessage is not implemented yet."
-                //tryResetRunQueue = failwith "PartitionerProxy: tryResetRunQueue is not implemented yet."
-                //sendCancelRunQueueMessage = failwith "PartitionerProxy: sendCancelRunQueueMessage is not implemented yet."
             }
 
 
@@ -192,39 +154,8 @@ module Partitioner =
         proxy.saveCharts c |> bindError (addError SaveChartsRunnerErr (UnableToSaveChartsRunnerErr c.runQueueId))
 
 
-//    let processMessage (proxy : ProcessMessageProxy) (m : Message) =
-//        printfn $"processMessage: messageId = %A{m.messageDataInfo.messageId}, message = %A{m}."
-
-//        let r =
-//            match m.messageData with
-//            | UserMsg (PartitionerMsg x) ->
-//                match x with
-//                | UpdateProgressPrtMsg i -> proxy.updateProgress i
-//                | SaveChartsPrtMsg c -> proxy.saveCharts c
-//                | RegisterWorkerNodePrtMsg r -> proxy.register r
-//                | UnregisterWorkerNodePrtMsg r -> proxy.unregister r
-//                |> bindError (addError ProcessMessageRunnerErr (ErrorWhenProcessingMessageRunnerErr m.messageDataInfo.messageId))
-//            | _ -> toError ProcessMessageRunnerErr (InvalidMessageTypeRunnerErr m.messageDataInfo.messageId)
-
-//        match r with
-//        | Ok() -> ()
-//        | Error e -> printfn $"processMessage: messageId = %A{m.messageDataInfo.messageId}, ERROR = %A{e}."
-
-//        r
-
-
-//    let getRunState (proxy : GetRunStateProxy) =
-//        let w, e = proxy.loadRunQueueProgress() |> unzipListResult
-//        w, e |> foldToUnitResult
-
-// ====================================
-
     type IPartitionerService =
         inherit IHostedService
-
-        //abstract tryCancelRunQueue : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
-        //abstract tryRequestResults : RunQueueId -> DistributedProcessingUnitResult -> DistributedProcessingUnitResult
-        //abstract tryReset : RunQueueId -> DistributedProcessingUnitResult
 
         /// To check if service is working.
         abstract ping : unit -> DistributedProcessingUnitResult
@@ -233,15 +164,6 @@ module Partitioner =
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = PartitionerWcfServiceName)>]
     type IPartitionerWcfService =
-        //[<OperationContract(Name = "tryCancelRunQueue")>]
-        //abstract tryCancelRunQueue : q:byte[] -> byte[]
-
-        //[<OperationContract(Name = "tryRequestResults")>]
-        //abstract tryRequestResults : q:byte[] -> byte[]
-
-        //[<OperationContract(Name = "tryReset")>]
-        //abstract tryReset : q:byte[] -> byte[]
-
         [<OperationContract(Name = "ping")>]
         abstract ping : q:byte[] -> byte[]
 
@@ -294,7 +216,6 @@ module Partitioner =
     type PartitionerRunner (ctx : PartitionerContext) =
         let mutable eventHandlers = []
 
-        //let partitionerId = ctx.partitionerServiceInfo.partitionerInfo.partitionerId
         let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(ctx.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
         let onProcessMessageImpl (m : DistributedProcessingMessage) =

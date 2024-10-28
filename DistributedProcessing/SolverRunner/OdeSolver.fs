@@ -1,21 +1,10 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
-open System
-open Softellect.Sys.Primitives
-open Softellect.Sys.Errors
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
-open Softellect.DistributedProcessing.Errors
-open System
 open Microsoft.FSharp.NativeInterop
-//open Primitives.GeneralPrimitives
-//open Primitives.SolverPrimitives
-//open Primitives.SolverRunnerErrors
 open Softellect.OdePackInterop
 open Microsoft.FSharp.Core
-//open Primitives.GeneralData
-//open GenericOdeSolver.Primitives
-open Softellect.Sys.Primitives
 
 #nowarn "9"
 

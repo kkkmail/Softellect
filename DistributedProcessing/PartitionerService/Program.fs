@@ -1,20 +1,14 @@
 namespace Softellect.DistributedProcessing.PartitionerService
 
-open Argu
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Messaging.Primitives
 open Softellect.DistributedProcessing.Primitives.Common
-//open Softellect.DistributedProcessing.PartitionerService.Worker
-open Softellect.DistributedProcessing.PartitionerService.CommandLine
-//open Softellect.DistributedProcessing.PartitionerService.Partitioner
 open Softellect.DistributedProcessing.AppSettings.PartitionerService
-open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.PartitionerService
 open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.PartitionerService.Partitioner
-open Softellect.DistributedProcessing.DataAccess.PartitionerService
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
@@ -60,14 +54,14 @@ module Program =
             failwith ""
 
         let configureServices (services : IServiceCollection) =
-            let runner = new PartitionerRunner(data)
+            let runner = PartitionerRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
 
         let programData =
             {
                 serviceAccessInfo = data.partitionerServiceInfo.partitionerServiceAccessInfo
-                getService = fun () -> new PartitionerService(data.partitionerServiceInfo) :> IPartitionerService
-                getWcfService = fun service -> new PartitionerWcfService(service)
+                getService = fun () -> PartitionerService(data.partitionerServiceInfo) :> IPartitionerService
+                getWcfService = PartitionerWcfService
                 saveSettings = saveSettings
                 configureServices = Some configureServices
             }

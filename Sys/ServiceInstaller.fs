@@ -33,7 +33,7 @@ module ServiceInstaller =
 
 
     /// kk:20190812 - As of this date Argu does not support generics.
-    /// Which means that it is not possible to use this class directly and we need to remap the values.
+    /// Which means that it is not possible to use this class directly, and we need to remap the values.
     [<CliPrefix(CliPrefix.None)>]
     type SvcArguments<'A when 'A :> IArgParserTemplate> =
         | [<Unique>] [<First>] [<AltCommandLine("i")>] Install

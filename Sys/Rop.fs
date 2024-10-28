@@ -226,7 +226,7 @@ module Rop =
 
 
     /// Adds error f if the result is (Error e).
-    /// Otherwise returns then same (Ok r).
+    /// Otherwise, returns then same (Ok r).
     let addError adder v f =
         match v with
         | Ok r -> Ok r

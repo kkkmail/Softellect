@@ -3,11 +3,7 @@
 namespace Softellect.Messaging
 
 open System
-open System.Data.SQLite
 open FSharp.Data.Sql
-open System.Data
-open System.Data.SqlClient
-
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.VersionInfo

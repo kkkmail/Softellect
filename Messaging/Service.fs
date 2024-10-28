@@ -6,11 +6,9 @@ open System.Threading.Tasks
 open CoreWCF
 open Softellect.Messaging.Errors
 open Softellect.Sys.TimerEvents
-open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
-open Softellect.Sys.Logging
 open Microsoft.Extensions.Hosting
 
 module Service =
@@ -79,10 +77,6 @@ module Service =
                 | None -> Ok()
 
         interface IMessagingService<'D> with
-            //member _.tryStart() =
-            //    eventHandler <- createEventHandlers()
-            //    Ok()
-
             member _.getVersion() =
                 printfn "getVersion was called."
                 Ok d.messagingServiceAccessInfo.messagingDataVersion
@@ -103,8 +97,6 @@ module Service =
                 //printfn "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
                 proxy.deleteMessage m
 
-            //member _.removeExpiredMessages() = removeExpiredMessagesImpl()
-
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
                 match onTryStart() with
@@ -113,7 +105,7 @@ module Service =
                     Task.CompletedTask
                 | Error e ->
                     printfn $"Error during start: %A{e}."
-                    Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
+                    Task.FromException(Exception($"Failed to start WorkerNodeRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with

@@ -6,21 +6,13 @@ open System.Threading.Tasks
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
-open Softellect.Sys.Core
 open Softellect.Sys.TimerEvents
-open Softellect.Wcf.Common
-open Softellect.Wcf.Client
-open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Proxy
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.DataAccess.WorkerNodeService
-open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Sys.Primitives
-open Softellect.Sys.Logging
 open Softellect.Messaging.Client
-open Softellect.Messaging.ServiceProxy
 open Microsoft.Extensions.Hosting
 
 module WorkerNode =
@@ -91,7 +83,7 @@ module WorkerNode =
 
         let numberOfCores = i.workerNodeServiceInfo.workerNodeInfo.noOfCores
         let partitionerId = i.workerNodeServiceInfo.workerNodeInfo.partitionerId
-        let messageProcessor = new MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
+        let messageProcessor = MessagingClient<DistributedProcessingMessageData>(i.messagingClientData) :> IMessageProcessor<DistributedProcessingMessageData>
 
         let onProcessMessageImpl (m : DistributedProcessingMessage) =
             let r = onProcessMessage i m
@@ -199,7 +191,7 @@ module WorkerNode =
                 | Ok () -> Task.CompletedTask
                 | Error e ->
                     printfn $"Error during start: %A{e}."
-                    Task.FromException(new Exception($"Failed to start WorkerNodeRunner: %A{e}"))
+                    Task.FromException(Exception($"Failed to start WorkerNodeRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with

@@ -1,18 +1,8 @@
 namespace Softellect.DistributedProcessing
 
-open System
-open System.Threading
-
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
-open Softellect.Sys.TimerEvents
-
-open Softellect.Wcf.Common
-open Softellect.Wcf.Client
-
-open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.Proxy
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
@@ -206,27 +196,8 @@ module Errors =
 
     type OnProcessMessageError =
         | CannotSaveModelDataErr of MessageId * RunQueueId
-//        | OnRunModelFailedErr of MessageId * RunQueueId
-//        | ModelAlreadyRunningErr of MessageId * RunQueueId
         | InvalidMessageErr of (MessageId * string)
         | FailedToCancelErr of (MessageId * RunQueueId * exn)
-
-
-//    type OnRequestResultError =
-//        | CannotFindRunQueueErr of RunQueueId
-
-
-//    //type WrkSettingsError =
-//    //    | InvalidSettings of string
-//    //    | WrkSettingExn of exn
-
-
-//    type WorkerNodeError =
-////        | OnRunModelErr of OnRunModelError
-////        | OnProcessMessageErr of OnProcessMessageError
-//        | OnGetMessagesErr of OnGetMessagesError
-//        | OnRequestResultErr of OnRequestResultError
-//        //| WrkSettingsErr of WrkSettingsError
 
 
     type WorkerNodeWcfError =
@@ -235,24 +206,8 @@ module Errors =
         | PingWcfErr of WcfError
 
 
-    type PartitionereWcfError =
+    type PartitionerWcfError =
         | PrtPingWcfErr of WcfError
-
-
-//    type WorkerNodeServiceError =
-////        | WorkerNodeWcfErr of WorkerNodeWcfError
-////        | UnableToStartMessagingClientErr of MessagingError
-////        | UnableToCreateWorkerNodeServiceErr
-//        | ServiceUnavailableErr
-//        | UpdateLocalProgressErr of string
-//        | ConfigureServiceErr of string
-//        | MonitorServiceErr of string
-
-//        // ======
-//        // Ugly stuff
-//        // TODO kk:20240722 - WorkNode error types are now inconsistent and conflict with messaging error types.
-//        // See: https://github.com/kkkmail/CoreClm/issues/40
-//        | UnableToRegisterWorkerNodeErr of MessagingError
 
 
 // Model runner errors
@@ -330,21 +285,6 @@ module Errors =
         | UnableToFindMappingErr of RunQueueId
 
 
-    //type ModelRunnerError =
-    //    | RunModelRunnerErr of RunModelRunnerError
-    //    | TryRunFirstModelRunnerErr of TryRunFirstModelRunnerError
-    //    | TryCancelRunQueueRunnerErr of TryCancelRunQueueRunnerError
-    //    | TryRequestResultsRunnerErr of TryRequestResultsRunnerError
-    //    | TryRunAllModelsRunnerErr of TryRunAllModelsRunnerError
-    //    | UpdateProgressRunnerErr of UpdateProgressRunnerError
-    //    | RegisterRunnerErr of RegisterRunnerError
-    //    | UnregisterRunnerErr of UnregisterRunnerError
-    //    | SaveResultRunnerErr of SaveResultRunnerError
-    //    | SaveChartsRunnerErr of SaveChartsRunnerError
-    //    | ProcessMessageRunnerErr of ProcessMessageRunnerError
-    //    | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
-
-
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
@@ -418,7 +358,7 @@ module Errors =
 
         // Some errors
         | SaveChartsExn of exn
-        | PartitionerWcfErr of PartitionereWcfError
+        | PartitionerWcfErr of PartitionerWcfError
 
         static member addError a b =
             match a, b with
@@ -460,20 +400,3 @@ module Errors =
     type DistributedProcessingResult<'T> = Result<'T, DistributedProcessingError>
     type DistributedProcessingListResult<'T> = ListResult<'T, DistributedProcessingError>
     type DistributedProcessingStateWithResult<'T> = StateWithResult<'T, DistributedProcessingError>
-
-
-    /// See: https://stackoverflow.com/questions/49974736/how-to-declare-a-generic-exception-types-in-f
-    /// We have to resort to throwing a specific exception in order
-    /// to perform early termination from deep inside C# ODE solver.
-    /// There seems to be no other easy and clean way. Revisit if that changes.
-    //type ComputationAbortedException<'P> (pd : ProgressData<'P>, ct : CancellationType) =
-    //    inherit System.Exception ()
-
-    //    member _.progressData = pd
-    //    member _.cancellationType = ct
-
-    //type ComputationAbortedException (pd : ProgressData, ct : CancellationType) =
-    //    inherit System.Exception ()
-
-    //    member _.progressData = pd
-    //    member _.cancellationType = ct
