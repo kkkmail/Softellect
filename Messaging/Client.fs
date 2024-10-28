@@ -165,17 +165,28 @@ module Client =
 
 
     let private trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
-        //printfn "trySendSingleMessage: starting..."
+        printfn "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
-        | Ok None -> Ok None
+        | Ok None ->
+            printfn "trySendSingleMessage: No messages to send."
+            Ok None
         | Ok (Some m) ->
+            printfn $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
             match proxy.sendMessage m with
             | Ok() ->
                 match proxy.tryDeleteMessage m.messageDataInfo.messageId with
-                | Ok() -> m.messageData |> proxy.getMessageSize |> Some |> Ok
-                | Error e -> Error e
-            | Error e -> Error e
-        | Error e -> Error e
+                | Ok() ->
+                    printfn $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
+                    m.messageData |> proxy.getMessageSize |> Some |> Ok
+                | Error e ->
+                    printfn $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
+                    Error e
+            | Error e ->
+                printfn $"trySendSingleMessage: Failed to send message: '%A{m.messageDataInfo}', error: '%A{e}'."
+                Error e
+        | Error e ->
+            printfn $"trySendSingleMessage: Failed to pick message, error: '%A{e}'."
+            Error e
 
 
     let private trySendMessages proxy = tryTransmitMessages (fun () -> trySendSingleMessage proxy)

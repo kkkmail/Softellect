@@ -88,7 +88,9 @@ module DataAccess =
             try
                 g()
             with
-            | e -> mapExceptionToError f e
+            | e ->
+                printfn $"tryDbFun: e = %A{e}."
+                mapExceptionToError f e
 
         tryRopFun (mapException f) w
 

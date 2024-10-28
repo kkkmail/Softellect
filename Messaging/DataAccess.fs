@@ -173,6 +173,7 @@ module DataAccess =
     ///                when matched then
     ///                    update set senderId = source.senderId, recipientId = source.recipientId, dataVersion = source.dataVersion, deliveryTypeId = source.deliveryTypeId, messageData = source.messageData, createdOn = source.createdOn;
     let saveMessage<'D> (v : MessagingDataVersion) (m : Message<'D>) =
+        printfn $"saveMessage: %A{m.messageDataInfo}"
         let elevate e = e |> SaveMessageErr
         let toError e = e |> CannotSaveMessageErr |> elevate
         let fromDbError e = e |> SaveMessageDbErr |> elevate
@@ -190,10 +191,13 @@ module DataAccess =
 
             r.ResultSet |> bindIntScalar toError m.messageDataInfo.messageId
 
-        tryDbFun fromDbError g
+        let result = tryDbFun fromDbError g
+        printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+        result
 
 
     let deleteMessage (messageId : MessageId) =
+        printfn $"deleteMessage: %A{messageId}"
         let elevate e = e |> DeleteMessageErr
         let toError e = e |> CannotDeleteMessageErr |> elevate
         let fromDbError e = e |> DeleteMessageDbErr |> elevate
@@ -203,7 +207,9 @@ module DataAccess =
             let r = ctx.Procedures.DeleteMessage .Invoke(``@messageId`` = messageId.value)
             r.ResultSet |> bindIntScalar toError messageId
 
-        tryDbFun fromDbError g
+        let result = tryDbFun fromDbError g
+        printfn $"deleteMessage: %A{messageId}, result: %A{result}."
+        result
 
 
     let deleteExpiredMessages (v : MessagingDataVersion) (expirationTime : TimeSpan) =

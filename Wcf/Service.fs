@@ -45,13 +45,15 @@ module Service =
             match tryDeserialize wcfSerializationFormat a with
             | Ok m -> p m
             | Error e ->
-//                printfn $"tryReply - {count}: Error: '{e}'."
+                printfn $"tryReply - Error on reply: '{e}'."
                 toWcfSerializationError f e
 
         let retVal =
             match trySerialize wcfSerializationFormat reply with
             | Ok r -> r
-            | Error _ -> [||]
+            | Error e ->
+                printfn $"tryReply - Error: '{e}'."
+                [||]
 
 //        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
         retVal

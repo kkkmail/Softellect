@@ -88,13 +88,15 @@ module Service =
                 Ok d.messagingServiceAccessInfo.messagingDataVersion
 
             member _.sendMessage m =
-                printfn "sendMessage was called with message: %A." m
-                proxy.saveMessage m
+                printfn $"sendMessage was called with message: %A{m}."
+                let result = proxy.saveMessage m
+                printfn $"sendMessage - result: %A{result}."
+                result
 
             member _.tryPickMessage n =
-                printfn "tryPeekMessage was called with MessagingClientId: %A." n
+                printfn $"tryPeekMessage was called with MessagingClientId: %A{n}."
                 let result = proxy.tryPickMessage n
-                printfn "tryPickMessage - result: %A." result
+                printfn $"tryPickMessage - result: %A{result}."
                 result
 
             member _.tryDeleteFromServer (_, m) =
@@ -118,7 +120,7 @@ module Service =
                 | Ok () ->
                     printfn "MessagingService is stopping..."
                     Task.CompletedTask
-                | Error e -> 
+                | Error e ->
                     printfn $"Error during stop: %A{e}."
                     Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.
 

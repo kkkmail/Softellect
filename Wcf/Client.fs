@@ -74,10 +74,10 @@ module Client =
     /// Tries getting a Wcf Client.
     let tryGetWcfService<'T> t url =
         try
-            printfn $"tryGetWcfService - t: '%A{t}', url: '%A{url}'." 
+            printfn $"tryGetWcfService - t: '%A{t}', url: '%A{url}'."
             let binding = getBinding t
             let address = EndpointAddress(url)
-            printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'." 
+            printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'."
 
             let channelFactory =
                 match binding with
@@ -102,7 +102,7 @@ module Client =
 
                     match trySerialize wcfSerializationFormat a with
                     | Ok b ->
-                        printfn $"tryCommunicate: Calling service at %A{DateTime.Now}..." 
+                        printfn $"tryCommunicate: Calling service at %A{DateTime.Now}..."
                         let d = c service b
                         channel.Close()
                         factoryCloser()
@@ -112,7 +112,9 @@ module Client =
                         |> Result.mapError WcfSerializationErr
                         |> Result.mapError f
                         |> Result.bind id
-                    | Error e -> toWcfSerializationError f e
+                    | Error e ->
+                        printfn $"tryCommunicate: At %A{DateTime.Now} got serialization error: '%A{e}'."
+                        toWcfSerializationError f e
                 with
                 | e ->
                     printfn $"tryCommunicate: At %A{DateTime.Now} got inner exception:' %A{e}'."
@@ -124,7 +126,9 @@ module Client =
                     | _ -> ()
 
                     toWcfError f e // We want the outer "real" error.
-            | Error e -> e |> f |> Error
+            | Error e ->
+                printfn $"tryCommunicate: At %A{DateTime.Now} got outer error: '%A{e}'."
+                e |> f |> Error
         with
         | e ->
             printfn $"tryCommunicate: At %A{DateTime.Now} got outer exception: '%A{e}'."
