@@ -19,19 +19,31 @@ module DataAccess =
     let AppConfigFile : string = __SOURCE_DIRECTORY__ + @"\app.config"
 
 
-    let getConnectionString (fileName : string) connKey defaultValue =
-        let fullPath =
-            if Path.IsPathRooted(fileName) then fileName
-            else Path.Combine(getAssemblyLocation(), fileName)
+    let getConnectionString fileName connKey defaultValue =
+        let fullPath = getFileName fileName
 
-        match AppSettingsProvider.tryCreate fullPath with
-        | Ok provider ->
-            match provider.tryGetConnectionString connKey with
-            | Ok (Some EmptyString) -> defaultValue
-            | Ok (Some s) -> s
-            | _ -> defaultValue
-        | _ -> defaultValue
-        |> ConnectionString
+        printfn $"getConnectionString: fileName = '%A{fileName}', fullPath = '%A{fullPath}', connKey = '%A{connKey}'."
+
+        let r =
+            match AppSettingsProvider.tryCreate fullPath with
+            | Ok provider ->
+                match provider.tryGetConnectionString connKey with
+                | Ok (Some EmptyString) ->
+                    printfn $"getConnectionString: EmptyString."
+                    defaultValue
+                | Ok (Some s) ->
+                    printfn $"getConnectionString: s = '%A{s}'."
+                    s
+                | _ ->
+                    printfn $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."
+                    defaultValue
+            | _ ->
+                printfn $"getConnectionString: no provider, defaultValue = '%A{defaultValue}'."
+                defaultValue
+            |> ConnectionString
+
+        printfn $"getConnectionString: r = %A{r}."
+        r
 
 
     let buildConnectionString (key : string) : string =
@@ -82,6 +94,10 @@ module DataAccess =
     /// Otherwise, it will return None.
     /// This function is mostly used to get the number of updated rows.
     let mapIntScalar (r : Common.SqlEntity[]) =
+        r
+        |> Array.map(fun e -> printfn $"mapIntScalar: '%A{e.ColumnValues}'.")
+        |> ignore
+
         let result =
             r
             |> Array.map(fun e -> e.ColumnValues |> List.ofSeq |> List.head)

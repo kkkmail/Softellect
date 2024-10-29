@@ -217,11 +217,11 @@ module WorkerNodeService =
     let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
         printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
-        let fileName = SolverRunnerName
+        let fileName = FileName SolverRunnerName
         let elevate f = f |> TryRunSolverProcessErr |> Error
 
         match tryGetSolverLocation q with
-        | Ok (Some (FolderName folderName)) ->
+        | Ok (Some folderName) ->
             printfn $"tryRunSolverProcess: folderName = '{folderName}'."
 
             // TODO kk:20210511 - Build command line using Argu.
@@ -230,7 +230,7 @@ module WorkerNodeService =
                     let e = getExeName (Some folderName) fileName
 
                     match o with
-                    | None -> e, $"q {q.value}"
+                    | None -> e.value, $"q {q.value}"
                     | Some (FolderName f) ->
                         let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
                         let a = $"/c {e} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
@@ -248,7 +248,7 @@ module WorkerNodeService =
                             Arguments = args
                         )
 
-                    procStartInfo.WorkingDirectory <- folderName // getAssemblyLocation()
+                    procStartInfo.WorkingDirectory <- folderName.value
                     //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
                     procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
                     let p = new Process(StartInfo = procStartInfo)

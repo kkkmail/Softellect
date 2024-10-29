@@ -136,7 +136,7 @@ module WorkerNodeService =
 
 
     let loadPartitionerServiceInfo messagingDataVersion =
-        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
 
         match providerRes with
         | Ok provider ->
@@ -246,7 +246,7 @@ module WorkerNodeService =
 
 
     let loadWorkerNodeServiceInfo messagingDataVersion : WorkerNodeServiceInfo =
-        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
 
         match providerRes with
         | Ok provider ->

@@ -15,7 +15,7 @@ module AppSettings =
 
 
     let loadMessagingServiceAccessInfo messagingDataVersion =
-        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
         let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
         let m = getServiceAccessInfo providerRes messagingServiceAccessInfoKey d.serviceAccessInfo
 
@@ -38,7 +38,7 @@ module AppSettings =
 
 
     let updateMessagingServiceAccessInfo (m : MessagingServiceAccessInfo) =
-        let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
         let toErr e = e |> MsgSettingExn |> MsgSettingsErr |> Error
 
         match providerRes with

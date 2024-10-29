@@ -8,6 +8,7 @@ open Newtonsoft.Json
 open Argu
 open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
+open Softellect.Sys.Primitives
 
 module AppSettings =
 
@@ -49,7 +50,7 @@ module AppSettings =
         | ConfigKey of string
 
 
-    let tryOpenJson fileName =
+    let tryOpenJson (FileName fileName) =
         try
             let json = File.ReadAllText(fileName)
             let jsonObj = JsonConvert.DeserializeObject(json)
@@ -58,7 +59,7 @@ module AppSettings =
         | e -> Error e
 
 
-    let trySaveJson fileName jsonObj =
+    let trySaveJson (FileName fileName) jsonObj =
         try
             let output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented)
             File.WriteAllText(fileName, output)
@@ -224,7 +225,7 @@ module AppSettings =
         static member tryCreate fileName =
             let fullFileName = getFileName fileName
             match tryOpenJson fullFileName with
-            | Ok jsonObj -> (fileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject)) |> AppSettingsProvider |> Ok
+            | Ok jsonObj -> (fullFileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject)) |> AppSettingsProvider |> Ok
             | Error e -> Error e
 
 

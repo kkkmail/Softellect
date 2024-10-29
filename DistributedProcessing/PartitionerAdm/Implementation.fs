@@ -52,7 +52,7 @@ module Implementation =
         }
 
         static member create () =
-            let providerRes = AppSettingsProvider.tryCreate AppSettingsFile
+            let providerRes = AppSettingsProvider.tryCreate appSettingsFile
 
             match providerRes with
             | Ok provider ->

@@ -138,7 +138,7 @@ module WorkerNodeService =
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
-    let private getConnectionStringImpl() = getConnectionString AppSettingsFile connectionStringKey ConnectionStringValue
+    let private getConnectionStringImpl() = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
     let private getConnectionString() = connectionString.Value
 

@@ -135,14 +135,37 @@ module Core =
         | h :: t -> h :: removeFirst pred t
 
 
+    let getAssemblyLocation() =
+        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
+        x
+
+
     /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory.
     /// See:
     ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
     ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
     ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
-    let getFileName fileName =
-        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        x + @"\" + fileName
+    let getFileName (FileName fileName) =
+        let fullPath =
+            if Path.IsPathRooted(fileName) then fileName
+            else Path.Combine(getAssemblyLocation(), fileName)
+
+        printfn $"getFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+        FileName fullPath
+
+
+    /// Gets the full file name located in the folder where the assembly normally resides on disk or the installation folder.
+    /// Optional folder parameter allows to specify a different folder.
+    /// If folder starts with a backslash, then it is considered a relative path.
+    let getExeName (folder : FolderName option) (FileName exeName) =
+        let location = getAssemblyLocation()
+
+        match folder with
+        | None -> location + @"\" + exeName
+        | Some (FolderName f) ->
+            let x = if f.StartsWith(@"\") then location + f else f
+            x + @"\" + exeName
+        |> FileName
 
 
     let private xmlSerializer = FsPickler.CreateXmlSerializer(indent = true)
@@ -485,23 +508,6 @@ module Core =
         match b with
         | true -> b, Some s
         | false -> b, None
-
-
-    let getAssemblyLocation() =
-        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        x
-
-
-    /// Gets the full file name located in the folder where the assembly normally resides on disk or the installation folder.
-    /// Optional folder parameter allows to specify a different folder.
-    /// If folder starts with a backslash, then it is considered a relative path.
-    let getExeName folder exeName =
-        let location = getAssemblyLocation()
-        match folder with
-        | None -> location + @"\" + exeName
-        | Some (f : string) ->
-            let x = if f.StartsWith(@"\") then location + f else f
-            x + @"\" + exeName
 
 
     /// http://codebetter.com/matthewpodwysocki/2010/02/05/using-and-abusing-the-f-dynamic-lookup-operator/

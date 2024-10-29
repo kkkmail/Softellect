@@ -26,10 +26,6 @@ module Primitives =
     let Nl = "\r\n"
 
 
-    [<Literal>]
-    let AppSettingsFile = "appsettings.json"
-
-
     [<Measure>] type millisecond
     [<Measure>] type second
     [<Measure>] type minute
@@ -245,3 +241,6 @@ module Primitives =
             match c with
             | HtmlChart h -> h.fileName
             | BinaryChart b -> b.fileName
+
+
+    let appSettingsFile = FileName "appsettings.json"
