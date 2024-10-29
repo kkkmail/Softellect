@@ -233,7 +233,7 @@ module WorkerNodeService =
                     | None -> e.value, $"q {q.value}"
                     | Some (FolderName f) ->
                         let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
-                        let a = $"/c {e} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
+                        let a = $"/c {e.value} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
                         ("cmd.exe", a)
 
                 printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
