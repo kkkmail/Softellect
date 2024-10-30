@@ -481,8 +481,8 @@ GO
 
 create procedure dbo.tryUpdateProgressRunQueue (
                         @runQueueId uniqueidentifier,
-                        @progress decimal(18, 14),
-                        @evolutionTime decimal(18, 14),
+                        @progress decimal(38, 16),
+                        @evolutionTime decimal(38, 16),
                         @progressData nvarchar(max) = null,
                         @callCount bigint,
                         @relativeInvariant float)
