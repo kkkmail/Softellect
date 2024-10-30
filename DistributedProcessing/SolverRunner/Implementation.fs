@@ -80,7 +80,7 @@ module Implementation =
             | NotStartedRunQueue -> (GuaranteedDelivery, false)
             | InactiveRunQueue -> (GuaranteedDelivery, false)
             | RunRequestedRunQueue -> (GuaranteedDelivery, false)
-            | InProgressRunQueue -> (GuaranteedDelivery, false)
+            | InProgressRunQueue -> (NonGuaranteedDelivery, false)
             | CompletedRunQueue -> (GuaranteedDelivery, true)
             | FailedRunQueue -> (GuaranteedDelivery, true)
             | CancelRequestedRunQueue -> (GuaranteedDelivery, false)
@@ -101,8 +101,8 @@ module Implementation =
                         | CompletedCalculation -> Some CompletedRunQueue
                         | CancelledCalculation c ->
                             match c with
-                            | CancelWithResults so -> Some CancelledRunQueue
-                            | AbortCalculation so -> Some CancelledRunQueue
+                            | CancelWithResults _ -> Some CancelledRunQueue
+                            | AbortCalculation _ -> Some CancelledRunQueue
                 progressData = pd
             }
 

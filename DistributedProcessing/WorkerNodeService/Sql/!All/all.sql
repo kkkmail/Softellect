@@ -87,14 +87,14 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int not null,
         errorMessage nvarchar(max) null,
-        progress decimal(18, 14) not null,
+        progress decimal(38, 16) not null,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
         -- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
         progressData nvarchar(max) NULL,
 
         callCount bigint not null,
-        evolutionTime decimal(18, 14) not null,
+        evolutionTime decimal(38, 16) not null,
 
 	        -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
         relativeInvariant float not null,
@@ -482,6 +482,7 @@ GO
 create procedure dbo.tryUpdateProgressRunQueue (
                         @runQueueId uniqueidentifier,
                         @progress decimal(18, 14),
+                        @evolutionTime decimal(18, 14),
                         @progressData nvarchar(max) = null,
                         @callCount bigint,
                         @relativeInvariant float)
@@ -493,6 +494,7 @@ begin
     update dbo.RunQueue
     set
         progress = @progress,
+        evolutionTime = @evolutionTime,
         progressData = @progressData,
         callCount = @callCount,
         relativeInvariant = @relativeInvariant,

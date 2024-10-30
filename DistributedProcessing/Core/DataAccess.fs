@@ -246,6 +246,7 @@ module WorkerNodeService =
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
+                            EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             Progress = r.progressData.progressInfo.progress,
                             CallCount = r.progressData.progressInfo.callCount,
                             RelativeInvariant = r.progressData.progressInfo.relativeInvariant.value,
@@ -289,6 +290,7 @@ module WorkerNodeService =
             //r.RunQueueId <- q.runQueueId.value
             r.WorkerNodeId <- (q.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value))
             r.Progress <- q.progressData.progressInfo.progress
+            r.EvolutionTime <- q.progressData.progressInfo.evolutionTime.value
             r.CallCount <- q.progressData.progressInfo.callCount
             r.RelativeInvariant <- q.progressData.progressInfo.relativeInvariant.value
             r.ErrorMessage <- q.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)
@@ -786,6 +788,7 @@ module WorkerNodeService =
             let r = ctx.Procedures.TryUpdateProgressRunQueue.Invoke(
                                         ``@runQueueId`` = q.value,
                                         ``@progress`` = p.progressInfo.progress,
+                                        ``@evolutionTime`` = p.progressInfo.evolutionTime.value,
                                         ``@progressData`` = progressData,
                                         ``@callCount`` = p.progressInfo.callCount,
                                         ``@relativeInvariant`` = p.progressInfo.relativeInvariant.value)

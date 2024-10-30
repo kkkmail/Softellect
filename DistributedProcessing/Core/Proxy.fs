@@ -114,14 +114,6 @@ module WorkerNodeService =
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult
-
-            //// Unclear
-            //sendRunModelMessage : DistributedProcessingMessageInfo -> DistributedProcessingUnitResult
-            ////runModel : RunQueue -> DistributedProcessingUnitResult
-            //sendRequestResultsMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
-            //tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
-            ////tryRunFirstModel : unit -> DistributedProcessingResult<TryRunModelResult>
-            //sendCancelRunQueueMessage : DistributedProcessingMessageInfo -> MessagingUnitResult
         }
 
 

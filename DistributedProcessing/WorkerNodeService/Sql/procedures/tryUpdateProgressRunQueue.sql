@@ -11,6 +11,7 @@ GO
 create procedure dbo.tryUpdateProgressRunQueue (
                         @runQueueId uniqueidentifier,
                         @progress decimal(18, 14),
+                        @evolutionTime decimal(18, 14),
                         @progressData nvarchar(max) = null,
                         @callCount bigint,
                         @relativeInvariant float)
@@ -22,6 +23,7 @@ begin
     update dbo.RunQueue
     set
         progress = @progress,
+        evolutionTime = @evolutionTime,
         progressData = @progressData,
         callCount = @callCount,
         relativeInvariant = @relativeInvariant,

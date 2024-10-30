@@ -127,14 +127,14 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int NOT NULL,
         errorMessage nvarchar(max) NULL,
-        progress decimal(18, 14) NOT NULL,
+        progress decimal(38, 16) NOT NULL,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
         -- We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
         progressData nvarchar(max) NULL,
 
         callCount bigint NOT NULL,
-        evolutionTime decimal(18, 14) not null,
+        evolutionTime decimal(38, 16) not null,
 
 	        -- Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
         relativeInvariant float NOT NULL,

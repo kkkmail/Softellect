@@ -92,7 +92,7 @@ BEGIN
     END
 
     -- Return the row count to indicate whether an insertion occurred
-    SELECT @rowCount AS [Row_Count]
+    SELECT @rowCount AS [RowCount]
 END
 GO
 
