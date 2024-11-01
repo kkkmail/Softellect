@@ -47,6 +47,7 @@ module Errors =
         | WriteFileExn of exn
         | DeleteFileExn of exn
         | GetObjectIdsExn of exn
+        | DirectoryExn of exn
 
 
     type UnhandledEventInfo =

@@ -75,6 +75,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SysTests", "SysTests\SysTes
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Core", "Samples\DistrProc\Core\Core.fsproj", "{33B4B160-0E4B-46F7-B601-96544AC24B62}"
 EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Analytics", "Analytics\Analytics.fsproj", "{DFF30184-1369-486E-BBCC-B168BC176277}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -197,6 +199,10 @@ Global
 		{33B4B160-0E4B-46F7-B601-96544AC24B62}.Debug|x64.Build.0 = Debug|x64
 		{33B4B160-0E4B-46F7-B601-96544AC24B62}.Release|x64.ActiveCfg = Release|x64
 		{33B4B160-0E4B-46F7-B601-96544AC24B62}.Release|x64.Build.0 = Release|x64
+		{DFF30184-1369-486E-BBCC-B168BC176277}.Debug|x64.ActiveCfg = Debug|x64
+		{DFF30184-1369-486E-BBCC-B168BC176277}.Debug|x64.Build.0 = Debug|x64
+		{DFF30184-1369-486E-BBCC-B168BC176277}.Release|x64.ActiveCfg = Release|x64
+		{DFF30184-1369-486E-BBCC-B168BC176277}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

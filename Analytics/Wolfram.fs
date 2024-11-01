@@ -1,9 +1,12 @@
-﻿namespace Softellect.Sys
+﻿namespace Softellect.Analytics
 
 open System
 open Microsoft.FSharp.Reflection
 open System.Text
 open Softellect.Sys.Primitives
+open Softellect.Sys.Core
+open System.IO
+open Wolfram.NETLink
 
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
@@ -155,3 +158,61 @@ module Wolfram =
             | _ -> x.ToString()
 
         inner x ""
+
+
+    type WolframRequest =
+        {
+            content : string // A content of .m file to be put into inputFolder\inputFileName
+            inputFolder : FolderName
+            inputFileName : FileName
+            outputFolder : FolderName
+            outputFileName : FileName
+            extension : string
+        }
+
+
+    let runMathematicaScript (request: WolframRequest) =
+        try
+            // Ensure input and output folders exist
+            ensureDirectoryExists request.inputFolder |> ignore
+            ensureDirectoryExists request.outputFolder |> ignore
+
+            // Write the content to the input file
+            let inputFilePath = Path.Combine(request.inputFolder.value, request.inputFileName.value)
+            File.WriteAllText(inputFilePath, request.content)
+
+           // Start the Wolfram Kernel with explicit link name
+            let linkArgs = "-linkname 'C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe -mathlink'"
+            let link = MathLinkFactory.CreateKernelLink(linkArgs)
+
+            try
+                // Discard the initial kernel output
+                link.WaitAndDiscardAnswer()
+
+                // Load the .m file as a script and run it
+                let scriptCommand = $"<< \"%s{inputFilePath}\""  // Use "<< file.m" to load the script
+                link.Evaluate(scriptCommand)
+
+                // Wait for the result of the evaluation
+                link.WaitForAnswer() |> ignore
+
+                // Check for the output file in the output folder
+                let outputFilePath = Path.Combine(request.outputFolder.value, request.outputFileName.value) + "." + request.extension
+                if File.Exists(outputFilePath) then
+                    // If the output file is found, read it as a byte array and return it as Ok
+                    let fileBytes = File.ReadAllBytes(outputFilePath)
+                    link.Close() // Close the link when done
+                    Ok fileBytes
+                else
+                    // If the output file is not found, return an error
+                    link.Close()
+                    Error $"Output file '{outputFilePath}' not found."
+
+            with
+            | ex ->
+                link.Close()
+                Error $"An error occurred during Wolfram evaluation: {ex.Message}"
+
+        with
+        | ex -> Error $"An error occurred: {ex.Message}"
+

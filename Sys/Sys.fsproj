@@ -54,7 +54,6 @@
     <Compile Include="DynamicSql.fs" />
     <Compile Include="DataAccess.fs" />
     <Compile Include="FileSystemTypes.fs" />
-    <Compile Include="Wolfram.fs" />
   </ItemGroup>
 
   <ItemGroup>

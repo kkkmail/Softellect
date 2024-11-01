@@ -515,3 +515,14 @@ module Core =
         let t = this.GetType()
         let p = t.GetProperty(prop)
         p.GetValue(this, null) :?> 'Result
+
+
+    /// Function to ensure a directory exists and create it if it doesn't.
+    let ensureDirectoryExists (FolderName dir) =
+        try
+            if not (Directory.Exists dir) then Directory.CreateDirectory dir |> ignore
+            Ok ()
+        with
+        | e ->
+            printfn $"ensureDirectoryExists: Exception: '%A{e}'."
+            e |> DirectoryExn |> Error

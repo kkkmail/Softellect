@@ -20,24 +20,10 @@
   </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\..\..\..\..\Program Files\Wolfram Research\Mathematica\13.0\SystemFiles\Links\MathLink\DeveloperKit\Windows\SystemAdditions\ml32i4.dll" Link="ml32i4.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\..\..\Program Files\Wolfram Research\Mathematica\13.0\SystemFiles\Links\MathLink\DeveloperKit\Windows-x86-64\SystemAdditions\ml64i4.dll" Link="ml64i4.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
         <Content Include="..\..\..\DistributedProcessing\WorkerNodeService\appsettings.json" Link="appsettings.json">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Compile Include="Program.fs" />
-    </ItemGroup>
-
-    <ItemGroup />
-
-    <ItemGroup>
-      <PackageReference Include="Plotly.NET" Version="5.1.0" />
-      <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0" />
-      <PackageReference Include="Wolfram.NETLink" Version="1.7.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -45,6 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Analytics\Analytics.fsproj" />
       <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
       <ProjectReference Include="..\..\..\DistributedProcessing\SolverRunner\SolverRunner.fsproj" />
       <ProjectReference Include="..\Core\Core.fsproj" />
