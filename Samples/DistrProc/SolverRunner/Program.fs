@@ -67,9 +67,9 @@ module Program =
         |> HtmlChart
 
 
-    let inputFolder = "C:\\\\Temp\\\\WolframInput\\\\"
-    let outputFolder = "C:\\\\Temp\\\\WolframOutput\\\\"
-    let getInputFileName (q : RunQueueId) = $"{q.value}.m"
+    let inputFolder = "C:\\Temp\\WolframInput\\" |> FolderName
+    let outputFolder = "C:\\Temp\\WolframOutput\\" |> FolderName
+    let getInputFileName (q : RunQueueId) = $"{q.value}.m" |> FileName |> getFileName
     let getOutputFileName (q : RunQueueId) = $"{q.value}"
 
 
@@ -105,7 +105,7 @@ module Program =
                 ]
                 |> joinStrings Nl
 
-            Some data
+            data |> M |> Some
         | None -> None
 
 

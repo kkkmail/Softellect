@@ -11,6 +11,7 @@ open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Newtonsoft.Json.Serialization
+open System.Runtime.InteropServices
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -133,39 +134,6 @@ module Core =
         | [] -> []
         | h :: t when pred h -> t
         | h :: t -> h :: removeFirst pred t
-
-
-    let getAssemblyLocation() =
-        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        x
-
-
-    /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory.
-    /// See:
-    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
-    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
-    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
-    let getFileName (FileName fileName) =
-        let fullPath =
-            if Path.IsPathRooted(fileName) then fileName
-            else Path.Combine(getAssemblyLocation(), fileName)
-
-        printfn $"getFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
-        FileName fullPath
-
-
-    /// Gets the full file name located in the folder where the assembly normally resides on disk or the installation folder.
-    /// Optional folder parameter allows to specify a different folder.
-    /// If folder starts with a backslash, then it is considered a relative path.
-    let getExeName (folder : FolderName option) (FileName exeName) =
-        let location = getAssemblyLocation()
-
-        match folder with
-        | None -> location + @"\" + exeName
-        | Some (FolderName f) ->
-            let x = if f.StartsWith(@"\") then location + f else f
-            x + @"\" + exeName
-        |> FileName
 
 
     let private xmlSerializer = FsPickler.CreateXmlSerializer(indent = true)
@@ -517,12 +485,77 @@ module Core =
         p.GetValue(this, null) :?> 'Result
 
 
-    /// Function to ensure a directory exists and create it if it doesn't.
-    let ensureDirectoryExists (FolderName dir) =
-        try
-            if not (Directory.Exists dir) then Directory.CreateDirectory dir |> ignore
-            Ok ()
+    /// See:
+    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
+    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
+    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
+    let getAssemblyLocation() =
+        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
+        FolderName x
+
+
+    type FolderName
         with
-        | e ->
-            printfn $"ensureDirectoryExists: Exception: '%A{e}'."
-            e |> DirectoryExn |> Error
+
+        /// Function to ensure that a folder exists and create it if it doesn't.
+        member f.tryEnsureFolderExists() =
+            try
+                let dir = f.value
+                if not (Directory.Exists dir) then Directory.CreateDirectory dir |> ignore
+                Ok ()
+            with
+            | e ->
+                printfn $"tryEnsureDirectoryExists: Exception: '%A{e}'."
+                e |> TryEnsureFolderExistsExn |> Error
+
+
+    type FileName
+        with
+
+        /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory
+        /// unless the file name is already a name with a full path.
+        /// Optional folder name allow specifying a subfolder unless it is a fullly qualified folder name.
+        member f.tryGetFullFileName(fo : FolderName option) =
+            try
+                let fileName = f.value
+
+                let fullPath =
+                    if Path.IsPathRooted(fileName) then fileName
+                    else
+                        let assemblyLocation = getAssemblyLocation().value
+
+                        match fo with
+                        | None -> Path.Combine(assemblyLocation, fileName)
+                        | Some (FolderName folder) ->
+                            if Path.IsPathRooted(folder)
+                            then Path.Combine(folder, fileName)
+                            else Path.Combine(assemblyLocation, folder, fileName)
+
+                printfn $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                FileName fullPath |> Ok
+            with
+            | e ->
+                printfn $"tryGetFullFileName: Exception: '%A{e}'."
+                e |> TryGetFullFileNameExn |> Error
+
+        member f.tryGetFullFileName() = f.tryGetFullFileName None
+
+        member f.tryGetFullFolderName() =
+            try
+                match f.tryGetFullFileName() with
+                | Ok fileName -> Path.GetDirectoryName (fileName.value) |> FolderName |> Ok
+                | Error e -> Error e
+            with
+            | e ->
+                printfn $"tryGetFolderName: Exception: '%A{e}'."
+                e |> TryGetFolderNameExn |> Error
+
+        member f.tryEnsureFolderExists() =
+            try
+                    match f.tryGetFullFolderName() with
+                    | Ok folder -> folder.tryEnsureFolderExists()
+                    | Error e -> Error e
+                with
+                | e ->
+                    printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
+                    e |> TryEnsureFolderExistsExn |> Error

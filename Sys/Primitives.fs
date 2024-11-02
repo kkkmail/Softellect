@@ -98,9 +98,25 @@ module Primitives =
                 Error $"Folder name cannot be a reserved name (e.g., {r})."
             else
                 Ok (FolderName s)
-
         static member defaultResultLocation = FolderName "C:\\Results"
         static member defaultSolverLocation = FolderName "C:\\Solvers"
+
+
+    /// File extensions used in the system.
+    type FileExtension =
+        | PNG
+        | HTML
+
+        member e.extension =
+            match e with
+            | PNG -> ".png"
+            | HTML -> ".html"
+
+        static member tryCreate (s : string) =
+            match s.ToLower() with
+                | ".png" -> PNG |> Some
+                | ".html" -> HTML |> Some
+                | _ -> None
 
 
     /// An encapsulation of a file name.
@@ -108,6 +124,15 @@ module Primitives =
         | FileName of string
 
         member this.value = let (FileName v) = this in v
+        member this.combine (subFolder : FolderName) = Path.Combine(subFolder.value, this.value) |> FileName
+
+        member this.tryGetExtension() =
+            try
+                Path.GetExtension(this.value) |> FileExtension.tryCreate
+            with
+            | e ->
+                printfn $"FileName.tryGetExtension - Exception: %A{e}."
+                None
 
 
     type VersionNumber =

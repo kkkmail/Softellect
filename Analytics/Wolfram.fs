@@ -11,6 +11,13 @@ open Wolfram.NETLink
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
 
+    //. An encapsulation of Wolfram code file content.
+    type WolframCode =
+        | WolframCode of string
+
+        member this.value = let (WolframCode v) = this in v
+
+
     let private baseIndent = "  "
     let isDiscriminatedUnion obj = FSharpType.IsUnion(obj.GetType())
     let isRecord obj = FSharpType.IsRecord(obj.GetType())
@@ -162,57 +169,56 @@ module Wolfram =
 
     type WolframRequest =
         {
-            content : string // A content of .m file to be put into inputFolder\inputFileName
-            inputFolder : FolderName
+            wolframCode : WolframCode
             inputFileName : FileName
-            outputFolder : FolderName
             outputFileName : FileName
-            extension : string
         }
 
 
-    let runMathematicaScript (request: WolframRequest) =
+    /// TODO kk:20241101 - Make it configurable via appconfig.json.
+    let tryGetMathKernelFileName() =
+        "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName |> Ok
+
+
+    let tryRunMathematicaScript (request: WolframRequest) =
         try
-            // Ensure input and output folders exist
-            ensureDirectoryExists request.inputFolder |> ignore
-            ensureDirectoryExists request.outputFolder |> ignore
+            match request.inputFileName.tryEnsureFolderExists(), request.outputFileName.tryEnsureFolderExists(), request.inputFileName.tryGetFullFileName(), request.outputFileName.tryGetFullFileName() with
+            | Ok(), Ok(), Ok (FileName i), Ok (FileName o) ->
+                // Write the content to the input file.
+                File.WriteAllText(i, request.wolframCode.value)
 
-            // Write the content to the input file
-            let inputFilePath = Path.Combine(request.inputFolder.value, request.inputFileName.value)
-            File.WriteAllText(inputFilePath, request.content)
+                // Start the Wolfram Kernel with explicit link name.
+                match tryGetMathKernelFileName() with
+                | Ok kernelName ->
+                    let linkArgs = $"-linkname '{kernelName} -mathlink'"
+                    let link = MathLinkFactory.CreateKernelLink(linkArgs)
 
-           // Start the Wolfram Kernel with explicit link name
-            let linkArgs = "-linkname 'C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe -mathlink'"
-            let link = MathLinkFactory.CreateKernelLink(linkArgs)
+                    try
+                        // Discard the initial kernel output.
+                        link.WaitAndDiscardAnswer()
 
-            try
-                // Discard the initial kernel output
-                link.WaitAndDiscardAnswer()
+                        // Load the .m or .wl file as a script and run it.
+                        let scriptCommand = $"<< \"%s{i}\"" // Use "<< file.m" to load the script.
+                        link.Evaluate(scriptCommand)
 
-                // Load the .m file as a script and run it
-                let scriptCommand = $"<< \"%s{inputFilePath}\""  // Use "<< file.m" to load the script
-                link.Evaluate(scriptCommand)
+                        // Wait for the result of the evaluation.
+                        link.WaitForAnswer() |> ignore
 
-                // Wait for the result of the evaluation
-                link.WaitForAnswer() |> ignore
-
-                // Check for the output file in the output folder
-                let outputFilePath = Path.Combine(request.outputFolder.value, request.outputFileName.value) + "." + request.extension
-                if File.Exists(outputFilePath) then
-                    // If the output file is found, read it as a byte array and return it as Ok
-                    let fileBytes = File.ReadAllBytes(outputFilePath)
-                    link.Close() // Close the link when done
-                    Ok fileBytes
-                else
-                    // If the output file is not found, return an error
-                    link.Close()
-                    Error $"Output file '{outputFilePath}' not found."
-
-            with
-            | ex ->
-                link.Close()
-                Error $"An error occurred during Wolfram evaluation: {ex.Message}"
-
+                        // Check for the output file in the output folder
+                        if File.Exists(o) then
+                            // If the output file is found, read it as a byte array and return it as Ok.
+                            let fileBytes = File.ReadAllBytes(o)
+                            link.Close() // Close the link when done
+                            Ok fileBytes
+                        else
+                            // If the output file is not found, return an error.
+                            link.Close()
+                            Error $"Output file '{o}' is not found."
+                    with
+                    | ex ->
+                        link.Close()
+                        Error $"An error occurred during Wolfram evaluation: {ex.Message}"
+                | Error e -> Error e
+            | _ -> failwith "tryRunMathematicaScript failed..."
         with
         | ex -> Error $"An error occurred: {ex.Message}"
-
