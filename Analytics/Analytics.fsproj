@@ -39,6 +39,7 @@
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Compile Include="AppSettings.fs" />
     <Compile Include="Wolfram.fs" />
   </ItemGroup>
 

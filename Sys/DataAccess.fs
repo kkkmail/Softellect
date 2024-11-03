@@ -20,31 +20,23 @@ module DataAccess =
 
 
     let getConnectionString (fileName : FileName) connKey defaultValue =
-        //let fullPath = fileName.tryGetFullFileName()
-
         printfn $"getConnectionString: fileName = '%A{fileName}', connKey = '%A{connKey}'."
 
         let r =
-            match fileName.tryGetFullFileName() with
-            | Ok fullPath ->
-                printfn $"getConnectionString: fileName = '%A{fileName}', fullPath = '%A{fullPath}', connKey = '%A{connKey}'."
-                match AppSettingsProvider.tryCreate fullPath with
-                | Ok provider ->
-                    match provider.tryGetConnectionString connKey with
-                    | Ok (Some EmptyString) ->
-                        printfn $"getConnectionString: EmptyString."
-                        defaultValue
-                    | Ok (Some s) ->
-                        printfn $"getConnectionString: s = '%A{s}'."
-                        s
-                    | _ ->
-                        printfn $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."
-                        defaultValue
-                | _ ->
-                    printfn $"getConnectionString: no provider, defaultValue = '%A{defaultValue}'."
+            match AppSettingsProvider.tryCreate() with
+            | Ok provider ->
+                match provider.tryGetConnectionString connKey with
+                | Ok (Some EmptyString) ->
+                    printfn $"getConnectionString: EmptyString."
                     defaultValue
-            | Error e ->
-                printfn $"getConnectionString: ERROR = %A{e}."
+                | Ok (Some s) ->
+                    printfn $"getConnectionString: s = '%A{s}'."
+                    s
+                | _ ->
+                    printfn $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."
+                    defaultValue
+            | _ ->
+                printfn $"getConnectionString: no provider, defaultValue = '%A{defaultValue}'."
                 defaultValue
             |> ConnectionString
 

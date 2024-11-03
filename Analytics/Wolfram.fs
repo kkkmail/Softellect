@@ -3,10 +3,12 @@
 open System
 open Microsoft.FSharp.Reflection
 open System.Text
+open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open System.IO
 open Wolfram.NETLink
+open Softellect.Analytics.AppSettings
 
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
@@ -175,9 +177,13 @@ module Wolfram =
         }
 
 
-    /// TODO kk:20241101 - Make it configurable via appconfig.json.
     let tryGetMathKernelFileName() =
-        "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName |> Ok
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let result = provider.getMathKernelFileName() |> Ok
+            provider.save()
+            result
+        | Error e -> Error e
 
 
     let tryRunMathematicaScript (request: WolframRequest) =
@@ -222,7 +228,7 @@ module Wolfram =
                     | ex ->
                         link.Close()
                         Error $"An error occurred during Wolfram evaluation: {ex.Message}"
-                | Error e -> Error e
+                | Error e -> Error $"%A{e}"
             | _ -> failwith $"tryRunMathematicaScript failed for request: '%A{request}'."
         with
         | ex -> Error $"An error occurred: {ex.Message}"

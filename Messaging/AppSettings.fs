@@ -15,20 +15,11 @@ module AppSettings =
 
 
     let loadMessagingServiceAccessInfo messagingDataVersion =
-        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
-
-        match providerRes with
+        match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
             let m = getServiceAccessInfo provider messagingServiceAccessInfoKey d.serviceAccessInfo
-
-            let expirationTimeInMinutes =
-                match providerRes with
-                | Ok provider ->
-                    match provider.tryGetInt expirationTimeInMinutesKey with
-                    | Ok (Some n) when n > 0 -> TimeSpan.FromMinutes(float n)
-                    | _ -> defaultExpirationTime
-                | _ -> defaultExpirationTime
+            let expirationTimeInMinutes = provider.getIntOrDefault expirationTimeInMinutesKey defaultExpirationTime.Minutes |> TimeSpan.FromMinutes
 
             let messagingSvcInfo =
                 {
@@ -44,10 +35,9 @@ module AppSettings =
 
 
     let updateMessagingServiceAccessInfo (m : MessagingServiceAccessInfo) =
-        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
         let toErr e = e |> MsgSettingExn |> MsgSettingsErr |> Error
 
-        match providerRes with
+        match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let s = m.serviceAccessInfo
             printfn $"updateMessagingSettings - s: '{s}'."

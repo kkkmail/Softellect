@@ -52,9 +52,7 @@ module Implementation =
         }
 
         static member create () =
-            let providerRes = AppSettingsProvider.tryCreate appSettingsFile
-
-            match providerRes with
+            match AppSettingsProvider.tryCreate() with
             | Ok provider ->
                 let w = loadPartitionerInfo provider
 

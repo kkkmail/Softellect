@@ -79,28 +79,9 @@ module WorkerNodeService =
     let solverOutputLocationKey = ConfigKey "SolverOutputLocation"
 
 
-    let getPartitionerId (provider : AppSettingsProvider) d =
-        match provider.tryGetGuid partitionerIdKey with
-        | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> PartitionerId
-        | _ -> d
-
-
-    let tryGetFolderName (provider : AppSettingsProvider) key =
-        match provider.tryGetString key with
-        | Ok (Some p) when p <> "" ->
-            match FolderName.tryCreate p with
-            | Ok f -> Some f
-            | Error _ -> None
-        | _ -> None
-
-
-    let getFolderName (provider : AppSettingsProvider) key d =
-        match provider.tryGetString key with
-        | Ok (Some p) ->
-            match FolderName.tryCreate p with
-            | Ok f -> f
-            | Error _ -> d
-        | _ -> d
+    type AppSettingsProvider
+        with
+        member p.getPartitionerId (PartitionerId d) = p.getGuidOrDefault partitionerIdKey d.value |> MessagingClientId |> PartitionerId
 
 #endif
 
@@ -127,8 +108,8 @@ module WorkerNodeService =
     let loadPartitionerInfo (provider : AppSettingsProvider) =
         let w =
             {
-                partitionerId = getPartitionerId provider defaultPartitionerId
-                resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
+                partitionerId = provider.getPartitionerId defaultPartitionerId
+                resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
                 lastAllowedNodeErr = LastAllowedNodeErr.defaultValue
             }
 
@@ -136,9 +117,7 @@ module WorkerNodeService =
 
 
     let loadPartitionerServiceInfo messagingDataVersion =
-        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
-
-        match providerRes with
+        match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let m = loadMessagingServiceAccessInfo messagingDataVersion
             let w = loadPartitionerInfo provider
@@ -181,40 +160,18 @@ module WorkerNodeService =
             |> NetTcpServiceInfo
 
 
-    let getWorkerNodeId (provider : AppSettingsProvider) d =
-        match provider.tryGetGuid workerNodeIdKey with
-        | Ok (Some p) when p <> Guid.Empty -> p |> MessagingClientId |> WorkerNodeId
-        | _ -> d
-
-
-    let getWorkerNodeName (provider : AppSettingsProvider) d =
-        match provider.tryGetString workerNodeNameKey with
-        | Ok (Some EmptyString) -> d
-        | Ok (Some s) -> s |> WorkerNodeName
-        | _ -> d
-
-
-    let getNoOfCores (provider : AppSettingsProvider) d =
-        match provider.tryGetInt noOfCoresKey with
-        | Ok (Some k) when k >= 0 -> k
-        | _ -> d
-
-
-    let getNodePriority (provider : AppSettingsProvider) d =
-        match provider.tryGetInt nodePriorityKey with
-        | Ok (Some k) when k >= 0 -> WorkerNodePriority k
-        | _ -> d
-
-
-    let getIsInactive (provider : AppSettingsProvider) d =
-        match provider.tryGetBool isInactiveKey with
-        | Ok (Some b) -> b
-        | _ -> d
+    type AppSettingsProvider
+        with
+        member p.getWorkerNodeId (WorkerNodeId d) = p.getGuidOrDefault workerNodeIdKey d.value |> MessagingClientId |> WorkerNodeId
+        member p.getWorkerNodeName (WorkerNodeName d) = p.getStringOrDefault workerNodeNameKey d |> WorkerNodeName
+        member p.getNoOfCores d = p.getIntOrDefault noOfCoresKey d
+        member p.getNodePriority (WorkerNodePriority d) = p.getIntOrDefault nodePriorityKey d |> WorkerNodePriority
+        member p.getIsInactive d = p.getBoolOrDefault isInactiveKey d
 
 
     let loadWorkerNodeInfo (provider : AppSettingsProvider) =
-        let i = getWorkerNodeId provider (WorkerNodeId.newId())
-        let n = getWorkerNodeName provider (WorkerNodeName.newName())
+        let i = provider.getWorkerNodeId (WorkerNodeId.newId())
+        let n = provider.getWorkerNodeName (WorkerNodeName.newName())
 
         let defaultNoOfCores =
             match Environment.ProcessorCount with
@@ -227,28 +184,29 @@ module WorkerNodeService =
             {
                 workerNodeId = i
                 workerNodeName = n
-                partitionerId = getPartitionerId provider defaultPartitionerId
-                noOfCores = getNoOfCores provider defaultNoOfCores
-                nodePriority = getNodePriority provider WorkerNodePriority.defaultValue
-                isInactive = getIsInactive provider true
+                partitionerId = provider.getPartitionerId defaultPartitionerId
+                noOfCores = provider.getNoOfCores defaultNoOfCores
+                nodePriority = provider.getNodePriority WorkerNodePriority.defaultValue
+                isInactive = provider.getIsInactive true
                 lastErrorDateOpt = None
             }
+
+        let result = provider.trySave()
+        printfn $"loadWorkerNodeInfo: result = '%A{result}'."
 
         w
 
 
-    let loadWorkerNodeLocalInto provider =
+    let loadWorkerNodeLocalInto (provider : AppSettingsProvider) =
         {
-            resultLocation = getFolderName provider resultLocationKey FolderName.defaultResultLocation
-            solverLocation = getFolderName provider solverLocationKey FolderName.defaultSolverLocation
-            solverOutputLocation = tryGetFolderName provider solverOutputLocationKey
+            resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
+            solverLocation = provider.getFolderNameOrDefault solverLocationKey FolderName.defaultSolverLocation
+            solverOutputLocation = provider.getFolderNameOrDefault solverOutputLocationKey FolderName.defaultSolverOutputLocation
         }
 
 
     let loadWorkerNodeServiceInfo messagingDataVersion : WorkerNodeServiceInfo =
-        let providerRes = AppSettingsProvider.tryCreate appSettingsFile
-
-        match providerRes with
+        match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let workerNodeSvcInfo =
                 {

@@ -98,8 +98,10 @@ module Primitives =
                 Error $"Folder name cannot be a reserved name (e.g., {r})."
             else
                 Ok (FolderName s)
+
         static member defaultResultLocation = FolderName "C:\\Results"
         static member defaultSolverLocation = FolderName "C:\\Solvers"
+        static member defaultSolverOutputLocation = FolderName "C:\\Temp"
 
 
     /// File extensions used in the system.
@@ -130,6 +132,8 @@ module Primitives =
 
         member this.value = let (FileName v) = this in v
         member this.combine (subFolder : FolderName) = Path.Combine(subFolder.value, this.value) |> FileName
+
+        static member tryCreate (s: string) = FileName s |> Ok
 
         /// Wolfram path needs to double "\".
         member this.toWolframNotation() = this.value.Replace("\\", "\\\\")
