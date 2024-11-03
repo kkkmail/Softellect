@@ -104,19 +104,24 @@ module Primitives =
 
     /// File extensions used in the system.
     type FileExtension =
-        | PNG
-        | HTML
+        | FileExtension of string
 
-        member e.extension =
-            match e with
-            | PNG -> ".png"
-            | HTML -> ".html"
+        member this.value = let (FileExtension v) = this in v
+        member this.toWolframNotation() = this.value.Replace(".", "").ToUpper()
 
-        static member tryCreate (s : string) =
-            match s.ToLower() with
-                | ".png" -> PNG |> Some
-                | ".html" -> HTML |> Some
-                | _ -> None
+        //| PNG
+        //| HTML
+
+        //member e.extension =
+        //    match e with
+        //    | PNG -> ".png"
+        //    | HTML -> ".html"
+
+        //static member tryCreate (s : string) =
+        //    match s.ToLower() with
+        //        | ".png" -> PNG |> Some
+        //        | ".html" -> HTML |> Some
+        //        | _ -> None
 
 
     /// An encapsulation of a file name.
@@ -126,9 +131,12 @@ module Primitives =
         member this.value = let (FileName v) = this in v
         member this.combine (subFolder : FolderName) = Path.Combine(subFolder.value, this.value) |> FileName
 
+        /// Wolfram path needs to double "\".
+        member this.toWolframNotation() = this.value.Replace("\\", "\\\\")
+
         member this.tryGetExtension() =
             try
-                Path.GetExtension(this.value) |> FileExtension.tryCreate
+                Path.GetExtension(this.value) |> FileExtension |> Some
             with
             | e ->
                 printfn $"FileName.tryGetExtension - Exception: %A{e}."

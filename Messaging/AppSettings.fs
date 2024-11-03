@@ -16,25 +16,31 @@ module AppSettings =
 
     let loadMessagingServiceAccessInfo messagingDataVersion =
         let providerRes = AppSettingsProvider.tryCreate appSettingsFile
-        let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
-        let m = getServiceAccessInfo providerRes messagingServiceAccessInfoKey d.serviceAccessInfo
 
-        let expirationTimeInMinutes =
-            match providerRes with
-            | Ok provider ->
-                match provider.tryGetInt expirationTimeInMinutesKey with
-                | Ok (Some n) when n > 0 -> TimeSpan.FromMinutes(float n)
+        match providerRes with
+        | Ok provider ->
+            let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
+            let m = getServiceAccessInfo provider messagingServiceAccessInfoKey d.serviceAccessInfo
+
+            let expirationTimeInMinutes =
+                match providerRes with
+                | Ok provider ->
+                    match provider.tryGetInt expirationTimeInMinutesKey with
+                    | Ok (Some n) when n > 0 -> TimeSpan.FromMinutes(float n)
+                    | _ -> defaultExpirationTime
                 | _ -> defaultExpirationTime
-            | _ -> defaultExpirationTime
 
-        let messagingSvcInfo =
-            {
-                messagingDataVersion = messagingDataVersion
-                serviceAccessInfo = m
-                expirationTime = expirationTimeInMinutes
-            }
+            let messagingSvcInfo =
+                {
+                    messagingDataVersion = messagingDataVersion
+                    serviceAccessInfo = m
+                    expirationTime = expirationTimeInMinutes
+                }
 
-        messagingSvcInfo
+            messagingSvcInfo
+        | Error e ->
+            printfn $"loadMessagingServiceAccessInfo - Cannot load settings. Error: '%A{e}'."
+            failwith $"loadMessagingServiceAccessInfo - Cannot load settings. Error: '%A{e}'."
 
 
     let updateMessagingServiceAccessInfo (m : MessagingServiceAccessInfo) =
@@ -51,4 +57,4 @@ module AppSettings =
             printfn $"updateMessagingSettings - result: '%A{result}'."
             provider.trySet expirationTimeInMinutesKey (int m.expirationTime.TotalMinutes) |> ignore
             provider.trySave() |> Rop.bindError toErr
-        | Error e -> toErr e
+        | Error e -> e |> FileErr |> MsgSettingsErr |> Error

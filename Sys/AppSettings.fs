@@ -9,6 +9,7 @@ open Argu
 open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
+open Softellect.Sys.Errors
 
 module AppSettings =
 
@@ -222,10 +223,12 @@ module AppSettings =
         member _.trySave() = trySaveJson fileName jsonObj
         member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
 
-        static member tryCreate fileName =
-            let fullFileName = getFileName fileName
-            match tryOpenJson fullFileName with
-            | Ok jsonObj -> (fullFileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject)) |> AppSettingsProvider |> Ok
+        static member tryCreate (fileName : FileName) =
+            match fileName.tryGetFullFileName() with
+            | Ok fullFileName ->
+                match tryOpenJson fullFileName with
+                | Ok jsonObj -> (fullFileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject)) |> AppSettingsProvider |> Ok
+                | Error e -> e |> TryOpenJsonExn |> Error
             | Error e -> Error e
 
 

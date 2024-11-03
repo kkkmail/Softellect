@@ -50,6 +50,8 @@ module Errors =
         | TryEnsureFolderExistsExn of exn
         | TryGetFullFileNameExn of exn
         | TryGetFolderNameExn of exn
+        | TryGetExtensionExn of exn
+        | TryOpenJsonExn of exn
 
 
     type UnhandledEventInfo =

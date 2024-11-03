@@ -142,7 +142,7 @@ module WorkerNodeService =
         | Ok provider ->
             let m = loadMessagingServiceAccessInfo messagingDataVersion
             let w = loadPartitionerInfo provider
-            let i = getServiceAccessInfo providerRes partitionerServiceAccessInfoKey ServiceAccessInfo.defaultPartitionerValue
+            let i = getServiceAccessInfo provider partitionerServiceAccessInfoKey ServiceAccessInfo.defaultPartitionerValue
 
             let partitionerSvcInfo =
                 {
@@ -254,7 +254,7 @@ module WorkerNodeService =
                 {
                     workerNodeInfo = loadWorkerNodeInfo provider
                     workerNodeLocalInto = loadWorkerNodeLocalInto provider
-                    workerNodeServiceAccessInfo = getServiceAccessInfo providerRes workerNodeServiceAccessInfoKey ServiceAccessInfo.defaultWorkerNodeValue
+                    workerNodeServiceAccessInfo = getServiceAccessInfo provider workerNodeServiceAccessInfoKey ServiceAccessInfo.defaultWorkerNodeValue
                     messagingServiceAccessInfo = loadMessagingServiceAccessInfo messagingDataVersion
                 }
 

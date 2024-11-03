@@ -69,15 +69,16 @@ module Program =
 
     let inputFolder = "C:\\Temp\\WolframInput\\" |> FolderName
     let outputFolder = "C:\\Temp\\WolframOutput\\" |> FolderName
-    let getInputFileName (q : RunQueueId) = $"{q.value}.m" |> FileName |> getFileName
-    let getOutputFileName (q : RunQueueId) = $"{q.value}"
+
+    let tryGetInputFileName (q : RunQueueId) = (FileName $"{q.value}.m").tryGetFullFileName (Some inputFolder)
+    let tryGetOutputFileName (q : RunQueueId) = (FileName $"{q.value}.png").tryGetFullFileName (Some outputFolder)
 
 
     let getWolframData (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
         let c1 = c |>  List.rev
 
-        match c1 |> List.tryHead with
-        | Some h ->
+        match c1 |> List.tryHead, tryGetOutputFileName q with
+        | Some h, Ok o ->
             let t = c1 |> List.map(fun e -> double e.t)
             let legends = d.chartLabels
 
@@ -86,7 +87,7 @@ module Program =
                 |> Array.mapi (fun i  _ -> c1 |> List.map (fun e -> e.chartData.x[i]))
 
             let xValues = x |> Array.mapi(fun i e -> $"x{i} = {(toWolframNotation e)};") |> List.ofArray
-            let txValues = x |> Array.mapi(fun i e -> $"tx{i} = Table[{{t[[i]], x{i}[[i]]}}, {{i, 1, Length[t]}}];") |> List.ofArray
+            let txValues = x |> Array.mapi(fun i _ -> $"tx{i} = Table[{{t[[i]], x{i}[[i]]}}, {{i, 1, Length[t]}}];") |> List.ofArray
             let txVar = x |> Array.mapi(fun i _ -> $"tx{i}") |> joinStrings ", "
 
             let data =
@@ -100,41 +101,41 @@ module Program =
                 @
                 [
                     $"legends = {(toWolframNotation legends)};"
-                    $"outputFile = \"{outputFolder}{(getOutputFileName q)}.png\";"
+                    $"outputFile = \"{o.toWolframNotation()}\";"
                     $"Export[outputFile, ListLinePlot[{{{txVar}}}, Frame -> True, PlotRange -> All, GridLines -> Automatic, PlotLegends -> legends], \"PNG\"];"
                 ]
                 |> joinStrings Nl
 
-            data |> M |> Some
-        | None -> None
+            data |> WolframCode |> Some
+        | None, _ -> None
+        | _, Error e ->
+            printfn $"getWolframData - ERROR: %A{e}."
+            None
 
 
     let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
         try
-            match getWolframData q d c with
-            | Some data ->
+            match getWolframData q d c, tryGetInputFileName q, tryGetOutputFileName q with
+            | Some data, Ok i, Ok o ->
                 let request =
                     {
-                        content = data
-                        inputFolder = inputFolder |> FolderName
-                        inputFileName = getInputFileName q |> FileName
-                        outputFolder = outputFolder |> FolderName
-                        outputFileName = getOutputFileName q |> FileName
-                        extension = "png"
+                        wolframCode = data
+                        inputFileName = i
+                        outputFileName = o
                     }
 
-                match runMathematicaScript request with
+                match tryRunMathematicaScript request with
                 | Ok v ->
                     {
                         binaryContent = v
-                        fileName = FileName (request.outputFileName.value + "." + request.extension)
+                        fileName = request.outputFileName
                     }
                     |> BinaryChart
                     |> Some
                 | Error e ->
                     printfn $"getWolframChart - Error: %A{e}."
                     None
-            | None ->
+            | _ ->
                 printfn $"getWolframChart - Cannot get data for: %A{q}."
                 None
         with

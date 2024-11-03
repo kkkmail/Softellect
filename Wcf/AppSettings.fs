@@ -5,7 +5,5 @@ open Softellect.Wcf.Common
 
 module AppSettings =
 
-    let getServiceAccessInfo (providerRes : AppSettingsProviderResult) n d =
-        match providerRes with
-        | Ok provider -> provider.tryGetOrDefault d ServiceAccessInfo.tryDeserialize n
-        | _ -> d
+    let getServiceAccessInfo (provider : AppSettingsProvider) n d =
+        provider.tryGetOrDefault d ServiceAccessInfo.tryDeserialize n

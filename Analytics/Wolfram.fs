@@ -190,7 +190,8 @@ module Wolfram =
                 // Start the Wolfram Kernel with explicit link name.
                 match tryGetMathKernelFileName() with
                 | Ok kernelName ->
-                    let linkArgs = $"-linkname '{kernelName} -mathlink'"
+                    let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
+                    printfn $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
 
                     try
@@ -199,16 +200,18 @@ module Wolfram =
 
                         // Load the .m or .wl file as a script and run it.
                         let scriptCommand = $"<< \"%s{i}\"" // Use "<< file.m" to load the script.
+                        printfn $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
                         link.Evaluate(scriptCommand)
 
                         // Wait for the result of the evaluation.
                         link.WaitForAnswer() |> ignore
+                        printfn "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
 
                         // Check for the output file in the output folder
                         if File.Exists(o) then
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
-                            link.Close() // Close the link when done
+                            link.Close() // Close the link when done.
                             Ok fileBytes
                         else
                             // If the output file is not found, return an error.
@@ -219,6 +222,6 @@ module Wolfram =
                         link.Close()
                         Error $"An error occurred during Wolfram evaluation: {ex.Message}"
                 | Error e -> Error e
-            | _ -> failwith "tryRunMathematicaScript failed..."
+            | _ -> failwith $"tryRunMathematicaScript failed for request: '%A{request}'."
         with
         | ex -> Error $"An error occurred: {ex.Message}"

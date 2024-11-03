@@ -60,6 +60,7 @@ module Errors =
     type MsgSettingsError =
         | InvalidSettings of string
         | MsgSettingExn of exn
+        | FileErr of FileError
 
 
     type TryReceiveSingleMessageError =

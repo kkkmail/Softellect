@@ -215,57 +215,58 @@ module WorkerNodeService =
         match tryGetSolverLocation q with
         | Ok (Some folderName) ->
             printfn $"tryRunSolverProcess: folderName = '{folderName}'."
+            match fileName.tryGetFullFileName(Some folderName) with
+            | Ok e ->
+                let run() =
+                    let (exeName, args) =
+                        match o with
+                        | None -> e.value, $"q {q.value}"
+                        | Some (FolderName f) ->
+                            let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
+                            let a = $"/c {e.value} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
+                            ("cmd.exe", a)
 
-            // TODO kk:20210511 - Build command line using Argu.
-            let run() =
-                let (exeName, args) =
-                    let e = getExeName (Some folderName) fileName
+                    printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
-                    match o with
-                    | None -> e.value, $"q {q.value}"
-                    | Some (FolderName f) ->
-                        let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
-                        let a = $"/c {e.value} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
-                        ("cmd.exe", a)
+                    try
+                        let procStartInfo =
+                            ProcessStartInfo(
+                                RedirectStandardOutput = false,
+                                RedirectStandardError = false,
+                                UseShellExecute = true,
+                                FileName = exeName,
+                                Arguments = args
+                            )
 
-                printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                        procStartInfo.WorkingDirectory <- folderName.value
+                        //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                        procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
+                        let p = new Process(StartInfo = procStartInfo)
+                        let started = p.Start()
 
-                try
-                    let procStartInfo =
-                        ProcessStartInfo(
-                            RedirectStandardOutput = false,
-                            RedirectStandardError = false,
-                            UseShellExecute = true,
-                            FileName = exeName,
-                            Arguments = args
-                        )
+                        if started
+                        then
+                            p.PriorityClass <- ProcessPriorityClass.Idle
+                            let processId = p.Id |> ProcessId
+                            printfn $"Started: {p.ProcessName} with pid: {processId}."
+                            Ok processId
+                        else
+                            printfn $"Failed to start process: {fileName}."
+                            q |> FailedToRunSolverProcessErr |> elevate
+                    with
+                    | ex ->
+                        printfn $"Failed to start process: {fileName} with exception: {ex}."
+                        (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
 
-                    procStartInfo.WorkingDirectory <- folderName.value
-                    //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
-                    procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
-                    let p = new Process(StartInfo = procStartInfo)
-                    let started = p.Start()
-
-                    if started
-                    then
-                        p.PriorityClass <- ProcessPriorityClass.Idle
-                        let processId = p.Id |> ProcessId
-                        printfn $"Started: {p.ProcessName} with pid: {processId}."
-                        Ok processId
-                    else
-                        printfn $"Failed to start process: {fileName}."
-                        q |> FailedToRunSolverProcessErr |> elevate
-                with
-                | ex ->
-                    printfn $"Failed to start process: {fileName} with exception: {ex}."
-                    (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
-
-            // Decrease max value by one to account for the solver to be started.
-            match checkRunning (Some (n - 1)) q with
-            | CanRun -> run()
-            | e ->
-                printfn $"Can't run run queue with id %A{q}: %A{e}."
-                q |> CannotRunSolverProcessErr |> elevate
+                // Decrease max value by one to account for the solver to be started.
+                match checkRunning (Some (n - 1)) q with
+                | CanRun -> run()
+                | e ->
+                    printfn $"Can't run run queue with id %A{q}: %A{e}."
+                    q |> CannotRunSolverProcessErr |> elevate
+            | Error e ->
+                printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
+                q |> FailedToLoadSolverNameErr |> elevate
         | Ok None -> q |> CannotLoadSolverNameErr |> elevate
         | Error e ->
             printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."

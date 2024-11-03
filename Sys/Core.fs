@@ -552,10 +552,19 @@ module Core =
 
         member f.tryEnsureFolderExists() =
             try
-                    match f.tryGetFullFolderName() with
-                    | Ok folder -> folder.tryEnsureFolderExists()
-                    | Error e -> Error e
-                with
-                | e ->
-                    printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
-                    e |> TryEnsureFolderExistsExn |> Error
+                match f.tryGetFullFolderName() with
+                | Ok folder -> folder.tryEnsureFolderExists()
+                | Error e -> Error e
+            with
+            | e ->
+                printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
+                e |> TryEnsureFolderExistsExn |> Error
+
+        member f.tryGetExtension() =
+            try
+                Path.GetExtension(f.value) |> FileExtension |> Ok
+            with
+            | e ->
+                printfn $"tryGetExtension: Exception: '%A{e}'."
+                e |> TryGetExtensionExn |> Error
+
