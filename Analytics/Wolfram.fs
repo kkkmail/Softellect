@@ -183,9 +183,9 @@ module Wolfram =
     let tryRunMathematicaScript (request: WolframRequest) =
         try
             match request.inputFileName.tryEnsureFolderExists(), request.outputFileName.tryEnsureFolderExists(), request.inputFileName.tryGetFullFileName(), request.outputFileName.tryGetFullFileName() with
-            | Ok(), Ok(), Ok (FileName i), Ok (FileName o) ->
+            | Ok(), Ok(), Ok i, Ok (FileName o) ->
                 // Write the content to the input file.
-                File.WriteAllText(i, request.wolframCode.value)
+                File.WriteAllText(i.value, request.wolframCode.value)
 
                 // Start the Wolfram Kernel with explicit link name.
                 match tryGetMathKernelFileName() with
@@ -199,7 +199,8 @@ module Wolfram =
                         link.WaitAndDiscardAnswer()
 
                         // Load the .m or .wl file as a script and run it.
-                        let scriptCommand = $"<< \"%s{i}\"" // Use "<< file.m" to load the script.
+                        // Wolfram wants "\\\\" for each "\\" in the path. Don't ask why.
+                        let scriptCommand = $"<< \"%s{i.toWolframNotation()}\"" // Use "<< file.m" to load the script.
                         printfn $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
                         link.Evaluate(scriptCommand)
 
