@@ -3,6 +3,7 @@
 open System
 open Microsoft.FSharp.Reflection
 open System.Text
+open Softellect.Analytics.Primitives
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
@@ -13,11 +14,45 @@ open Softellect.Analytics.AppSettings
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
 
-    //. An encapsulation of Wolfram code file content.
+    ///. An encapsulation of Wolfram code file content.
     type WolframCode =
         | WolframCode of string
 
         member this.value = let (WolframCode v) = this in v
+
+
+    type PlotRange =
+        | All
+        | Full
+        | Automatic
+
+        static member defaultValue = PlotRange.All
+
+
+    type GridLines =
+        | Automatic
+        // | None
+        | UserDefined of string // You are on your own here.
+
+        static member defaultValue = GridLines.Automatic
+
+
+    type ImageSize =
+        | Tiny
+        | Small
+        | Medium
+        | Large
+        | Full
+
+        static member defaultValue = ImageSize.Large
+
+
+    type LabelStyle =
+        | LabelStyle of string
+
+        member this.value = let (LabelStyle v) = this in v
+
+        static member defaultValue = LabelStyle "{FontSize -> 16, Bold, Black}"
 
 
     let private baseIndent = "  "
@@ -232,3 +267,67 @@ module Wolfram =
             | _ -> failwith $"tryRunMathematicaScript failed for request: '%A{request}'."
         with
         | ex -> Error $"An error occurred: {ex.Message}"
+
+
+    type ListLineParams =
+        {
+            frame : bool
+            plotRange : PlotRange option
+            gridLines : GridLines option
+            imageSize : ImageSize option
+            labelStyle : LabelStyle option
+        }
+
+        static member defaultValue =
+            {
+                frame = true
+                plotRange = Some PlotRange.defaultValue
+                gridLines = Some GridLines.defaultValue
+                imageSize = Some ImageSize.defaultValue
+                labelStyle = Some LabelStyle.defaultValue
+            }
+
+
+    let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D array) =
+        let legends = d |> Array.map (_.dataLabel.value)
+        let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
+        let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
+        let frame = if p.frame then ", Frame -> True" else ""
+        let plotRange = p.plotRange |> Option.map (fun r -> $", PlotRange -> %A{r}") |> Option.defaultValue ""
+        let gridLines = p.gridLines |> Option.map (fun g -> $", GridLines -> %A{g}") |> Option.defaultValue ""
+        let imageSize = p.imageSize |> Option.map (fun i -> $", ImageSize -> %A{i}") |> Option.defaultValue ""
+        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
+        let plotLegends = ", PlotLegends -> legends"
+
+        let data =
+            [
+                xyData
+                $"legends = {(toWolframNotation legends)};"
+                $"outputFile = \"{o.toWolframNotation()}\";"
+                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}], \"PNG\"];"
+            ]
+            |> joinStrings Nl
+        data |> WolframCode
+
+
+    let getListLinePlot i o p d =
+        let data = getListLinePlotData o p d
+
+        let request =
+            {
+                wolframCode = data
+                inputFileName = i
+                outputFileName = o
+            }
+
+        match tryRunMathematicaScript request with
+        | Ok v ->
+            {
+                binaryContent = v
+                fileName = o
+            }
+            |> BinaryChart
+            |> Some
+        | Error e ->
+            printfn $"getListLinePlot - Error: %A{e}."
+            None
