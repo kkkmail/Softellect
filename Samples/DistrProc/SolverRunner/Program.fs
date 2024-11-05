@@ -73,137 +73,22 @@ module Program =
     let tryGetOutputFileName outputFolder (q : RunQueueId) = (FileName $"{q.value}.png").tryGetFullFileName (Some outputFolder)
 
 
-    // let getWolframData (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
-    //     match AppSettingsProvider.tryCreate() with
-    //     | Ok provider ->
-    //         let outputFolder = provider.getWolframOutputFolder()
-    //         let c1 = c |>  List.rev
-    //
-    //         match c1 |> List.tryHead, tryGetOutputFileName outputFolder q with
-    //         | Some h, Ok o ->
-    //             let t = c1 |> List.map(fun e -> double e.t)
-    //             let legends = d.chartLabels
-    //
-    //             let x =
-    //                 h.chartData.x
-    //                 |> Array.mapi (fun i  _ -> c1 |> List.map (fun e -> e.chartData.x[i]))
-    //
-    //             let xValues = x |> Array.mapi(fun i e -> $"x{i} = {(toWolframNotation e)};") |> List.ofArray
-    //             let txValues = x |> Array.mapi(fun i _ -> $"tx{i} = Table[{{t[[i]], x{i}[[i]]}}, {{i, 1, Length[t]}}];") |> List.ofArray
-    //             let txVar = x |> Array.mapi(fun i _ -> $"tx{i}") |> joinStrings ", "
-    //
-    //             let data =
-    //                 [
-    //                     $"t = {(toWolframNotation t)};"
-    //                 ]
-    //                 @
-    //                 xValues
-    //                 @
-    //                 txValues
-    //                 @
-    //                 [
-    //                     $"legends = {(toWolframNotation legends)};"
-    //                     $"outputFile = \"{o.toWolframNotation()}\";"
-    //                     $"Export[outputFile, ListLinePlot[{{{txVar}}}, Frame -> True, PlotRange -> All, GridLines -> Automatic, PlotLegends -> legends], \"PNG\"];"
-    //                 ]
-    //                 |> joinStrings Nl
-    //
-    //             data |> WolframCode |> Some
-    //         | None, _ -> None
-    //         | _, Error e ->
-    //             printfn $"getWolframData - ERROR: %A{e}."
-    //             None
-    //     | Error e ->
-    //         printfn $"getWolframData - ERROR: %A{e}."
-    //         None
-
-
-    // let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
-    //     try
-    //         match AppSettingsProvider.tryCreate() with
-    //         | Ok provider ->
-    //             let inputFolder = provider.getWolframInputFolder()
-    //             let outputFolder = provider.getWolframOutputFolder()
-    //             provider.save()
-    //
-    //             match getWolframData q d c, tryGetInputFileName inputFolder q, tryGetOutputFileName outputFolder q with
-    //             | Some data, Ok i, Ok o ->
-    //                 let request =
-    //                     {
-    //                         wolframCode = data
-    //                         inputFileName = i
-    //                         outputFileName = o
-    //                     }
-    //
-    //                 match tryRunMathematicaScript request with
-    //                 | Ok v ->
-    //                     {
-    //                         binaryContent = v
-    //                         fileName = request.outputFileName
-    //                     }
-    //                     |> BinaryChart
-    //                     |> Some
-    //                 | Error e ->
-    //                     printfn $"getWolframChart - Error: %A{e}."
-    //                     None
-    //             | _ ->
-    //                 printfn $"getWolframChart - Cannot get data for: %A{q}."
-    //                 None
-    //         | Error e ->
-    //             printfn $"getWolframChart - ERROR: %A{e}."
-    //             None
-    //     with
-    //     | e ->
-    //         printfn $"getWolframChart - Exception: %A{e}."
-    //         None
-
-
     let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
-        try
-            match AppSettingsProvider.tryCreate() with
-            | Ok provider ->
-                let inputFolder = provider.getWolframInputFolder()
-                let outputFolder = provider.getWolframOutputFolder()
-                provider.save()
+        let w = loadWolframParams()
 
-                match tryGetInputFileName inputFolder q, tryGetOutputFileName outputFolder q with
-                | Ok i, Ok o ->
-                    let c1 = c |>  List.rev
-                    let t = c1 |> List.map(fun e -> double e.t)
-                    let legends = d.chartLabels
+        match tryGetInputFileName w.wolframInputFolder q, tryGetOutputFileName w.wolframOutputFolder q with
+        | Ok i, Ok o ->
+            let c1 = c |> List.rev
+            let t = c1 |> List.map(fun e -> double e.t)
+            let legends = d.chartLabels
 
-                    let d =
-                        c1.Head.chartData.x
-                        |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.chartData.x[i] }) })
+            let d =
+                c1.Head.chartData.x
+                |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.chartData.x[i] }) })
 
-                    getListLinePlot i o ListLineParams.defaultValue d
-                    // let request =
-                    //     {
-                    //         wolframCode = data
-                    //         inputFileName = i
-                    //         outputFileName = o
-                    //     }
-                    //
-                    // match tryRunMathematicaScript request with
-                    // | Ok v ->
-                    //     {
-                    //         binaryContent = v
-                    //         fileName = request.outputFileName
-                    //     }
-                    //     |> BinaryChart
-                    //     |> Some
-                    // | Error e ->
-                    //     printfn $"getWolframChart - Error: %A{e}."
-                    //     None
-                | _ ->
-                    printfn $"getWolframChart - Cannot get data for: %A{q}."
-                    None
-            | Error e ->
-                printfn $"getWolframChart - ERROR: %A{e}."
-                None
-        with
-        | e ->
-            printfn $"getWolframChart - Exception: %A{e}."
+            getListLinePlot i o ListLineParams.defaultValue d
+        | _ ->
+            printfn $"getWolframChart - Cannot get data for: %A{q}."
             None
 
 
