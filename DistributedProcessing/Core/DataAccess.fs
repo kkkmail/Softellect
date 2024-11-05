@@ -376,8 +376,8 @@ module WorkerNodeService =
 
 #if PARTITIONER
 
-    let saveLocalChartInfo d (c : ChartInfo) =
-        printfn $"saveLocalChartInfo - d: '%A{d}', c: '%A{c}'."
+    let saveLocalResultInfo d (c : ResultInfo) =
+        printfn $"saveLocalResultInfo - d: '%A{d}', c: '%A{c}'."
 
         try
             let getFileName (FileName name) =
@@ -390,23 +390,23 @@ module WorkerNodeService =
                     | None -> Path.Combine(f, fileName)
                 | None -> name
 
-            let saveChart (f : string) (c : Chart) =
+            let saveResult (f : string) (c : CalculationResult) =
                 let folder = Path.GetDirectoryName f
                 Directory.CreateDirectory(folder) |> ignore
-                printfn $"saveLocalChartInfo - saveChart - f: '%A{f}', c: '%A{c}'."
+                printfn $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c}'."
 
                 match c with
-                | HtmlChart h -> File.WriteAllText(f, h.htmlContent)
-                | BinaryChart b -> File.WriteAllBytes(f, b.binaryContent)
+                | TextResult h -> File.WriteAllText(f, h.textContent)
+                | BinaryResult b -> File.WriteAllBytes(f, b.binaryContent)
 
-            c.charts
-            |> List.map (fun e -> saveChart (getFileName e.fileName) e)
+            c.results
+            |> List.map (fun e -> saveResult (getFileName e.fileName) e)
             |> ignore
             Ok ()
         with
         | e ->
-            printfn $"saveLocalChartInfo - e: '%A{e}'."
-            e |> SaveChartsExn |> Error
+            printfn $"saveLocalResultInfo - e: '%A{e}'."
+            e |> SaveResultsExn |> Error
 
 
     /// TODO kk:20241007 - Change errors???
@@ -730,8 +730,8 @@ module WorkerNodeService =
             | Some v ->
                 match v with
                 | 0 -> None
-                | 1 -> Some RegularChartGeneration
-                | 2 -> Some ForceChartGeneration
+                | 1 -> Some RegularResultGeneration
+                | 2 -> Some ForceResultGeneration
                 | _ -> None
                 |> Ok
             | None -> y q |> Error
@@ -1010,7 +1010,7 @@ module WorkerNodeService =
 
 
     /// Can request notification of results when state is InProgress or CancelRequested.
-    let tryNotifyRunQueue (q : RunQueueId) (r : ChartNotificationType option) =
+    let tryNotifyRunQueue (q : RunQueueId) (r : ResultNotificationType option) =
         let elevate e = e |> TryNotifyRunQueueErr
         //let toError e = e |> elevate |> Error
         let x e = CannotNotifyRunQueue e |> elevate

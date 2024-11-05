@@ -106,7 +106,7 @@ module WorkerNodeService =
 
     type PartitionerProxy =
         {
-            saveCharts : ChartInfo -> DistributedProcessingUnitResult
+            saveResults : ResultInfo -> DistributedProcessingUnitResult
             loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
             loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue option>
@@ -170,35 +170,6 @@ module WorkerNodeService =
             | None -> run()
         with
         | e -> e |> GetProcessesByNameExn
-
-#endif
-
-#if SOLVER_RUNNER
-
-//    type SolverUpdateProxy<'P> =
-//        {
-//            updateProgress : ProgressUpdateInfo<'P> -> DistributedProcessingUnitResult
-////            updateTime : ProgressData -> UnitResult
-//            checkCancellation : RunQueueId -> CancellationType option
-//            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
-//        }
-
-
-//    type SolverNotificationProxy =
-//        {
-//            checkNotificationRequest : RunQueueId -> ChartNotificationType option
-//            clearNotificationRequest : RunQueueId -> DistributedProcessingUnitResult
-//        }
-
-
-//    type SolverRunnerProxy<'P> =
-//        {
-//            solverUpdateProxy : SolverUpdateProxy<'P>
-//            solverNotificationProxy : SolverNotificationProxy
-////            saveResult : ResultDataWithId -> UnitResult
-//            saveCharts : ChartGenerationResult -> DistributedProcessingUnitResult
-//            logCrit : SolverRunnerCriticalError -> DistributedProcessingUnitResult
-//        }
 
 #endif
 
@@ -289,7 +260,7 @@ module WorkerNodeService =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
-            notifyOfResults : RunQueueId -> ChartNotificationType -> DistributedProcessingUnitResult
+            notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult

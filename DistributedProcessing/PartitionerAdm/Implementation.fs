@@ -184,7 +184,7 @@ module Implementation =
                                 deliveryType = GuaranteedDelivery
                             }
 
-                        messageData = (q, c) |> RequestChartsWrkMsg |> WorkerNodeMsg |> UserMsg
+                        messageData = (q, c) |> RequestResultsWrkMsg |> WorkerNodeMsg |> UserMsg
                     }
                     |> ctx.partitionerAdmProxy.createMessage
                     |> ctx.partitionerAdmProxy.saveMessage

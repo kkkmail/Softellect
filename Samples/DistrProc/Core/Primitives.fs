@@ -122,7 +122,7 @@ module Primitives =
         {
             noOfOutputPoints = 4_000
             noOfProgressPoints = 100
-            noOfChartDetailedPoints = Some 20
+            noOfResultDetailedPoints = Some 20
         }
 
 

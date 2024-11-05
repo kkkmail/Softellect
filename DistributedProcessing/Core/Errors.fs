@@ -260,8 +260,8 @@ module Errors =
         | UnableToSaveResultDataRunnerErr of RunQueueId
 
 
-    type SaveChartsRunnerError =
-        | UnableToSaveChartsRunnerErr of RunQueueId
+    type SaveResultsRunnerError =
+        | UnableToSaveResultsRunnerErr of RunQueueId
 
 
     type ProcessMessageRunnerError =
@@ -276,8 +276,8 @@ module Errors =
     // ==================================
     // Solver Runner errors
 
-    type OnSaveChartsError =
-        | SendChartMessageErr of (MessagingClientId * RunQueueId * MessagingError)
+    type OnSaveResultsError =
+        | SendResultMessageErr of (MessagingClientId * RunQueueId * MessagingError)
 
 
     type OnUpdateProgressError =
@@ -338,7 +338,7 @@ module Errors =
         | RegisterRunnerErr of RegisterRunnerError
         | UnregisterRunnerErr of UnregisterRunnerError
         | SaveResultRunnerErr of SaveResultRunnerError
-        | SaveChartsRunnerErr of SaveChartsRunnerError
+        | SaveResultsRunnerErr of SaveResultsRunnerError
         | ProcessMessageRunnerErr of ProcessMessageRunnerError
         | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
 
@@ -346,7 +346,7 @@ module Errors =
         | TryGetSolverNameErr of TryGetSolverNameError
 
         // Solver runner errors
-        | OnSaveChartsErr of OnSaveChartsError
+        | OnSaveResultsErr of OnSaveResultsError
         | OnUpdateProgressErr of OnUpdateProgressError
         | TryRunSolverProcessErr of TryRunSolverProcessError
         | SaveSolverErr of SaveSolverError
@@ -357,7 +357,7 @@ module Errors =
         | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
 
         // Some errors
-        | SaveChartsExn of exn
+        | SaveResultsExn of exn
         | PartitionerWcfErr of PartitionerWcfError
 
         static member addError a b =

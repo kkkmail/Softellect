@@ -89,15 +89,14 @@ module Common =
         static member defaultValue = AbsoluteTolerance DefaultAbsoluteTolerance
 
 
-    /// Was ResultNotificationType
-    type ChartNotificationType =
-        | RegularChartGeneration // The chart engine will decide whether to generate the chart or not.
-        | ForceChartGeneration   // The chart engine will generate the chart.
+    type ResultNotificationType =
+        | RegularResultGeneration // The engine will decide whether to generate the result or not.
+        | ForceResultGeneration   // The  engine will generate the result.
 
         member n.value =
             match n with
-            | RegularChartGeneration -> 1
-            | ForceChartGeneration -> 2
+            | RegularResultGeneration -> 1
+            | ForceResultGeneration -> 2
 
 
     type CancellationType =
@@ -238,14 +237,14 @@ module Common =
         {
             noOfOutputPoints : int
             noOfProgressPoints : int
-            noOfChartDetailedPoints : int option
+            noOfResultDetailedPoints : int option
         }
 
         static member defaultValue =
             {
                 noOfOutputPoints = 2
                 noOfProgressPoints = 100
-                noOfChartDetailedPoints = None
+                noOfResultDetailedPoints = None
             }
 
 
@@ -260,14 +259,14 @@ module Common =
     type WorkerNodeMessage =
         | RunModelWrkMsg of (RunQueueId * SolverId * ModelBinaryData)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
-        | RequestChartsWrkMsg of (RunQueueId * ChartNotificationType)
+        | RequestResultsWrkMsg of (RunQueueId * ResultNotificationType)
         | UpdateSolverWrkMsg of Solver
 
         member this.messageSize =
             match this with
             | RunModelWrkMsg _ -> LargeSize
             | CancelRunWrkMsg _ -> SmallSize
-            | RequestChartsWrkMsg _ -> SmallSize
+            | RequestResultsWrkMsg _ -> SmallSize
             | UpdateSolverWrkMsg _ -> LargeSize
 
 
@@ -317,23 +316,23 @@ module Common =
         }
 
 
-    type ChartInfo =
+    type ResultInfo =
         {
             runQueueId : RunQueueId
-            charts : list<Chart>
+            results : list<CalculationResult>
         }
 
 
     type PartitionerMessage =
         | UpdateProgressPrtMsg of ProgressUpdateInfo
-        | SaveChartsPrtMsg of ChartInfo
+        | SaveResultsPrtMsg of ResultInfo
         | RegisterWorkerNodePrtMsg of WorkerNodeInfo
         | UnregisterWorkerNodePrtMsg of WorkerNodeId
 
         member this.messageSize =
             match this with
             | UpdateProgressPrtMsg _ -> SmallSize
-            | SaveChartsPrtMsg _ -> MediumSize
+            | SaveResultsPrtMsg _ -> MediumSize
             | RegisterWorkerNodePrtMsg _ -> SmallSize
             | UnregisterWorkerNodePrtMsg _ -> SmallSize
 

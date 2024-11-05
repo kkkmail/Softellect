@@ -59,20 +59,20 @@ module Runner =
         r
 
 
-    let private shouldNotifyByNextChartProgress i ncbd t =
+    let private shouldNotifyByNextResultProgress i ncbd t =
         let p = calculateProgress i t
-        let r = p >= ncbd.nextChartProgress
-        // n.logger.logDebugString $"shouldNotifyByNextChartProgress: p = {p}, nextChartProgress = {d.nextChartProgress}, r = {r}."
+        let r = p >= ncbd.nextResultProgress
+        // n.logger.logDebugString $"shouldNotifyByNextResultProgress: p = {p}, nextResultProgress = {d.nextResultProgress}, r = {r}."
         r
 
 
-    let private shouldNotifyByNextChartDetailedProgress i o ncbd t =
-        // n.logger.logDebugString $"shouldNotifyByNextChartDetailedProgress: t = {t}, n.odeParams.outputParams.noOfChartDetailedPoints = {n.odeParams.outputParams.noOfChartDetailedPoints}."
-        match o.noOfChartDetailedPoints with
+    let private shouldNotifyByNextResultDetailedProgress i o ncbd t =
+        // n.logger.logDebugString $"shouldNotifyByNextResultDetailedProgress: t = {t}, n.odeParams.outputParams.noOfResultDetailedPoints = {n.odeParams.outputParams.noOfResultDetailedPoints}."
+        match o.noOfResultDetailedPoints with
         | Some _ ->
             let p = calculateProgress i t
-            let r = p >= ncbd.nextChartDetailedProgress
-            // n.logger.logDebugString $"shouldNotifyByNextChartDetailedProgress: t = {t}, p = {p}, d.nextChartDetailedProgress = {d.nextChartDetailedProgress}, r = {r}."
+            let r = p >= ncbd.nextResultDetailedProgress
+            // n.logger.logDebugString $"shouldNotifyByNextResultDetailedProgress: t = {t}, p = {p}, d.nextResultDetailedProgress = {d.nextResultDetailedProgress}, r = {r}."
             r
         | None -> false
 
@@ -91,55 +91,55 @@ module Runner =
         r
 
 
-    let private calculateNextChartProgress i o t =
+    let private calculateNextResultProgress i o t =
         let r = calculateNextProgressImpl i t o.noOfOutputPoints
-        // n.logger.logDebugString $"calculateNextChartProgress: t = {t}, r = {r}."
+        // n.logger.logDebugString $"calculateNextResultProgress: t = {t}, r = {r}."
         r
 
 
-    let private calculateNextChartDetailedProgress i o t =
+    let private calculateNextResultDetailedProgress i o t =
         let r =
-            match o.noOfChartDetailedPoints with
+            match o.noOfResultDetailedPoints with
             | Some nop -> calculateNextProgressImpl i t nop
             | None -> 1.0m
-        // n.logger.logDebugString $"calculateNextChartDetailedProgress: t = {t}, r = {r}."
+        // n.logger.logDebugString $"calculateNextResultDetailedProgress: t = {t}, r = {r}."
         r
 
 
     let private shouldNotifyProgress i ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextProgress i ncbd t
-    let private shouldNotifyChart i ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextChartProgress i ncbd t
+    let private shouldNotifyResult i ncbd t = shouldNotifyByCallCount ncbd || shouldNotifyByNextResultProgress i ncbd t
 
 
     let private needsCallBack i o =
         let f ncbd t =
             let shouldNotifyProgress = shouldNotifyProgress i ncbd t
-            let shouldNotifyChart = shouldNotifyChart i ncbd t
-            let shouldNotifyChartDetailed = shouldNotifyByNextChartDetailedProgress i o ncbd t
+            let shouldNotifyResult = shouldNotifyResult i ncbd t
+            let shouldNotifyResultDetailed = shouldNotifyByNextResultDetailedProgress i o ncbd t
 
             let nextProgress = calculateNextProgress  i o t
-            let nextChartProgress = calculateNextChartProgress i o t
-            let nextChartDetailedProgress = calculateNextChartDetailedProgress i o t
-            // n.logger.logDebugString $"needsCallBack: t = {t}, d = {d}, shouldNotifyProgress = {shouldNotifyProgress}, shouldNotifyChart = {shouldNotifyChart}, shouldNotifyChartDetailed = {shouldNotifyChartDetailed}, nextChartDetailedProgress = {nextChartDetailedProgress}."
+            let nextResultProgress = calculateNextResultProgress i o t
+            let nextResultDetailedProgress = calculateNextResultDetailedProgress i o t
+            // n.logger.logDebugString $"needsCallBack: t = {t}, d = {d}, shouldNotifyProgress = {shouldNotifyProgress}, shouldNotifyResult = {shouldNotifyResult}, shouldNotifyResultDetailed = {shouldNotifyResultDetailed}, nextResultDetailedProgress = {nextResultDetailedProgress}."
 
             let retVal =
-                match (shouldNotifyProgress, shouldNotifyChart, shouldNotifyChartDetailed) with
+                match (shouldNotifyProgress, shouldNotifyResult, shouldNotifyResultDetailed) with
                 | false, false, false -> (ncbd, None)
                 | false, true, false ->
-                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextChartProgress to: {nextChartProgress}, ChartNotification."
-                    ( { ncbd with nextChartProgress = nextChartProgress }, Some ChartNotification)
+                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextResultProgress to: {nextResultProgress}, ResultNotification."
+                    ( { ncbd with nextResultProgress = nextResultProgress }, Some ResultNotification)
                 | true, false, false ->
                     // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextProgress to: {nextProgress}, ProgressNotification."
                     ( { ncbd with nextProgress = nextProgress }, Some ProgressNotification)
                 | true, true, false ->
-                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextProgress to {nextProgress}, nextChartProgress to: {nextChartProgress}, ProgressAndChartNotification."
-                    ( { ncbd with nextProgress = nextProgress; nextChartProgress = nextChartProgress }, Some ProgressAndChartNotification)
+                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextProgress to {nextProgress}, nextResultProgress to: {nextResultProgress}, ProgressAndResultNotification."
+                    ( { ncbd with nextProgress = nextProgress; nextResultProgress = nextResultProgress }, Some ProgressAndResultNotification)
 
                 | false, _, true ->
-                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextChartProgress to {nextChartProgress}, nextChartDetailedProgress to: {nextChartDetailedProgress}, ChartDetailedNotification."
-                    ( { ncbd with nextChartProgress = nextChartProgress; nextChartDetailedProgress = nextChartDetailedProgress }, Some ChartDetailedNotification)
+                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextResultProgress to {nextResultProgress}, nextResultDetailedProgress to: {nextResultDetailedProgress}, ResultDetailedNotification."
+                    ( { ncbd with nextResultProgress = nextResultProgress; nextResultDetailedProgress = nextResultDetailedProgress }, Some ResultDetailedNotification)
                 | true, _, true ->
-                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextProgress to {nextProgress}, nextChartProgress to {nextChartProgress}, nextChartDetailedProgress to: {nextChartDetailedProgress}, AllNotification."
-                    ( { ncbd with nextProgress = nextProgress; nextChartProgress = nextChartProgress; nextChartDetailedProgress = nextChartDetailedProgress }, Some AllNotification)
+                    // n.logger.logDebugString $"needsCallBack: t = {t}, setting nextProgress to {nextProgress}, nextResultProgress to {nextResultProgress}, nextResultDetailedProgress to: {nextResultDetailedProgress}, AllNotification."
+                    ( { ncbd with nextProgress = nextProgress; nextResultProgress = nextResultProgress; nextResultDetailedProgress = nextResultDetailedProgress }, Some AllNotification)
 
             // n.logger.logDebugString $"needsCallBack: retVal = {retVal}."
             retVal
@@ -185,7 +185,7 @@ module Runner =
         s.callBackProxy.progressCallBack.invoke cb pd
 
 
-    let private updateCharts ctx t x =
+    let private updateResults ctx t x =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
@@ -193,68 +193,68 @@ module Runner =
 
         let cd =
             {
-                chartData = u.chartGenerator.getChartData modelData t x
+                resultData = u.resultGenerator.getResultData modelData t x
                 t = t.value
             }
 
-        s.addChartData cd
+        s.addResultData cd
 
 
-    let private notifyChartsDetailed ctx t x =
+    let private notifyResultsDetailed ctx t x =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
-        match u.chartGenerator.generateDetailedCharts ctx.runnerData.runQueueId modelData t x with
+        match u.resultGenerator.generateDetailedResults ctx.runnerData.runQueueId modelData t x with
         | Some c ->
-            printfn $"notifyChartsDetailed: c.Length = %A{c.Length}"
-            s.callBackProxy.chartCallBack.invoke c
+            printfn $"notifyResultsDetailed: c.Length = %A{c.Length}"
+            s.callBackProxy.resultCallBack.invoke c
         | None ->
-            printfn $"notifyChartsDetailed: No charts to generate."
+            printfn $"notifyResultsDetailed: No results to generate."
             ()
 
 
     let private notifyAll ctx cb pd t x =
         let s = ctx.systemProxy
         notifyProgress s cb pd
-        updateCharts ctx t x
-        notifyChartsDetailed ctx t x
+        updateResults ctx t x
+        notifyResultsDetailed ctx t x
 
 
-    let private notifyCharts ctx t =
-        printfn $"notifyCharts: t = %A{t}"
+    let private notifyResults ctx t =
+        printfn $"notifyResults: t = %A{t}"
 
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
-        let cd = s.getChartData()
+        let cd = s.getResultData()
 
-        match u.chartGenerator.generateCharts ctx.runnerData.runQueueId modelData t cd with
+        match u.resultGenerator.generateResults ctx.runnerData.runQueueId modelData t cd with
         | Some c ->
-            printfn $"notifyCharts: c.Length = %A{c.Length}"
-            s.callBackProxy.chartCallBack.invoke c
+            printfn $"notifyResults: c.Length = %A{c.Length}"
+            s.callBackProxy.resultCallBack.invoke c
         | None ->
-            printfn $"notifyCharts: No charts to generate."
+            printfn $"notifyResults: No results to generate."
             ()
 
 
-    /// Sends "on-request" charts to the user.
-    let private notifyRequestedCharts ctx =
-        printfn $"notifyOfCharts: Starting."
+    /// Sends "on-request" results to the user.
+    let private notifyRequestedResults ctx =
+        printfn $"notifyRequestedResults: Starting."
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runQueueId
 
         match s.checkNotification runQueueId with
         | Some t ->
             // TODO kk:20240926 - handle errors.
-            let r1 = notifyCharts ctx t
+            let r1 = notifyResults ctx t
             let r2 = s.clearNotification runQueueId
             // let r = combineUnitResults (DistributedProcessingError.addError) r1 r2
-            printfn $"notifyOfCharts: r1 = %A{r1}, r2 = %A{r2}"
+            printfn $"notifyRequestedResults: r1 = %A{r1}, r2 = %A{r2}"
             Ok()
         | None ->
-            printfn $"notifyOfCharts: No notification to process."
+            printfn $"notifyRequestedResults: No notification to process."
             Ok()
 
 
@@ -301,11 +301,11 @@ module Runner =
             | Some v ->
                 match v with
                 | ProgressNotification -> notifyProgress s RegularCallBack pd
-                | ChartNotification -> updateCharts ctx t x
-                | ChartDetailedNotification -> notifyChartsDetailed ctx t x
-                | ProgressAndChartNotification ->
+                | ResultNotification -> updateResults ctx t x
+                | ResultDetailedNotification -> notifyResultsDetailed ctx t x
+                | ProgressAndResultNotification ->
                     notifyProgress s RegularCallBack pd
-                    updateCharts ctx t x
+                    updateResults ctx t x
                 | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
             ncbd3
@@ -347,7 +347,7 @@ module Runner =
         updateNeedsCallBackData d.modelData.solverInputParams.startTime x0
         notifyAll ctx RegularCallBack pd0 t0 x0
 
-        let i = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue TimerEventErr (fun () -> notifyRequestedCharts ctx) "runSolver - notifyOfCharts"
+        let i = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue TimerEventErr (fun () -> notifyRequestedResults ctx) "runSolver - notifyRequestedResults"
         let h = TimerEventHandler i
         do h.start()
 
@@ -359,7 +359,7 @@ module Runner =
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
-                notifyCharts ctx RegularChartGeneration
+                notifyResults ctx RegularResultGeneration
 
                 //(tEnd, xEnd)
             with
@@ -369,7 +369,7 @@ module Runner =
 
                 match ex.cancellationType with
                 | CancelWithResults e ->
-                    notifyCharts ctx RegularChartGeneration
+                    notifyResults ctx RegularResultGeneration
                     notifyProgress s (e |> CancelWithResults |> CancelledCalculation |> FinalCallBack) pd
                 | AbortCalculation e ->
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd

@@ -326,7 +326,7 @@ module Wolfram =
                 binaryContent = v
                 fileName = o
             }
-            |> BinaryChart
+            |> BinaryResult
             |> Some
         | Error e ->
             printfn $"getListLinePlot - Error: %A{e}."

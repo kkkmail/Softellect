@@ -51,26 +51,26 @@ module Implementation =
         max ((float noOfCores) * (1.0 + AllowedOverhead) |> int) (noOfCores + 1)
 
 
-    let private onSaveCharts<'D, 'P> (data : RunnerData<'D>) c =
+    let private onSaveResults<'D, 'P> (data : RunnerData<'D>) c =
         let i =
             {
-                charts = c
+                results = c
                 runQueueId = data.runQueueId
             }
 
-        printfn $"onSaveCharts: Sending charts with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
+        printfn $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
 
         let result =
             {
                 partitionerRecipient = data.partitionerId
                 deliveryType = GuaranteedDelivery
-                messageData = i |> SaveChartsPrtMsg
+                messageData = i |> SaveResultsPrtMsg
             }.getMessageInfo()
             |> sendMessage data.messagingDataVersion data.workerNodeId.messagingClientId
 
         match result with
         | Ok v -> Ok v
-        | Error e -> OnSaveChartsErr (SendChartMessageErr (data.partitionerId.messagingClientId, data.runQueueId, e)) |> Error
+        | Error e -> OnSaveResultsErr (SendResultMessageErr (data.partitionerId.messagingClientId, data.runQueueId, e)) |> Error
 
 
     let private toDeliveryType (p : ProgressUpdateInfo<'P>) =
@@ -136,18 +136,18 @@ module Implementation =
 
     /// TODO kk:20240928 - Add error handling.
     let private createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
-        let updater = AsyncUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>>(ChartDataUpdater<'C>(), ()) :> IAsyncUpdater<ChartSliceData<'C>, ChartData<'C>>
+        let updater = AsyncUpdater<ResultInitData, ResultSliceData<'C>, ResultData<'C>>(ResultDataUpdater<'C>(), ()) :> IAsyncUpdater<ResultSliceData<'C>, ResultData<'C>>
 
         let proxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
             {
                 callBackProxy =
                     {
                         progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'D, 'P> data cb pd |> ignore)
-                        chartCallBack = ChartCallBack (fun c -> onSaveCharts<'D, 'P> data c |> ignore)
+                        resultCallBack = ResultCallBack (fun c -> onSaveResults<'D, 'P> data c |> ignore)
                         checkCancellation = CheckCancellation (fun q -> tryCheckCancellation q |> toOption |> Option.bind id)
                     }
-                addChartData = updater.addContent
-                getChartData = updater.getContent
+                addResultData = updater.addContent
+                getResultData = updater.getContent
                 checkNotification = fun q -> tryCheckNotification q |> toOption |> Option.bind id
                 clearNotification = fun q -> tryClearNotification q |> toOption |> Option.defaultValue ()
             }

@@ -38,7 +38,7 @@ module Partitioner =
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertWorkerNodeInfo = upsertWorkerNodeInfo
                 loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo.partitionerId
-                saveCharts = saveLocalChartInfo (Some (i.partitionerInfo.resultLocation, None))
+                saveResults = saveLocalResultInfo (Some (i.partitionerInfo.resultLocation, None))
                 loadModelBinaryData = loadModelBinaryData
             }
 
@@ -149,9 +149,9 @@ module Partitioner =
         | Error e -> addError (UnableToLoadWorkerNodeInfoRunnerErr r) e
 
 
-    let private saveCharts (proxy : PartitionerProxy) (c : ChartInfo) =
-        printfn $"saveCharts: c.runQueueId = %A{c.runQueueId}"
-        proxy.saveCharts c |> bindError (addError SaveChartsRunnerErr (UnableToSaveChartsRunnerErr c.runQueueId))
+    let private saveResults (proxy : PartitionerProxy) (c : ResultInfo) =
+        printfn $"saveResults: c.runQueueId = %A{c.runQueueId}"
+        proxy.saveResults c |> bindError (addError SaveResultsRunnerErr (UnableToSaveResultsRunnerErr c.runQueueId))
 
 
     type IPartitionerService =
@@ -207,7 +207,7 @@ module Partitioner =
         | UserMsg (PartitionerMsg x) ->
             match x with
             | UpdateProgressPrtMsg p -> updateProgress proxy p
-            | SaveChartsPrtMsg c -> saveCharts proxy c
+            | SaveResultsPrtMsg c -> saveResults proxy c
             | RegisterWorkerNodePrtMsg w -> register proxy w
             | UnregisterWorkerNodePrtMsg w -> unregister proxy w
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error

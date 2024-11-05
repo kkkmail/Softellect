@@ -66,7 +66,7 @@
 /// <item>
 /// <term>Generator - </term>
 /// <description>A synonym for Delegate, but with a more concise meaning. This is used when a function creates or generates something, making the intent clearer.</description>
-/// <example>Example: <code>type chartGenerator = {generate : Chart -> Chart}</code></example>
+/// <example>Example: <code>type resultGenerator = {generate : Result -> Result}</code></example>
 /// </item>
 ///
 /// <item>

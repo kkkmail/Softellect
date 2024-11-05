@@ -49,7 +49,7 @@ module CommandLine =
                 match this with
                 | RunQueueIdToModify _ -> "RunQueueId to modify."
                 | CancelOrAbort _ -> "if false then requests to cancel with results, if true then requests to abort calculations."
-                | ReportResults _ -> "if false then requests results without charts, if true the requests results with charts."
+                | ReportResults _ -> "if false then requests results without results, if true the requests results."
                 | ResetIfFailed -> "if present then reset a failed run queue. That's run queues with status = Failed."
 
 
@@ -73,6 +73,6 @@ module CommandLine =
 
 
     let getResultNotificationTypeOpt p =
-        p |> List.tryPick (fun e -> match e with | ReportResults e -> (match e with | false -> RegularChartGeneration | true -> ForceChartGeneration) |> Some | _ -> None)
+        p |> List.tryPick (fun e -> match e with | ReportResults e -> (match e with | false -> RegularResultGeneration | true -> ForceResultGeneration) |> Some | _ -> None)
 
     let getResetIfFailed p = p |> List.tryPick (fun e -> match e with | ResetIfFailed -> Some true | _ -> None) |> Option.defaultValue false

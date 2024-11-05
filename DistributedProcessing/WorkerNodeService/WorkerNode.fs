@@ -68,10 +68,10 @@ module WorkerNode =
                 let result = q ||> proxy.requestCancellation
                 printfn $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
-            | RequestChartsWrkMsg q ->
-                printfn $"    onProcessMessage: RequestChartsWrkMsg with runQueueId: '%A{q}'."
+            | RequestResultsWrkMsg q ->
+                printfn $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}'."
                 let result = q ||> proxy.notifyOfResults
-                printfn $"    onProcessMessage: RequestChartsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                printfn $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
             | UpdateSolverWrkMsg s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error

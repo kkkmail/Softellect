@@ -63,17 +63,17 @@ module Program =
 
     let getHtmlChart fileName d ch =
         {
-            htmlContent = toEmbeddedHtmlWithDescription d ch
+            textContent = toEmbeddedHtmlWithDescription d ch
             fileName = toHtmlFileName fileName
         }
-        |> HtmlChart
+        |> TextResult
 
 
     let tryGetInputFileName inputFolder (q : RunQueueId) = (FileName $"{q.value}.m").tryGetFullFileName (Some inputFolder)
     let tryGetOutputFileName outputFolder (q : RunQueueId) = (FileName $"{q.value}.png").tryGetFullFileName (Some outputFolder)
 
 
-    let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
+    let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
         let w = loadWolframParams()
 
         match tryGetInputFileName w.wolframInputFolder q, tryGetOutputFileName w.wolframOutputFolder q with
@@ -83,8 +83,8 @@ module Program =
             let legends = d.chartLabels
 
             let d =
-                c1.Head.chartData.x
-                |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.chartData.x[i] }) })
+                c1.Head.resultData.x
+                |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
 
             getListLinePlot i o ListLineParams.defaultValue d
         | _ ->
@@ -92,14 +92,14 @@ module Program =
             None
 
 
-    let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ChartSliceData<TestChartData>>) =
+    let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
         printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
             match c |> List.tryHead with
             | Some h ->
-                h.chartData.x
-                |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.chartData.x[i]), Name = d.chartLabels[i]))
+                h.resultData.x
+                |> Array.mapi (fun i  _ -> Chart.Line(c |> List.map (fun c -> c.t, c.resultData.x[i]), Name = d.chartLabels[i]))
             | None -> [||]
 
         let chart = Chart.combine charts
@@ -118,9 +118,9 @@ module Program =
             try
                 let chartGenerator =
                     {
-                        getChartData = fun _ _ (x : double[]) -> { x = x }
-                        generateCharts = fun q d _ c -> getCharts q d c
-                        generateDetailedCharts = fun _ _ _ _ -> None
+                        getResultData = fun _ _ (x : double[]) -> { x = x }
+                        generateResults = fun q d _ c -> getCharts q d c
+                        generateDetailedResults = fun _ _ _ _ -> None
                     }
 
                 let getUserProxy (solverData : TestSolverData) =
@@ -136,7 +136,7 @@ module Program =
                     {
                         solverRunner = solverRunner
                         solverProxy = solverProxy
-                        chartGenerator = chartGenerator
+                        resultGenerator = chartGenerator
                     }
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>

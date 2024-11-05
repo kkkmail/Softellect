@@ -256,28 +256,28 @@ module Primitives =
         member this.value = let (ProcessId v) = this in v
 
 
-    type HtmlChart =
+    type TextResult =
         {
-            htmlContent: string
+            textContent: string
             fileName : FileName
         }
 
 
-    type BinaryChart =
+    type BinaryResult =
         {
             binaryContent: byte[]
             fileName : FileName
         }
 
 
-    type Chart =
-        | HtmlChart of HtmlChart
-        | BinaryChart of BinaryChart
+    type CalculationResult =
+        | TextResult of TextResult
+        | BinaryResult of BinaryResult
 
         member c.fileName =
             match c with
-            | HtmlChart h -> h.fileName
-            | BinaryChart b -> b.fileName
+            | TextResult h -> h.fileName
+            | BinaryResult b -> b.fileName
 
 
     let appSettingsFile = FileName "appsettings.json"

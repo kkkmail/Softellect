@@ -10,11 +10,11 @@ open Softellect.Messaging.Primitives
 open Softellect.Sys.Rop
 
 /// A SolverRunner operates on input data 'D and produces progress / output data 'P.
-/// Internally it uses a data type 'X to store the state of the computation and may produce chart data 'C.
+/// Internally it uses a data type 'X to store the state of the computation and may produce result data 'C.
 /// So, 4 generics are used: 'D, 'P, 'X, 'C and it is a minimum that's needed.
-/// "Charts" are some slices of data that are produced during the computation and can be used to visualize the progress.
+/// "Results" are some slices of data that are produced during the computation and can be used to visualize the progress.
 /// We do it that way because both 'D and 'X could be huge and so capturing the state of the computation on each step is expensive.
-/// Charts are relatively small and can be used to visualize the progress of the computation.
+/// Results are relatively small and can be used to visualize the progress of the computation.
 module Primitives =
 
     /// See: https://stackoverflow.com/questions/49974736/how-to-declare-a-generic-exception-types-in-f
@@ -51,10 +51,10 @@ module Primitives =
 
     type CallBackNotificationType =
         | ProgressNotification
-        | ChartNotification
-        | ChartDetailedNotification // Also should include ChartNotification.
-        | ProgressAndChartNotification
-        | AllNotification // Should send ProgressNotification and ChartDetailedNotification
+        | ResultNotification
+        | ResultDetailedNotification // Also should include ResultNotification.
+        | ProgressAndResultNotification
+        | AllNotification // Should send ProgressNotification and ResultDetailedNotification
 
 
     type CallBackType =
@@ -62,23 +62,23 @@ module Primitives =
         | FinalCallBack of CalculationCompletionType
 
 
-    /// We don't want to store any initial data in the chart data.
-    /// Rather, we provide 'D when generating charts.
-    type ChartInitData = unit
+    /// We don't want to store any initial data in the result data.
+    /// Rather, we provide 'D when generating results.
+    type ResultInitData = unit
 
 
-    type ChartSliceData<'C> =
+    type ResultSliceData<'C> =
         {
             t : decimal
-            chartData : 'C
+            resultData : 'C
         }
 
 
-    type ChartData<'C> = list<ChartSliceData<'C>>
+    type ResultData<'C> = list<ResultSliceData<'C>>
 
 
-    type ChartDataUpdater<'C> () =
-        interface IUpdater<ChartInitData, ChartSliceData<'C>, ChartData<'C>> with
+    type ResultDataUpdater<'C> () =
+        interface IUpdater<ResultInitData, ResultSliceData<'C>, ResultData<'C>> with
             member _.init _ = []
             member _.add a m = a :: m
 
@@ -89,29 +89,26 @@ module Primitives =
         member r.invoke = let (ProgressCallBack v) = r in v
 
 
-    type ChartGenerator<'D, 'X, 'C> =
+    type ResultGenerator<'D, 'X, 'C> =
         {
-            /// A function to call in order to generate a chart data point.
-            /// This is to collect "lightweight" chart data points at some predetermined intervals.
-            getChartData : 'D -> EvolutionTime -> 'X -> 'C
+            /// A function to call in order to generate a result data point.
+            /// This is to collect "lightweight" reslut data points at some predetermined intervals.
+            getResultData : 'D -> EvolutionTime -> 'X -> 'C
 
-            ///// A function to call in order to generate and store locally a chart data point.
-            ///// This is to collect "lightweight" chart data points at some predetermined intervals.
-            //addChartData : 'C -> unit
+            /// A function to call to generate all lightweight ("evolution") results.
+            /// A generator may skip generating results if it finds them useless. Force result generation if you need them.
+            generateResults : RunQueueId -> 'D -> ResultNotificationType -> list<ResultSliceData<'C>> -> list<CalculationResult> option
 
-            /// A function to call to generate all lightweight ("evolution") charts.
-            generateCharts : RunQueueId -> 'D -> ChartNotificationType -> list<ChartSliceData<'C>> -> list<Chart> option // A generator may skip generating charts if it finds them useless. Force chart generation if you need them.
-
-            /// A function to call to generate heavy charts if any.
-            /// If you don't need heavy charts, then return None.
-            generateDetailedCharts : RunQueueId -> 'D -> EvolutionTime -> 'X -> list<Chart> option
+            /// A function to call to generate heavy results if any.
+            /// If you don't need heavy results, then return None.
+            generateDetailedResults : RunQueueId -> 'D -> EvolutionTime -> 'X -> list<CalculationResult> option
         }
 
 
-    type ChartCallBack =
-        | ChartCallBack of (list<Chart> -> unit)
+    type ResultCallBack =
+        | ResultCallBack of (list<CalculationResult> -> unit)
 
-        member r.invoke = let (ChartCallBack v) = r in v
+        member r.invoke = let (ResultCallBack v) = r in v
 
 
     /// A function to call to check if cancellation is requested.
@@ -127,8 +124,8 @@ module Primitives =
             progressData : ProgressData
             lastCheck : DateTime
             nextProgress : decimal
-            nextChartProgress : decimal
-            nextChartDetailedProgress : decimal
+            nextResultProgress : decimal
+            nextResultDetailedProgress : decimal
         }
 
         static member defaultValue =
@@ -136,8 +133,8 @@ module Primitives =
                 progressData = ProgressData.defaultValue
                 lastCheck = DateTime.Now
                 nextProgress = 0.0M
-                nextChartProgress = 0.0M
-                nextChartDetailedProgress = 0.0M
+                nextResultProgress = 0.0M
+                nextResultDetailedProgress = 0.0M
             }
 
 
@@ -152,14 +149,14 @@ module Primitives =
     type CallBackProxy<'P> =
         {
             progressCallBack : ProgressCallBack<'P>
-            chartCallBack : ChartCallBack
+            resultCallBack : ResultCallBack
             checkCancellation : CheckCancellation
         }
 
 
     /// The main solver runner function.
     /// It takes initial evolution time and computation state and returns the final evolution time and computation state.
-    /// It will try to call back with progress data and chart data when it finds it necessary based on the parameters.
+    /// It will try to call back with progress data and result data when it finds it necessary based on the parameters.
     type SolverRunner<'X> =
         | SolverRunner of (EvolutionTime * 'X -> TryCallBack<'X> -> EvolutionTime * 'X)
 
@@ -179,7 +176,7 @@ module Primitives =
         {
             solverRunner : SolverRunner<'X> // Run the computation from the initial data till the end and report progress on the way.
             solverProxy : SolverProxy<'D, 'P, 'X>
-            chartGenerator : ChartGenerator<'D, 'X, 'C>
+            resultGenerator : ResultGenerator<'D, 'X, 'C>
         }
 
 
@@ -187,9 +184,9 @@ module Primitives =
     type SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
         {
             callBackProxy : CallBackProxy<'P>
-            addChartData : ChartSliceData<'C> -> unit
-            getChartData : unit -> list<ChartSliceData<'C>>
-            checkNotification : RunQueueId -> ChartNotificationType option
+            addResultData : ResultSliceData<'C> -> unit
+            getResultData : unit -> list<ResultSliceData<'C>>
+            checkNotification : RunQueueId -> ResultNotificationType option
             clearNotification : RunQueueId -> unit
         }
 
