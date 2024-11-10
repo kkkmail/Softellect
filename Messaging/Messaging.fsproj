@@ -1,63 +1,63 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>Softellect.Messaging</AssemblyName>
-    <Platforms>x64</Platforms>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Konstantin Konstantinov</Authors>
-    <Company>Softellect Systems, Inc.</Company>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>8.0.400.2</Version>
-    <PackageVersion>8.0.400.2</PackageVersion>
-    <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
-    <PackageTags>messaging;client;server;framework</PackageTags>
-    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <AssemblyName>Softellect.Messaging</AssemblyName>
+        <Platforms>x64</Platforms>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Authors>Konstantin Konstantinov</Authors>
+        <Company>Softellect Systems, Inc.</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Version>8.0.400.2</Version>
+        <PackageVersion>8.0.400.2</PackageVersion>
+        <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
+        <PackageTags>messaging;client;server;framework</PackageTags>
+        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <DefineConstants>DEBUG</DefineConstants>
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <DefineConstants>DEBUG</DefineConstants>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <Compile Include="Primitives.fs" />
-    <Compile Include="VersionInfo.fs" />
-    <Compile Include="Errors.fs" />
-    <Compile Include="ServiceInfo.fs" />
-    <Compile Include="Proxy.fs" />
-    <Compile Include="Client.fs" />
-    <Compile Include="Service.fs" />
-    <Compile Include="AppSettings.fs" />
-    <Compile Include="DataAccess.fs" />
-    <Compile Include="ServiceProxy.fs" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <Compile Include="Primitives.fs"/>
+        <Compile Include="VersionInfo.fs"/>
+        <Compile Include="Errors.fs"/>
+        <Compile Include="ServiceInfo.fs"/>
+        <Compile Include="Proxy.fs"/>
+        <Compile Include="Client.fs"/>
+        <Compile Include="Service.fs"/>
+        <Compile Include="AppSettings.fs"/>
+        <Compile Include="DataAccess.fs"/>
+        <Compile Include="ServiceProxy.fs"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Sys\Sys.fsproj" />
-    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\Wcf\Wcf.fsproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SQLProvider" Version="1.4.1" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-    <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Update="FSharp.Core" Version="8.0.401" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="SQLProvider" Version="1.4.1"/>
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2"/>
+        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103"/>
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1"/>
+        <PackageReference Include="System.Data.Common" Version="4.3.0"/>
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119"/>
+        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+    </ItemGroup>
 
 </Project>

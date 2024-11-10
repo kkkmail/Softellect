@@ -1,3 +1,7 @@
+# Softellect.DistributedProcessing
+`Softellect.DistributedProcessing` is a collection of libraries and samples to simplify writing distributed applications in F#. it is similar to map / reduce where map is heavy and reduce is nearly instantaneous.
+
+
 # Softellect.Wcf
 
 `Softellect.Wcf` is a thin F# wrapper around [CoreWcf](https://github.com/CoreWCF/CoreWCF) to simplify writing WCF client / server applications in a natural F# way. This is achieved by using two interfaces instead of one. The higher-level interface describes client - server communication in F# way by using immutable F# structures (records, discriminated unions, etc...). And the lower-level interface performs communication using [FsPicler](https://mbraceproject.github.io/FsPickler/) to serialize arbitrary native F# object into byte array, then zips it and sends as an array of bytes where it is unzipped and then deserialized. Similarly, native F# response, e.g. `Result<'A, 'B>` is sent the same way back. Projects `.\Samples\Wcf\WcfClient` and `.\Samples\Wcf\WcfService` contain examples of how it works and folders `.\Samples\Wcf\NetCoreClient` and `.\Samples\Wcf\NetCoreService` contain F# ports of .net Core examples from `CoreWcf`.
