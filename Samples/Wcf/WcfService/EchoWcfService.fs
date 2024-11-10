@@ -35,7 +35,7 @@ module EchoWcfService =
     let mutable private serviceCount = 0L
 
 
-    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall)>]
+    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type EchoWcfService private (data : EchoServiceData) =
         let count = Interlocked.Increment(&serviceCount)
         do printfn $"EchoWcfService: count = {count}."
@@ -52,4 +52,4 @@ module EchoWcfService =
             member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
 
 
-    type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, EchoServiceData>
+    //type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, EchoServiceData>

@@ -45,12 +45,6 @@ module Primitives =
         static member create() = Guid.NewGuid() |> MessagingClientId
 
 
-    type MessagingClientName =
-        | MessagingClientName of string
-
-        member this.value = let (MessagingClientName v) = this in v
-
-
     type MessagingServiceName =
         | MessagingServiceName of ServiceName
 
@@ -58,8 +52,6 @@ module Primitives =
 
 
     let messagingServiceName = "MessagingService" |> ServiceName |> MessagingServiceName
-    let messagingHttpServiceName = "MessagingHttpService" |> ServiceName |> MessagingServiceName
-    let messagingNetTcpServiceName = "MessagingNetTcpService" |> ServiceName |> MessagingServiceName
 
 
     type MessageType =

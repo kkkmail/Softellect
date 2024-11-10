@@ -9,6 +9,8 @@ open Softellect.Wcf.Common
 
 module Client =
 
+    /// ! Do not try consolidating with Servise. Different namespaces are used !
+    /// This SecurityMode lives in System.ServiceModel namespace.
     type WcfSecurityMode
         with
         member s.securityMode =
@@ -63,17 +65,19 @@ module Client =
         binding
 
 
-    let getBinding t s =
+    let getBinding t =
         match t with
         | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding
-        | NetTcpCommunication -> getNetTcpBinding s |> NetTcpBinding
+        | NetTcpCommunication s -> getNetTcpBinding s |> NetTcpBinding
 
 
     /// Tries getting a Wcf Client.
-    let tryGetWcfService<'T> t s url =
+    let tryGetWcfService<'T> t url =
         try
-            let binding = getBinding t s
+            printfn $"tryGetWcfService - t: '%A{t}', url: '%A{url}'."
+            let binding = getBinding t
             let address = EndpointAddress(url)
+            printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'."
 
             let channelFactory =
                 match binding with
@@ -92,13 +96,13 @@ module Client =
             match t() with
             | Ok (service, factoryCloser) ->
                 try
-                    //printfn "tryCommunicate: Checking channel state..."
+                    printfn "tryCommunicate: Checking channel state..."
                     let channel = (box service) :?> IClientChannel
-                    //printfn "tryCommunicate: Channel State: %A, Via: %A, RemoteAddress: %A." channel.State channel.Via channel.RemoteAddress
+                    printfn $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'."
 
                     match trySerialize wcfSerializationFormat a with
                     | Ok b ->
-                        //printfn "tryCommunicate: Calling service at %A..." DateTime.Now
+                        printfn $"tryCommunicate: Calling service at %A{DateTime.Now}..."
                         let d = c service b
                         channel.Close()
                         factoryCloser()
@@ -108,9 +112,12 @@ module Client =
                         |> Result.mapError WcfSerializationErr
                         |> Result.mapError f
                         |> Result.bind id
-                    | Error e -> toWcfSerializationError f e
+                    | Error e ->
+                        printfn $"tryCommunicate: At %A{DateTime.Now} got serialization error: '%A{e}'."
+                        toWcfSerializationError f e
                 with
                 | e ->
+                    printfn $"tryCommunicate: At %A{DateTime.Now} got inner exception:' %A{e}'."
                     try
                         let channel = (box service) :?> IClientChannel
                         channel.Abort()
@@ -119,8 +126,10 @@ module Client =
                     | _ -> ()
 
                     toWcfError f e // We want the outer "real" error.
-            | Error e -> e |> f |> Error
+            | Error e ->
+                printfn $"tryCommunicate: At %A{DateTime.Now} got outer error: '%A{e}'."
+                e |> f |> Error
         with
         | e ->
-//            printfn $"tryCommunicate: At %A{DateTime.Now} got exception: %A{e}"
+            printfn $"tryCommunicate: At %A{DateTime.Now} got outer exception: '%A{e}'."
             toWcfError f e

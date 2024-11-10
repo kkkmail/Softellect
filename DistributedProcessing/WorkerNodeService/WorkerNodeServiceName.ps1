@@ -1,0 +1,1 @@
+[string] $global:workerNodeServiceName = "WorkerNodeService"

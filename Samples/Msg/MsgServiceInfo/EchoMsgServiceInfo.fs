@@ -3,35 +3,26 @@
 open System
 open System.Threading
 
-open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
-open Softellect.Sys.Logging
-open Softellect.Wcf.Common
-open Softellect.Wcf.Service
 open Softellect.Messaging.ServiceInfo
-open Softellect.Messaging.Service
+open Softellect.Messaging.AppSettings
 open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
-open Softellect.Messaging.VersionInfo
+open Softellect.Messaging.ServiceProxy
+open Softellect.Sys.Logging
 
 module EchoMsgServiceInfo =
+
+    // Flip to false to use in memory lists for messaging service storage and to true to use local database.
+    let useLocalDatabase = true
+
     type EchoMessagingClient = MessagingClient<EchoMessageData>
-    type EchoMessagingClientData = MessagingClientData<EchoMessageData>
-    type EchoMessagingServiceData = MessagingServiceData<EchoMessageData>
     type EchoMessage = Message<EchoMessageData>
-    type EchoMessagingService = MessagingService<EchoMessageData>
-    type EchoMessagingWcfService = MessagingWcfService<EchoMessageData>
-    type EchoMessagingWcfServiceImpl = WcfService<EchoMessagingWcfService, IMessagingWcfService, EchoMessagingServiceData>
 
-
-    let serviceAddress = defaultMessagingServiceAddress
-    let httpServicePort = getDefaultMessagingHttpServicePort echoDataVersion
-    let netTcpServicePort = getDefaultMessagingNetTcpServicePort echoDataVersion
-
-    let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress httpServicePort messagingHttpServiceName.value
-    let netTcpServiceInfo = NetTcpServiceAccessInfo.create serviceAddress netTcpServicePort messagingNetTcpServiceName.value WcfSecurityMode.defaultValue
-    let echoMsgServiceAccessInfo = ServiceAccessInfo.create httpServiceInfo netTcpServiceInfo
+    let echMessagingServiceAccessInfo = loadMessagingServiceAccessInfo echoDataVersion
+    let getLogger = fun _ -> Logger.defaultValue
+    let getProxy() : MessagingServiceProxy<EchoMessageData> = createMessagingServiceProxy getLogger echoDataVersion
 
     let clientOneId = Guid("D4CF3938-CF10-4985-9D45-DD6941092151") |> MessagingClientId
     let clientTwoId = Guid("1AB8F97B-2F38-4947-883F-609128319C80") |> MessagingClientId
@@ -88,11 +79,11 @@ module EchoMsgServiceInfo =
             tryDeleteMessage = fun i -> tryDelete clientData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete clientData (isExpired i)
             getMessageSize = fun _ -> MediumSize
-            logger = echoLogger
+            getLogger = getLogger
         }
 
 
-    let serviceProxy =
+    let getListBasedServiceProxy() =
         {
             tryPickMessage =
                 fun clientId ->
@@ -108,48 +99,52 @@ module EchoMsgServiceInfo =
 
             deleteMessage = fun i -> tryDelete serverMessageData (fun e -> e.messageDataInfo.messageId = i)
             deleteExpiredMessages = fun i -> tryDelete serverMessageData (isExpired i)
-            logger = echoLogger
+            getLogger = getLogger
         }
+
+
+    let serviceProxy =
+        match useLocalDatabase with
+        | false ->
+            printfn "serviceProxy - Using in-memory lists for messaging service."
+            getListBasedServiceProxy()
+        | true ->
+            printfn "serviceProxy - Using local database for messaging service."
+            getProxy()
 
 
     let clientOneProxy = getClientProxy clientOneMessageData clientOneId clientTwoId
     let clientTwoProxy = getClientProxy clientTwoMessageData clientTwoId clientOneId
     let expirationTime = TimeSpan.FromSeconds 10.0
 
-    let createClientAccessInfo clientId = MessagingClientAccessInfo.create echoDataVersion echoMsgServiceAccessInfo clientId
+
+    let createClientAccessInfo clientId : MessagingClientAccessInfo =
+        {
+            msgClientId = clientId
+            msgSvcAccessInfo = echMessagingServiceAccessInfo
+        }
+
 
     let getClientData clientId proxy =
-        createClientAccessInfo clientId
-        |> MessagingClientData.create proxy expirationTime communicationType
+        {
+            msgAccessInfo = createClientAccessInfo clientId
+            msgClientProxy = proxy
+            logOnError = true
+        }
 
 
     let clientOneData = getClientData clientOneId clientOneProxy
     let clientTwoData = getClientData clientTwoId clientTwoProxy
 
 
-    let private serviceData =
-        {
-            messagingServiceInfo =
-                {
-                    expirationTime = TimeSpan.FromSeconds 10.0
-                    messagingDataVersion = echoDataVersion
-                }
-
-            communicationType = communicationType
-            messagingServiceProxy = serviceProxy
-        }
-
-
-    let echoMsgServiceDataRes = tryGetMsgServiceData echoMsgServiceAccessInfo Logger.defaultValue serviceData
-
-
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
-        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgResponseHandlerData.msgAccessInfo}"
+        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
+        let messageProcessor = client :> IMessageProcessor<EchoMessageData>
 
-        let tryProcessMessage = onTryProcessMessage client.messageProcessorProxy
+        //let tryProcessMessage = onTryProcessMessage messageProcessor
 
-        match client.start() with
+        match messageProcessor.tryStart() with
         | Ok() ->
             while true do
                 printfn $"Sending message to: %A{recipient}."
@@ -165,16 +160,16 @@ module EchoMsgServiceInfo =
                         messageData = EchoMessageData.create() |> UserMsg
                     }
 
-                let sendResult = client.sendMessage m
+                let sendResult = messageProcessor.sendMessage m
                 printfn $"Sent with: %A{sendResult}."
 
                 printfn "Checking messages."
 
                 let checkMessage() =
-                    match tryProcessMessage () (fun _ m -> m) with
-                    | ProcessedSuccessfully m -> printfn $"    Received message: %A{m}."
-                    | ProcessedWithError (m, e) -> printfn $"    Received message: %A{m} with error e: %A{e}."
-                    | ProcessedWithFailedToRemove (m, e) -> printfn $"    Received message: %A{m} with error: %A{e}."
+                    match messageProcessor.tryProcessMessage (fun _ -> Ok()) with
+                    | ProcessedSuccessfully -> printfn $"    Received message: %A{m}."
+                    | ProcessedWithError e -> printfn $"    Received message: %A{m} with error e: %A{e}."
+                    | ProcessedWithFailedToRemove e -> printfn $"    Received message: %A{m} with error: %A{e}."
                     | FailedToProcess e -> printfn $"    Error e: %A{e}"
                     | NothingToDo -> printfn "    Nothing to do..."
                     | BusyProcessing -> printfn "    Busy processing..."

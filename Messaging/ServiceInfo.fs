@@ -1,23 +1,29 @@
 ﻿namespace Softellect.Messaging
 
+open System
 open System.ServiceModel
 
 open Softellect.Sys.Rop
+open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
 open Softellect.Wcf.Common
-open Softellect.Sys.Logging
 open Softellect.Messaging.Errors
+open Softellect.Messaging.VersionInfo
+open Microsoft.Extensions.Hosting
 
 module ServiceInfo =
 
+    let defaultExpirationTime = TimeSpan.FromMinutes 5.0
+
+
+    /// 'D is the strongly typed data that is being sent / received by messaging service.
     type MessagingResult<'D> = Result<'D, MessagingError>
     type MessagingOptionalResult<'D> = Result<Message<'D> option, MessagingError>
     type MessagingUnitResult = UnitResult<MessagingError>
-    type MessagingLogger = Logger<MessagingError>
     type MessagingStateWithResult<'D> = 'D * MessagingUnitResult
 
 
-    /// Client part of messaging service.
+    // Client part of messaging service.
     type IMessagingClient<'D> =
         abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
         abstract sendMessage : Message<'D> -> MessagingUnitResult
@@ -25,16 +31,18 @@ module ServiceInfo =
         abstract tryDeleteFromServer : (MessagingClientId * MessageId) -> MessagingUnitResult
 
 
-    /// Server part of messaging service.
+    // Service part of messaging service.
     type IMessagingService<'D> =
+        inherit IHostedService
         abstract getVersion : unit -> MessagingResult<MessagingDataVersion>
         abstract sendMessage : Message<'D> -> MessagingUnitResult
         abstract tryPickMessage : MessagingClientId -> MessagingOptionalResult<'D>
         abstract tryDeleteFromServer : MessagingClientId * MessageId -> MessagingUnitResult
-        abstract removeExpiredMessages : unit -> MessagingUnitResult
+        //abstract tryStart : unit -> MessagingUnitResult
+        //abstract removeExpiredMessages : unit -> MessagingUnitResult
 
 
-    /// Server WCF part of messaging service.
+    /// Service WCF part of messaging service.
     /// The method removeExpiredMessages is not exposed via WCF.
     /// https://gist.github.com/dgfitch/661656
     [<ServiceContract(ConfigurationName = MessagingWcfServiceName)>]
@@ -55,14 +63,23 @@ module ServiceInfo =
 
     type MessagingServiceAccessInfo =
         {
-            messagingServiceAccessInfo : ServiceAccessInfo
             messagingDataVersion : MessagingDataVersion
+            serviceAccessInfo : ServiceAccessInfo
+            expirationTime : TimeSpan
         }
 
-        static member create dataVersion info =
+        static member defaultValue v =
             {
-                messagingServiceAccessInfo = info
-                messagingDataVersion = dataVersion
+                messagingDataVersion = v
+                serviceAccessInfo =
+                    {
+                        netTcpServiceAddress = ServiceAddress localHost
+                        netTcpServicePort = getDefaultMessagingHttpServicePort v
+                        netTcpServiceName = messagingServiceName.value
+                        netTcpSecurityMode = NoSecurity
+                    }
+                    |> NetTcpServiceInfo
+                expirationTime = defaultExpirationTime
             }
 
 
@@ -71,9 +88,3 @@ module ServiceInfo =
             msgClientId : MessagingClientId
             msgSvcAccessInfo : MessagingServiceAccessInfo
         }
-
-        static member create dataVersion info clientId =
-            {
-                msgClientId = clientId
-                msgSvcAccessInfo = MessagingServiceAccessInfo.create dataVersion info
-            }

@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <AssemblyName>Softellect.Analytics</AssemblyName>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Authors>Konstantin Konstantinov</Authors>
+        <Company>Softellect Systems, Inc.</Company>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Version>8.0.400.2</Version>
+        <PackageVersion>8.0.400.2</PackageVersion>
+        <Description>Softellect Analytics...</Description>
+        <PackageTags>framework</PackageTags>
+        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Analytics</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <DefineConstants>DEBUG</DefineConstants>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <PlatformTarget>x64</PlatformTarget>
+        <NoWarn>NU5100</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="ml32i4.dll" Pack="true">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </None>
+        <None Include="ml64i4.dll" Pack="true">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </None>
+        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <Compile Include="Primitives.fs"/>
+        <Compile Include="AppSettings.fs"/>
+        <Compile Include="Wolfram.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Plotly.NET" Version="5.1.0"/>
+        <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0"/>
+        <PackageReference Include="Wolfram.NETLink" Version="1.7.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Sys\Sys.fsproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+    </ItemGroup>
+
+</Project>

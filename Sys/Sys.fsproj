@@ -1,79 +1,86 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Platforms>x64</Platforms>
-    <AssemblyName>Softellect.Sys</AssemblyName>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Authors>Konstantin Konstantinov</Authors>
-    <Company>Softellect Systems, Inc.</Company>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>8.0.300.1</Version>
-    <PackageVersion>8.0.300.1</PackageVersion>
-    <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
-    <PackageTags>framework</PackageTags>
-    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Sys</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <AssemblyName>Softellect.Sys</AssemblyName>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Authors>Konstantin Konstantinov</Authors>
+        <Company>Softellect Systems, Inc.</Company>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Version>8.0.400.2</Version>
+        <PackageVersion>8.0.400.2</PackageVersion>
+        <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
+        <PackageTags>framework</PackageTags>
+        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Sys</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <DefineConstants>DEBUG</DefineConstants>
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <DefineConstants>DEBUG</DefineConstants>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111</NoWarn>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <PlatformTarget>x64</PlatformTarget>
+        <NoWarn>NU5100;NU5110;NU5111</NoWarn>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\Functions.ps1" Link="Functions.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <Compile Include="NamingConventions.fs" />
-    <Compile Include="ExitErrorCodes.fs" />
-    <Compile Include="Primitives.fs" />
-    <Compile Include="Errors.fs" />
-    <Compile Include="Logging.fs" />
-    <Compile Include="Core.fs" />
-    <Compile Include="Rop.fs" />
-    <Compile Include="Retry.fs" />
-    <Compile Include="TimerEvents.fs" />
-    <Compile Include="ServiceInstaller.fs" />
-    <Compile Include="AppSettings.fs" />
-    <Compile Include="DataAccess.fs" />
-    <Compile Include="Worker.fs" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <Compile Include="NamingConventions.fs"/>
+        <Compile Include="VersionInfo.fs"/>
+        <Compile Include="ExitErrorCodes.fs"/>
+        <Compile Include="Primitives.fs"/>
+        <Compile Include="Errors.fs"/>
+        <Compile Include="Logging.fs"/>
+        <Compile Include="Core.fs"/>
+        <Compile Include="Rop.fs"/>
+        <Compile Include="Retry.fs"/>
+        <Compile Include="TimerEvents.fs"/>
+        <Compile Include="ServiceInstaller.fs"/>
+        <Compile Include="AppSettings.fs"/>
+        <Compile Include="DynamicSql.fs"/>
+        <Compile Include="DataAccess.fs"/>
+        <Compile Include="FileSystemTypes.fs"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Argu" Version="6.2.4" />
-    <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
-    <PackageReference Include="CoreWCF.Http" Version="1.5.2" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="1.5.2" />
-    <PackageReference Include="CoreWCF.Primitives" Version="1.5.2" />
-    <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
-    <PackageReference Include="FsPickler" Version="5.3.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
-    <PackageReference Include="System.ServiceModel.Http" Version="8.0.0" />
-    <PackageReference Include="System.ServiceModel.NetTcp" Version="8.0.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="8.0.0" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
-    <PackageReference Include="FSharp.Core" Version="8.0.301" />
-    <PackageReference Include="SQLProvider" Version="1.3.43" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
-    <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-    <PackageReference Include="System.Data.Common" Version="4.3.0" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
-    <PackageReference Include="FSharp.Data" Version="6.4.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Argu" Version="6.2.4"/>
+        <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0"/>
+        <PackageReference Include="CoreWCF.Http" Version="1.6.0"/>
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0"/>
+        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0"/>
+        <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268"/>
+        <PackageReference Include="FsPickler" Version="5.3.2"/>
+        <PackageReference Include="FsPickler.Json" Version="5.3.2"/>
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1"/>
+        <PackageReference Include="System.ServiceModel.Http" Version="8.0.0"/>
+        <PackageReference Include="System.ServiceModel.NetTcp" Version="8.0.0"/>
+        <PackageReference Include="System.ServiceModel.Primitives" Version="8.0.0"/>
+        <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1"/>
+        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Include="SQLProvider" Version="1.4.1"/>
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.6"/>
+        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103"/>
+        <PackageReference Include="System.Data.Common" Version="4.3.0"/>
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119"/>
+        <PackageReference Include="FSharp.Data" Version="6.4.0"/>
+    </ItemGroup>
 
 </Project>

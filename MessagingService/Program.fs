@@ -1,41 +1,27 @@
 ﻿namespace Softellect.MessagingService
 
-open Argu
-open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
-open Softellect.Messaging.Primitives
-open Softellect.MessagingService
-open Softellect.MessagingService.CommandLine
-open Softellect.Sys.ExitErrorCodes
+open Softellect.Messaging.Service
+open Microsoft.FSharp.Core.Operators
+open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.AppSettings
+open Softellect.Wcf.Program
 
 module Program =
 
-    let private createHostBuilder<'D> (v : MessagingDataVersion) =
-        Host.CreateDefaultBuilder()
-            .UseWindowsService()
-            .ConfigureServices(fun hostContext services ->
-                services.AddSingleton(v) |> ignore
-                services.AddHostedService<MsgWorker<'D>>() |> ignore)
+    let messagingMain<'D> messagingProgramName data argv =
+        printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
+        let saveSettings() =
+            let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
+            printfn $"saveSettings - result: '%A{result}'."
 
-    let main<'D> messagingProgramName v argv =
-        let runHost() = createHostBuilder<'D>(v).Build().Run()
+        let programData =
+            {
+                serviceAccessInfo = data.messagingServiceAccessInfo.serviceAccessInfo
+                getService = fun () -> new MessagingService<'D>(data) :> IMessagingService<'D>
+                getWcfService = fun service -> new MessagingWcfService<'D>(service)
+                saveSettings = saveSettings
+                configureServices = None
+            }
 
-        try
-            let parser = ArgumentParser.Create<MsgSvcArguArgs>(programName = messagingProgramName)
-            let results = (parser.Parse argv).GetAllResults() |> MsgSvcArgs.fromArgu convertArgs
-
-            let run p =
-                getParams v p |> ignore
-                runHost
-
-            match MessagingServiceTask.tryCreate run (getSaveSettings v) results with
-            | Some task -> task.run()
-            | None ->  runHost()
-
-            CompletedSuccessfully
-
-        with
-        | exn ->
-            printfn $"%s{exn.Message}"
-            UnknownException
+        wcfMain<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv

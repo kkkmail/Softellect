@@ -1,9 +1,18 @@
 ﻿namespace Softellect.Samples.Msg.WcfWorker
 
+open Softellect.Messaging.Service
 open Softellect.MessagingService.Program
 open Softellect.Samples.Msg.ServiceInfo.Primitives
+open Softellect.Samples.Msg.ServiceInfo.EchoMsgServiceInfo
 
 module Program =
 
     [<EntryPoint>]
-    let main args = main<EchoMessageData> "MsgWorker" echoDataVersion args
+    let main args =
+        let data =
+            {
+                messagingServiceProxy = serviceProxy
+                messagingServiceAccessInfo = echMessagingServiceAccessInfo
+            }
+
+        messagingMain<EchoMessageData> "MsgWorker" data args

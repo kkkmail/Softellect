@@ -24,7 +24,7 @@ module Program =
 
     let callUsingWcf() =
         let service = EchoWcfResponseHandler echoWcfServiceAccessInfo :> IEchoService
-        let url = echoWcfServiceAccessInfo.getUrl communicationType
+        let url = echoWcfServiceAccessInfo.getUrl()
 
         while true do
             try

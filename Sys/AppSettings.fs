@@ -2,20 +2,27 @@
 open Newtonsoft.Json.Linq
 
 open System
+open System.Collections.Generic
 open System.IO
 open Newtonsoft.Json
+open Argu
 open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
+open Softellect.Sys.Errors
 
 module AppSettings =
 
     [<Literal>]
-    let ValueSeparator = ":"
+    let SetOnMissing = true
 
 
     [<Literal>]
-    let ListSeparator = ","
+    let ValueSeparator = "="
+
+
+    [<Literal>]
+    let ListSeparator = ";"
 
 
     [<Literal>]
@@ -23,7 +30,7 @@ module AppSettings =
 
 
     /// Expects a string in the form:
-    ///     someField1:SomeValue1,someField2:SomeValue2
+    ///     someField1:SomeValue1;someField2:SomeValue2
     let parseSimpleSetting (s : string) =
         let p =
             s.Split ListSeparator
@@ -48,124 +55,7 @@ module AppSettings =
         | ConfigKey of string
 
 
-    let tryOpenJson fileName =
-        try
-            let json = File.ReadAllText(fileName)
-            let jsonObj = JsonConvert.DeserializeObject(json)
-            Ok jsonObj
-        with
-        | e -> Error e
-
-
-    let trySaveJson fileName jsonObj =
-        try
-            let output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented)
-            File.WriteAllText(fileName, output)
-            Ok()
-        with
-        | e -> Error e
-
-
-    let tryGetString jsonObj (ConfigSection section) (ConfigKey key) =
-        try
-            let sectionObj = jsonObj?(section)
-
-            if sectionObj = null
-            then Ok None
-            else
-                let value = (sectionObj?(key))
-                match box value with
-                | null -> Ok None
-                | _ -> value.ToString() |> Some |> Ok
-        with
-        | e -> Error e
-
-
-    let tryGetInt jsonObj section key =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                Int32.Parse s |> Some |> Ok
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    let tryGetDecimal jsonObj section key =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                Decimal.Parse s |> Some |> Ok
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    let tryGetDouble jsonObj section key =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                Double.Parse s |> Some |> Ok
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    let tryGetGuid jsonObj section key =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                Guid.Parse s |> Some |> Ok
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    let tryGetBool jsonObj section key =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                bool.Parse s |> Some |> Ok
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    let tryGet<'T> tryCreate jsonObj section key : Result<'T option, exn> =
-        match tryGetString jsonObj section key with
-        | Ok (Some s) ->
-            try
-                match tryCreate s with
-                | Ok v -> Ok (Some v)
-                | Error e -> e |> InvalidDataException :> exn |> Error
-            with
-            | e -> Error e
-        | Ok None -> Ok None
-        | Error e -> Error e
-
-
-    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
-    /// and returns provided default value instead.
-    let tryGetOrDefault<'T> (defaultValue : 'T) tryCreate jsonObj section key : 'T =
-        match tryGet<'T> tryCreate jsonObj section key with
-        | Ok (Some v) -> v
-        | _ -> defaultValue
-
-
-    //let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
-    //    try
-    //        jsonObj?(section)?(key) <- $"{value}"
-    //        Ok()
-    //    with
-    //    | e -> Error e
-
-
-    let trySet jsonObj (ConfigSection section) (ConfigKey key) value =
+    let private trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
             let sectionObj =
                 if jsonObj?(section) = null then
@@ -180,65 +70,261 @@ module AppSettings =
         | e -> Error e
 
 
+    let private tryOpenJson (FileName fileName) =
+        try
+            let json = File.ReadAllText(fileName)
+            let jsonObj = JsonConvert.DeserializeObject(json)
+            Ok jsonObj
+        with
+        | e -> Error e
+
+
+    let private trySaveJson (FileName fileName) jsonObj =
+        try
+            let output = JsonConvert.SerializeObject(jsonObj, Formatting.Indented)
+            File.WriteAllText(fileName, output)
+            Ok()
+        with
+        | e -> Error e
+
+
+    let private tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
+        try
+            // Safely try to get the section.
+            match jsonObj.TryGetValue(section) with
+            | true, sectionObj ->
+                match sectionObj :?> Newtonsoft.Json.Linq.JObject with
+                | null -> Ok None
+                | sectionJObj ->
+                    // Safely try to get the key in the section.
+                    match sectionJObj.TryGetValue(key) with
+                    | true, value when value <> null -> value.ToString() |> Some |> Ok
+                    | _ -> Ok None
+            | _ -> Ok None
+        with
+        | e -> Error e
+
+
+    let private getStringOrDefault setOnMissing defaultValue jsonObj section key =
+        match tryGetString jsonObj section key with
+        | Ok (Some v) -> v
+        | _ ->
+            match setOnMissing with
+            | true -> trySet jsonObj section key defaultValue |> ignore
+            | false -> ()
+
+            defaultValue
+
+
+    let private tryGet<'T> tryCreate jsonObj section key : Result<'T option, exn> =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                match tryCreate s with
+                | Ok v -> Ok (Some v)
+                | Error e -> e |> InvalidDataException :> exn |> Error
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
+    let private tryGetFromJson<'T> jsonObj section key : Result<'T option, exn> =
+        match tryGetString jsonObj section key with
+        | Ok (Some s) ->
+            try
+                jsonDeserialize<'T> s |> Some |> Ok
+            with
+            | e -> Error e
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
+    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
+    /// and returns provided default value instead.
+    let private getOrDefault<'T> setOnMissing (defaultValue : 'T) tryCreate jsonObj section key : 'T =
+        match tryGet<'T> tryCreate jsonObj section key with
+        | Ok (Some v) -> v
+        | _ ->
+            match setOnMissing with
+            | true -> trySet jsonObj section key defaultValue |> ignore
+            | false -> ()
+
+            defaultValue
+
+
+    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
+    /// and returns provided default value instead.
+    let private getFromJsonOrDefault<'T> setOnMissing (defaultValue : 'T) jsonObj section key : 'T =
+        match tryGetFromJson<'T> jsonObj section key with
+        | Ok (Some v) -> v
+        | _ ->
+            match setOnMissing with
+            | true -> trySet jsonObj section key defaultValue |> ignore
+            | false -> ()
+
+            defaultValue
+
+
+    let private tryCreateInt (s : string) =
+        try
+            Int32.Parse s |> Ok
+        with
+        | e -> Error $"{e}"
+
+
+    let private tryCreateDecimal (s : string) =
+        try
+            Decimal.Parse s |> Ok
+        with
+        | e -> Error $"{e}"
+
+
+    let private tryCreateDouble (s : string) =
+        try
+            Double.Parse s |> Ok
+        with
+        | e -> Error $"{e}"
+
+
+    let private tryCreateGuid (s : string) =
+        try
+            Guid.Parse s |> Ok
+        with
+        | e -> Error $"{e}"
+
+
+    let private tryCreateBool (s : string) =
+        try
+            Boolean.Parse s |> Ok
+        with
+        | e -> Error $"{e}"
+
+
+    let private tryGetInt jsonObj section key = tryGet<int> tryCreateInt jsonObj section key
+    let private tryGetDecimal jsonObj section key = tryGet<decimal> tryCreateDecimal jsonObj section key
+    let private tryGetDouble jsonObj section key = tryGet<double> tryCreateDouble jsonObj section key
+    let private tryGetGuid jsonObj section key = tryGet<Guid> tryCreateGuid jsonObj section key
+    let private tryGetBool jsonObj section key = tryGet<bool> tryCreateBool jsonObj section key
+    let private tryGetFolderName jsonObj section key = tryGet<FolderName> FolderName.tryCreate jsonObj section key
+    let private tryGetFileName jsonObj section key = tryGet<FileName> FileName.tryCreate jsonObj section key
+
+
+    let private getIntOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<int> setOnMissing defaultValue tryCreateInt jsonObj section key
+
+
+    let private getDecimalOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<decimal> setOnMissing defaultValue tryCreateDecimal jsonObj section key
+
+
+    let private getDoubleOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<double> setOnMissing defaultValue tryCreateDouble jsonObj section key
+
+
+    let private getGuidOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<Guid> setOnMissing defaultValue tryCreateGuid jsonObj section key
+
+
+    let private getBoolOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<bool> setOnMissing defaultValue tryCreateBool jsonObj section key
+
+
+    let private getFolderNameOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<FolderName> setOnMissing defaultValue FolderName.tryCreate jsonObj section key
+
+
+    let private getFileNameOrDefault setOnMissing defaultValue jsonObj section key =
+        getOrDefault<FileName> setOnMissing defaultValue FileName.tryCreate jsonObj section key
+
+
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
-    type AppSettingsProvider private (fileName, jsonObj) =
-        member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
-        member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
-        member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
-        member _.tryGetDouble key = tryGetDouble jsonObj ConfigSection.appSettings key
-        member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
-        member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
-        member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
+    type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject, setOnMissing : bool) =
+        // member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
+        // member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
+        // member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
+        // member _.tryGetDouble key = tryGetDouble jsonObj ConfigSection.appSettings key
+        // member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
+        // member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
+        // member _.tryGetFolderName key = tryGetFolderName jsonObj ConfigSection.appSettings key
+        // member _.tryGetFileName key = tryGetFileName jsonObj ConfigSection.appSettings key
 
-        member _.tryGetOrDefault<'T> (defaultValue : 'T) tryCreate key =
-            tryGetOrDefault<'T> defaultValue tryCreate jsonObj ConfigSection.appSettings key
+        member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getDoubleOrDefault key defaultValue = getDoubleOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getGuidOrDefault key defaultValue = getGuidOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getBoolOrDefault key defaultValue = getBoolOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getFolderNameOrDefault key defaultValue = getFolderNameOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+        member _.getFileNameOrDefault key defaultValue = getFileNameOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+
+        member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
+        member _.tryGetFromJson<'T> key = tryGetFromJson<'T> jsonObj ConfigSection.appSettings key
+
+        member _.getOrDefault<'T> (defaultValue : 'T) tryCreate key =
+            getOrDefault<'T> setOnMissing defaultValue tryCreate jsonObj ConfigSection.appSettings key
+
+        member _.getFromJsonOrDefault<'T> (defaultValue : 'T) key =
+            getFromJsonOrDefault<'T> setOnMissing defaultValue jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
 
         member _.tryGetConnectionString key = tryGetString jsonObj ConfigSection.connectionStrings key
         member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
 
-        member _.trySave() = trySaveJson fileName jsonObj
-        member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
+        member _.trySave() =
+            printfn $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
+            trySaveJson fileName jsonObj
 
-        static member tryCreate fileName =
-            let fullFileName = getFileName fileName
-            match tryOpenJson fullFileName with
-            | Ok jsonObj -> (fileName, jsonObj) |> AppSettingsProvider |> Ok
+        member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
+        member _.setOnMissing = setOnMissing
+
+        member a.save() =
+            match a.trySave() with
+            | Ok () -> ()
+            | Error e -> printfn $"AppSettingsProvider.save - ERROR: '%A{e}'."
+
+        static member tryCreate (fileName : FileName) =
+            match fileName.tryGetFullFileName() with
+            | Ok fullFileName ->
+                match tryOpenJson fullFileName with
+                | Ok jsonObj -> (fullFileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject), SetOnMissing) |> AppSettingsProvider |> Ok
+                | Error e -> e |> TryOpenJsonExn |> Error
             | Error e -> Error e
+
+        static member tryCreate () = AppSettingsProvider.tryCreate appSettingsFile
 
 
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
 
 
-    let getServiceAddress (providerRes : AppSettingsProviderResult) n (ServiceAddress d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetString n with
-            | Ok (Some EmptyString) -> d
-            | Ok (Some s) -> s
-            | _ -> d
-        | _ -> d
-        |> ServiceAddress
+    /// A simple command line handler to save default settings into appconfig.json file.
+    /// Thisis helpful when the structures change and you want to reset the settings.
+    [<CliPrefix(CliPrefix.None)>]
+    type SettingsArguments =
+        | [<Unique>] [<First>] [<AltCommandLine("s")>] Save
+
+    with
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Save -> "saves default settings into appconfig.json file."
 
 
-    let getServiceHttpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetInt n with
-            | Ok (Some k) when k > 0 -> k
-            | _ -> d
-        | _ -> d
-        |> ServicePort
+    type SettingsTask =
+        | SaveSettingsTask of (unit -> unit)
 
+        member task.run () =
+            match task with
+            | SaveSettingsTask s -> s()
 
-    let getServiceNetTcpPort (providerRes : AppSettingsProviderResult) n (ServicePort d) =
-        match providerRes with
-        | Ok provider ->
-            match provider.tryGetInt n with
-            | Ok (Some k) when k > 0 -> k
-            | _ -> d
-        | _ -> d
-        |> ServicePort
+        static member private tryCreateSaveSettingsTask s (p : list<SettingsArguments>) : SettingsTask option =
+            p |> List.tryPick (fun e -> match e with | Save -> s |> SaveSettingsTask |> Some | _ -> None)
+
+        static member tryCreate s p =
+            [
+                SettingsTask.tryCreateSaveSettingsTask s
+            ]
+            |> List.tryPick (fun e -> e p)

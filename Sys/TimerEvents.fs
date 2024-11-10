@@ -12,7 +12,6 @@ module TimerEvents =
 
 
     [<Literal>]
-    //let RefreshInterval = 30_000
     let RefreshInterval = 10_000
 
 
@@ -48,34 +47,71 @@ module TimerEvents =
     type TimerEventProxy<'E> =
         {
             eventHandler : unit -> UnitResult<'E>
-            logger : Logger<'E>
+            getLogger : GetLogger
             toErr : TimerEventError -> 'E
         }
 
 
-    type TimerEventHandler<'E> (i : TimerEventInfo, proxy : TimerEventProxy<'E>) =
+    type TimerEventHandlerInfo<'E> =
+        {
+            timerEventInfo : TimerEventInfo
+            timerProxy : TimerEventProxy<'E>
+        }
+
+        member i.withFirstDelay d =
+            { i with timerEventInfo = { i.timerEventInfo with firstDelay = d } }
+
+        static member defaultValue e h n =
+            {
+                timerEventInfo = TimerEventInfo.defaultValue n
+                timerProxy =
+                    {
+                        eventHandler = h
+                        getLogger = fun _ -> Logger.defaultValue
+                        toErr = e
+                    }
+            }
+
+        static member oneHourValue e h n =
+            {
+                timerEventInfo = TimerEventInfo.oneHourValue n
+                timerProxy =
+                    {
+                        eventHandler = h
+                        getLogger = fun _ -> Logger.defaultValue
+                        toErr = e
+                    }
+            }
+
+
+    type TimerEventHandler<'E> (i0 : TimerEventHandlerInfo<'E>) =
         let mutable counter = -1
         let mutable lastStartedAt = DateTime.Now
-        let handlerId = i.handlerId |> Option.defaultValue (Guid.NewGuid())
-        let refreshInterval = i.refreshInterval |> Option.defaultValue RefreshInterval
-        let logger = proxy.logger
-        let firstDelay = i.firstDelay |> Option.defaultValue refreshInterval
-        let logError e = e |> proxy.toErr |> logger.logErrorData
-        let logWarn e = e |> proxy.toErr |> logger.logWarnData
-        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.handlerName}"
+        let handlerId = i0.timerEventInfo.handlerId |> Option.defaultValue (Guid.NewGuid())
+        let refreshInterval = i0.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
+        let firstDelay = i0.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
+        let i = { i0 with timerEventInfo.handlerId = Some handlerId; timerEventInfo.refreshInterval = Some refreshInterval; timerEventInfo.firstDelay = Some firstDelay }
+        let logger = i.timerProxy.getLogger (LoggerName $"{nameof(TimerEventHandler)}<{typedefof<'E>.Name}>: {handlerId}")
+        let logError e = logger.logError $"%A{(i.timerProxy.toErr e)}"
+        let logWarn e = logger.logWarn $"%A{(i.timerProxy.toErr e)}"
+        let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.timerEventInfo.handlerName}"
 //        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
+        //do (printfn $"TimerEventHandler: %A{i} - starting.")
 
         let g() =
             try
-                match proxy.eventHandler() with
+                match i.timerProxy.eventHandler() with
                 | Ok() ->
 //                    logger.logDebugString "proxy.eventHandler() - succeeded."
+                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
                     ()
-                | Error e -> logger.logErrorData e
+                | Error e ->
+                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - FAILED, error: '%A{e}'."
+                    logger.logError $"%A{e}"
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }
@@ -91,7 +127,7 @@ module TimerEvents =
                     timedImplementation false logger info g
                 else
                     {
-                        handlerName = i.handlerName
+                        handlerName = i.timerEventInfo.handlerName
                         handlerId = handlerId
                         runTime = DateTime.Now - lastStartedAt
                     }
@@ -103,11 +139,12 @@ module TimerEvents =
 
         member _.start() =
             try
+                printfn $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }
@@ -115,11 +152,12 @@ module TimerEvents =
 
         member _.stop() =
             try
+                printfn $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
             | e ->
                 {
-                    handlerName = i.handlerName
+                    handlerName = i.timerEventInfo.handlerName
                     handlerId = handlerId
                     unhandledException = e
                 }

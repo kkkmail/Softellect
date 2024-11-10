@@ -3,11 +3,7 @@
 namespace Softellect.Messaging
 
 open System
-open System.Data.SQLite
 open FSharp.Data.Sql
-open System.Data
-open System.Data.SqlClient
-
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Messaging.VersionInfo
@@ -15,43 +11,54 @@ open Softellect.Sys.Core
 open Softellect.Sys.DataAccess
 open Softellect.Messaging.Errors
 open Softellect.Messaging.Primitives
+open Softellect.Sys.Errors
 
 module DataAccess =
 
-    let messagingConnectionStringKey = ConfigKey "MessagingService"
+    let private serializationFormat = BinaryZippedFormat
+    let private connectionStringKey = ConfigKey "MessagingService"
 
 
     [<Literal>]
-    let private MessagingDbName = MsgSvcBaseName
+    let private DbName = MsgSvcBaseName
 
 
     [<Literal>]
-    let private MessagingConnectionStringValue = "Server=localhost;Database=" + MessagingDbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
+    let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
 
-    let private getMessagingConnectionStringImpl() = getConnectionString AppSettingsFile messagingConnectionStringKey MessagingConnectionStringValue
-    let private messagingConnectionString = Lazy<ConnectionString>(getMessagingConnectionStringImpl)
-    let getMessagingConnectionString() = messagingConnectionString.Value
+    let private getConnectionStringImpl() =
+        let c = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
+        printfn $"getConnectionStringImpl: %A{c}."
+        c
+
+    let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
+
+    let private getConnectionString() =
+        let c = connectionString.Value
+        printfn $"getConnectionString: %A{c}."
+        c
 
 
-    [<Literal>]
-    let MessagingSqlProviderName : string = "name=MessagingService"
-
-    [<Literal>]
-    let private SqliteStorageFolder = DefaultRootFolder
+    //[<Literal>]
+    //let private SqlProviderName : string = "name=MessagingService"
 
 
-    [<Literal>]
-    let MsgSqliteConnStr = "Data Source=" + __SOURCE_DIRECTORY__ + @"\" + MsgDatabase + @";Version=3;foreign keys=true"
+    //[<Literal>]
+    //let private SqlProviderName = DefaultRootFolder
 
 
-    let getSqlLiteConnStr msgDbLocation = @"Data Source=" + msgDbLocation + ";Version=3;foreign keys=true"
-    let msgSqliteConnStr = MsgSqliteConnStr |> SqliteConnectionString
+    //[<Literal>]
+    //let SqliteConnStr = "Data Source=" + __SOURCE_DIRECTORY__ + @"\" + MsgDatabase + @";Version=3;foreign keys=true"
 
 
-    type Guid
-        with
-        member g.ToSqliteString() = g.ToString("N")
+    //let private getSqlLiteConnStr msgDbLocation = @"Data Source=" + msgDbLocation + ";Version=3;foreign keys=true"
+    ////let private msgSqliteConnStr = SqliteConnStr |> SqliteConnectionString
+
+
+    //type Guid
+    //    with
+    //    member g.ToSqliteString() = g.ToString("N")
 
 
     //type sqLite = SqlDataProvider<
@@ -62,20 +69,17 @@ module DataAccess =
     //               CaseSensitivityChange = Common.CaseSensitivityChange.ORIGINAL>
 
 
-    let serializationFormat = BinaryZippedFormat
-
-
-    type private MsgSvcDb = SqlDataProvider<
+    type private Db = SqlDataProvider<
                     Common.DatabaseProviderTypes.MSSQLSERVER,
-                    ConnectionString = MessagingConnectionStringValue,
+                    ConnectionString = ConnectionStringValue,
                     UseOptionTypes = Common.NullableColumnType.OPTION>
 
 
-    type private MsgSvcContext = MsgSvcDb.dataContext
-    type private MessageEntity = MsgSvcContext.``dbo.MessageEntity``
+    type private DbContext = Db.dataContext
+    type private MessageEntity = DbContext.``dbo.MessageEntity``
 
 
-    let private getDbContext (c : unit -> ConnectionString) = c().value |> MsgSvcDb.GetDataContext
+    let private getDbContext (c : unit -> ConnectionString) = c().value |> Db.GetDataContext
 
 
     let private tryCreateMessageImpl (v : MessagingDataVersion) (r : MessageEntity) =
@@ -121,11 +125,11 @@ module DataAccess =
         | None -> Ok None
 
 
-    let tryPickIncomingMessage c (v : MessagingDataVersion) (MessagingClientId i) =
+    let tryPickIncomingMessage (v : MessagingDataVersion) (MessagingClientId i) =
         let fromDbError e = e |> TryPickIncomingMessageDbErr |> TryPickMessageErr
 
         let g () =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -141,11 +145,11 @@ module DataAccess =
         tryDbFun fromDbError g
 
 
-    let tryPickOutgoingMessage c (v : MessagingDataVersion) (MessagingClientId i) =
+    let tryPickOutgoingMessage (v : MessagingDataVersion) (MessagingClientId i) =
         let fromDbError e = e |> TryPickOutgoingMessageDbErr |> TryPickMessageErr
 
         let g () =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
             let x =
                 query {
@@ -173,46 +177,131 @@ module DataAccess =
     ///                    values (source.messageId, source.senderId, source.recipientId, source.dataVersion, source.deliveryTypeId, source.messageData, source.createdOn)
     ///                when matched then
     ///                    update set senderId = source.senderId, recipientId = source.recipientId, dataVersion = source.dataVersion, deliveryTypeId = source.deliveryTypeId, messageData = source.messageData, createdOn = source.createdOn;
-    let saveMessage c (v : MessagingDataVersion) (m : Message<'D>) =
+    // let saveMessage<'D> (v : MessagingDataVersion) (m : Message<'D>) =
+    //     printfn $"saveMessage: %A{m.messageDataInfo}"
+    //     let elevate e = e |> SaveMessageErr
+    //     let toError e = e |> CannotSaveMessageErr |> elevate
+    //     let fromDbError e = e |> SaveMessageDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let r = ctx.Procedures.SaveMessage.Invoke(
+    //                         ``@messageId`` = m.messageDataInfo.messageId.value,
+    //                         ``@senderId`` = m.messageDataInfo.sender.value,
+    //                         ``@recipientId`` = m.messageDataInfo.recipientInfo.recipient.value,
+    //                         ``@dataVersion`` = v.value,
+    //                         ``@deliveryTypeId`` = m.messageDataInfo.recipientInfo.deliveryType.value,
+    //                         ``@messageData`` = (m.messageData |> serialize serializationFormat))
+    //
+    //         r.ResultSet |> bindIntScalar toError m.messageDataInfo.messageId
+    //
+    //     let result = tryDbFun fromDbError g
+    //     printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+    //     result
+    // let saveMessage<'D> (v : MessagingDataVersion) (m : Message<'D>) =
+    //     printfn $"saveMessage: %A{m.messageDataInfo}"
+    //     let elevate e = e |> SaveMessageErr
+    //     let toError e = e |> CannotSaveMessageErr |> elevate
+    //     let fromDbError e = e |> SaveMessageDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let r = ctx.Procedures.SaveMessage.Invoke(
+    //                         ``@messageId`` = m.messageDataInfo.messageId.value,
+    //                         ``@senderId`` = m.messageDataInfo.sender.value,
+    //                         ``@recipientId`` = m.messageDataInfo.recipientInfo.recipient.value,
+    //                         ``@dataVersion`` = v.value,
+    //                         ``@deliveryTypeId`` = m.messageDataInfo.recipientInfo.deliveryType.value,
+    //                         ``@messageData`` = (m.messageData |> serialize serializationFormat))
+    //
+    //         let x =
+    //             match r.ResultSet |> mapIntScalar with
+    //             | Some 1 ->
+    //                 printfn $"saveMessage: messageId with %A{m.messageDataInfo.messageId} inserted."
+    //                 Ok()
+    //             | Some v ->
+    //                 printfn $"saveMessage: No row inserted - possible duplicate messageId or constraint issue, %A{m.messageDataInfo.messageId}, v = {v}."
+    //                 Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
+    //             | None ->
+    //                 printfn $"saveMessage: No row inserted - %A{m.messageDataInfo.messageId}, unknown error."
+    //                 Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
+    //
+    //         x
+    //
+    //     let result = tryDbFun fromDbError g
+    //     printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+    //     result
+    let saveMessage<'D> (v: MessagingDataVersion) (m: Message<'D>) =
+        printfn $"saveMessage: %A{m.messageDataInfo}"
         let elevate e = e |> SaveMessageErr
         let toError e = e |> CannotSaveMessageErr |> elevate
         let fromDbError e = e |> SaveMessageDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
 
-            let r = ctx.Procedures.SaveMessage.Invoke(
-                            ``@messageId`` = m.messageDataInfo.messageId.value,
-                            ``@senderId`` = m.messageDataInfo.sender.value,
-                            ``@recipientId`` = m.messageDataInfo.recipientInfo.recipient.value,
-                            ``@dataVersion`` = v.value,
-                            ``@deliveryTypeId`` = m.messageDataInfo.recipientInfo.deliveryType.value,
-                            ``@messageData`` = (m.messageData |> serialize serializationFormat))
+            // Check if the message with this ID already exists
+            let existingMessage =
+                query {
+                    for msg in ctx.Dbo.Message do
+                    where (msg.MessageId = m.messageDataInfo.messageId.value)
+                    select (Some msg.MessageId)
+                    exactlyOneOrDefault
+                }
 
-            r.ResultSet |> bindIntScalar toError m.messageDataInfo.messageId
+            match existingMessage with
+            | Some _ ->
+                printfn $"saveMessage: No row inserted - duplicate messageId %A{m.messageDataInfo.messageId}."
+                Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
+            | None ->
+                // Create a new Message and insert it
+                let newMessage = ctx.Dbo.Message.Create()
+                newMessage.MessageId <- m.messageDataInfo.messageId.value
+                newMessage.SenderId <- m.messageDataInfo.sender.value
+                newMessage.RecipientId <- m.messageDataInfo.recipientInfo.recipient.value
+                newMessage.DataVersion <- v.value
+                newMessage.DeliveryTypeId <- m.messageDataInfo.recipientInfo.deliveryType.value
+                newMessage.MessageData <- m.messageData |> serialize serializationFormat
+                newMessage.CreatedOn <- DateTime.UtcNow
 
-        tryDbFun fromDbError g
+                try
+                    ctx.SubmitUpdates()
+                    printfn $"saveMessage: messageId %A{m.messageDataInfo.messageId} inserted."
+                    Ok()
+                with
+                | ex ->
+                    printfn $"saveMessage: Failed to insert messageId %A{m.messageDataInfo.messageId} with exception: %s{ex.Message}."
+                    Error <| elevate (SaveMessageDbErr (DbExn ex))
+
+        let result = tryDbFun fromDbError g
+        printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+        result
 
 
-    let deleteMessage c (messageId : MessageId) =
+    let deleteMessage (messageId : MessageId) =
+        printfn $"deleteMessage: %A{messageId}"
         let elevate e = e |> DeleteMessageErr
         let toError e = e |> CannotDeleteMessageErr |> elevate
         let fromDbError e = e |> DeleteMessageDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.DeleteMessage .Invoke(``@messageId`` = messageId.value)
             r.ResultSet |> bindIntScalar toError messageId
 
-        tryDbFun fromDbError g
+        let result = tryDbFun fromDbError g
+        printfn $"deleteMessage: %A{messageId}, result: %A{result}."
+        result
 
 
-    let deleteExpiredMessages c (v : MessagingDataVersion) (expirationTime : TimeSpan) =
+    let deleteExpiredMessages (v : MessagingDataVersion) (expirationTime : TimeSpan) =
         let elevate e = e |> DeleteExpiredMessagesErr
         let fromDbError e = e |> DeleteExpiredMessagesDbErr |> elevate
 
         let g() =
-            let ctx = getDbContext c
+            let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.DeleteExpiredMessages.Invoke(``@dataVersion`` = v.value, ``@createdOn`` = DateTime.Now - expirationTime)
             r.ResultSet |> ignore
             Ok()

@@ -5,6 +5,12 @@ open System
 /// Collection of general errors & related functionality.
 module Errors =
 
+    type ErrorMessage =
+        | ErrorMessage of string
+
+        member this.value = let (ErrorMessage v) = this in v
+
+
     type ErrorId =
         | ErrorId of Guid
 
@@ -28,16 +34,24 @@ module Errors =
         | StopServiceErr of exn
 
 
-    type GeneralError =
-        | JsonParseErr of JsonParseError
-        | SerializationErr of SerializationError
-
-
     type DbError =
         | DbExn of exn
 
 
-    // Timer Errors and related data.
+    type FileError =
+        | GeneralFileExn of exn
+        | GetFolderNameExn of exn
+        | GetFileNameExn of exn
+        | FileNotFoundErr of string
+        | ReadFileExn of exn
+        | WriteFileExn of exn
+        | DeleteFileExn of exn
+        | GetObjectIdsExn of exn
+        | TryEnsureFolderExistsExn of exn
+        | TryGetFullFileNameExn of exn
+        | TryGetFolderNameExn of exn
+        | TryGetExtensionExn of exn
+        | TryOpenJsonExn of exn
 
 
     type UnhandledEventInfo =
@@ -59,3 +73,12 @@ module Errors =
     type TimerEventError =
         | UnhandledEventHandlerExn of UnhandledEventInfo
         | StillRunningEventHandlerErr of LongRunningEventInfo
+
+
+    type SysError =
+        | JsonParseErr of JsonParseError
+        | SerializationErr of SerializationError
+        | ServiceInstallerErr of ServiceInstallerError
+        | DbErr of DbError
+        | FileErr of FileError
+        | TimerEventErr of TimerEventError

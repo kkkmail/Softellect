@@ -1,0 +1,1 @@
+[string] $global:partitionerServiceName = "PartitionerService"

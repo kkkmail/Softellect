@@ -231,3 +231,32 @@ function StopSvc([string] $serviceName, [string] $messagingDataVersion = "")
     [string] $windowsServiceName = GetServiceName -serviceName $serviceName -messagingDataVersion $messagingDataVersion
     TryStopService -serviceName $windowsServiceName
 }
+
+function GetFolderSizes {
+    param (
+        [string]$drive = "C:\"  # Default to C: drive if no parameter is provided
+    )
+
+    # Initialize an array to store folder sizes
+    $folderSizes = @()
+
+    # Recursively get all folders on the specified drive
+    $folders = Get-ChildItem -Path $drive -Directory -Recurse -Force
+
+    foreach ($folder in $folders) {
+        # Get the total size of all files in the folder (excluding subfolders)
+        $size = (Get-ChildItem -Path $folder.FullName -File -Force | Measure-Object -Property Length -Sum).Sum
+
+        # Add the folder and its size to the array
+        $folderSizes += [PSCustomObject]@{
+            FolderName = $folder.FullName
+            TotalSize  = $size
+        }
+    }
+
+    # Sort the results by TotalSize in descending order
+    $sortedResults = $folderSizes | Sort-Object -Property TotalSize -Descending
+
+    # Display the table
+    $sortedResults | Format-Table -Property FolderName, TotalSize -AutoSize
+}

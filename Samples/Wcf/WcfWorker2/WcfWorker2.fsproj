@@ -4,7 +4,20 @@
     <UserSecretsId>dotnet-WcfWorker-42B7797B-10C0-4875-B86B-A635EEE2C57E</UserSecretsId>
     <AssemblyName>Softellect.Samples.Wcf.WcfWorker</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="WeatherForecast.fs" />
     <Compile Include="Controllers\WeatherForecastController.fs" />

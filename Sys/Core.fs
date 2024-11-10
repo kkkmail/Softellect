@@ -7,10 +7,11 @@ open System.IO.Compression
 open System.Text
 open MBrace.FsPickler
 open Newtonsoft.Json
-
 open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
+open Newtonsoft.Json.Serialization
+open System.Runtime.InteropServices
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -50,6 +51,54 @@ module Core =
     let unZip (b : byte[]) = b |> unZipBytes |> fromByteArray
 
 
+    /// Zips the contents of the specified folder and all subfolders.
+    let zipFolder (FolderName folderPath) =
+        try
+            if not (Directory.Exists(folderPath)) then Error $"Folder {folderPath} does not exist."
+            else
+                use memoryStream = new MemoryStream()
+
+                // archive must be disposed of before we can access the memoryStream.ToArray()
+                // So, we wrap it into a function with use archive inside.
+                let archiveFolder() =
+                    use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
+
+                    let rec zipFiles folderPath archiveFolder =
+                        let directory = DirectoryInfo(folderPath)
+
+                        for file in directory.GetFiles() do
+                            let entryName = Path.Combine(archiveFolder, file.Name)
+                            let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
+                            use entryStream = entry.Open()
+                            use fileStream = file.OpenRead()
+                            fileStream.CopyTo(entryStream)
+
+                        for subfolder in directory.GetDirectories() do
+                            let subfolderArchivePath = Path.Combine(archiveFolder, subfolder.Name)
+                            zipFiles subfolder.FullName subfolderArchivePath
+
+                    zipFiles folderPath String.Empty
+
+                archiveFolder()
+
+                let resultBytes = memoryStream.ToArray()
+                Ok resultBytes
+        with
+        | ex -> Error ex.Message
+
+
+    /// Unzips the byte[] into the specified folder. Overwrites files if overwrite is true.
+    let unzipToFolder (b : byte[]) (FolderName folderPath) overwrite =
+        try
+            if not (Directory.Exists(folderPath)) then Directory.CreateDirectory(folderPath) |> ignore
+
+            use memoryStream = new MemoryStream(b)
+            use archive = new ZipArchive(memoryStream, ZipArchiveMode.Read)
+            archive.ExtractToDirectory(folderPath, overwrite) |> Ok
+        with
+        | ex -> Error ex.Message
+
+
     let toAsync (f : unit-> unit) = async { do f() }
 
 
@@ -87,16 +136,6 @@ module Core =
         | h :: t -> h :: removeFirst pred t
 
 
-    /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory.
-    /// See:
-    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
-    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
-    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
-    let getFileName fileName =
-        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        x + @"\" + fileName
-
-
     let private xmlSerializer = FsPickler.CreateXmlSerializer(indent = true)
     let xmlSerialize t = xmlSerializer.PickleToString t
     let xmlDeserialize s = xmlSerializer.UnPickleOfString s
@@ -107,8 +146,48 @@ module Core =
     let binDeserialize b = binSerializer.UnPickle b
 
 
-    let jsonSerialize t = JsonConvert.SerializeObject t
-    let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T> s
+    let jsonSettings =
+        JsonSerializerSettings(
+            Formatting = Formatting.Indented,
+            ContractResolver = CamelCasePropertyNamesContractResolver(),
+            Converters = [| new Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
+
+    let jsonSerialize t = JsonConvert.SerializeObject(t, jsonSettings)
+    let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T>(s, jsonSettings)
+
+    //let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
+    //let jsonSerialize t = jsonSerializer.PickleToString t
+    //let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
+
+
+    // let joinStrings (s : string) (v : string[]) = String.Join(s, v)
+    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
+
+
+    // TODO kk:20240824 - Does not work. Delete in 180 days if not fixed.
+    //let rec private serializeImpl (value: obj) (indent: int) : string =
+    //    let indentStr = new string(' ', indent * 4)
+    //    match value with
+    //    | :? int | :? string | :? float | :? bool as primitive -> sprintf "%A" primitive
+    //    | :? System.Collections.Generic.IEnumerable<obj> as seq ->
+    //        let elements = seq |> Seq.map (fun item -> serializeImpl item (indent + 1))
+    //        let joined = String.Join("\n" + indentStr + "  ", elements)
+    //        sprintf "[\n%s  %s\n%s]" indentStr joined indentStr
+    //    | :? System.Collections.Generic.KeyValuePair<_,_> as kvp ->
+    //        sprintf "%s%s = %s" indentStr (serializeImpl kvp.Key (indent + 1)) (serializeImpl kvp.Value (indent + 1))
+    //    | :? (string * obj) as tuple ->
+    //        sprintf "%s%s = %s" indentStr (fst tuple) (serializeImpl (snd tuple) (indent + 1))
+    //    | :? System.Reflection.PropertyInfo as pInfo ->
+    //        sprintf "%s%s = %s" indentStr pInfo.Name (serializeImpl (pInfo.GetValue(value, null)) (indent + 1))
+    //    | _ ->
+    //        let props = value.GetType().GetProperties()
+    //        let serializedProps =
+    //            props
+    //            |> Array.map (fun prop -> serializeImpl prop (indent + 1))
+    //            |> joinStrings ("\n" + indentStr + "  ")
+    //        sprintf "{\n%s  %s\n%s}" indentStr serializedProps indentStr
+
+    //let serializeValue v = serializeImpl v 0
 
 
     let serialize f t =
@@ -189,13 +268,13 @@ module Core =
     let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
 
 
-    let timedImplementation<'E, 'A> b (l : Logger<'E>) name (f : unit -> 'A) =
+    let timedImplementation<'A> b (l : Logger) name (f : unit -> 'A) =
         let r, t = time f ()
 
         if t.TotalSeconds <= 10.0
         then
-            if b then l.logInfoString $"%s{name}: Execution time: %A{t}"
-        else l.logInfoString $"%s{name}: !!! LARGE Execution time: %A{t}"
+            if b then l.logInfo $"%s{name}: Execution time: %A{t}"
+        else l.logInfo $"%s{name}: !!! LARGE Execution time: %A{t}"
 
         r
 
@@ -213,6 +292,11 @@ module Core =
         | GetContent of AsyncReplyChannel<'S>
 
 
+    type IAsyncUpdater<'A, 'S> =
+        abstract member addContent : 'A -> unit
+        abstract member getContent : unit -> 'S
+
+
     type AsyncUpdater<'I, 'A, 'S> (updater : IUpdater<'I, 'A, 'S>, i : 'I) =
         let chat = Updater.Start(fun u ->
           let rec loop s = async {
@@ -226,8 +310,9 @@ module Core =
 
           updater.init i |> loop)
 
-        member _.addContent p = AddContent p |> chat.Post
-        member _.getContent () = chat.PostAndReply GetContent
+        interface IAsyncUpdater<'A, 'S> with
+            member _.addContent p = AddContent p |> chat.Post
+            member _.getContent () = chat.PostAndReply GetContent
 
 
     type Map<'k, 'v when 'k : comparison>
@@ -391,3 +476,95 @@ module Core =
         match b with
         | true -> b, Some s
         | false -> b, None
+
+
+    /// http://codebetter.com/matthewpodwysocki/2010/02/05/using-and-abusing-the-f-dynamic-lookup-operator/
+    let (?) (this : 'Source) (prop : string) : 'Result =
+        let t = this.GetType()
+        let p = t.GetProperty(prop)
+        p.GetValue(this, null) :?> 'Result
+
+
+    /// See:
+    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
+    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
+    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
+    let getAssemblyLocation() =
+        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
+        FolderName x
+
+
+    type FolderName
+        with
+
+        /// Function to ensure that a folder exists and create it if it doesn't.
+        member f.tryEnsureFolderExists() =
+            try
+                let dir = f.value
+                if not (Directory.Exists dir) then Directory.CreateDirectory dir |> ignore
+                Ok ()
+            with
+            | e ->
+                printfn $"tryEnsureDirectoryExists: Exception: '%A{e}'."
+                e |> TryEnsureFolderExistsExn |> Error
+
+
+    type FileName
+        with
+
+        /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory
+        /// unless the file name is already a name with a full path.
+        /// Optional folder name allow specifying a subfolder unless it is a fullly qualified folder name.
+        member f.tryGetFullFileName(fo : FolderName option) =
+            try
+                let fileName = f.value
+
+                let fullPath =
+                    if Path.IsPathRooted(fileName) then fileName
+                    else
+                        let assemblyLocation = getAssemblyLocation().value
+
+                        match fo with
+                        | None -> Path.Combine(assemblyLocation, fileName)
+                        | Some (FolderName folder) ->
+                            if Path.IsPathRooted(folder)
+                            then Path.Combine(folder, fileName)
+                            else Path.Combine(assemblyLocation, folder, fileName)
+
+                printfn $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                FileName fullPath |> Ok
+            with
+            | e ->
+                printfn $"tryGetFullFileName: Exception: '%A{e}'."
+                e |> TryGetFullFileNameExn |> Error
+
+        member f.tryGetFullFileName() = f.tryGetFullFileName None
+
+        member f.tryGetFullFolderName() =
+            try
+                match f.tryGetFullFileName() with
+                | Ok fileName -> Path.GetDirectoryName (fileName.value) |> FolderName |> Ok
+                | Error e -> Error e
+            with
+            | e ->
+                printfn $"tryGetFolderName: Exception: '%A{e}'."
+                e |> TryGetFolderNameExn |> Error
+
+        member f.tryEnsureFolderExists() =
+            try
+                match f.tryGetFullFolderName() with
+                | Ok folder -> folder.tryEnsureFolderExists()
+                | Error e -> Error e
+            with
+            | e ->
+                printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
+                e |> TryEnsureFolderExistsExn |> Error
+
+        member f.tryGetExtension() =
+            try
+                Path.GetExtension(f.value) |> FileExtension |> Ok
+            with
+            | e ->
+                printfn $"tryGetExtension: Exception: '%A{e}'."
+                e |> TryGetExtensionExn |> Error
+

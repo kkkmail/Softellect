@@ -1,59 +1,61 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Platforms>x64</Platforms>
-    <AssemblyName>Softellect.Wcf</AssemblyName>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>Konstantin Konstantinov</Authors>
-    <Company>Softellect Systems, Inc.</Company>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>8.0.300.1</Version>
-    <PackageVersion>8.0.300.1</PackageVersion>
-    <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
-    <PackageTags>wcf;client;server;framework</PackageTags>
-    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Wcf</PackageProjectUrl>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <AssemblyName>Softellect.Wcf</AssemblyName>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Authors>Konstantin Konstantinov</Authors>
+        <Company>Softellect Systems, Inc.</Company>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Version>8.0.400.2</Version>
+        <PackageVersion>8.0.400.2</PackageVersion>
+        <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
+        <PackageTags>wcf;client;server;framework</PackageTags>
+        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Wcf</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PlatformTarget>x64</PlatformTarget>
-    <DefineConstants>DEBUG</DefineConstants>
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <DefineConstants>DEBUG</DefineConstants>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <Compile Include="Errors.fs" />
-    <Compile Include="Common.fs" />
-    <Compile Include="AppSettings.fs" />
-    <Compile Include="Client.fs" />
-    <Compile Include="Service.fs" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <Compile Include="Errors.fs"/>
+        <Compile Include="Common.fs"/>
+        <Compile Include="AppSettings.fs"/>
+        <Compile Include="Client.fs"/>
+        <Compile Include="Service.fs"/>
+        <Compile Include="Program.fs"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+    </ItemGroup>
 
-  <ItemGroup />
+    <ItemGroup>
+        <ProjectReference Include="..\Sys\Sys.fsproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Sys\Sys.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CoreWCF.Http" Version="1.5.2" />
-    <PackageReference Include="CoreWCF.NetTcp" Version="1.5.2" />
-    <PackageReference Include="CoreWCF.Primitives" Version="1.5.2" />
-    <PackageReference Update="FSharp.Core" Version="8.0.301" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="CoreWCF.Http" Version="1.6.0"/>
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0"/>
+        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1"/>
+        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+    </ItemGroup>
 
 </Project>

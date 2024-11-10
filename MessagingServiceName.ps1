@@ -1,1 +1,0 @@
-[string] $global:messagingServiceName = "MessagingService"
