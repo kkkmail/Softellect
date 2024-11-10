@@ -10,3 +10,4 @@ copy /b /y .\Messaging\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Analytics\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Sys\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Wcf\bin\x64\Release\*.nupkg  ..\Packages\
+copy /b /y ..\OdePackInterop\OdePackInterop\bin\x64\Release\*.nupkg  ..\Packages\
