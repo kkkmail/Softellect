@@ -237,26 +237,55 @@ function GetFolderSizes {
         [string]$drive = "C:\"  # Default to C: drive if no parameter is provided
     )
 
-    # Initialize an array to store folder sizes
+    # Initialize arrays to store folder sizes and inaccessible folders
     $folderSizes = @()
+    $inaccessibleFolders = @()
 
-    # Recursively get all folders on the specified drive
-    $folders = Get-ChildItem -Path $drive -Directory -Recurse -Force
+    # Get top-level folders first to prevent immediate termination on inaccessible folders
+    $topLevelFolders = Get-ChildItem -Path $drive -Directory -Force -ErrorAction SilentlyContinue
 
-    foreach ($folder in $folders) {
-        # Get the total size of all files in the folder (excluding subfolders)
-        $size = (Get-ChildItem -Path $folder.FullName -File -Force | Measure-Object -Property Length -Sum).Sum
+    foreach ($topFolder in $topLevelFolders) {
+        Write-Host "Processing top-level folder: $($topFolder.FullName)"
 
-        # Add the folder and its size to the array
-        $folderSizes += [PSCustomObject]@{
-            FolderName = $folder.FullName
-            TotalSize  = $size
+        try {
+            # Recursively get all subfolders for the current top-level folder
+            $folders = Get-ChildItem -Path $topFolder.FullName -Directory -Recurse -Force -ErrorAction SilentlyContinue
+            $folders += $topFolder  # Include the top-level folder itself
+
+            foreach ($folder in $folders) {
+                Write-Host "Processing folder: $($folder.FullName)"
+
+                try {
+                    # Get the total size of all files in the folder (excluding subfolders)
+                    $size = (Get-ChildItem -Path $folder.FullName -File -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+
+                    # Add the folder and its size to the array
+                    $folderSizes += [PSCustomObject]@{
+                        FolderName = $folder.FullName
+                        TotalSize  = $size
+                    }
+                } catch {
+                    # Collect inaccessible folders and report error
+                    Write-Host "ERROR: Could not access folder: $($folder.FullName)" -ForegroundColor Red
+                    $inaccessibleFolders += $folder.FullName
+                }
+            }
+        } catch {
+            # Collect inaccessible top-level folders and report error
+            Write-Host "ERROR: Could not access top-level folder: $($topFolder.FullName)" -ForegroundColor Red
+            $inaccessibleFolders += $topFolder.FullName
         }
     }
 
     # Sort the results by TotalSize in descending order
     $sortedResults = $folderSizes | Sort-Object -Property TotalSize -Descending
 
-    # Display the table
+    # Display the table of folder sizes
     $sortedResults | Format-Table -Property FolderName, TotalSize -AutoSize
+
+    # Report inaccessible folders
+    if ($inaccessibleFolders.Count -gt 0) {
+        Write-Host "`nInaccessible Folders:" -ForegroundColor Yellow
+        $inaccessibleFolders | ForEach-Object { Write-Host "ERROR: $_" -ForegroundColor Red }
+    }
 }
