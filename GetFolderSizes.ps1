@@ -1,2 +1,4 @@
+param([string] $drive = "C:\")
+
 . ./Functions.ps1
-GetFolderSizes
+GetFolderSizes -drive $drive

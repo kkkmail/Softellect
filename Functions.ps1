@@ -232,10 +232,9 @@ function StopSvc([string] $serviceName, [string] $messagingDataVersion = "")
     TryStopService -serviceName $windowsServiceName
 }
 
-function GetFolderSizes {
-    param (
-        [string]$drive = "C:\"  # Default to C: drive if no parameter is provided
-    )
+# Default to C: drive if no parameter is provided
+function GetFolderSizes([string] $drive = "C:\") {
+    Write-Host "Processing input folder: $($drive)"
 
     # Initialize arrays to store folder sizes and inaccessible folders
     $folderSizes = @()
@@ -280,8 +279,10 @@ function GetFolderSizes {
     # Sort the results by TotalSize in descending order
     $sortedResults = $folderSizes | Sort-Object -Property TotalSize -Descending
 
-    # Display the table of folder sizes
-    $sortedResults | Format-Table -Property FolderName, TotalSize -AutoSize
+    # Display the table with TotalSize padded and FolderName
+    $sortedResults | ForEach-Object {
+        "{0,12:N0}  {1}" -f $_.TotalSize, $_.FolderName
+    }
 
     # Report inaccessible folders
     if ($inaccessibleFolders.Count -gt 0) {
