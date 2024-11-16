@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <AssemblyName>Softellect.DistributedProcessing.ModelGenerator</AssemblyName>
         <Platforms>x64</Platforms>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Model Generator ...</Description>
         <PackageTags>client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -35,21 +35,21 @@
         <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs"/>
+        <Compile Include="Primitives.fs" />
+        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
         <Compile Include="..\Core\Proxy.fs">
             <Link>Proxy.fs</Link>
         </Compile>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Core\Core.fsproj"/>
-        <ProjectReference Include="..\..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>

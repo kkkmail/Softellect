@@ -19,7 +19,7 @@ module AppSettings =
         | Ok provider ->
             let d = MessagingServiceAccessInfo.defaultValue messagingDataVersion
             let m = getServiceAccessInfo provider messagingServiceAccessInfoKey d.serviceAccessInfo
-            let expirationTimeInMinutes = provider.getIntOrDefault expirationTimeInMinutesKey defaultExpirationTime.Minutes |> TimeSpan.FromMinutes
+            let expirationTimeInMinutes = provider.getIntOrDefault expirationTimeInMinutesKey defaultExpirationTime.Minutes |> int64 |> TimeSpan.FromMinutes
 
             let messagingSvcInfo =
                 {

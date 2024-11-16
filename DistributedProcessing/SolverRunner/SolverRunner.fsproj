@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <AssemblyName>Softellect.DistributedProcessing.SolverRunner</AssemblyName>
         <Platforms>x64</Platforms>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Solver Runner ...</Description>
         <PackageTags>client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -57,10 +57,10 @@
 
     <ItemGroup>
         <PackageReference Include="alglib.net" Version="3.19.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
-        <PackageReference Include="Softellect.OdePackInterop" Version="8.0.400.3" />
-        <PackageReference Update="FSharp.Core" Version="8.0.401" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
+        <PackageReference Include="Softellect.OdePackInterop" Version="9.0.100.4" />
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>

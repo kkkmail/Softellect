@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <AssemblyName>Softellect.Messaging</AssemblyName>
         <Platforms>x64</Platforms>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
         <PackageTags>messaging;client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -33,31 +33,31 @@
         <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="VersionInfo.fs"/>
-        <Compile Include="Errors.fs"/>
-        <Compile Include="ServiceInfo.fs"/>
-        <Compile Include="Proxy.fs"/>
-        <Compile Include="Client.fs"/>
-        <Compile Include="Service.fs"/>
-        <Compile Include="AppSettings.fs"/>
-        <Compile Include="DataAccess.fs"/>
-        <Compile Include="ServiceProxy.fs"/>
+        <Compile Include="Primitives.fs" />
+        <Compile Include="VersionInfo.fs" />
+        <Compile Include="Errors.fs" />
+        <Compile Include="ServiceInfo.fs" />
+        <Compile Include="Proxy.fs" />
+        <Compile Include="Client.fs" />
+        <Compile Include="Service.fs" />
+        <Compile Include="AppSettings.fs" />
+        <Compile Include="DataAccess.fs" />
+        <Compile Include="ServiceProxy.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Sys\Sys.fsproj"/>
-        <ProjectReference Include="..\Wcf\Wcf.fsproj"/>
+        <ProjectReference Include="..\Sys\Sys.fsproj" />
+        <ProjectReference Include="..\Wcf\Wcf.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="SQLProvider" Version="1.4.1"/>
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2"/>
-        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103"/>
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1"/>
-        <PackageReference Include="System.Data.Common" Version="4.3.0"/>
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119"/>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Include="SQLProvider" Version="1.4.2" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+        <PackageReference Include="System.Data.Common" Version="4.3.0" />
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>

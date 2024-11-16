@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Platforms>x64</Platforms>
         <AssemblyName>Softellect.Analytics</AssemblyName>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Analytics...</Description>
         <PackageTags>framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -45,23 +45,23 @@
         <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="AppSettings.fs"/>
-        <Compile Include="Wolfram.fs"/>
+        <Compile Include="Primitives.fs" />
+        <Compile Include="AppSettings.fs" />
+        <Compile Include="Wolfram.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Plotly.NET" Version="5.1.0"/>
-        <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0"/>
-        <PackageReference Include="Wolfram.NETLink" Version="1.7.1"/>
+        <PackageReference Include="Plotly.NET" Version="5.1.0" />
+        <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0" />
+        <PackageReference Include="Wolfram.NETLink" Version="1.7.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>

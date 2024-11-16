@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Platforms>x64</Platforms>
         <AssemblyName>Softellect.Sys</AssemblyName>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
         <PackageTags>framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -41,46 +41,46 @@
         <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <Compile Include="NamingConventions.fs"/>
-        <Compile Include="VersionInfo.fs"/>
-        <Compile Include="ExitErrorCodes.fs"/>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="Errors.fs"/>
-        <Compile Include="Logging.fs"/>
-        <Compile Include="Core.fs"/>
-        <Compile Include="Rop.fs"/>
-        <Compile Include="Retry.fs"/>
-        <Compile Include="TimerEvents.fs"/>
-        <Compile Include="ServiceInstaller.fs"/>
-        <Compile Include="AppSettings.fs"/>
-        <Compile Include="DynamicSql.fs"/>
-        <Compile Include="DataAccess.fs"/>
-        <Compile Include="FileSystemTypes.fs"/>
+        <Compile Include="NamingConventions.fs" />
+        <Compile Include="VersionInfo.fs" />
+        <Compile Include="ExitErrorCodes.fs" />
+        <Compile Include="Primitives.fs" />
+        <Compile Include="Errors.fs" />
+        <Compile Include="Logging.fs" />
+        <Compile Include="Core.fs" />
+        <Compile Include="Rop.fs" />
+        <Compile Include="Retry.fs" />
+        <Compile Include="TimerEvents.fs" />
+        <Compile Include="ServiceInstaller.fs" />
+        <Compile Include="AppSettings.fs" />
+        <Compile Include="DynamicSql.fs" />
+        <Compile Include="DataAccess.fs" />
+        <Compile Include="FileSystemTypes.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Argu" Version="6.2.4"/>
-        <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0"/>
-        <PackageReference Include="CoreWCF.Http" Version="1.6.0"/>
-        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0"/>
-        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0"/>
-        <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268"/>
-        <PackageReference Include="FsPickler" Version="5.3.2"/>
-        <PackageReference Include="FsPickler.Json" Version="5.3.2"/>
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1"/>
-        <PackageReference Include="System.ServiceModel.Http" Version="8.0.0"/>
-        <PackageReference Include="System.ServiceModel.NetTcp" Version="8.0.0"/>
-        <PackageReference Include="System.ServiceModel.Primitives" Version="8.0.0"/>
-        <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1"/>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
-        <PackageReference Include="SQLProvider" Version="1.4.1"/>
-        <PackageReference Include="System.Data.SqlClient" Version="4.8.6"/>
-        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103"/>
-        <PackageReference Include="System.Data.Common" Version="4.3.0"/>
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119"/>
-        <PackageReference Include="FSharp.Data" Version="6.4.0"/>
+        <PackageReference Include="Argu" Version="6.2.4" />
+        <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
+        <PackageReference Include="CoreWCF.Http" Version="1.6.0" />
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0" />
+        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0" />
+        <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
+        <PackageReference Include="FsPickler" Version="5.3.2" />
+        <PackageReference Include="FsPickler.Json" Version="5.3.2" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+        <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
+        <PackageReference Include="System.ServiceModel.NetTcp" Version="8.1.0" />
+        <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.0" />
+        <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+        <PackageReference Include="SQLProvider" Version="1.4.2" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
+        <PackageReference Include="System.Data.Common" Version="4.3.0" />
+        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+        <PackageReference Include="FSharp.Data" Version="6.4.0" />
     </ItemGroup>
 
 </Project>

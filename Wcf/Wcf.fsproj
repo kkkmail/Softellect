@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Platforms>x64</Platforms>
         <AssemblyName>Softellect.Wcf</AssemblyName>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
         <PackageTags>wcf;client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -33,29 +33,29 @@
         <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <Compile Include="Errors.fs"/>
-        <Compile Include="Common.fs"/>
-        <Compile Include="AppSettings.fs"/>
-        <Compile Include="Client.fs"/>
-        <Compile Include="Service.fs"/>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Errors.fs" />
+        <Compile Include="Common.fs" />
+        <Compile Include="AppSettings.fs" />
+        <Compile Include="Client.fs" />
+        <Compile Include="Service.fs" />
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CoreWCF.Http" Version="1.6.0"/>
-        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0"/>
-        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1"/>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Include="CoreWCF.Http" Version="1.6.0" />
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0" />
+        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>
