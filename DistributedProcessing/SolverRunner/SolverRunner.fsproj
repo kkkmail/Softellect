@@ -7,8 +7,8 @@
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.2</Version>
-        <PackageVersion>8.0.400.2</PackageVersion>
+        <Version>8.0.400.3</Version>
+        <PackageVersion>8.0.400.3</PackageVersion>
         <Description>Softellect Solver Runner ...</Description>
         <PackageTags>client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -35,32 +35,32 @@
         <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs"/>
-        <Compile Include="CommandLine.fs"/>
-        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs"/>
-        <Compile Include="NoSql.fs"/>
-        <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs"/>
-        <Compile Include="OdeSolver.fs"/>
-        <Compile Include="Runner.fs"/>
-        <Compile Include="Implementation.fs"/>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Primitives.fs" />
+        <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
+        <Compile Include="CommandLine.fs" />
+        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
+        <Compile Include="NoSql.fs" />
+        <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
+        <Compile Include="OdeSolver.fs" />
+        <Compile Include="Runner.fs" />
+        <Compile Include="Implementation.fs" />
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
-    <ItemGroup/>
+    <ItemGroup />
 
     <ItemGroup>
-        <ProjectReference Include="..\..\Messaging\Messaging.fsproj"/>
-        <ProjectReference Include="..\Core\Core.fsproj"/>
-        <ProjectReference Include="..\..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
+        <ProjectReference Include="..\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="alglib.net" Version="3.19.0"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1"/>
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1"/>
-        <PackageReference Include="Softellect.OdePackInterop" Version="8.0.400.1"/>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Include="alglib.net" Version="3.19.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+        <PackageReference Include="Softellect.OdePackInterop" Version="8.0.400.3" />
+        <PackageReference Update="FSharp.Core" Version="8.0.401" />
     </ItemGroup>
 
 </Project>

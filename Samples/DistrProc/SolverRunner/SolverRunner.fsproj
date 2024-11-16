@@ -23,18 +23,22 @@
         <Content Include="..\..\..\DistributedProcessing\WorkerNodeService\appsettings.json" Link="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+      <PackageReference Include="Softellect.OdePackInterop" Version="8.0.400.3" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\..\Analytics\Analytics.fsproj"/>
-        <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj"/>
-        <ProjectReference Include="..\..\..\DistributedProcessing\SolverRunner\SolverRunner.fsproj"/>
-        <ProjectReference Include="..\Core\Core.fsproj"/>
+        <PackageReference Update="FSharp.Core" Version="8.0.401" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\Analytics\Analytics.fsproj" />
+        <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\..\DistributedProcessing\SolverRunner\SolverRunner.fsproj" />
+        <ProjectReference Include="..\Core\Core.fsproj" />
     </ItemGroup>
 
 </Project>
