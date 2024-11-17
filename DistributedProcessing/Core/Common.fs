@@ -31,6 +31,8 @@ module Common =
     /// JSON is supported by MSSQL and so it is a good choice.
     let private progressSerializationFormat = JSonFormat
 
+    let solverSerializationFormat = BinaryZippedFormat
+
     let serializeProgress = jsonSerialize
     let deserializeProgress<'T> = jsonDeserialize<'T>
 
@@ -210,13 +212,25 @@ module Common =
         member this.folderName = this.value |> FolderName
 
 
+    type SolverData =
+        | SolverData of byte[]
+
+        member this.value = let (SolverData v) = this in v
+
+
     type Solver =
         {
             solverId : SolverId
             solverName : SolverName
             description : string option
-            solverData : byte[] option
+            solverData : SolverData option
         }
+
+
+    type EncryptedSolver =
+        | EncryptedSolver of byte[]
+
+        member this.value = let (EncryptedSolver v) = this in v
 
 
     type SolverRunnerInfo =
@@ -260,7 +274,7 @@ module Common =
         | RunModelWrkMsg of (RunQueueId * SolverId * ModelBinaryData)
         | CancelRunWrkMsg of (RunQueueId * CancellationType)
         | RequestResultsWrkMsg of (RunQueueId * ResultNotificationType)
-        | UpdateSolverWrkMsg of Solver
+        | UpdateSolverWrkMsg of EncryptedSolver
 
         member this.messageSize =
             match this with

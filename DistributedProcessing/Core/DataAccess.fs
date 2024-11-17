@@ -96,10 +96,11 @@ module WorkerNodeService =
 #endif
 
 // ==========================================
-// To make a compiler happy.
+// Common for all.
 
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
-    let private dummy = 0
+    let private publicKeySetting = "395A5869D3104C2D9FD87421B501D622"
+    let private privateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
 #endif
 
 // ==========================================
@@ -110,7 +111,7 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR
 
-    /// Both partitioner and ModelGenerator use the same database.
+    /// Both Partitioner, PartitionerAdm, and ModelGenerator use the same database.
     let connectionStringKey = ConfigKey "PartitionerService"
 
 
@@ -164,6 +165,7 @@ module WorkerNodeService =
 #if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
 
     type private SolverEntity = DbContext.``dbo.SolverEntity``
+    type private SettingDataEntity = DbContext.``dbo.SettingEntity``
 
 #endif
 
@@ -369,6 +371,72 @@ module WorkerNodeService =
 
             ctx.SubmitUpdates()
             result
+
+        tryDbFun fromDbError g
+
+
+    let tryLoadWorkerNodePublicKey (w : WorkerNodeId) : DistributedProcessingResult<PublicKey option> =
+        let elevate e = e |> TryLoadWorkerNodePublicKeyErr
+        let fromDbError e = e |> TryLoadWorkerNodePublicKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.WorkerNode do
+                    where (s.WorkerNodeId = w.value.value)
+                    select s.WorkerNodePublicKey
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> PublicKey |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let tryLoadPartitionerPrivateKey () : DistributedProcessingResult<PrivateKey option> =
+        let elevate e = e |> TryLoadPartitionerPrivateKeyErr
+        let fromDbError e = e |> TryLoadPartitionerPrivateKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = privateKeySetting)
+                    select s.SettingBinary
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> PrivateKey |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let tryLoadPartitionerPublicKey () : DistributedProcessingResult<PublicKey option> =
+        let elevate e = e |> TryLoadPartitionerPublicKeyErr
+        let fromDbError e = e |> TryLoadPartitionerPublicKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = publicKeySetting)
+                    select s.SettingBinary
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> PublicKey |> Some |> Ok
+            | None -> Ok None
 
         tryDbFun fromDbError g
 
@@ -1024,6 +1092,18 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+
+    let tryLoadWorkerNodePublicKey (w : WorkerNodeId) : DistributedProcessingResult<PublicKey option> =
+        failwith ""
+
+
+    let tryLoadWorkerNodePrivateKey (w : WorkerNodeId) : DistributedProcessingResult<PrivateKey option> =
+        failwith ""
+
+
+    let tryLoadPartitionerPublicKey (p : PartitionerId) : DistributedProcessingResult<PublicKey option> =
+        failwith ""
+
 #endif
 
 #if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
@@ -1033,7 +1113,7 @@ module WorkerNodeService =
             solverId = SolverId s.SolverId
             solverName = SolverName s.SolverName
             description = s.Description
-            solverData = s.SolverData
+            solverData = s.SolverData |> Option.map (fun e -> SolverData e)
         }
 
 
@@ -1081,7 +1161,7 @@ module WorkerNodeService =
                             SolverId = s.solverId.value,
                             SolverName = s.solverName.value,
                             Description = s.description,
-                            SolverData = s.solverData)
+                            SolverData = (s.solverData |> Option.map (fun e -> e.value)))
 
         row
 
@@ -1098,7 +1178,7 @@ module WorkerNodeService =
                 (fun ctx s ->
                     s.SolverName <- solver.solverName.value
                     s.Description <- solver.description
-                    s.SolverData <- solver.solverData
+                    s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
                     s.IsDeployed <- false
 
                     ctx.SubmitUpdates()
@@ -1138,7 +1218,7 @@ module WorkerNodeService =
     let unpackSolver folderName (solver : Solver) =
         match solver.solverData with
         | Some data ->
-            match unzipToFolder data folderName true with
+            match unzipToFolder data.value folderName true with
             | Ok _ -> Ok ()
             | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
         | None -> Ok()

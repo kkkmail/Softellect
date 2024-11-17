@@ -9,6 +9,7 @@ open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
+open Softellect.Sys.Crypto
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.PartitionerAdm
@@ -22,10 +23,21 @@ module Implementation =
     let private addError g f e = ((f |> g) + e) |> Error
 
 
+    /// Default implementation of solver encryption.
+    let private tryEncryptSolver (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
+        match tryLoadPartitionerPrivateKey(), tryLoadWorkerNodePublicKey w, trySerialize solverSerializationFormat solver with
+        | Ok (Some p1), Ok (Some w1), Ok data ->
+            match tryEncryptAndSign tryEncryptAes data p1 w1 with
+            | Ok r -> r |> EncryptedSolver |> Ok
+            | Error e -> e |> TryEncryptSolverSysErr |> TryEncryptSolverErr |> Error
+        | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
+
+
     type PartitionerAdmProxy =
         {
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
+            tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
@@ -37,6 +49,7 @@ module Implementation =
             {
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
+                tryEncryptSolver = tryEncryptSolver
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
                 createMessage = createMessage messagingDataVersion p.messagingClientId
@@ -63,21 +76,6 @@ module Implementation =
             | Error e -> failwith $"ERROR: {e}"
 
 
-    let private sendSolverImpl (ctx : PartitionerAdmContext) (solver : Solver) w =
-        printfn $"sendSolver: {solver.solverName}."
-
-        let result =
-            {
-                workerNodeRecipient = w
-                deliveryType = GuaranteedDelivery
-                messageData = UpdateSolverWrkMsg solver
-            }.getMessageInfo()
-            |> ctx.partitionerAdmProxy.createMessage
-            |> ctx.partitionerAdmProxy.saveMessage
-
-        result
-
-
     let addSolver (ctx : PartitionerAdmContext) (x : list<AddSolverArgs>) =
         let so = x |> List.tryPick (fun e -> match e with | AddSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
         let no = x |> List.tryPick (fun e -> match e with | Name name -> SolverName name |> Some | _ -> None)
@@ -92,11 +90,11 @@ module Implementation =
                     {
                         solverId = s
                         solverName = n
-                        solverData = Some d
+                        solverData = d |> SolverData |> Some
                         description = de
                     }
 
-                printfn $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.Length) |> Option.defaultValue 0):N0}"
+                printfn $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
                 ctx.partitionerAdmProxy.saveSolver solver
             | Error e ->
                 printfn $"Error: {e}."
@@ -114,13 +112,27 @@ module Implementation =
 
             match ctx.partitionerAdmProxy.tryLoadSolver s with
             | Ok solver ->
-                match sendSolverImpl ctx solver w with
-                | Ok () ->
-                    printfn $"sendSolver: solver with id '{s}' was sent to worker node '{w}'."
-                    Ok ()
-                | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
+                match ctx.partitionerAdmProxy.tryEncryptSolver solver w with
+                | Ok encryptedSolver ->
+                    let result =
+                        {
+                            workerNodeRecipient = w
+                            deliveryType = GuaranteedDelivery
+                            messageData = UpdateSolverWrkMsg encryptedSolver
+                        }.getMessageInfo()
+                        |> ctx.partitionerAdmProxy.createMessage
+                        |> ctx.partitionerAdmProxy.saveMessage
+
+                    match result with
+                    | Ok () ->
+                        printfn $"sendSolver: solver with id '{s}' was sent to worker node '{w}'."
+                        Ok ()
+                    | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
+                | Error e ->
+                    printfn $"sendSolver: Unable to encrypt solder, error: {e}."
+                    Error e
             | Error e ->
-                printfn $"sendSolver: error: {e}."
+                printfn $"sendSolver: Unable to load solver, error: {e}."
                 Error e
         | _ -> failwith "sendSolver: Invalid arguments."
 

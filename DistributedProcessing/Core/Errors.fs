@@ -135,6 +135,7 @@ module Errors =
 
     type SendSolverError =
         | UnableToSendSolverErr of (SolverId * WorkerNodeId * MessagingError)
+        | UnableToEncryptSolverErr of (SolverId * WorkerNodeId * SysError)
 
 
     type MapSolverError =
@@ -273,6 +274,29 @@ module Errors =
     type TryGetAvailableWorkerNodeRunnerError =
         | A
 
+
+    type TryEncryptSolverError =
+        | TryEncryptSolverSysErr of SysError
+        | TryEncryptSolverCriticalErr of (WorkerNodeId * SolverId)
+
+
+    type TryDecryptSolverError =
+        | TryDecryptSolverSysErr of SysError
+        | TryDecryptSolverSerializationErr of SerializationError
+        | TryDecryptSolverCriticalErr of PartitionerId
+
+
+    type TryLoadPartitionerPrivateKeyError =
+        | TryLoadPartitionerPrivateKeyDbErr of DbError
+
+
+    type TryLoadPartitionerPublicKeyError =
+        | TryLoadPartitionerPublicKeyDbErr of DbError
+
+
+    type TryLoadWorkerNodePublicKeyError =
+        | TryLoadWorkerNodePublicKeyDbErr of DbError
+
     // ==================================
     // Solver Runner errors
 
@@ -359,6 +383,11 @@ module Errors =
         // Some errors
         | SaveResultsExn of exn
         | PartitionerWcfErr of PartitionerWcfError
+        | TryEncryptSolverErr of TryEncryptSolverError
+        | TryDecryptSolverErr of TryDecryptSolverError
+        | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
+        | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
+        | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
 
         static member addError a b =
             match a, b with

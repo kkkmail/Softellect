@@ -9,6 +9,7 @@ IF OBJECT_ID('dbo.WorkerNode') IS NULL begin
 		numberOfCores int NOT NULL,
 		description nvarchar(1000) NULL,
 		isInactive bit NOT NULL,
+		workerNodePublicKey varbinary(max) NULL,
 		createdOn datetime NOT NULL,
 		modifiedOn datetime NOT NULL,
 		lastErrorOn datetime NULL,

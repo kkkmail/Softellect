@@ -73,7 +73,10 @@ module WorkerNode =
                 let result = q ||> proxy.notifyOfResults
                 printfn $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
-            | UpdateSolverWrkMsg s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
+            | UpdateSolverWrkMsg e ->
+                match proxy.tryDecryptSolver e (m.messageDataInfo.sender |> PartitionerId) with
+                | Ok s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
+                | Error e -> Error e
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 

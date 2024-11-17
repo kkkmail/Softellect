@@ -4,15 +4,15 @@
 		select * 
 		from 
 		( values
-			  (0, 'Suspended', 0, NULL, NULL, NULL)
+			  ('Suspended', 0, NULL, NULL, NULL, NULL, getdate())
 
-		) as a (settingId, settingName, settingBool, settingGuid, settingLong, settingText)
+		) as a (settingName, settingBool, settingGuid, settingLong, settingText, settingBinary, createdOn)
 	)
 insert into Setting
 select valTbl.*
 from valTbl
-left outer join Setting on valTbl.settingId = Setting.settingId
-where Setting.settingId is null
+left outer join Setting on valTbl.settingName = Setting.settingName
+where Setting.settingName is null
 go
 
 

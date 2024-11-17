@@ -39,7 +39,7 @@ module Program =
             }
 
 
-        let proxy = WorkerNodeProxy.create workerNodeServiceInfo.workerNodeLocalInto
+        let proxy = WorkerNodeProxy.create workerNodeServiceInfo
 
         let data =
             {

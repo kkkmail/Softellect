@@ -9,6 +9,7 @@ open System.Management
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
+open Softellect.Sys.Crypto
 open Softellect.Sys.TimerEvents
 
 open Softellect.Wcf.Common
@@ -256,6 +257,18 @@ module WorkerNodeService =
         | Error e -> Error e
 
 
+    let private tryDecryptSolver (w : WorkerNodeId) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
+        match tryLoadWorkerNodePrivateKey w, tryLoadPartitionerPublicKey p with
+        | Ok (Some w1), Ok (Some p1) ->
+            match tryDecryptAndVerify tryDecryptAes e w1 p1 with
+            | Ok data ->
+                match tryDeserialize<Solver> solverSerializationFormat data with
+                | Ok solver -> Ok solver
+                | Error e -> e |> TryDecryptSolverSerializationErr |> TryDecryptSolverErr |> Error
+            | Error e -> e |> TryDecryptSolverSysErr |> TryDecryptSolverErr |> Error
+        | _ -> p |> TryDecryptSolverCriticalErr |> TryDecryptSolverErr |> Error
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -264,19 +277,21 @@ module WorkerNodeService =
             loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
+            tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
-        static member create (i : WorkerNodeLocalInto) : WorkerNodeProxy =
+        static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
             {
                 saveModelData = saveModelData
                 requestCancellation = tryRequestCancelRunQueue
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i) (Some i.solverOutputLocation)
+                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
+                tryDecryptSolver = tryDecryptSolver i.workerNodeInfo.workerNodeId
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
