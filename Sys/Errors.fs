@@ -75,6 +75,16 @@ module Errors =
         | StillRunningEventHandlerErr of LongRunningEventInfo
 
 
+    type CryptoError =
+        | SignDataExn of exn
+        | TryEncryptAesExn of exn
+        | TryDecryptAesExn of exn
+        | TryEncryptRsaExn of exn
+        | TryDecryptRsaExn of exn
+        | VerifySignatureExn of exn
+        | VerifySignatureFailedError
+
+
     type SysError =
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
@@ -82,3 +92,4 @@ module Errors =
         | DbErr of DbError
         | FileErr of FileError
         | TimerEventErr of TimerEventError
+        | CryptoErr of CryptoError

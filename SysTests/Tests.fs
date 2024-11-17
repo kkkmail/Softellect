@@ -1,9 +1,12 @@
 namespace Softellect.Tests.SysTests
 
 open Xunit
+open System
 open System.IO
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
+open Softellect.Sys.Crypto
+open FluentAssertions
 
 module CoreTests =
 
@@ -28,8 +31,8 @@ module CoreTests =
                 Directory.CreateDirectory(folder) |> ignore
             true
         with
-        | ex -> 
-            printfn "Error while clearing folder: %s" ex.Message
+        | ex ->
+            printfn $"Error while clearing folder: %s{ex.Message}"
             false
 
 
@@ -65,7 +68,7 @@ module CoreTests =
 
     // Test method to zip, unzip, and verify content
     [<Fact>]
-    let ``Zipping and unzipping folder should preserve contents`` () =
+    let zippingAndUnzippingFolderShouldPreserveContents () : unit =
         let inputFolder = FolderName "C:\\Temp\\Input"
         let outputFolder = FolderName "C:\\Temp\\Output"
 
@@ -92,3 +95,49 @@ module CoreTests =
                 Assert.True(false, $"Unzipping failed: {err}")
         | Error err ->
             Assert.True(false, $"Zipping failed: {err}")
+
+
+    [<Fact>]
+    let encryptDecryptAesShouldWork () : unit =
+        let rnd = Random(1)
+        let len = 1_000_000
+        let id = Guid.NewGuid()
+        let senderPublicKey, senderPrivateKey = generateKey id
+        let recipientPublicKey, recipientPrivateKey = generateKey id
+
+        let isGuidEmbedded = checkKey id senderPublicKey
+        isGuidEmbedded.Should().BeTrue() |> ignore
+        let data = Array.zeroCreate<byte> len
+        rnd.NextBytes(data)
+
+        let encryptedData =
+            match tryEncryptAndSign tryEncryptAes data senderPrivateKey recipientPublicKey with
+            | Ok d -> d
+            | Error e -> failwith $"Error: %A{e}"
+
+        match tryDecryptAndVerify tryDecryptAes encryptedData recipientPrivateKey senderPublicKey with
+        | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
+        | Error e -> failwith $"Error: %A{e}"
+
+
+    [<Fact>]
+    let encryptDecryptRsaShouldWork () : unit =
+        let rnd = Random(1)
+        let len = 1_000_000
+        let id = Guid.NewGuid()
+        let senderPublicKey, senderPrivateKey = generateKey id
+        let recipientPublicKey, recipientPrivateKey = generateKey id
+
+        let isGuidEmbedded = checkKey id senderPublicKey
+        isGuidEmbedded.Should().BeTrue() |> ignore
+        let data = Array.zeroCreate<byte> len
+        rnd.NextBytes(data)
+
+        let encryptedData =
+            match tryEncryptAndSign tryEncryptRsa data senderPrivateKey recipientPublicKey with
+            | Ok d -> d
+            | Error e -> failwith $"Error: %A{e}"
+
+        match tryDecryptAndVerify tryDecryptRsa encryptedData recipientPrivateKey senderPublicKey with
+        | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
+        | Error e -> failwith $"Error: %A{e}"

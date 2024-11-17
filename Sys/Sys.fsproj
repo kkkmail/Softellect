@@ -54,6 +54,7 @@
         <Compile Include="ServiceInstaller.fs" />
         <Compile Include="AppSettings.fs" />
         <Compile Include="DynamicSql.fs" />
+        <Compile Include="Crypto.fs" />
         <Compile Include="DataAccess.fs" />
         <Compile Include="FileSystemTypes.fs" />
     </ItemGroup>
