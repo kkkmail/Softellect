@@ -290,6 +290,10 @@ module Errors =
         | TryLoadPartitionerPrivateKeyDbErr of DbError
 
 
+    type TryLoadEncryptionKeyError =
+        | TryLoadEncryptionKeyDbErr of DbError
+
+
     type TryLoadPartitionerPublicKeyError =
         | TryLoadPartitionerPublicKeyDbErr of DbError
 
@@ -386,6 +390,7 @@ module Errors =
         | TryEncryptSolverErr of TryEncryptSolverError
         | TryDecryptSolverErr of TryDecryptSolverError
         | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
+        | TryLoadEncryptionKeyErr of TryLoadEncryptionKeyError
         | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
         | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
 

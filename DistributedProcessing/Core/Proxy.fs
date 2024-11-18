@@ -258,7 +258,7 @@ module WorkerNodeService =
 
 
     let private tryDecryptSolver (w : WorkerNodeId) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
-        match tryLoadWorkerNodePrivateKey w, tryLoadPartitionerPublicKey p with
+        match tryLoadWorkerNodePrivateKey (), tryLoadPartitionerPublicKey () with
         | Ok (Some w1), Ok (Some p1) ->
             match tryDecryptAndVerify tryDecryptAes e w1 p1 with
             | Ok data ->

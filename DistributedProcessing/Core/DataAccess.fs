@@ -99,8 +99,13 @@ module WorkerNodeService =
 // Common for all.
 
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
-    let private publicKeySetting = "395A5869D3104C2D9FD87421B501D622"
-    let private privateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
+
+    let private partitionerPublicKeySetting = "395A5869D3104C2D9FD87421B501D622"
+    let private partitionerPrivateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
+
+    let private workerNodePublicKeySetting = "BD95B603BBFB4C5BB8C74A4C36783EB3"
+    let private workerNodePrivateKeySetting = "A895B4BDC0354D6EB776D26DD30BA943"
+
 #endif
 
 // ==========================================
@@ -177,6 +182,32 @@ module WorkerNodeService =
 
 // ==========================================
 // Code
+
+#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+
+    /// Tries loading a public or private key out of setting using a given key name.
+    let private tryLoadEncryptionKey toKey keyName =
+        let elevate e = e |> TryLoadEncryptionKeyErr
+        let fromDbError e = e |> TryLoadEncryptionKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select s.SettingBinary
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> toKey |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+#endif
 
 #if PARTITIONER || PARTITIONER_ADM
 
@@ -397,48 +428,8 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryLoadPartitionerPrivateKey () : DistributedProcessingResult<PrivateKey option> =
-        let elevate e = e |> TryLoadPartitionerPrivateKeyErr
-        let fromDbError e = e |> TryLoadPartitionerPrivateKeyDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for s in ctx.Dbo.Setting do
-                    where (s.SettingName = privateKeySetting)
-                    select s.SettingBinary
-                    exactlyOneOrDefault
-                }
-
-            match x with
-            | Some v -> v |> unZip |> PrivateKey |> Some |> Ok
-            | None -> Ok None
-
-        tryDbFun fromDbError g
-
-
-    let tryLoadPartitionerPublicKey () : DistributedProcessingResult<PublicKey option> =
-        let elevate e = e |> TryLoadPartitionerPublicKeyErr
-        let fromDbError e = e |> TryLoadPartitionerPublicKeyDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for s in ctx.Dbo.Setting do
-                    where (s.SettingName = publicKeySetting)
-                    select s.SettingBinary
-                    exactlyOneOrDefault
-                }
-
-            match x with
-            | Some v -> v |> unZip |> PublicKey |> Some |> Ok
-            | None -> Ok None
-
-        tryDbFun fromDbError g
+    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySetting
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
 
 #endif
 
@@ -1093,16 +1084,9 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryLoadWorkerNodePublicKey (w : WorkerNodeId) : DistributedProcessingResult<PublicKey option> =
-        failwith ""
-
-
-    let tryLoadWorkerNodePrivateKey (w : WorkerNodeId) : DistributedProcessingResult<PrivateKey option> =
-        failwith ""
-
-
-    let tryLoadPartitionerPublicKey (p : PartitionerId) : DistributedProcessingResult<PublicKey option> =
-        failwith ""
+    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
+    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
 
 #endif
 
