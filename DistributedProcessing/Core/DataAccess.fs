@@ -207,6 +207,40 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+
+    let private trySaveEncryptionKey fromKey keyName encryptionKey =
+        let elevate e = e |> TrySaveEncryptionKeyErr
+        let fromDbError e = e |> TrySaveEncryptionKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            // Retrieve the current key if it exists
+            let existingKey =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match existingKey with
+            | Some setting ->
+                // Update the existing key
+                setting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+            | None ->
+                // Insert a new key
+                let newSetting = ctx.Dbo.Setting.Create()
+                newSetting.SettingName <- keyName
+                newSetting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+                //ctx.Dbo.Setting.Add(newSetting) |> ignore
+
+            // Save changes to the database
+            ctx.SubmitUpdates()
+            Ok ()
+
+        tryDbFun fromDbError g
+
 #endif
 
 #if PARTITIONER || PARTITIONER_ADM
@@ -428,8 +462,40 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
+    let tryUpdateWorkerNodePublicKey (w: WorkerNodeId) (PublicKey newPublicKey) =
+        let elevate e = e |> TryUpdateWorkerNodePublicKeyErr
+        let fromDbError e = e |> TryUpdateWorkerNodePublicKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            // Retrieve the row for the specified WorkerNodeId
+            let workerNode =
+                query {
+                    for s in ctx.Dbo.WorkerNode do
+                    where (s.WorkerNodeId = w.value.value)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match workerNode with
+            | Some row ->
+                // Update the public key for the WorkerNode
+                row.WorkerNodePublicKey <- newPublicKey |> zip |> Some
+                ctx.SubmitUpdates()  // Persist changes to the database
+                Ok ()
+            | None ->
+                // The row must exist; if not, return an error
+                w |> UnableToFindWorkerNodeErr |> elevate |> Error
+
+        tryDbFun fromDbError g
+
+
     let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySetting
     let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+
+    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySetting privateKey
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
 
 #endif
 
@@ -1086,7 +1152,12 @@ module WorkerNodeService =
 
     let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
     let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting
+
+    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySetting publicKey
+    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySetting privateKey
+
     let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
 
 #endif
 

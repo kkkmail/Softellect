@@ -294,12 +294,21 @@ module Errors =
         | TryLoadEncryptionKeyDbErr of DbError
 
 
+    type TrySaveEncryptionKeyError =
+        | TrySaveEncryptionKeyDbErr of DbError
+
+
     type TryLoadPartitionerPublicKeyError =
         | TryLoadPartitionerPublicKeyDbErr of DbError
 
 
     type TryLoadWorkerNodePublicKeyError =
         | TryLoadWorkerNodePublicKeyDbErr of DbError
+
+
+    type TryUpdateWorkerNodePublicKeyError =
+        | TryUpdateWorkerNodePublicKeyDbErr of DbError
+        | UnableToFindWorkerNodeErr of WorkerNodeId
 
     // ==================================
     // Solver Runner errors
@@ -389,9 +398,11 @@ module Errors =
         | PartitionerWcfErr of PartitionerWcfError
         | TryEncryptSolverErr of TryEncryptSolverError
         | TryDecryptSolverErr of TryDecryptSolverError
-        | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
         | TryLoadEncryptionKeyErr of TryLoadEncryptionKeyError
+        | TrySaveEncryptionKeyErr of TrySaveEncryptionKeyError
+        | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
         | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
+        | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
         | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
 
         static member addError a b =
