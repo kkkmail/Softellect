@@ -24,7 +24,9 @@ module CommandLine =
                 | Description _ -> "solver description."
 
 
-    and SendSolverArgs =
+    and
+        [<CliPrefix(CliPrefix.Dash)>]
+        SendSolverArgs =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-i")>] SolverId of Guid
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-w")>] WorkerNodeId of Guid
 
@@ -43,7 +45,6 @@ module CommandLine =
         |               [<Unique>] [<AltCommandLine("-r")>] ReportResults of bool
         |               [<Unique>] [<AltCommandLine("-e")>] ResetIfFailed
 
-        with
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
@@ -53,10 +54,23 @@ module CommandLine =
                 | ResetIfFailed -> "if present then reset a failed run queue. That's run queues with status = Failed."
 
 
-    and PartitionerAdmArgs =
+    and
+        [<CliPrefix(CliPrefix.Dash)>]
+        GenerateKeysArgs =
+        | [<Mandatory>] [<Unique>] [<AltCommandLine("-z")>] Dummy of int
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Dummy _ -> "Dummy parameter as a placeholder."
+
+
+    and
+        PartitionerAdmArgs =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddSolver of ParseResults<AddSolverArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendSolver of ParseResults<SendSolverArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ModifyRunQueue of ParseResults<ModifyRunQueueArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -64,6 +78,7 @@ module CommandLine =
                 | AddSolver _ -> "add a solver."
                 | SendSolver _ -> "send a solver to a worker node."
                 | ModifyRunQueue _ -> "tries to modify a run queue."
+                | GenerateKeys _ -> "generates encryption keys."
 
 
     let tryGetRunQueueIdToModify p = p |> List.tryPick (fun e -> match e with | RunQueueIdToModify e -> e |> RunQueueId |> Some | _ -> None)

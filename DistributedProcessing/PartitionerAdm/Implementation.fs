@@ -33,11 +33,22 @@ module Implementation =
         | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
 
 
+    let private tryGeneratePartitionerKeys (p : PartitionerId) =
+        let publicKey, privateKey = generateKey p.value
+
+        match trySavePartitionerPrivateKey privateKey, trySavePartitionerPublicKey publicKey with
+        | Ok(), Ok() -> Ok()
+        | Error e, Ok() -> Error e
+        | Ok(), Error e -> Error e
+        | Error e1, Error e2 -> e1 + e2 |> Error
+
+
     type PartitionerAdmProxy =
         {
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
             tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
+            tryGeneratePartitionerKeys : unit -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
@@ -50,6 +61,7 @@ module Implementation =
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
                 tryEncryptSolver = tryEncryptSolver
+                tryGeneratePartitionerKeys = fun () -> tryGeneratePartitionerKeys p
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
                 createMessage = createMessage messagingDataVersion p.messagingClientId
@@ -231,3 +243,8 @@ module Implementation =
         | None ->
             printfn $"modifyRunQueue: No runQueueId to modify found."
             Ok ()
+
+
+    let generateKeys (ctx : PartitionerAdmContext) (x : list<GenerateKeysArgs>) =
+        let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys()
+        result

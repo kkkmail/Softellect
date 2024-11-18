@@ -19,6 +19,7 @@ module Program =
                     | AddSolver addSolverArgs -> addSolver ctx (addSolverArgs.GetAllResults())
                     | SendSolver sendSolverArgs -> sendSolver ctx (sendSolverArgs.GetAllResults())
                     | ModifyRunQueue modifyRunQueueArgs -> modifyRunQueue ctx (modifyRunQueueArgs.GetAllResults())
+                    | GenerateKeys generateKeysArgs -> generateKeys ctx (generateKeysArgs.GetAllResults())
                 )
 
         retVal |> List.map (fun x -> printfn $"%A{x}") |> ignore
