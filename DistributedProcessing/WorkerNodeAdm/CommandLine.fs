@@ -57,25 +57,12 @@ module CommandLine =
     and
         [<CliPrefix(CliPrefix.Dash)>]
         GenerateKeysArgs =
-        | [<Unique>] [<AltCommandLine("-f")>] Force of bool
+        | [<Mandatory>] [<Unique>] [<AltCommandLine("-z")>] Dummy of int
 
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
-                | Force _ -> "pass true to force re-generation of keys when they already exist."
-
-
-    and
-        [<CliPrefix(CliPrefix.Dash)>]
-        ExportPublicKeyArgs =
-        | [<Mandatory>] [<Unique>] [<AltCommandLine("-ofn")>] OutputFileName of string
-        | [<Unique>] [<AltCommandLine("-o")>] Overwrite of bool
-
-        interface IArgParserTemplate with
-            member this.Usage =
-                match this with
-                | OutputFileName _ -> "full path and file name (with extension) to export public key."
-                | Overwrite _ -> "pass true to overwrite output file when it already exists."
+                | Dummy _ -> "Dummy parameter as a placeholder."
 
 
     and
@@ -84,7 +71,6 @@ module CommandLine =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendSolver of ParseResults<SendSolverArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ModifyRunQueue of ParseResults<ModifyRunQueueArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
-        | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -93,23 +79,15 @@ module CommandLine =
                 | SendSolver _ -> "send a solver to a worker node."
                 | ModifyRunQueue _ -> "tries to modify a run queue."
                 | GenerateKeys _ -> "generates encryption keys."
-                | ExportPublicKey _ -> "exports public key."
 
 
-    // let tryGetRunQueueIdToModify p = p |> List.tryPick (fun e -> match e with | RunQueueIdToModify e -> e |> RunQueueId |> Some | _ -> None)
-    //
-    // let getCancellationTypeOpt p =
-    //     p |> List.tryPick (fun e -> match e with | CancelOrAbort e -> (match e with | false -> (CancelWithResults None) | true -> (AbortCalculation None)) |> Some | _ -> None)
-    //
-    //
-    // let getResultNotificationTypeOpt p =
-    //     p |> List.tryPick (fun e -> match e with | ReportResults e -> (match e with | false -> RegularResultGeneration | true -> ForceResultGeneration) |> Some | _ -> None)
-    //
-    // let getResetIfFailed p = p |> List.tryPick (fun e -> match e with | ResetIfFailed -> Some true | _ -> None) |> Option.defaultValue false
-    //
-    //
-    // let tryGetFileName p = p |> List.tryPick (fun e -> match e with | FileName e -> Some e | _ -> None)
-    // let tryGetOverwrite p = p |> List.tryPick (fun e -> match e with | Overwrite e -> Some e | _ -> None)
-    //
-    //
-    // let tryGetForce p = p |> List.tryPick (fun e -> match e with | Force e -> Some e | _ -> None)
+    let tryGetRunQueueIdToModify p = p |> List.tryPick (fun e -> match e with | RunQueueIdToModify e -> e |> RunQueueId |> Some | _ -> None)
+
+    let getCancellationTypeOpt p =
+        p |> List.tryPick (fun e -> match e with | CancelOrAbort e -> (match e with | false -> (CancelWithResults None) | true -> (AbortCalculation None)) |> Some | _ -> None)
+
+
+    let getResultNotificationTypeOpt p =
+        p |> List.tryPick (fun e -> match e with | ReportResults e -> (match e with | false -> RegularResultGeneration | true -> ForceResultGeneration) |> Some | _ -> None)
+
+    let getResetIfFailed p = p |> List.tryPick (fun e -> match e with | ResetIfFailed -> Some true | _ -> None) |> Option.defaultValue false

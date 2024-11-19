@@ -242,15 +242,6 @@ module AppSettings =
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
     type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject, setOnMissing : bool) =
-        // member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
-        // member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
-        // member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
-        // member _.tryGetDouble key = tryGetDouble jsonObj ConfigSection.appSettings key
-        // member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
-        // member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
-        // member _.tryGetFolderName key = tryGetFolderName jsonObj ConfigSection.appSettings key
-        // member _.tryGetFileName key = tryGetFileName jsonObj ConfigSection.appSettings key
-
         member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key

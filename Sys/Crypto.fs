@@ -1,10 +1,12 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.IO
 open System.Security.Cryptography
 open System.Xml.Linq
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
+open Softellect.Sys.Core
 
 module Crypto =
 
@@ -208,3 +210,27 @@ module Crypto =
         match extractGuidFromKey publicKey with
         | Some embeddedId -> embeddedId = id
         | None -> false
+
+
+    let tryExportPublicKey (FileName fileName) (PublicKey publicKey) (overwrite : bool) =
+        try
+            let g() =
+                let keyValue = publicKey |> zip
+                File.WriteAllBytes(fileName, keyValue)
+                Ok ()
+
+            if overwrite || (File.Exists fileName |> not)  then g()
+            else failwith ""
+        with
+        | e -> failwith ""
+
+
+    let tryImportPublicKey (FileName fileName) (id : Guid) =
+        try
+            let key = File.ReadAllBytes fileName |> unZip |> PublicKey
+
+            match checkKey id key with
+            | true -> Ok key
+            | false -> failwith ""
+        with
+        | e -> failwith ""

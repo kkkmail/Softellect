@@ -33,25 +33,14 @@ module Implementation =
         | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
 
 
-    let private tryGeneratePartitionerKeys (p : PartitionerId) force =
-        let g() =
-            let publicKey, privateKey = generateKey p.value
+    let private tryGeneratePartitionerKeys (p : PartitionerId) =
+        let publicKey, privateKey = generateKey p.value
 
-            match trySavePartitionerPrivateKey privateKey, trySavePartitionerPublicKey publicKey with
-            | Ok(), Ok() -> Ok()
-            | Error e, Ok() -> Error e
-            | Ok(), Error e -> Error e
-            | Error e1, Error e2 -> e1 + e2 |> Error
-
-        match tryLoadPartitionerPrivateKey (), tryLoadPartitionerPublicKey (), force with
-        | Ok (Some _), Ok (Some _), false -> Ok()
-        | _ -> g()
-
-
-    let private tryImportWorkerNodePublicKey fileName (w : WorkerNodeId) =
-        match tryImportPublicKey fileName w.value.value with
-        | Ok key -> Ok key
-        | Error e -> failwith ""
+        match trySavePartitionerPrivateKey privateKey, trySavePartitionerPublicKey publicKey with
+        | Ok(), Ok() -> Ok()
+        | Error e, Ok() -> Error e
+        | Ok(), Error e -> Error e
+        | Error e1, Error e2 -> e1 + e2 |> Error
 
 
     type PartitionerAdmProxy =
@@ -59,9 +48,7 @@ module Implementation =
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
             tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
-            tryGeneratePartitionerKeys : bool -> DistributedProcessingUnitResult
-            tryExportPublicKey : FileName -> PublicKey -> bool -> DistributedProcessingUnitResult
-            tryImportWorkerNodePublicKey : FileName -> WorkerNodeId -> DistributedProcessingResult<PublicKey>
+            tryGeneratePartitionerKeys : unit -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
@@ -74,9 +61,7 @@ module Implementation =
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
                 tryEncryptSolver = tryEncryptSolver
-                tryGeneratePartitionerKeys = tryGeneratePartitionerKeys p
-                tryExportPublicKey = tryExportPublicKey
-                tryImportWorkerNodePublicKey = tryImportWorkerNodePublicKey
+                tryGeneratePartitionerKeys = fun () -> tryGeneratePartitionerKeys p
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
                 createMessage = createMessage messagingDataVersion p.messagingClientId
@@ -241,12 +226,12 @@ module Implementation =
 
 
     let modifyRunQueue (ctx : PartitionerAdmContext) (x : list<ModifyRunQueueArgs>) =
-        match x |> List.tryPick (fun e -> match e with | RunQueueIdToModify e -> e |> RunQueueId |> Some | _ -> None) with
+        match tryGetRunQueueIdToModify x with
         | Some q ->
-            let n = x |> List.tryPick (fun e -> match e with | ReportResults e -> (match e with | false -> RegularResultGeneration | true -> ForceResultGeneration) |> Some | _ -> None)
-            let r = x |> List.tryPick (fun e -> match e with | ResetIfFailed -> Some true | _ -> None) |> Option.defaultValue false
+            let n = getResultNotificationTypeOpt x
+            let r = getResetIfFailed x
 
-            match x |> List.tryPick (fun e -> match e with | CancelOrAbort e -> (match e with | false -> (CancelWithResults None) | true -> (AbortCalculation None)) |> Some | _ -> None) with
+            match getCancellationTypeOpt x with
             | Some c -> tryCancelRunQueue ctx q c
             | None ->
                 match r with
@@ -261,22 +246,5 @@ module Implementation =
 
 
     let generateKeys (ctx : PartitionerAdmContext) (x : list<GenerateKeysArgs>) =
-        let force = x |> List.tryPick (fun e -> match e with | Force e -> Some e | _ -> None) |> Option.defaultValue false
-        let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys force
+        let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys()
         result
-
-
-    let exportPublicKey (ctx : PartitionerAdmContext) (x : list<ExportPublicKeyArgs>) =
-        let ofn = x |> List.tryPick (fun e -> match e with | OutputFileName e -> e |> FileName |> Some | _ -> None)
-        let o = x |> List.tryPick (fun e -> match e with | Overwrite e -> e |> Some | _ -> None) |> Option.defaultValue false
-
-        match ofn with
-        | Some f ->
-            match tryLoadPartitionerPublicKey () with
-            | Ok (Some k) ->
-                match ctx.partitionerAdmProxy.tryExportPublicKey f k o with
-                | Ok () -> Ok ()
-                | Error e -> e |> ExportPublicKeyErr |> Error
-            | Ok None -> NoPublicKeyFoundErr |> ExportPublicKeyErr |> Error
-            | Error e -> e |> ExportPublicKeyErr |> Error
-        | None -> NoOutputFileNameFoundErr |> ExportPublicKeyErr |> Error

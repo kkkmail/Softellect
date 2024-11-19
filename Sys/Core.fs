@@ -543,7 +543,7 @@ module Core =
         member f.tryGetFullFolderName() =
             try
                 match f.tryGetFullFileName() with
-                | Ok fileName -> Path.GetDirectoryName (fileName.value) |> FolderName |> Ok
+                | Ok fileName -> Path.GetDirectoryName fileName.value |> FolderName |> Ok
                 | Error e -> Error e
             with
             | e ->
@@ -567,4 +567,3 @@ module Core =
             | e ->
                 printfn $"tryGetExtension: Exception: '%A{e}'."
                 e |> TryGetExtensionExn |> Error
-
