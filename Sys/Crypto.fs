@@ -190,7 +190,7 @@ module Crypto =
 
 
     /// Extracts the Guid from an XML key.
-    let private extractGuidFromKey (keyXml: string) =
+    let private extractKeyIdFromKey (keyXml: string) =
         try
             let doc = XDocument.Parse(keyXml)
             let guidElement = doc.Root.Element("Guid")
@@ -209,14 +209,14 @@ module Crypto =
 
     /// Verifies if a public key is bound to the given Guid.
     let checkKey id (PublicKey publicKey) : bool =
-        match extractGuidFromKey publicKey with
+        match extractKeyIdFromKey publicKey with
         | Some embeddedId -> embeddedId = id
         | None -> false
 
 
     let tryExportPublicKey (folderName : FolderName) (PublicKey publicKey) (overwrite : bool) =
         try
-            match extractGuidFromKey publicKey with
+            match extractKeyIdFromKey publicKey with
             | Some i ->
                 let fileName = (FileName $"{i.value}{publicKeyExtension.value}").combine(folderName)
                 let keyValue = publicKey |> zip
@@ -231,15 +231,21 @@ module Crypto =
         | e -> e |> KeyExportExn |> toError
 
 
-    let tryImportPublicKey (fileName : FileName) (id : KeyId) =
+    let tryImportPublicKey (fileName : FileName) (ko : KeyId option)=
         try
             match fileName.tryGetFullFileName() with
             | Ok fn ->
                 let key = File.ReadAllBytes fn.value |> unZip |> PublicKey
 
-                match checkKey id key with
-                | true -> Ok key
-                | false -> (id, fileName) |> KeyMismatchErr |> toError
+                match ko with
+                | Some k ->
+                    match checkKey k key with
+                    | true -> Ok (k, key)
+                    | false -> (k, fileName) |> KeyMismatchErr |> toError
+                | None ->
+                    match extractKeyIdFromKey key.value with
+                    | Some k -> Ok (k, key)
+                    | None -> KeyImportMissingIdErr |> toError
             | Error e -> e |> KeyImportFileErr |> toError
         with
         | e -> e |> KeyImportExn |> toError

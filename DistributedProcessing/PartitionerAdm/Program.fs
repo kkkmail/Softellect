@@ -21,6 +21,7 @@ module Program =
                     | ModifyRunQueue modifyRunQueueArgs -> modifyRunQueue ctx (modifyRunQueueArgs.GetAllResults())
                     | GenerateKeys generateKeysArgs -> generateKeys ctx (generateKeysArgs.GetAllResults())
                     | ExportPublicKey exportPublicKeyArgs -> exportPublicKey ctx (exportPublicKeyArgs.GetAllResults())
+                    | ImportPublicKey importPublicKeyArgs -> importPublicKey ctx (importPublicKeyArgs.GetAllResults())
                 )
 
         retVal |> List.map (fun x -> printfn $"%A{x}") |> ignore

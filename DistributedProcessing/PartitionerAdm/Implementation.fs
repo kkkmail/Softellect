@@ -59,8 +59,8 @@ module Implementation =
         | Error e -> Error e
 
 
-    let private tryImportWorkerNodePublicKey (fileName : FileName) (w : WorkerNodeId) =
-        match tryImportPublicKey fileName (KeyId w.value.value) with
+    let private tryImportWorkerNodePublicKey (fileName : FileName) =
+        match tryImportPublicKey fileName None with
         | Ok key -> Ok key
         | Error e -> e |> TryImportWorkerNodePublicKeyErr |> TryLoadWorkerNodePublicKeyErr |> Error
 
@@ -72,7 +72,8 @@ module Implementation =
             tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
             tryGeneratePartitionerKeys : bool -> DistributedProcessingUnitResult
             tryExportPublicKey : FolderName -> bool -> DistributedProcessingUnitResult
-            tryImportWorkerNodePublicKey : FileName -> WorkerNodeId -> DistributedProcessingResult<PublicKey>
+            tryImportWorkerNodePublicKey : FileName -> DistributedProcessingResult<KeyId * PublicKey>
+            tryUpdateWorkerNodePublicKey : WorkerNodeId -> PublicKey -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
@@ -88,6 +89,7 @@ module Implementation =
                 tryGeneratePartitionerKeys = tryGeneratePartitionerKeys p
                 tryExportPublicKey = tryExportPartitionerPublicKey
                 tryImportWorkerNodePublicKey = tryImportWorkerNodePublicKey
+                tryUpdateWorkerNodePublicKey = tryUpdateWorkerNodePublicKey
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
                 createMessage = createMessage messagingDataVersion p.messagingClientId
@@ -278,11 +280,26 @@ module Implementation =
 
 
     let exportPublicKey (ctx : PartitionerAdmContext) (x : list<ExportPublicKeyArgs>) =
-        let ofn = x |> List.tryPick (fun e -> match e with | OutputFileName e -> e |> FolderName |> Some | _ -> None)
+        let ofn = x |> List.tryPick (fun e -> match e with | OutputFolderName e -> e |> FolderName |> Some | _ -> None)
         let o = x |> List.tryPick (fun e -> match e with | Overwrite e -> e |> Some | _ -> None) |> Option.defaultValue false
 
         match ofn with
         | Some f -> ctx.partitionerAdmProxy.tryExportPublicKey f o
         | None ->
             printfn "exportPublicKey - output folder name was not provided."
+            Ok()
+
+
+    let importPublicKey (ctx : PartitionerAdmContext) (x : list<ImportPublicKeyArgs>) =
+        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some | _ -> None)
+
+        match ifn with
+        | Some f ->
+            match ctx.partitionerAdmProxy.tryImportWorkerNodePublicKey f with
+            | Ok (k, key) ->
+                let w = k.value |> MessagingClientId |> WorkerNodeId
+                ctx.partitionerAdmProxy.tryUpdateWorkerNodePublicKey w key
+            | Error e -> Error e
+        | None ->
+            printfn "importPublicKey - input file name was not provided."
             Ok()

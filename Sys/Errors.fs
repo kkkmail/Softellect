@@ -90,6 +90,7 @@ module Errors =
         | KeyMismatchErr of (KeyId * FileName)
         | KeyImportExn of exn
         | KeyImportFileErr of FileError
+        | KeyImportMissingIdErr
 
 
     type SysError =
