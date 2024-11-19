@@ -48,14 +48,21 @@ module Implementation =
         | _ -> g()
 
 
-    let private tryExportPartitonerPublicKey x y =
-        failwith ""
+    let private tryExportPartitionerPublicKey (folderName : FolderName) overwrite =
+        let toError e = e |> TryLoadPartitionerPublicKeyErr |> Error
+        match tryLoadPartitionerPublicKey() with
+        | Ok (Some key) ->
+            match tryExportPublicKey folderName key overwrite with
+            | Ok() -> Ok()
+            | Error e -> e |> TryExportPartitionerPublicKeyErr |> toError
+        | Ok None -> NoPartitionerPublicKeyErr |> toError
+        | Error e -> Error e
 
 
     let private tryImportWorkerNodePublicKey (fileName : FileName) (w : WorkerNodeId) =
         match tryImportPublicKey fileName (KeyId w.value.value) with
         | Ok key -> Ok key
-        | Error e -> failwith ""
+        | Error e -> e |> TryImportWorkerNodePublicKeyErr |> TryLoadWorkerNodePublicKeyErr |> Error
 
 
     type PartitionerAdmProxy =
@@ -79,7 +86,7 @@ module Implementation =
                 tryLoadSolver = tryLoadSolver
                 tryEncryptSolver = tryEncryptSolver
                 tryGeneratePartitionerKeys = tryGeneratePartitionerKeys p
-                tryExportPublicKey = tryExportPartitonerPublicKey
+                tryExportPublicKey = tryExportPartitionerPublicKey
                 tryImportWorkerNodePublicKey = tryImportWorkerNodePublicKey
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
@@ -271,17 +278,11 @@ module Implementation =
 
 
     let exportPublicKey (ctx : PartitionerAdmContext) (x : list<ExportPublicKeyArgs>) =
-        let ofn = x |> List.tryPick (fun e -> match e with | OutputFileName e -> e |> FileName |> Some | _ -> None)
+        let ofn = x |> List.tryPick (fun e -> match e with | OutputFileName e -> e |> FolderName |> Some | _ -> None)
         let o = x |> List.tryPick (fun e -> match e with | Overwrite e -> e |> Some | _ -> None) |> Option.defaultValue false
 
-        //match ofn with
-        //| Some f ->
-        //    match tryLoadPartitionerPublicKey () with
-        //    | Ok (Some k) ->
-        //        match ctx.partitionerAdmProxy.tryExportPublicKey f k o with
-        //        | Ok () -> Ok ()
-        //        | Error e -> e |> ExportPublicKeyErr |> Error
-        //    | Ok None -> NoPublicKeyFoundErr |> ExportPublicKeyErr |> Error
-        //    | Error e -> e |> ExportPublicKeyErr |> Error
-        //| None -> NoOutputFileNameFoundErr |> ExportPublicKeyErr |> Error
-        failwith ""
+        match ofn with
+        | Some f -> ctx.partitionerAdmProxy.tryExportPublicKey f o
+        | None ->
+            printfn "exportPublicKey - output folder name was not provided."
+            Ok()

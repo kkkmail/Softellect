@@ -300,10 +300,13 @@ module Errors =
 
     type TryLoadPartitionerPublicKeyError =
         | TryLoadPartitionerPublicKeyDbErr of DbError
+        | NoPartitionerPublicKeyErr
+        | TryExportPartitionerPublicKeyErr of SysError
 
 
     type TryLoadWorkerNodePublicKeyError =
         | TryLoadWorkerNodePublicKeyDbErr of DbError
+        | TryImportWorkerNodePublicKeyErr of SysError
 
 
     type TryUpdateWorkerNodePublicKeyError =
