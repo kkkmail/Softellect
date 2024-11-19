@@ -101,7 +101,7 @@ module CoreTests =
     let encryptDecryptAesShouldWork () : unit =
         let rnd = Random(1)
         let len = 1_000_000
-        let id = Guid.NewGuid()
+        let id = Guid.NewGuid() |> KeyId
         let senderPublicKey, senderPrivateKey = generateKey id
         let recipientPublicKey, recipientPrivateKey = generateKey id
 
@@ -124,7 +124,7 @@ module CoreTests =
     let encryptDecryptRsaShouldWork () : unit =
         let rnd = Random(1)
         let len = 1_000_000
-        let id = Guid.NewGuid()
+        let id = Guid.NewGuid() |> KeyId
         let senderPublicKey, senderPrivateKey = generateKey id
         let recipientPublicKey, recipientPrivateKey = generateKey id
 

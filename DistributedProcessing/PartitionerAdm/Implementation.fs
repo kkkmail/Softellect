@@ -35,7 +35,7 @@ module Implementation =
 
     let private tryGeneratePartitionerKeys (p : PartitionerId) force =
         let g() =
-            let publicKey, privateKey = generateKey p.value
+            let publicKey, privateKey = generateKey (KeyId p.value)
 
             match trySavePartitionerPrivateKey privateKey, trySavePartitionerPublicKey publicKey with
             | Ok(), Ok() -> Ok()
@@ -48,8 +48,12 @@ module Implementation =
         | _ -> g()
 
 
-    let private tryImportWorkerNodePublicKey fileName (w : WorkerNodeId) =
-        match tryImportPublicKey fileName w.value.value with
+    let private tryExportPartitonerPublicKey x y =
+        failwith ""
+
+
+    let private tryImportWorkerNodePublicKey (fileName : FileName) (w : WorkerNodeId) =
+        match tryImportPublicKey fileName (KeyId w.value.value) with
         | Ok key -> Ok key
         | Error e -> failwith ""
 
@@ -60,7 +64,7 @@ module Implementation =
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
             tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
             tryGeneratePartitionerKeys : bool -> DistributedProcessingUnitResult
-            tryExportPublicKey : FileName -> PublicKey -> bool -> DistributedProcessingUnitResult
+            tryExportPublicKey : FolderName -> bool -> DistributedProcessingUnitResult
             tryImportWorkerNodePublicKey : FileName -> WorkerNodeId -> DistributedProcessingResult<PublicKey>
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
@@ -75,7 +79,7 @@ module Implementation =
                 tryLoadSolver = tryLoadSolver
                 tryEncryptSolver = tryEncryptSolver
                 tryGeneratePartitionerKeys = tryGeneratePartitionerKeys p
-                tryExportPublicKey = tryExportPublicKey
+                tryExportPublicKey = tryExportPartitonerPublicKey
                 tryImportWorkerNodePublicKey = tryImportWorkerNodePublicKey
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
@@ -270,13 +274,14 @@ module Implementation =
         let ofn = x |> List.tryPick (fun e -> match e with | OutputFileName e -> e |> FileName |> Some | _ -> None)
         let o = x |> List.tryPick (fun e -> match e with | Overwrite e -> e |> Some | _ -> None) |> Option.defaultValue false
 
-        match ofn with
-        | Some f ->
-            match tryLoadPartitionerPublicKey () with
-            | Ok (Some k) ->
-                match ctx.partitionerAdmProxy.tryExportPublicKey f k o with
-                | Ok () -> Ok ()
-                | Error e -> e |> ExportPublicKeyErr |> Error
-            | Ok None -> NoPublicKeyFoundErr |> ExportPublicKeyErr |> Error
-            | Error e -> e |> ExportPublicKeyErr |> Error
-        | None -> NoOutputFileNameFoundErr |> ExportPublicKeyErr |> Error
+        //match ofn with
+        //| Some f ->
+        //    match tryLoadPartitionerPublicKey () with
+        //    | Ok (Some k) ->
+        //        match ctx.partitionerAdmProxy.tryExportPublicKey f k o with
+        //        | Ok () -> Ok ()
+        //        | Error e -> e |> ExportPublicKeyErr |> Error
+        //    | Ok None -> NoPublicKeyFoundErr |> ExportPublicKeyErr |> Error
+        //    | Error e -> e |> ExportPublicKeyErr |> Error
+        //| None -> NoOutputFileNameFoundErr |> ExportPublicKeyErr |> Error
+        failwith ""

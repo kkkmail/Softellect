@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open Softellect.Sys.Primitives
 
 /// Collection of general errors & related functionality.
 module Errors =
@@ -83,6 +84,12 @@ module Errors =
         | TryDecryptRsaExn of exn
         | VerifySignatureExn of exn
         | VerifySignatureFailedError
+        | KeyFileExistErr of FileName
+        | MissingKeyId
+        | KeyExportExn of exn
+        | KeyMismatchErr of (KeyId * FileName)
+        | KeyImportExn of exn
+        | KeyImportFileErr of FileError
 
 
     type SysError =

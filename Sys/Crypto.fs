@@ -11,7 +11,9 @@ open Softellect.Sys.Core
 module Crypto =
 
     let rsaKeyLength = 4096
-    // let rsaSignatureLength = rsaKeyLength / 8
+    let private publicKeyExtension = FileExtension ".pkx"
+    let private toError e = e |> CryptoErr |> Error
+
 
     /// Signs the data using the sender's private key.
     let signData (data: byte[]) (PrivateKey privateKey) =
@@ -175,7 +177,7 @@ module Crypto =
 
 
     /// Embeds the Guid in the key as metadata.
-    let private embedGuidInKey (rsa: RSA) (id: Guid) =
+    let private embedGuidInKey (rsa: RSA) (KeyId id) =
         let publicKeyXml = rsa.ToXmlString(false)
         let privateKeyXml = rsa.ToXmlString(true)
 
@@ -188,49 +190,56 @@ module Crypto =
 
 
     /// Extracts the Guid from an XML key.
-    let private extractGuidFromKey (keyXml: string) : Guid option =
+    let private extractGuidFromKey (keyXml: string) =
         try
             let doc = XDocument.Parse(keyXml)
             let guidElement = doc.Root.Element("Guid")
 
-            if guidElement <> null then Some(Guid.Parse(guidElement.Value))
+            if guidElement <> null then Guid.Parse(guidElement.Value) |> KeyId |> Some
             else None
         with
         | _ -> None
 
 
     /// Generates a public/private key pair with an embedded Guid.
-    let generateKey (id: Guid) =
+    let generateKey id =
         use rsa = RSA.Create(rsaKeyLength)
         embedGuidInKey rsa id
 
 
     /// Verifies if a public key is bound to the given Guid.
-    let checkKey (id: Guid) (PublicKey publicKey) : bool =
+    let checkKey id (PublicKey publicKey) : bool =
         match extractGuidFromKey publicKey with
         | Some embeddedId -> embeddedId = id
         | None -> false
 
 
-    let tryExportPublicKey (FileName fileName) (PublicKey publicKey) (overwrite : bool) =
+    let tryExportPublicKey (folderName : FolderName) (PublicKey publicKey) (overwrite : bool) =
         try
-            let g() =
+            match extractGuidFromKey publicKey with
+            | Some i ->
+                let fileName = (FileName $"{i.value}{publicKeyExtension.value}").combine(folderName)
                 let keyValue = publicKey |> zip
-                File.WriteAllBytes(fileName, keyValue)
-                Ok ()
 
-            if overwrite || (File.Exists fileName |> not)  then g()
-            else failwith ""
+                if overwrite || (File.Exists fileName.value |> not)
+                then
+                    File.WriteAllBytes(fileName.value, keyValue)
+                    Ok ()
+                else fileName |> KeyFileExistErr |> toError
+            | None -> MissingKeyId |> toError
         with
-        | e -> failwith ""
+        | e -> e |> KeyExportExn |> toError
 
 
-    let tryImportPublicKey (FileName fileName) (id : Guid) =
+    let tryImportPublicKey (fileName : FileName) (id : KeyId) =
         try
-            let key = File.ReadAllBytes fileName |> unZip |> PublicKey
+            match fileName.tryGetFullFileName() with
+            | Ok fn ->
+                let key = File.ReadAllBytes fn.value |> unZip |> PublicKey
 
-            match checkKey id key with
-            | true -> Ok key
-            | false -> failwith ""
+                match checkKey id key with
+                | true -> Ok key
+                | false -> (id, fileName) |> KeyMismatchErr |> toError
+            | Error e -> e |> KeyImportFileErr |> toError
         with
-        | e -> failwith ""
+        | e -> e |> KeyImportExn |> toError

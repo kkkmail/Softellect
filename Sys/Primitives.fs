@@ -283,6 +283,12 @@ module Primitives =
     let appSettingsFile = FileName "appsettings.json"
 
 
+    type KeyId =
+        | KeyId of Guid
+
+        member this.value = let (KeyId v) = this in v
+
+
     type PublicKey =
         | PublicKey of string
 
