@@ -48,10 +48,13 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if SOLVER_RUNNER
 #endif
 
+#if WORKERNODE_ADM
+#endif
+
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -82,6 +85,10 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
@@ -89,7 +96,7 @@ module WorkerNodeService =
 // ==========================================
 // To make a compiler happy.
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
     let private dummy = 0
 #endif
 
@@ -100,7 +107,7 @@ module WorkerNodeService =
     let partitionerServiceProgramName = "PartitionerService.exe"
 #endif
 
-#if WORKER_NODE
+#if WORKER_NODE || WORKERNODE_ADM
     let workerNodeServiceProgramName = "WorkerNodeService.exe"
 
 
@@ -123,7 +130,7 @@ module WorkerNodeService =
 
 #endif
 
-#if WORKER_NODE
+#if WORKER_NODE || WORKERNODE_ADM
 
     type RunQueue =
         {

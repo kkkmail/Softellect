@@ -208,9 +208,9 @@ module Crypto =
 
 
     /// Verifies if a public key is bound to the given Guid.
-    let checkKey id (PublicKey publicKey) : bool =
+    let checkKey k (PublicKey publicKey) =
         match extractKeyIdFromKey publicKey with
-        | Some embeddedId -> embeddedId = id
+        | Some embeddedId -> embeddedId = k
         | None -> false
 
 

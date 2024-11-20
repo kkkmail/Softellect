@@ -1,8 +1,8 @@
-﻿namespace Softellect.DistributedProcessing.PartitionerAdm
+﻿namespace Softellect.DistributedProcessing.WorkerNodeAdm
 
-open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
+open Softellect.DistributedProcessing.WorkerNodeAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
-open Softellect.DistributedProcessing.Primitives.PartitionerAdm
+open Softellect.DistributedProcessing.Primitives.WorkerNodeAdm
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys
@@ -12,10 +12,10 @@ open Softellect.Sys.Core
 open Softellect.Sys.Crypto
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
-open Softellect.DistributedProcessing.DataAccess.PartitionerAdm
+open Softellect.DistributedProcessing.DataAccess.WorkerNodeAdm
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Messaging.DataAccess
-open Softellect.DistributedProcessing.AppSettings.PartitionerAdm
+open Softellect.DistributedProcessing.AppSettings.WorkerNodeAdm
 
 module Implementation =
 
@@ -23,228 +23,107 @@ module Implementation =
     let private addError g f e = ((f |> g) + e) |> Error
 
 
-    /// Default implementation of solver encryption.
-    let private tryEncryptSolver (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
-        match tryLoadPartitionerPrivateKey(), tryLoadWorkerNodePublicKey w, trySerialize solverSerializationFormat solver with
-        | Ok (Some p1), Ok (Some w1), Ok data ->
-            match tryEncryptAndSign tryEncryptAes data p1 w1 with
-            | Ok r -> r |> EncryptedSolver |> Ok
-            | Error e -> e |> TryEncryptSolverSysErr |> TryEncryptSolverErr |> Error
-        | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
+    let private tryGenerateWorkerNodeKeys (w : WorkerNodeId) force =
+        let g() =
+            let publicKey, privateKey = generateKey (KeyId w.value.value)
+
+            match trySaveWorkerNodePrivateKey privateKey, trySaveWorkerNodePublicKey publicKey with
+            | Ok(), Ok() -> Ok()
+            | Error e, Ok() -> Error e
+            | Ok(), Error e -> Error e
+            | Error e1, Error e2 -> e1 + e2 |> Error
+
+        match tryLoadWorkerNodePrivateKey (), tryLoadWorkerNodePublicKey (), force with
+        | Ok (Some _), Ok (Some _), false -> Ok()
+        | _ -> g()
 
 
-    let private tryGeneratePartitionerKeys (p : PartitionerId) =
-        let publicKey, privateKey = generateKey p.value
+    let private tryExporWorkerNodePublicKey (folderName : FolderName) overwrite =
+        let toError e = e |> TryExportWorkerNodePublicKeyErr |> Error
 
-        match trySavePartitionerPrivateKey privateKey, trySavePartitionerPublicKey publicKey with
-        | Ok(), Ok() -> Ok()
-        | Error e, Ok() -> Error e
-        | Ok(), Error e -> Error e
-        | Error e1, Error e2 -> e1 + e2 |> Error
+        match tryLoadWorkerNodePublicKey() with
+        | Ok (Some key) ->
+            match tryExportPublicKey folderName key overwrite with
+            | Ok() -> Ok()
+            | Error e -> e |> TryExpWorkerNodePublicKeyErr |> toError
+        | Ok None -> NoWorkerNodePublicKeyErr |> toError
+        | Error e -> Error e
 
 
-    type PartitionerAdmProxy =
+    let private tryImportPartitionerPublicKey (fileName : FileName) =
+        match tryImportPublicKey fileName None with
+        | Ok key -> Ok key
+        | Error e -> e |> TryImportWorkerNodePublicKeyErr |> TryLoadWorkerNodePublicKeyErr |> Error
+
+
+    let private tryUpdatePartitionerPublicKey (p : PartitionerId) (key : PublicKey) =
+        match checkKey (KeyId p.value) key with
+        | true -> trySavePartitionerPublicKey key
+        | false -> KeyMismatchPartitionerPublicKeyErr |> TryLoadPartitionerPublicKeyErr |> Error
+
+
+    type WorkerNodeAdmProxy =
         {
-            saveSolver : Solver -> DistributedProcessingUnitResult
-            tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
-            tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
-            tryGeneratePartitionerKeys : unit -> DistributedProcessingUnitResult
-            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
-            upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
-            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
-            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
-            tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            tryGenerateWorkerNodeKeys : bool -> DistributedProcessingUnitResult
+            tryExportPublicKey : FolderName -> bool -> DistributedProcessingUnitResult
+            tryImportPartitionerPublicKey : FileName -> DistributedProcessingResult<KeyId * PublicKey>
+            tryUpdatePartitionerPublicKey : PartitionerId -> PublicKey -> DistributedProcessingUnitResult
         }
 
-        static member create (p : PartitionerId) =
+        static member create (i : WorkerNodeInfo) =
             {
-                saveSolver = saveSolver
-                tryLoadSolver = tryLoadSolver
-                tryEncryptSolver = tryEncryptSolver
-                tryGeneratePartitionerKeys = fun () -> tryGeneratePartitionerKeys p
-                tryLoadRunQueue = tryLoadRunQueue
-                upsertRunQueue = upsertRunQueue
-                createMessage = createMessage messagingDataVersion p.messagingClientId
-                saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
-                tryResetRunQueue = tryResetRunQueue
+                tryGenerateWorkerNodeKeys = tryGenerateWorkerNodeKeys i.workerNodeId
+                tryExportPublicKey = tryExporWorkerNodePublicKey
+                tryImportPartitionerPublicKey = tryImportPartitionerPublicKey
+                tryUpdatePartitionerPublicKey = tryUpdatePartitionerPublicKey
             }
 
 
-    type PartitionerAdmContext =
+    type WorkerNodeAdmContext =
         {
-            partitionerAdmProxy : PartitionerAdmProxy
-            partitionerInfo : PartitionerInfo
+            workerNodeAdmProxy : WorkerNodeAdmProxy
+            workerNodeInfo : WorkerNodeInfo
         }
 
         static member create () =
             match AppSettingsProvider.tryCreate() with
             | Ok provider ->
-                let w = loadPartitionerInfo provider
+                let w = loadWorkerNodeInfo provider
 
                 {
-                    partitionerAdmProxy = PartitionerAdmProxy.create w.partitionerId
-                    partitionerInfo = w
+                    workerNodeAdmProxy = WorkerNodeAdmProxy.create w
+                    workerNodeInfo = w
                 }
             | Error e -> failwith $"ERROR: {e}"
 
 
-    let addSolver (ctx : PartitionerAdmContext) (x : list<AddSolverArgs>) =
-        let so = x |> List.tryPick (fun e -> match e with | AddSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
-        let no = x |> List.tryPick (fun e -> match e with | Name name -> SolverName name |> Some | _ -> None)
-        let fo = x |> List.tryPick (fun e -> match e with | Folder folder -> FolderName folder |> Some | _ -> None)
-        let de = x |> List.tryPick (fun e -> match e with | Description description -> description |> Some | _ -> None)
-
-        match (so, no, fo) with
-        | Some s, Some n, Some f ->
-            match zipFolder f with
-            | Ok d ->
-                let solver =
-                    {
-                        solverId = s
-                        solverName = n
-                        solverData = d |> SolverData |> Some
-                        description = de
-                    }
-
-                printfn $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
-                ctx.partitionerAdmProxy.saveSolver solver
-            | Error e ->
-                printfn $"Error: {e}."
-                UnableToZipSolverErr (s, f, e) |> SaveSolverErr |> Error
-        | _ -> failwith "addSolver: Invalid arguments."
-
-
-    let sendSolver (ctx : PartitionerAdmContext) (x : list<SendSolverArgs>) =
-        let so = x |> List.tryPick (fun e -> match e with | SendSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
-        let wo = x |> List.tryPick (fun e -> match e with | SendSolverArgs.WorkerNodeId id -> id |> MessagingClientId |> WorkerNodeId |> Some | _ -> None)
-
-        match (so, wo) with
-        | Some s, Some w ->
-            printfn $"sendSolver: solver with id '{s}' is being sent to worker node '{w}'."
-
-            match ctx.partitionerAdmProxy.tryLoadSolver s with
-            | Ok solver ->
-                match ctx.partitionerAdmProxy.tryEncryptSolver solver w with
-                | Ok encryptedSolver ->
-                    let result =
-                        {
-                            workerNodeRecipient = w
-                            deliveryType = GuaranteedDelivery
-                            messageData = UpdateSolverWrkMsg encryptedSolver
-                        }.getMessageInfo()
-                        |> ctx.partitionerAdmProxy.createMessage
-                        |> ctx.partitionerAdmProxy.saveMessage
-
-                    match result with
-                    | Ok () ->
-                        printfn $"sendSolver: solver with id '{s}' was sent to worker node '{w}'."
-                        Ok ()
-                    | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
-                | Error e ->
-                    printfn $"sendSolver: Unable to encrypt solder, error: {e}."
-                    Error e
-            | Error e ->
-                printfn $"sendSolver: Unable to load solver, error: {e}."
-                Error e
-        | _ -> failwith "sendSolver: Invalid arguments."
-
-
-
-    let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
-        let addError = addError TryCancelRunQueueRunnerErr
-        let toError = toError TryCancelRunQueueRunnerErr
-
-        printfn $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
-
-        match ctx.partitionerAdmProxy.tryLoadRunQueue q with
-        | Ok (Some r) ->
-            let r1 =
-                match r.workerNodeIdOpt with
-                | Some w ->
-                    let r11 =
-                        {
-                            recipientInfo =
-                                {
-                                    recipient = w.messagingClientId
-                                    deliveryType = GuaranteedDelivery
-                                }
-
-                            messageData = (q, c) |> CancelRunWrkMsg |> WorkerNodeMsg |> UserMsg
-                        }
-                        |> ctx.partitionerAdmProxy.createMessage
-                        |> ctx.partitionerAdmProxy.saveMessage
-
-                    match r11 with
-                    | Ok v -> Ok v
-                    | Error e -> TryCancelRunQueueRunnerError.MessagingTryCancelRunQueueRunnerErr e |> toError
-                | None -> Ok()
-
-            let r2 =
-                match r.runQueueStatus with
-                | NotStartedRunQueue -> { r with runQueueStatus = CancelledRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
-                | RunRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
-                | InProgressRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
-                | CancelRequestedRunQueue -> { r with runQueueStatus = CancelRequestedRunQueue } |> ctx.partitionerAdmProxy.upsertRunQueue
-                | _ -> q |> TryCancelRunQueueRunnerError.InvalidRunQueueStatusRunnerErr |> toError
-
-            Rop.combineUnitResults (+) r1 r2
-        | Ok None -> toError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q)
-        | Error e -> addError (TryCancelRunQueueRunnerError.TryLoadRunQueueRunnerErr q) e
-
-
-    let tryRequestResults (ctx : PartitionerAdmContext) q c =
-        let addError = addError TryRequestResultsRunnerErr
-        let toError = toError TryRequestResultsRunnerErr
-
-        match ctx.partitionerAdmProxy.tryLoadRunQueue q with
-        | Ok (Some r) ->
-            match r.workerNodeIdOpt with
-            | Some w ->
-                let r1 =
-                    {
-                        recipientInfo =
-                            {
-                                recipient = w.messagingClientId
-                                deliveryType = GuaranteedDelivery
-                            }
-
-                        messageData = (q, c) |> RequestResultsWrkMsg |> WorkerNodeMsg |> UserMsg
-                    }
-                    |> ctx.partitionerAdmProxy.createMessage
-                    |> ctx.partitionerAdmProxy.saveMessage
-
-                match r1 with
-                | Ok v -> Ok v
-                | Error e -> MessagingTryRequestResultsRunnerErr e |> toError
-            | None -> Ok()
-        | Ok None -> toError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q)
-        | Error e -> addError (TryRequestResultsRunnerError.TryLoadRunQueueRunnerErr q) e
-
-
-    let tryResetIfFailed (ctx : PartitionerAdmContext) q =
-        ctx.partitionerAdmProxy.tryResetRunQueue q
-
-
-    let modifyRunQueue (ctx : PartitionerAdmContext) (x : list<ModifyRunQueueArgs>) =
-        match tryGetRunQueueIdToModify x with
-        | Some q ->
-            let n = getResultNotificationTypeOpt x
-            let r = getResetIfFailed x
-
-            match getCancellationTypeOpt x with
-            | Some c -> tryCancelRunQueue ctx q c
-            | None ->
-                match r with
-                | true -> tryResetIfFailed ctx q
-                | false ->
-                    match n with
-                    | Some v -> tryRequestResults ctx q v
-                    | None -> Ok ()
-        | None ->
-            printfn $"modifyRunQueue: No runQueueId to modify found."
-            Ok ()
-
-
-    let generateKeys (ctx : PartitionerAdmContext) (x : list<GenerateKeysArgs>) =
-        let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys()
+    let generateKeys (ctx : WorkerNodeAdmContext) (x : list<GenerateKeysArgs>) =
+        let force = x |> List.tryPick (fun e -> match e with | Force e -> Some e | _ -> None) |> Option.defaultValue false
+        let result = ctx.workerNodeAdmProxy.tryGenerateWorkerNodeKeys force
         result
+
+
+    let exportPublicKey (ctx : WorkerNodeAdmContext) (x : list<ExportPublicKeyArgs>) =
+        let ofn = x |> List.tryPick (fun e -> match e with | OutputFolderName e -> e |> FolderName |> Some | _ -> None)
+        let o = x |> List.tryPick (fun e -> match e with | Overwrite e -> e |> Some | _ -> None) |> Option.defaultValue false
+
+        match ofn with
+        | Some f -> ctx.workerNodeAdmProxy.tryExportPublicKey f o
+        | None ->
+            printfn "exportPublicKey - output folder name was not provided."
+            Ok()
+
+
+    let importPublicKey (ctx : WorkerNodeAdmContext) (x : list<ImportPublicKeyArgs>) =
+        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some | _ -> None)
+
+        match ifn with
+        | Some f ->
+            match ctx.workerNodeAdmProxy.tryImportPartitionerPublicKey f with
+            | Ok (k, key) ->
+                let w = k.value |> MessagingClientId |> PartitionerId
+                ctx.workerNodeAdmProxy.tryUpdatePartitionerPublicKey w key
+            | Error e -> Error e
+        | None ->
+            printfn "importPublicKey - input file name was not provided."
+            Ok()

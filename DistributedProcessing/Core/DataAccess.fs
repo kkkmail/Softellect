@@ -45,10 +45,13 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if SOLVER_RUNNER
 #endif
 
+#if WORKERNODE_ADM
+#endif
+
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -91,6 +94,10 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
@@ -98,7 +105,7 @@ module WorkerNodeService =
 // ==========================================
 // Common for all.
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     let private partitionerPublicKeySetting = "395A5869D3104C2D9FD87421B501D622"
     let private partitionerPrivateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
@@ -111,9 +118,6 @@ module WorkerNodeService =
 // ==========================================
 // Database access
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
-#endif
-
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR
 
     /// Both Partitioner, PartitionerAdm, and ModelGenerator use the same database.
@@ -125,10 +129,7 @@ module WorkerNodeService =
 
 #endif
 
-#if SOLVER_RUNNER
-#endif
-
-#if SOLVER_RUNNER || WORKER_NODE
+#if SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     /// Both WorkerNodeService and SolverRunner use the same database.
     let private connectionStringKey = ConfigKey "WorkerNodeService"
@@ -139,7 +140,7 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
@@ -167,7 +168,7 @@ module WorkerNodeService =
 // ==========================================
 // Specific Types
 
-#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
     type private SolverEntity = DbContext.``dbo.SolverEntity``
     type private SettingDataEntity = DbContext.``dbo.SettingEntity``
@@ -183,7 +184,7 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
     /// Tries loading a public or private key out of setting using a given key name.
     let private tryLoadEncryptionKey toKey keyName =
@@ -1149,6 +1150,9 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+#endif
+
+#if WORKERNODE_ADM || WORKER_NODE
 
     let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
     let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting

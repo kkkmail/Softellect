@@ -42,7 +42,7 @@ open Softellect.Messaging.AppSettings
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -64,6 +64,10 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
@@ -71,7 +75,7 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     let partitionerIdKey = ConfigKey "PartitionerId"
     let resultLocationKey = ConfigKey "ResultLocation"
@@ -135,7 +139,7 @@ module WorkerNodeService =
 
 #endif
 
-#if SOLVER_RUNNER || WORKER_NODE
+#if SOLVER_RUNNER || WORKER_NODE || WORKERNODE_ADM
 
     [<Literal>]
     let WorkerNodeWcfServiceName = "WorkerNodeWcfService"

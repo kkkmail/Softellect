@@ -177,7 +177,6 @@ module Implementation =
         | _ -> failwith "sendSolver: Invalid arguments."
 
 
-
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
         let addError = addError TryCancelRunQueueRunnerErr
         let toError = toError TryCancelRunQueueRunnerErr

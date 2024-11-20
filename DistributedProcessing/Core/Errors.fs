@@ -302,6 +302,7 @@ module Errors =
         | TryLoadPartitionerPublicKeyDbErr of DbError
         | NoPartitionerPublicKeyErr
         | TryExportPartitionerPublicKeyErr of SysError
+        | KeyMismatchPartitionerPublicKeyErr
 
 
     type TryLoadWorkerNodePublicKeyError =
@@ -312,6 +313,11 @@ module Errors =
     type TryUpdateWorkerNodePublicKeyError =
         | TryUpdateWorkerNodePublicKeyDbErr of DbError
         | UnableToFindWorkerNodeErr of WorkerNodeId
+
+
+    type TryExportWorkerNodePublicKeyError =
+        | NoWorkerNodePublicKeyErr
+        | TryExpWorkerNodePublicKeyErr of SysError
 
     // ==================================
     // Solver Runner errors
@@ -407,6 +413,7 @@ module Errors =
         | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
         | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
         | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
+        | TryExportWorkerNodePublicKeyErr of TryExportWorkerNodePublicKeyError
 
         static member addError a b =
             match a, b with
