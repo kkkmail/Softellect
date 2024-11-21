@@ -34,7 +34,7 @@ module CommandLine =
     and
         [<CliPrefix(CliPrefix.Dash)>]
         ImportPublicKeyArgs =
-        | [<Mandatory>] [<Unique>] [<AltCommandLine("ifn")>] InputFileName of string
+        | [<Mandatory>] [<Unique>] [<AltCommandLine("-ifn")>] InputFileName of string
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -52,5 +52,5 @@ module CommandLine =
             member this.Usage =
                 match this with
                 | GenerateKeys _ -> "generates encryption keys."
-                | ExportPublicKey _ -> "exports partitioner public key."
-                | ImportPublicKey _ -> "import worker node public key."
+                | ExportPublicKey _ -> "exports worker node public key."
+                | ImportPublicKey _ -> "import partitioner public key."

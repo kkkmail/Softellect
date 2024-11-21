@@ -79,6 +79,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Analytics", "Analytics\Anal
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WorkerNodeAdm", "DistributedProcessing\WorkerNodeAdm\WorkerNodeAdm.fsproj", "{F0B44C54-9A64-465E-B110-9E379FF878C7}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WorkerNodeAdm", "Samples\DistrProc\WorkerNodeAdm\WorkerNodeAdm.fsproj", "{A164FC37-216B-4D33-A75C-835455314366}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -209,6 +211,10 @@ Global
 		{F0B44C54-9A64-465E-B110-9E379FF878C7}.Debug|x64.Build.0 = Debug|x64
 		{F0B44C54-9A64-465E-B110-9E379FF878C7}.Release|x64.ActiveCfg = Release|x64
 		{F0B44C54-9A64-465E-B110-9E379FF878C7}.Release|x64.Build.0 = Release|x64
+		{A164FC37-216B-4D33-A75C-835455314366}.Debug|x64.ActiveCfg = Debug|x64
+		{A164FC37-216B-4D33-A75C-835455314366}.Debug|x64.Build.0 = Debug|x64
+		{A164FC37-216B-4D33-A75C-835455314366}.Release|x64.ActiveCfg = Release|x64
+		{A164FC37-216B-4D33-A75C-835455314366}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -245,6 +251,7 @@ Global
 		{72A202C3-466B-4A74-9B8D-EABCC317E6DD} = {A8E2B6A4-8403-41E4-9C0E-96274965C55C}
 		{33B4B160-0E4B-46F7-B601-96544AC24B62} = {B058BD13-C2C0-451A-83F2-50D993285078}
 		{F0B44C54-9A64-465E-B110-9E379FF878C7} = {F9C514B7-8DB8-4204-AA4C-DDF5F257BDFA}
+		{A164FC37-216B-4D33-A75C-835455314366} = {B058BD13-C2C0-451A-83F2-50D993285078}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7A2921D5-1F3D-48DF-A77D-B0C8D846BDB8}

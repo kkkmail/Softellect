@@ -81,7 +81,7 @@ module CommandLine =
     and
         [<CliPrefix(CliPrefix.Dash)>]
         ImportPublicKeyArgs =
-        | [<Mandatory>] [<Unique>] [<AltCommandLine("ifn")>] InputFileName of string
+        | [<Mandatory>] [<Unique>] [<AltCommandLine("-ifn")>] InputFileName of string
 
         interface IArgParserTemplate with
             member this.Usage =

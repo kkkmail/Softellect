@@ -7,7 +7,7 @@ open Softellect.Sys.ExitErrorCodes
 
 module Program =
 
-    let partitionerAdmMain programName argv =
+    let workerNodeAdmMain programName argv =
         let parser = ArgumentParser.Create<WorkerNodeAdmArgs>(programName = programName)
         let ctx = WorkerNodeAdmContext.create()
         let results = (parser.Parse argv).GetAllResults()
