@@ -132,6 +132,9 @@ module Primitives =
 
         member this.value = let (FileName v) = this in v
         member this.combine (subFolder : FolderName) = Path.Combine(subFolder.value, this.value) |> FileName
+        member this.addExtension(FileExtension extension) =
+            if extension.StartsWith "." then this.value + extension |> FileName
+            else failwith this.value + "." + extension |> FileName
 
         static member tryCreate (s: string) = FileName s |> Ok
 
@@ -203,10 +206,11 @@ module Primitives =
 
         member format.fileExtension =
             match format with
-            | BinaryFormat -> "bin"
-            | BinaryZippedFormat -> "binz"
-            | JSonFormat -> "json"
-            | XmlFormat -> "xml"
+            | BinaryFormat -> ".bin"
+            | BinaryZippedFormat -> ".binz"
+            | JSonFormat -> ".json"
+            | XmlFormat -> ".xml"
+            |> FileExtension
 
 
     type RunQueueId =

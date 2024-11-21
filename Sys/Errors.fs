@@ -43,7 +43,7 @@ module Errors =
         | GeneralFileExn of exn
         | GetFolderNameExn of exn
         | GetFileNameExn of exn
-        | FileNotFoundErr of string
+        | FileNotFoundErr of FileName
         | ReadFileExn of exn
         | WriteFileExn of exn
         | DeleteFileExn of exn

@@ -21,8 +21,7 @@ open Softellect.DistributedProcessing.VersionInfo
 
 module Implementation =
 
-    [<Literal>]
-    let SolverProgramName = "SolverRunner"
+    let solverProgramName = ServiceName "SolverRunner"
 
     /// Extra solver's "overhead" allowed when running SolverRunner by hands.
     /// This is needed when two versions share the same machine and one version has some stuck
@@ -164,7 +163,7 @@ module Implementation =
         with
         static member create () =
             {
-                logCrit = saveSolverRunnerErrFs SolverProgramName
+                logCrit = saveSolverRunnerErrFs solverProgramName
                 workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
                 tryLoadRunQueue = tryLoadRunQueue<'D>
                 getAllowedSolvers = getAllowedSolvers

@@ -5,6 +5,7 @@ open System.Threading
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.FileSystemTypes
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 
@@ -151,6 +152,7 @@ module WorkerNodeService =
     let noOfCoresKey = ConfigKey "NoOfCores"
     let isInactiveKey = ConfigKey "IsInactive"
     let nodePriorityKey = ConfigKey "NodePriority"
+    let fileStorageLocationKey = ConfigKey "FileStorageLocation"
 
 
     type ServiceAccessInfo with
@@ -171,6 +173,7 @@ module WorkerNodeService =
         member p.getNoOfCores d = p.getIntOrDefault noOfCoresKey d
         member p.getNodePriority (WorkerNodePriority d) = p.getIntOrDefault nodePriorityKey d |> WorkerNodePriority
         member p.getIsInactive d = p.getBoolOrDefault isInactiveKey d
+        member p.getFileStorageLocation (FolderName f) = p.getStringOrDefault fileStorageLocationKey f |> FolderName
 
 
     let loadWorkerNodeInfo (provider : AppSettingsProvider) =
@@ -222,5 +225,13 @@ module WorkerNodeService =
 
             workerNodeSvcInfo
         | Error e -> failwith $"Cannot load settings. Error: '{e}'."
+
+
+    let getStorageFolder () =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider -> provider.getFileStorageLocation defaultFileStorageFolder
+        | Error e ->
+            printfn $"getStorageFolder: ERROR - Cannot load storage folder. Error: '{e}'."
+            defaultFileStorageFolder
 
 #endif

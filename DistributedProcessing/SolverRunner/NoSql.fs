@@ -3,6 +3,7 @@
 open Softellect.DistributedProcessing.Errors
 open Softellect.Sys.FileSystemTypes
 open System
+open Softellect.DistributedProcessing.AppSettings.SolverRunner
 
 module NoSql =
 
@@ -10,4 +11,4 @@ module NoSql =
 
 
     let saveSolverRunnerErrFs serviceName (r : SolverRunnerCriticalError) =
-        saveErrData<SolverRunnerCriticalError, Guid> serviceName solverRunnerErrTblName r.errorId.value r
+        saveErrData<SolverRunnerCriticalError, Guid> getStorageFolder serviceName solverRunnerErrTblName r.errorId.value r

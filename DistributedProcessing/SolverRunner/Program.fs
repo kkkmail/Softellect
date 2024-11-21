@@ -13,7 +13,7 @@ module Program =
     let solverRunnerMain<'D, 'P, 'X, 'C> solverId getUserProxy argv =
         printfn $"solverRunnerMain<{typeof<'D>.Name}, {typeof<'P>.Name}, {typeof<'X>.Name}, {typeof<'X>.Name}> - messagingDataVersion = '{messagingDataVersion}', argv: %A{argv}."
 
-        let parser = ArgumentParser.Create<SolverRunnerArguments>(programName = SolverProgramName)
+        let parser = ArgumentParser.Create<SolverRunnerArguments>(programName = solverProgramName.value)
         let results = parser.Parse argv
 
         match results.TryGetResult RunQueue |> Option.bind (fun e -> e |> RunQueueId |> Some) with
