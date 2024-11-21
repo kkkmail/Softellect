@@ -25,10 +25,15 @@ module Implementation =
 
     /// Default implementation of solver encryption.
     let private tryEncryptSolver (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
+        printfn $"tryEncryptSolver: %A{solver.solverId}, %A{solver.solverName}, %A{w}"
         match tryLoadPartitionerPrivateKey(), tryLoadWorkerNodePublicKey w, trySerialize solverSerializationFormat solver with
         | Ok (Some p1), Ok (Some w1), Ok data ->
+            printfn $"tryEncryptSolver: encrypting - {data.Length:N0} bytes."
+
             match tryEncryptAndSign tryEncryptAes data p1 w1 with
-            | Ok r -> r |> EncryptedSolver |> Ok
+            | Ok r ->
+                printfn $"tryEncryptSolver: encrypted - {r.Length:N0} bytes."
+                r |> EncryptedSolver |> Ok
             | Error e -> e |> TryEncryptSolverSysErr |> TryEncryptSolverErr |> Error
         | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
 
@@ -169,7 +174,7 @@ module Implementation =
                         Ok ()
                     | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
                 | Error e ->
-                    printfn $"sendSolver: Unable to encrypt solder, error: {e}."
+                    printfn $"sendSolver: Unable to encrypt solver, error: {e}."
                     Error e
             | Error e ->
                 printfn $"sendSolver: Unable to load solver, error: {e}."
