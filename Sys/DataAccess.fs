@@ -5,7 +5,7 @@ open System.Data.SQLite
 open System.IO
 open FSharp.Data.Sql
 open System.Data
-open System.Data.SqlClient
+open Microsoft.Data.SqlClient
 
 open Softellect.Sys.Retry
 open Softellect.Sys.AppSettings
