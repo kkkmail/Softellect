@@ -220,7 +220,7 @@ module Errors =
 
     type TryRunFirstModelRunnerError =
         | TryLoadFirstRunQueueRunnerErr
-        | TryGetAvailableWorkerNodelRunnerErr
+        | TryGetAvailableWorkerNodeRunnerErr
         | UpsertRunQueueRunnerErr
         | UnableToRunModelRunnerErr
         | UnableToRunModelAndUpsertStatusRunnerErr
@@ -245,7 +245,7 @@ module Errors =
         | UnableToLoadRunQueueRunnerErr of RunQueueId
         | UnableToFindLoadRunQueueRunnerErr of RunQueueId
         | InvalidRunQueueStatusRunnerErr of RunQueueId
-        | CompletelyInvalidRunQueueStatusRunnerErr of RunQueueId // This should never happen but we still have to account for it. It if does, then we are in a BIG trouble.
+        | CompletelyInvalidRunQueueStatusRunnerErr of RunQueueId // This should never happen, but we still have to account for it. If it does, then we are in a BIG trouble.
 
 
     type RegisterRunnerError =
