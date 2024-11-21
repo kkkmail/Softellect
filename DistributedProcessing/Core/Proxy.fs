@@ -264,10 +264,10 @@ module WorkerNodeService =
         | Error e -> Error e
 
 
-    let private tryDecryptSolver (w : WorkerNodeId) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
+    let private tryDecryptSolver (w : WorkerNodeInfo) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
         match tryLoadWorkerNodePrivateKey (), tryLoadPartitionerPublicKey () with
         | Ok (Some w1), Ok (Some p1) ->
-            match tryDecryptAndVerify tryDecryptAes e w1 p1 with
+            match tryDecryptAndVerify w.solverEncryptionType.decryptor e w1 p1 with
             | Ok data ->
                 match tryDeserialize<Solver> solverSerializationFormat data with
                 | Ok solver -> Ok solver
@@ -298,7 +298,7 @@ module WorkerNodeService =
                 loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
-                tryDecryptSolver = tryDecryptSolver i.workerNodeInfo.workerNodeId
+                tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId

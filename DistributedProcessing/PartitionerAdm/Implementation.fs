@@ -24,13 +24,13 @@ module Implementation =
 
 
     /// Default implementation of solver encryption.
-    let private tryEncryptSolver (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
+    let private tryEncryptSolver (i : PartitionerInfo) (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
         printfn $"tryEncryptSolver: %A{solver.solverId}, %A{solver.solverName}, %A{w}"
         match tryLoadPartitionerPrivateKey(), tryLoadWorkerNodePublicKey w, trySerialize solverSerializationFormat solver with
         | Ok (Some p1), Ok (Some w1), Ok data ->
             printfn $"tryEncryptSolver: encrypting - {data.Length:N0} bytes."
 
-            match tryEncryptAndSign tryEncryptAes data p1 w1 with
+            match tryEncryptAndSign i.solverEncryptionType.encryptor data p1 w1 with
             | Ok r ->
                 printfn $"tryEncryptSolver: encrypted - {r.Length:N0} bytes."
                 r |> EncryptedSolver |> Ok
@@ -86,18 +86,18 @@ module Implementation =
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
         }
 
-        static member create (p : PartitionerId) =
+        static member create (i : PartitionerInfo) =
             {
                 saveSolver = saveSolver
                 tryLoadSolver = tryLoadSolver
-                tryEncryptSolver = tryEncryptSolver
-                tryGeneratePartitionerKeys = tryGeneratePartitionerKeys p
+                tryEncryptSolver = tryEncryptSolver i
+                tryGeneratePartitionerKeys = tryGeneratePartitionerKeys i.partitionerId
                 tryExportPublicKey = tryExportPartitionerPublicKey
                 tryImportWorkerNodePublicKey = tryImportWorkerNodePublicKey
                 tryUpdateWorkerNodePublicKey = tryUpdateWorkerNodePublicKey
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertRunQueue = upsertRunQueue
-                createMessage = createMessage messagingDataVersion p.messagingClientId
+                createMessage = createMessage messagingDataVersion i.partitionerId.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 tryResetRunQueue = tryResetRunQueue
             }
@@ -115,7 +115,7 @@ module Implementation =
                 let w = loadPartitionerInfo provider
 
                 {
-                    partitionerAdmProxy = PartitionerAdmProxy.create w.partitionerId
+                    partitionerAdmProxy = PartitionerAdmProxy.create w
                     partitionerInfo = w
                 }
             | Error e -> failwith $"ERROR: {e}"

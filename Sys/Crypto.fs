@@ -251,3 +251,15 @@ module Crypto =
             | Error e -> e |> KeyImportFileErr |> toError
         with
         | e -> e |> KeyImportExn |> toError
+
+    type EncryptionType
+        with
+        member e.encryptor =
+            match e with
+            | AES -> tryEncryptAes
+            | RSA -> tryEncryptRsa
+
+        member e.decryptor =
+            match e with
+            | AES -> tryDecryptAes
+            | RSA -> tryDecryptRsa

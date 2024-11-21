@@ -287,6 +287,21 @@ module Primitives =
     let appSettingsFile = FileName "appsettings.json"
 
 
+    type EncryptionType =
+        | AES
+        | RSA
+
+        static member defaultValue = AES
+
+        member e.value = $"%A{e}"
+
+        static member create (s : string) =
+            match s.ToUpper() with
+            | "AES" -> AES
+            | "RSA" -> RSA
+            | _ -> EncryptionType.defaultValue
+
+
     type KeyId =
         | KeyId of Guid
 

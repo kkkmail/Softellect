@@ -82,11 +82,13 @@ module WorkerNodeService =
     let resultLocationKey = ConfigKey "ResultLocation"
     let solverLocationKey = ConfigKey "SolverLocation"
     let solverOutputLocationKey = ConfigKey "SolverOutputLocation"
+    let solverEncryptionKey = ConfigKey "SolverEncryption"
 
 
     type AppSettingsProvider
         with
         member p.getPartitionerId (PartitionerId d) = p.getGuidOrDefault partitionerIdKey d.value |> MessagingClientId |> PartitionerId
+        member p.getSolverEncryptionType () = p.getStringOrDefault solverEncryptionKey EncryptionType.defaultValue.value |> EncryptionType.create
 
 #endif
 
@@ -116,6 +118,7 @@ module WorkerNodeService =
                 partitionerId = provider.getPartitionerId defaultPartitionerId
                 resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
                 lastAllowedNodeErr = LastAllowedNodeErr.defaultValue
+                solverEncryptionType = provider.getSolverEncryptionType()
             }
 
         w
@@ -196,6 +199,7 @@ module WorkerNodeService =
                 nodePriority = provider.getNodePriority WorkerNodePriority.defaultValue
                 isInactive = provider.getIsInactive true
                 lastErrorDateOpt = None
+                solverEncryptionType = provider.getSolverEncryptionType()
             }
 
         let result = provider.trySave()

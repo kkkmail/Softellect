@@ -302,6 +302,7 @@ module Common =
             nodePriority : WorkerNodePriority
             isInactive : bool
             lastErrorDateOpt : DateTime option
+            solverEncryptionType : EncryptionType
         }
 
 
@@ -319,6 +320,7 @@ module Common =
             partitionerId : PartitionerId
             resultLocation : FolderName
             lastAllowedNodeErr : LastAllowedNodeErr
+            solverEncryptionType : EncryptionType
         }
 
 
