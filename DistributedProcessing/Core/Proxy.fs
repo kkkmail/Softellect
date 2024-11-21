@@ -197,45 +197,51 @@ module WorkerNodeService =
             match fileName.tryGetFullFileName(Some folderName) with
             | Ok e ->
                 let run() =
-                    let (exeName, args) =
+                    let ea =
                         match o with
-                        | None -> e.value, $"q {q.value}"
-                        | Some (FolderName f) ->
-                            let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
-                            let a = $"/c {e.value} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
-                            ("cmd.exe", a)
+                        | None -> (e.value, $"q {q.value}") |> Ok
+                        | Some f ->
+                            let outputFile = (FileName $"-s__{q.value}.txt").combine f
+                            match f.tryEnsureFolderExists() with
+                            | Ok() ->
+                                let a = $"/c {e.value} q {q.value} > {outputFile.value} 2>&1 3>&1 4>&1 5>&1 6>&1"
+                                ("cmd.exe", a) |> Ok
+                            | Error e -> (q, f, e) |> FailedToCreateOutputFolderErr |> elevate
 
-                    printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                    match ea with
+                    | Ok (exeName, args) ->
+                        printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
-                    try
-                        let procStartInfo =
-                            ProcessStartInfo(
-                                RedirectStandardOutput = false,
-                                RedirectStandardError = false,
-                                UseShellExecute = true,
-                                FileName = exeName,
-                                Arguments = args
-                            )
+                        try
+                            let procStartInfo =
+                                ProcessStartInfo(
+                                    RedirectStandardOutput = false,
+                                    RedirectStandardError = false,
+                                    UseShellExecute = true,
+                                    FileName = exeName,
+                                    Arguments = args
+                                )
 
-                        procStartInfo.WorkingDirectory <- folderName.value
-                        //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
-                        procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
-                        let p = new Process(StartInfo = procStartInfo)
-                        let started = p.Start()
+                            procStartInfo.WorkingDirectory <- folderName.value
+                            //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                            procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
+                            let p = new Process(StartInfo = procStartInfo)
+                            let started = p.Start()
 
-                        if started
-                        then
-                            p.PriorityClass <- ProcessPriorityClass.Idle
-                            let processId = p.Id |> ProcessId
-                            printfn $"Started: {p.ProcessName} with pid: {processId}."
-                            Ok processId
-                        else
-                            printfn $"Failed to start process: {fileName}."
-                            q |> FailedToRunSolverProcessErr |> elevate
-                    with
-                    | ex ->
-                        printfn $"Failed to start process: {fileName} with exception: {ex}."
-                        (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+                            if started
+                            then
+                                p.PriorityClass <- ProcessPriorityClass.Idle
+                                let processId = p.Id |> ProcessId
+                                printfn $"Started: {p.ProcessName} with pid: {processId}."
+                                Ok processId
+                            else
+                                printfn $"Failed to start process: {fileName}."
+                                q |> FailedToRunSolverProcessErr |> elevate
+                        with
+                        | ex ->
+                            printfn $"Failed to start process: {fileName} with exception: {ex}."
+                            (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+                    | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
                 match checkRunning (Some (n - 1)) q with
@@ -267,7 +273,7 @@ module WorkerNodeService =
     let private tryDecryptSolver (w : WorkerNodeInfo) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
         match tryLoadWorkerNodePrivateKey (), tryLoadPartitionerPublicKey () with
         | Ok (Some w1), Ok (Some p1) ->
-            match tryDecryptAndVerify w.solverEncryptionType.decryptor e w1 p1 with
+            match tryDecryptAndVerify w.solverEncryptionType e w1 p1 with
             | Ok data ->
                 match tryDeserialize<Solver> solverSerializationFormat data with
                 | Ok solver -> Ok solver

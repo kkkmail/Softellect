@@ -40,29 +40,6 @@ module Crypto =
         | ex -> ex |> VerifySignatureExn |> CryptoErr |> Error
 
 
-    /// Encrypts and signs the data.
-    let tryEncryptAndSign tryEncrypt data senderPrivateKey recipientPublicKey =
-        match signData data senderPrivateKey with
-        | Ok signature -> tryEncrypt (Array.concat [signature; data]) recipientPublicKey
-        | Error e -> Error e
-
-
-    /// Decrypts and verifies the signed data.
-    let tryDecryptAndVerify tryDecrypt encryptedData recipientPrivateKey (senderPublicKey : PublicKey) =
-        match tryDecrypt encryptedData recipientPrivateKey with
-        | Ok (combinedData : byte[]) ->
-            use rsa = RSA.Create()
-            rsa.FromXmlString(senderPublicKey.value)
-            let signatureLength = rsa.KeySize / 8
-            let signature = combinedData[..signatureLength - 1]
-            let originalData = combinedData[signatureLength..]
-
-            match verifySignature originalData signature senderPublicKey with
-            | Ok () -> Ok originalData
-            | Error e -> Error e
-        | Error e -> Error e
-
-
     /// Encrypts large data by using RSA for the symmetric key and AES for the data.
     let tryEncryptAes (data: byte[]) (PublicKey publicKey) =
         try
@@ -263,3 +240,32 @@ module Crypto =
             match e with
             | AES -> tryDecryptAes
             | RSA -> tryDecryptRsa
+
+
+    /// Encrypts and signs the data.
+    let tryEncryptAndSign (e : EncryptionType) data senderPrivateKey recipientPublicKey =
+        printfn $"tryEncryptAndSign: Using %A{e}"
+        let tryEncrypt = e.encryptor
+
+        match signData data senderPrivateKey with
+        | Ok signature -> tryEncrypt (Array.concat [signature; data]) recipientPublicKey
+        | Error e -> Error e
+
+
+    /// Decrypts and verifies the signed data.
+    let tryDecryptAndVerify (e : EncryptionType) encryptedData recipientPrivateKey (senderPublicKey : PublicKey) =
+        printfn $"tryDecryptAndVerify: Using %A{e}"
+        let tryDecrypt = e.decryptor
+
+        match tryDecrypt encryptedData recipientPrivateKey with
+        | Ok (combinedData : byte[]) ->
+            use rsa = RSA.Create()
+            rsa.FromXmlString(senderPublicKey.value)
+            let signatureLength = rsa.KeySize / 8
+            let signature = combinedData[..signatureLength - 1]
+            let originalData = combinedData[signatureLength..]
+
+            match verifySignature originalData signature senderPublicKey with
+            | Ok () -> Ok originalData
+            | Error e -> Error e
+        | Error e -> Error e

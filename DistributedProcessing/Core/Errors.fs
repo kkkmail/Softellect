@@ -188,12 +188,12 @@ module Errors =
         | CannotRunSolverProcessErr of RunQueueId
         | CannotLoadSolverNameErr of RunQueueId
         | FailedToLoadSolverNameErr of RunQueueId
+        | FailedToCreateOutputFolderErr of (RunQueueId * FolderName * FileError)
 
 
     type OnRunModelError =
         | CannotRunModelErr of RunQueueId
         | CannotDeleteRunQueueErr of RunQueueId
-
 
     type OnProcessMessageError =
         | CannotSaveModelDataErr of MessageId * RunQueueId

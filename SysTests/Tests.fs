@@ -111,11 +111,11 @@ module CoreTests =
         rnd.NextBytes(data)
 
         let encryptedData =
-            match tryEncryptAndSign tryEncryptAes data senderPrivateKey recipientPublicKey with
+            match tryEncryptAndSign AES data senderPrivateKey recipientPublicKey with
             | Ok d -> d
             | Error e -> failwith $"Error: %A{e}"
 
-        match tryDecryptAndVerify tryDecryptAes encryptedData recipientPrivateKey senderPublicKey with
+        match tryDecryptAndVerify AES encryptedData recipientPrivateKey senderPublicKey with
         | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
         | Error e -> failwith $"Error: %A{e}"
 
@@ -134,10 +134,10 @@ module CoreTests =
         rnd.NextBytes(data)
 
         let encryptedData =
-            match tryEncryptAndSign tryEncryptRsa data senderPrivateKey recipientPublicKey with
+            match tryEncryptAndSign RSA data senderPrivateKey recipientPublicKey with
             | Ok d -> d
             | Error e -> failwith $"Error: %A{e}"
 
-        match tryDecryptAndVerify tryDecryptRsa encryptedData recipientPrivateKey senderPublicKey with
+        match tryDecryptAndVerify RSA encryptedData recipientPrivateKey senderPublicKey with
         | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
         | Error e -> failwith $"Error: %A{e}"
