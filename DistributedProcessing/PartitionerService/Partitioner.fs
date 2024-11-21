@@ -37,7 +37,7 @@ module Partitioner =
                 upsertRunQueue = upsertRunQueue
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertWorkerNodeInfo = upsertWorkerNodeInfo
-                loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo.partitionerId
+                loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo
                 saveResults = saveLocalResultInfo (Some (i.partitionerInfo.resultLocation, None))
                 loadModelBinaryData = loadModelBinaryData
             }

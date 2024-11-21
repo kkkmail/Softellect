@@ -625,19 +625,20 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private createWorkerNodeInfo p (r : WorkerNodeEntity) =
+    let private createWorkerNodeInfo (p : PartitionerInfo) (r : WorkerNodeEntity) =
         {
             workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
             workerNodeName = r.WorkerNodeName |> WorkerNodeName
             noOfCores = r.NumberOfCores
-            partitionerId = p
+            partitionerId = p.partitionerId
             nodePriority = r.NodePriority |> WorkerNodePriority
             isInactive = r.IsInactive
             lastErrorDateOpt = r.LastErrorOn
+            solverEncryptionType = p.solverEncryptionType
         }
 
 
-    let loadWorkerNodeInfo p (i : WorkerNodeId) =
+    let loadWorkerNodeInfo (p : PartitionerInfo) (i : WorkerNodeId) =
         let elevate e = e |> LoadWorkerNodeInfoErr
         let toError e = e |> elevate |> Error
         let fromDbError e = e |> LoadWorkerNodeInfoDbErr |> elevate
