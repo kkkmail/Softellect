@@ -80,8 +80,9 @@ module Crypto =
 
             // Encrypt the data using AES
             use encryptor = aes.CreateEncryptor()
+
             let encryptedData =
-                use ms = new IO.MemoryStream()
+                use ms = new MemoryStream()
                 use cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
                 cs.Write(data, 0, data.Length)
                 cs.FlushFinalBlock()
@@ -116,8 +117,9 @@ module Crypto =
             aes.IV <- iv
 
             use decryptor = aes.CreateDecryptor()
+
             let decryptedData =
-                use ms = new IO.MemoryStream()
+                use ms = new MemoryStream()
                 use cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Write)
                 cs.Write(aesData, 0, aesData.Length)
                 cs.FlushFinalBlock()
