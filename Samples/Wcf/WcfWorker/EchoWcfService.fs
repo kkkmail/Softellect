@@ -2,6 +2,7 @@
 
 open System
 
+open Softellect.Sys.Logging
 open Softellect.Wcf.Service
 
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
@@ -18,11 +19,11 @@ module EchoWcfService =
             }
 
         let echoImpl (m : string) : UnitResult =
-            printfn $"Simple message: %A{m}"
+            Logger.logTrace $"Simple message: %A{m}"
             Ok()
 
         let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
-            printfn $"Complex message: %A{m}"
+            Logger.logTrace $"Complex message: %A{m}"
             m |> getReply |> Ok
 
         interface IEchoService with
@@ -38,6 +39,3 @@ module EchoWcfService =
         interface IEchoWcfService with
             member _.echo m = tryReply service.echo toEchoError m
             member _.complexEcho m = tryReply service.complexEcho toComplexEchoError m
-
-
-    //type EchoWcfServiceImpl = WcfService<EchoWcfService, IEchoWcfService, EchoServiceData>

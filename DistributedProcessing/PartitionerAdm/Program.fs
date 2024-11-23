@@ -4,10 +4,12 @@ open Argu
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.PartitionerAdm.Implementation
 open Softellect.Sys.ExitErrorCodes
+open Softellect.Sys.AppSettings
 
 module Program =
 
     let partitionerAdmMain programName argv =
+        setLogLevel()
         let parser = ArgumentParser.Create<PartitionerAdmArgs>(programName = programName)
         let ctx = PartitionerAdmContext.create()
         let results = (parser.Parse argv).GetAllResults()

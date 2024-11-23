@@ -93,7 +93,7 @@ module TimerEvents =
         let g() =
             try
                 match i.timerProxy.eventHandler() with
-                | Ok() -> Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
+                | Ok() -> Logger.logTrace $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
                 | Error e -> Logger.logError $"%A{i.timerEventInfo} - FAILED, error: %A{e}"
             with
             | e ->
@@ -124,7 +124,7 @@ module TimerEvents =
 
         member _.start() =
             try
-                Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
+                Logger.logInfo $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
             | e ->
@@ -137,7 +137,7 @@ module TimerEvents =
 
         member _.stop() =
             try
-                Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
+                Logger.logInfo $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
             | e ->

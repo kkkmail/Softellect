@@ -154,14 +154,37 @@ module Logging =
         | ErrorLog
         | CritLog
 
-        member l.name =
+        /// The right padded with spaces fixed length name to be used in standard logging.
+        member l.logName =
             match l with
             | TraceLog -> "TRACE"
             | DebugLog -> "DEBUG"
-            | InfoLog -> "INFO"
-            | WarnLog -> "WARN"
+            | InfoLog ->  "INFO "
+            | WarnLog ->  "WARN "
             | ErrorLog -> "ERROR"
-            | CritLog -> "CRIT"
+            | CritLog ->  "CRIT "
+
+        /// A human-friendly value to be used in appsettings.json.
+        member l.value =
+            match l with
+            | TraceLog -> "Trace"
+            | DebugLog -> "Debug"
+            | InfoLog ->  "Information"
+            | WarnLog ->  "Warning"
+            | ErrorLog -> "Error"
+            | CritLog ->  "Critical"
+
+        static member tryDeserialize (s : string) =
+            match s.Trim() with
+            | "Trace" -> TraceLog |> Some
+            | "Debug" -> DebugLog |> Some
+            | "Information" -> InfoLog |> Some
+            | "Warning" -> WarnLog |> Some
+            | "Error" -> ErrorLog |> Some
+            | "Critical" -> CritLog |> Some
+            | _ -> None
+
+        static member defaultValue = DebugLog
 
 
     type Logger private () =
@@ -171,7 +194,7 @@ module Logging =
         static let mutable logImpl: LogLevel -> obj -> string -> unit =
             fun level message callerName ->
                 let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
-                printfn $"{elapsedSeconds,9:F3} # {level.name} - {callerName}: %A{message}"
+                printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
 
         /// Minimum log level for filtering messages.
         static let mutable minLogLevel = DebugLog

@@ -7,6 +7,7 @@ open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Softellect.Sys.Crypto
@@ -110,7 +111,7 @@ module Implementation =
         match ofn with
         | Some f -> ctx.workerNodeAdmProxy.tryExportPublicKey f o
         | None ->
-            printfn "exportPublicKey - output folder name was not provided."
+            Logger.logWarn "exportPublicKey - output folder name was not provided."
             Ok()
 
 
@@ -125,5 +126,5 @@ module Implementation =
                 ctx.workerNodeAdmProxy.tryUpdatePartitionerPublicKey w key
             | Error e -> Error e
         | None ->
-            printfn "importPublicKey - input file name was not provided."
+            Logger.logWarn "importPublicKey - input file name was not provided."
             Ok()

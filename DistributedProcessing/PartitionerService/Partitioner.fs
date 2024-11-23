@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
@@ -21,8 +22,6 @@ open Softellect.Sys.Rop
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
 
 module Partitioner =
-
-    let private printDebug s = printfn $"{s}"
 
     let private toError g f = f |> g |> Error
     let private addError g f e = ((f |> g) + e) |> Error
@@ -111,7 +110,7 @@ module Partitioner =
 
 
     let private updateProgress (proxy : PartitionerProxy) (i : ProgressUpdateInfo) =
-        printDebug $"updateProgress: i = %A{i}"
+        Logger.logTrace $"updateProgress: i = %A{i}"
         let addError = addError UpdateProgressRunnerErr
         let toError = toError UpdateProgressRunnerErr
 
@@ -120,7 +119,7 @@ module Partitioner =
             let q1 = { q with progressData = i.progressData }
 
             let upsert q2 =
-                printfn $"updateProgress.upsert: Upserting %A{i} into %A{q2}."
+                Logger.logTrace $"updateProgress.upsert: Upserting %A{i} into %A{q2}."
 
                 match proxy.upsertRunQueue q2 with
                 | Ok() -> Ok()
@@ -136,12 +135,12 @@ module Partitioner =
 
 
     let private register (proxy : PartitionerProxy) (r : WorkerNodeInfo) =
-        printfn $"register: r = %A{r}"
+        Logger.logInfo $"register: r = %A{r}"
         proxy.upsertWorkerNodeInfo r |> bindError (addError RegisterRunnerErr (UnableToUpsertWorkerNodeInfoRunnerErr r.workerNodeId))
 
 
     let private unregister (proxy : PartitionerProxy) (r : WorkerNodeId) =
-        printfn $"unregister: r = %A{r}"
+        Logger.logInfo $"unregister: r = %A{r}"
         let addError = addError UnregisterRunnerErr
 
         match proxy.loadWorkerNodeInfo r with
@@ -150,7 +149,7 @@ module Partitioner =
 
 
     let private saveResults (proxy : PartitionerProxy) (c : ResultInfo) =
-        printfn $"saveResults: c.runQueueId = %A{c.runQueueId}"
+        Logger.logInfo $"saveResults: c.runQueueId = %A{c.runQueueId}"
         proxy.saveResults c |> bindError (addError SaveResultsRunnerErr (UnableToSaveResultsRunnerErr c.runQueueId))
 
 
@@ -187,21 +186,21 @@ module Partitioner =
         interface IHostedService with
             member _.StartAsync(cancellationToken : CancellationToken) =
                 async {
-                    printfn "PartitionerService::StartAsync..."
+                    Logger.logInfo "PartitionerService::StartAsync..."
                 }
                 |> Async.StartAsTask
                 :> Task
 
             member _.StopAsync(cancellationToken : CancellationToken) =
                 async {
-                    printfn "PartitionerService::StopAsync..."
+                    Logger.logInfo "PartitionerService::StopAsync..."
                 }
                 |> Async.StartAsTask
                 :> Task
 
 
     let onProcessMessage (proxy : PartitionerProxy) (m : DistributedProcessingMessage) =
-        printfn $"onProcessMessage: Starting. messageId: '{m.messageDataInfo.messageId}', info: '{(m.messageData.getInfo())}'."
+        Logger.logTrace $"onProcessMessage: Starting. messageId: '{m.messageDataInfo.messageId}', info: '{(m.messageData.getInfo())}'."
 
         match m.messageData with
         | UserMsg (PartitionerMsg x) ->
@@ -225,7 +224,7 @@ module Partitioner =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"PartitionerRunner (onProcessMessageImpl) - ERROR processing message: messageId = '%A{m.messageDataInfo.messageId}', error = '%A{e}'."
+                    Logger.logError $"PartitionerRunner (onProcessMessageImpl) - ERROR processing message: messageId = '%A{m.messageDataInfo.messageId}', error = '%A{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
@@ -256,7 +255,7 @@ module Partitioner =
             | Error e -> UnableToStartMessagingClientErr e |> Error
 
         let onTryStop() =
-            printfn "PartitionerRunner - stopping timers."
+            Logger.logInfo "PartitionerRunner - stopping timers."
             eventHandlers |> List.iter (fun h -> h.stop())
             Ok()
 
@@ -265,12 +264,12 @@ module Partitioner =
                 match onTryStart() with
                 | Ok () -> Task.CompletedTask
                 | Error e ->
-                    printfn $"Error during start: %A{e}."
+                    Logger.logCrit $"Error during start: %A{e}."
                     Task.FromException(new Exception($"Failed to start PartitionerRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with
                 | Ok () -> Task.CompletedTask
                 | Error e ->
-                    printfn $"Error during stop: %A{e}."
+                    Logger.logError $"Error during stop: %A{e}."
                     Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.

@@ -5,6 +5,7 @@ open Microsoft.FSharp.Reflection
 open System.Text
 open Softellect.Analytics.Primitives
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open System.IO
@@ -232,7 +233,7 @@ module Wolfram =
                 match tryGetMathKernelFileName() with
                 | Ok kernelName ->
                     let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
-                    printfn $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
+                    Logger.logTrace $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
 
                     try
@@ -242,12 +243,12 @@ module Wolfram =
                         // Load the .m or .wl file as a script and run it.
                         // Wolfram wants "\\\\" for each "\\" in the path. Don't ask why.
                         let scriptCommand = $"<< \"%s{i.toWolframNotation()}\"" // Use "<< file.m" to load the script.
-                        printfn $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
+                        Logger.logTrace $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
                         link.Evaluate(scriptCommand)
 
                         // Wait for the result of the evaluation.
                         link.WaitForAnswer() |> ignore
-                        printfn "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
+                        Logger.logTrace "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
 
                         // Check for the output file in the output folder
                         if File.Exists(o) then
@@ -289,7 +290,7 @@ module Wolfram =
 
 
     let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D array) =
-        let legends = d |> Array.map (_.dataLabel.value)
+        let legends = d |> Array.map _.dataLabel.value
         let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
         let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
         let frame = if p.frame then ", Frame -> True" else ""
@@ -329,5 +330,5 @@ module Wolfram =
             |> BinaryResult
             |> Some
         | Error e ->
-            printfn $"getListLinePlot - Error: %A{e}."
+            Logger.logError $"getListLinePlot - Error: %A{e}."
             None

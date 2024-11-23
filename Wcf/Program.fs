@@ -31,9 +31,9 @@ module Program =
     /// IService is the underlying service that does the actual work.
     /// IWcfService is the WCF service interface that is exposed to the client.
     /// WcfService is the implementation of the WCF service.
-    let private createHostBuilder<'IService, 'IWcfService, 'WcfService 
+    let private createHostBuilder<'IService, 'IWcfService, 'WcfService
         when 'IService :> IHostedService and 'IService : not struct
-        and 'IWcfService : not struct 
+        and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
         Host.CreateDefaultBuilder()
@@ -77,7 +77,7 @@ module Program =
         when 'IService :> IHostedService and 'IService : not struct
         and 'IWcfService : not struct
         and 'WcfService : not struct> programName data argv =
-        printfn $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
+        Softellect.Sys.Logging.Logger.logInfo $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
         let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
 
         try
@@ -92,5 +92,5 @@ module Program =
 
         with
         | exn ->
-            printfn $"%s{exn.Message}"
+            Softellect.Sys.Logging.Logger.logError $"%s{exn.Message}"
             UnknownException

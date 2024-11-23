@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Analytics
 
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 
 module AppSettings =
@@ -42,13 +43,13 @@ module AppSettings =
             let w = appSettingsProvider.getWolframParams()
 
             if save then
-                printfn $"loadWolframParams - w = %A{w}."
+                Logger.logTrace $"loadWolframParams - w = %A{w}."
                 match appSettingsProvider.trySave() with
-                | Ok () -> printfn $"loadWolframParams - saved."
-                | Error e -> printfn $"loadWolframParams - error: %A{e}."
+                | Ok () -> Logger.logTrace $"loadWolframParams - saved."
+                | Error e -> Logger.logError $"loadWolframParams - error: %A{e}."
             w
         | Error e ->
-            printfn $"loadWolframParams - error: %A{e}."
+            Logger.logError $"loadWolframParams - error: %A{e}."
 
             {
                 mathKernel = defaultMathKernelFileName

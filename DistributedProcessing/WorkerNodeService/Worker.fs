@@ -5,6 +5,7 @@ open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
+open Softellect.Sys.Logging
 open Softellect.Wcf.Service
 open CoreWCF
 open Softellect.DistributedProcessing.Primitives.Common
@@ -44,14 +45,14 @@ module Worker =
         interface IHostedService with
             member _.StartAsync(cancellationToken : CancellationToken) =
                 async {
-                    printfn "WorkerNodeService::StartAsync..."
+                    Logger.logInfo "WorkerNodeService::StartAsync..."
                 }
                 |> Async.StartAsTask
                 :> Task
 
             member _.StopAsync(cancellationToken : CancellationToken) =
                 async {
-                    printfn "WorkerNodeService::StopAsync..."
+                    Logger.logInfo "WorkerNodeService::StopAsync..."
                 }
                 |> Async.StartAsTask
                 :> Task

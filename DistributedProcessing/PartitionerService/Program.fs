@@ -13,11 +13,13 @@ open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
 
 module Program =
 
     let partitionerMain argv =
-        printfn $"partitionerMain - argv: %A{argv}."
+        setLogLevel()
+        Logger.logTrace $"partitionerMain - argv: %A{argv}."
         let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
         let getMessageSize _ = SmallSize
 
@@ -48,9 +50,10 @@ module Program =
             }
 
         let saveSettings() =
-            //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            //printfn $"saveSettings - result: '%A{result}'."
-            failwith ""
+            // let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
+            // Logger.logTrace $"saveSettings - result: '%A{result}'."
+            Logger.logCrit $"saveSettings - is not implemented yet."
+            failwith "saveSettings - is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
             let runner = PartitionerRunner(data)
@@ -65,5 +68,5 @@ module Program =
                 configureServices = Some configureServices
             }
 
-        printfn $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
+        Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
         wcfMain<IPartitionerService, IPartitionerWcfService, PartitionerWcfService> partitionerServiceProgramName programData argv

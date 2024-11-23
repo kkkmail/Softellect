@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.Logging
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Messaging.Proxy
@@ -32,7 +33,7 @@ module WorkerNode =
 
 
     let private processSolver proxy f (s : Solver) =
-        printfn $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
+        Logger.logInfo $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
 
         match proxy.saveSolver s with
         | Ok() ->
@@ -46,32 +47,32 @@ module WorkerNode =
 
 
     let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
-        printfn $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}, info: '{m.messageData.getInfo()}'."
+        Logger.logTrace $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}, info: '{m.messageData.getInfo()}'."
         let proxy = i.workerNodeProxy
 
         match m.messageData with
         | UserMsg (WorkerNodeMsg x) ->
             match x with
             | RunModelWrkMsg (r, s, d) ->
-                printfn $"    onProcessMessage: runQueueId: '{r}'."
+                Logger.logTrace $"    onProcessMessage: runQueueId: '{r}'."
 
                 match proxy.saveModelData r s d with
                 | Ok() ->
-                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK."
+                    Logger.logTrace $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK."
                     Ok()
                 | Error e ->
-                    printfn $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
+                    Logger.logError $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
                     let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
                     e1 + e |> Error
             | CancelRunWrkMsg q ->
-                printfn $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}'."
+                Logger.logTrace $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}'."
                 let result = q ||> proxy.requestCancellation
-                printfn $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                Logger.logInfo $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
             | RequestResultsWrkMsg q ->
-                printfn $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}'."
+                Logger.logTrace $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}'."
                 let result = q ||> proxy.notifyOfResults
-                printfn $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                Logger.logTrace $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
             | UpdateSolverWrkMsg e ->
                 match proxy.tryDecryptSolver e (m.messageDataInfo.sender |> PartitionerId) with
@@ -95,22 +96,22 @@ module WorkerNode =
                 match r with
                 | Ok v -> Ok v
                 | Error e ->
-                    printfn $"WorkerNodeRunner - ERROR: '{e}'."
+                    Logger.logError $"WorkerNodeRunner - ERROR: '{e}'."
                     OnGetMessagesErr FailedToProcessErr |> Error
 
             r1
 
         let startSolvers() =
-            printfn "startSolvers: Starting."
+            Logger.logTrace "startSolvers: Starting."
             match i.workerNodeProxy.loadAllActiveRunQueueId() with
             | Ok m ->
-                printfn $"startSolvers: m = '%A{m}'."
+                Logger.logTrace $"startSolvers: m = '%A{m}'."
                 m
                 |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
                 |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
                 |> foldUnitResults
             | Error e ->
-                printfn $"startSolvers: ERROR: '%A{e}'."
+                Logger.logError $"startSolvers: ERROR: '%A{e}'."
                 Error e
 
         let onStartImpl() = if not started then startSolvers() else Ok()
@@ -146,12 +147,12 @@ module WorkerNode =
 
         let onTryStart() =
             let toError e =
-                printfn $"Error: '{e}'."
+                Logger.logError $"Error: '{e}'."
                 TimerEventErr e
 
             match i.workerNodeServiceInfo.workerNodeInfo.isInactive with
             | false ->
-                printfn "WorkerNodeRunner: Registering..."
+                Logger.logInfo "WorkerNodeRunner: Registering..."
                 match onRegisterImpl >-> onStartImpl |> evaluate with
                 | Ok() ->
                     match messageProcessor.tryStart() with
@@ -176,13 +177,13 @@ module WorkerNode =
                     | Error e -> UnableToStartMessagingClientErr e |> Error
                 | Error e -> Error e
             | true ->
-                printfn "WorkerNodeRunner: Unregistering..."
+                Logger.logInfo "WorkerNodeRunner: Unregistering..."
                 match onUnregisterImpl() with
                 | Ok() -> failwith "WorkerNodeRunner - onUnregisterImpl for inactive worker node is not implemented yet."
                 | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
         let onTryStop() =
-            printfn "WorkerNodeRunner - stopping timers."
+            Logger.logInfo "WorkerNodeRunner - stopping timers."
             eventHandlers |> List.iter (fun h -> h.stop())
             Ok()
 
@@ -193,12 +194,12 @@ module WorkerNode =
                 match onTryStart() with
                 | Ok () -> Task.CompletedTask
                 | Error e ->
-                    printfn $"Error during start: %A{e}."
+                    Logger.logCrit $"Error during start: %A{e}."
                     Task.FromException(Exception($"Failed to start WorkerNodeRunner: %A{e}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 match onTryStop() with
                 | Ok () -> Task.CompletedTask
                 | Error e ->
-                    printfn $"Error during stop: %A{e}."
+                    Logger.logError $"Error during stop: %A{e}."
                     Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.

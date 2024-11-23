@@ -1,4 +1,5 @@
 ﻿namespace Softellect.Sys
+open Microsoft.Identity.Client
 open Newtonsoft.Json.Linq
 
 open System
@@ -10,6 +11,7 @@ open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
+open Softellect.Sys.Logging
 
 module AppSettings =
 
@@ -49,6 +51,7 @@ module AppSettings =
 
         static member appSettings = ConfigSection "appSettings"
         static member connectionStrings = ConfigSection "connectionStrings"
+        static member logging = ConfigSection "Logging"
 
 
     type ConfigKey =
@@ -101,6 +104,27 @@ module AppSettings =
                     | true, value when value <> null -> value.ToString() |> Some |> Ok
                     | _ -> Ok None
             | _ -> Ok None
+        with
+        | e -> Error e
+
+
+    let private tryGetNestedString (jsonObj: JObject) (sections: string list) =
+        try
+            let rec getValue (currentObj: JObject) (keys: string list) =
+                match keys with
+                | [] -> Ok None // No more keys to traverse
+                | [lastKey] -> // Final key to retrieve the value
+                    match currentObj.TryGetValue(lastKey) with
+                    | true, value when value <> null -> Ok(Some(value.ToString()))
+                    | _ -> Ok None
+                | key :: rest -> // Traverse deeper into the JSON object
+                    match currentObj.TryGetValue(key) with
+                    | true, value ->
+                        match value with
+                        | :? JObject as nestedObj -> getValue nestedObj rest
+                        | _ -> Ok None
+                    | _ -> Ok None
+            getValue jsonObj sections
         with
         | e -> Error e
 
@@ -266,16 +290,31 @@ module AppSettings =
         member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
 
         member _.trySave() =
-            printfn $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
+            Logger.logTrace $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
             trySaveJson fileName jsonObj
 
         member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
         member _.setOnMissing = setOnMissing
 
+        member _.getLogLevel() =
+            match tryGetNestedString jsonObj ["Logging"; "LogLevel"; "Default"] with
+            | Ok(Some value) ->
+                match LogLevel.tryDeserialize value with
+                | Some v -> v
+                | None ->
+                    printfn $"Invalid log level value: '{value}'."
+                    LogLevel.defaultValue
+            | Ok None ->
+                printfn "Logging key not found"
+                LogLevel.defaultValue
+            | Error e ->
+                printfn $"ERROR: %A{e}"
+                LogLevel.defaultValue
+
         member a.save() =
             match a.trySave() with
             | Ok () -> ()
-            | Error e -> printfn $"AppSettingsProvider.save - ERROR: '%A{e}'."
+            | Error e -> Logger.logError $"AppSettingsProvider.save - ERROR: '%A{e}'."
 
         static member tryCreate (fileName : FileName) =
             match fileName.tryGetFullFileName() with
@@ -319,3 +358,12 @@ module AppSettings =
                 SettingsTask.tryCreateSaveSettingsTask s
             ]
             |> List.tryPick (fun e -> e p)
+
+
+    let setLogLevel() =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let logLevel = provider.getLogLevel()
+            Logger.logInfo $"setLogLevel: Setting log level to '%A{logLevel}'."
+            Logger.setMinLogLevel logLevel
+        | Error e -> Logger.logError $"setLogLevel: ERROR - '%A{e}'."

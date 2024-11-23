@@ -7,16 +7,19 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
+open Softellect.Sys.Logging
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives.WorkerNodeService
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
 
 module Program =
 
     let workerNodeMain argv =
+        setLogLevel()
         let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
         let getMessageSize _ = SmallSize
 
@@ -48,7 +51,8 @@ module Program =
 
         let saveSettings() =
             //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            //printfn $"saveSettings - result: '%A{result}'."
+            //Logger.logCrit $"saveSettings - result: '%A{result}'."
+            Logger.logCrit $"saveSettings is not implemented yet'."
             failwith "saveSettings is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
@@ -64,5 +68,5 @@ module Program =
                 configureServices = Some configureServices
             }
 
-        printfn $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
+        Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
         wcfMain<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv

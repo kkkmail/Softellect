@@ -1,6 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
 open Softellect.DistributedProcessing.Primitives.Common
@@ -181,7 +182,7 @@ module Runner =
 
 
     let private notifyProgress s cb pd =
-        printfn $"notifyProgress: cb = %A{cb}, pd = %A{pd}."
+        Logger.logTrace $"notifyProgress: cb = %A{cb}, pd = %A{pd}."
         s.callBackProxy.progressCallBack.invoke cb pd
 
 
@@ -207,10 +208,10 @@ module Runner =
         let modelData = ctx.runnerData.modelData.modelData
         match u.resultGenerator.generateDetailedResults ctx.runnerData.runQueueId modelData t x with
         | Some c ->
-            printfn $"notifyResultsDetailed: c.Length = %A{c.Length}"
+            Logger.logTrace $"notifyResultsDetailed: c.Length = %A{c.Length}"
             s.callBackProxy.resultCallBack.invoke c
         | None ->
-            printfn $"notifyResultsDetailed: No results to generate."
+            Logger.logTrace $"notifyResultsDetailed: No results to generate."
             ()
 
 
@@ -222,7 +223,7 @@ module Runner =
 
 
     let private notifyResults ctx t =
-        printfn $"notifyResults: t = %A{t}"
+        Logger.logTrace $"notifyResults: t = %A{t}"
 
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -232,16 +233,16 @@ module Runner =
 
         match u.resultGenerator.generateResults ctx.runnerData.runQueueId modelData t cd with
         | Some c ->
-            printfn $"notifyResults: c.Length = %A{c.Length}"
+            Logger.logInfo $"notifyResults: c.Length = %A{c.Length}"
             s.callBackProxy.resultCallBack.invoke c
         | None ->
-            printfn $"notifyResults: No results to generate."
+            Logger.logInfo $"notifyResults: No results to generate."
             ()
 
 
     /// Sends "on-request" results to the user.
     let private notifyRequestedResults ctx =
-        printfn $"notifyRequestedResults: Starting."
+        Logger.logTrace $"notifyRequestedResults: Starting."
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runQueueId
 
@@ -251,15 +252,15 @@ module Runner =
             let r1 = notifyResults ctx t
             let r2 = s.clearNotification runQueueId
             // let r = combineUnitResults (DistributedProcessingError.addError) r1 r2
-            printfn $"notifyRequestedResults: r1 = %A{r1}, r2 = %A{r2}"
+            Logger.logInfo $"notifyRequestedResults: r1 = %A{r1}, r2 = %A{r2}"
             Ok()
         | None ->
-            printfn $"notifyRequestedResults: No notification to process."
+            Logger.logTrace $"notifyRequestedResults: No notification to process."
             Ok()
 
 
     let private tryCallBack ctx (ncbd : NeedsCallBackData) (t : EvolutionTime) x =
-        // printfn $"tryCallBack: t = %A{t}, x = %A{x}"
+        // Logger.logTrace $"tryCallBack: t = %A{t}, x = %A{x}"
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -318,7 +319,7 @@ module Runner =
 
         let runQueueId = d.runQueueId
         let modelData = d.modelData.modelData
-        printfn $"runSolver: Starting runQueueId: '%A{runQueueId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData = '%A{modelData}'."
+        Logger.logInfo $"runSolver: Starting runQueueId: '%A{runQueueId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData = '%A{modelData}'."
 
         let getProgressData t x =
             {
@@ -364,7 +365,7 @@ module Runner =
                 //(tEnd, xEnd)
             with
             | :? ComputationAbortedException<'P> as ex ->
-                printfn $"runSolver: ComputationAbortedException: %A{ex}."
+                Logger.logInfo $"runSolver: ComputationAbortedException: %A{ex}."
                 let pd = ex.progressData
 
                 match ex.cancellationType with
@@ -374,10 +375,10 @@ module Runner =
                 | AbortCalculation e ->
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
             | ex ->
-                printfn $"runSolver: Exception: %A{ex}"
+                Logger.logError $"runSolver: Exception: %A{ex}"
                 let ncbd = getNeedsCallBackData d.runQueueId
                 let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
                 notifyProgress s (Some $"{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
-            printfn $"runSolver: Stopping timers."
+            Logger.logTrace $"runSolver: Stopping timers."
             h.stop()

@@ -8,6 +8,7 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Samples.DistrProc.Core.Primitives
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.SolverRunner.OdeSolver
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Plotly.NET
@@ -88,12 +89,12 @@ module Program =
 
             getListLinePlot i o ListLineParams.defaultValue d
         | _ ->
-            printfn $"getWolframChart - Cannot get data for: %A{q}."
+            Logger.logError $"getWolframChart - Cannot get data for: %A{q}."
             None
 
 
     let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
+        Logger.logTrace $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
             match c |> List.tryHead with
@@ -140,7 +141,7 @@ module Program =
                     }
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>
-                printfn "Calling solverRunnerMain..."
+                Logger.logTrace "Calling solverRunnerMain..."
                 solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->

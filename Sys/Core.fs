@@ -212,7 +212,7 @@ module Core =
             Ok b
         with
         | e ->
-            printfn $"trySerialize: Exception: '%A{e}'."
+            Logger.logTrace $"trySerialize: Exception: '%A{e}'."
             e |> SerializationExn |> Error
 
 
@@ -505,7 +505,7 @@ module Core =
                 Ok ()
             with
             | e ->
-                printfn $"tryEnsureDirectoryExists: Exception: '%A{e}'."
+                Logger.logError $"tryEnsureDirectoryExists: Exception: '%A{e}'."
                 e |> TryEnsureFolderExistsExn |> Error
 
 
@@ -531,11 +531,11 @@ module Core =
                             then Path.Combine(folder, fileName)
                             else Path.Combine(assemblyLocation, folder, fileName)
 
-                printfn $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                Logger.logTrace $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
                 FileName fullPath |> Ok
             with
             | e ->
-                printfn $"tryGetFullFileName: Exception: '%A{e}'."
+                Logger.logError $"tryGetFullFileName: Exception: '%A{e}'."
                 e |> TryGetFullFileNameExn |> Error
 
         member f.tryGetFullFileName() = f.tryGetFullFileName None
@@ -547,7 +547,7 @@ module Core =
                 | Error e -> Error e
             with
             | e ->
-                printfn $"tryGetFolderName: Exception: '%A{e}'."
+                Logger.logError $"tryGetFolderName: Exception: '%A{e}'."
                 e |> TryGetFolderNameExn |> Error
 
         member f.tryEnsureFolderExists() =
@@ -557,7 +557,7 @@ module Core =
                 | Error e -> Error e
             with
             | e ->
-                printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
+                Logger.logError $"tryEnsureFolderExists: Exception: '%A{e}'."
                 e |> TryEnsureFolderExistsExn |> Error
 
         member f.tryGetExtension() =
@@ -565,5 +565,5 @@ module Core =
                 Path.GetExtension(f.value) |> FileExtension |> Ok
             with
             | e ->
-                printfn $"tryGetExtension: Exception: '%A{e}'."
+                Logger.logError $"tryGetExtension: Exception: '%A{e}'."
                 e |> TryGetExtensionExn |> Error

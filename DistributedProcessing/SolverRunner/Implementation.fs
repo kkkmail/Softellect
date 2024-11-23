@@ -1,6 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
@@ -41,7 +42,7 @@ module Implementation =
     let private tryStartRunQueue q =
         let pid = Process.GetCurrentProcess().Id |> ProcessId
         let result = tryStartRunQueue q pid
-        printfn $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
+        Logger.logTrace $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
         result
 
 
@@ -57,7 +58,7 @@ module Implementation =
                 runQueueId = data.runQueueId
             }
 
-        printfn $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
+        Logger.logTrace $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
 
         let result =
             {
@@ -105,7 +106,7 @@ module Implementation =
                 progressData = pd
             }
 
-        printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
+        Logger.logTrace $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
         let t, completed = toDeliveryType p
         let r0 = tryUpdateProgress<'P> p.runQueueId p.progressData
 
@@ -129,7 +130,7 @@ module Implementation =
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
 
-        printfn $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
+        Logger.logTrace $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
         result
 
 
@@ -191,10 +192,10 @@ module Implementation =
         let q = data.runQueueId
 
         let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
-        printfn $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
 
         let exitWithLogCrit e x =
-            printfn $"runSolver: ERROR: {e}, exit code: {x}."
+            Logger.logCrit $"runSolver: ERROR: {e}, exit code: {x}."
             SolverRunnerCriticalError.create q e |> logCrit |> ignore
             x
 
@@ -215,7 +216,7 @@ module Implementation =
                     | NotStartedRunQueue | InProgressRunQueue ->
                         match ctx.tryStartRunQueue q with
                         | Ok() ->
-                            printfn $"runSolver: Starting solver with runQueueId: {q}."
+                            Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
                             let data : RunnerData<'D> =
                                 {
                                     runQueueId = q
@@ -238,10 +239,10 @@ module Implementation =
 
                             // The call below does not return until the run is completed OR cancelled in some way.
                             ctx.runSolver ctxr
-                            printfn "runSolver: Call to solver.run() completed."
+                            Logger.logInfo $"runSolver: Call to solver.run() with runQueueId: {q} completed."
                             CompletedSuccessfully
                         | Error e ->
-                            printfn $"runSolver: ERROR: {e}."
+                            Logger.logError $"runSolver: ERROR: {e}."
                             exitWithLogCrit e UnknownException
                     | CancelRequestedRunQueue ->
                         // If we got here that means that the solver was terminated before it had a chance to process cancellation.

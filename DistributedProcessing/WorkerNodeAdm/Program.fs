@@ -4,10 +4,13 @@ open Argu
 open Softellect.DistributedProcessing.WorkerNodeAdm.CommandLine
 open Softellect.DistributedProcessing.WorkerNodeAdm.Implementation
 open Softellect.Sys.ExitErrorCodes
+open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 
 module Program =
 
     let workerNodeAdmMain programName argv =
+        setLogLevel()
         let parser = ArgumentParser.Create<WorkerNodeAdmArgs>(programName = programName)
         let ctx = WorkerNodeAdmContext.create()
         let results = (parser.Parse argv).GetAllResults()
@@ -21,5 +24,5 @@ module Program =
                     | ImportPublicKey importPublicKeyArgs -> importPublicKey ctx (importPublicKeyArgs.GetAllResults())
                 )
 
-        retVal |> List.map (fun x -> printfn $"%A{x}") |> ignore
+        retVal |> List.map (fun x -> Logger.logInfo $"%A{x}") |> ignore
         CompletedSuccessfully

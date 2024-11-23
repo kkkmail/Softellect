@@ -10,6 +10,7 @@ open Softellect.Messaging.Client
 open Softellect.Messaging.Proxy
 open Softellect.Samples.Msg.ServiceInfo.Primitives
 open Softellect.Messaging.ServiceProxy
+open Softellect.Sys.Logging
 
 module EchoMsgServiceInfo =
 
@@ -40,9 +41,9 @@ module EchoMsgServiceInfo =
 
 
     let private tryDelete (source : MutableList<'T>) finder =
-        printfn $"tryDelete: source had %A{source.Count} elements."
+        Logger.logTrace $"tryDelete: source had %A{source.Count} elements."
         source.RemoveAll(fun e -> finder e) |> ignore
-        printfn $"tryDelete: source now has %A{source.Count} elements."
+        Logger.logTrace $"tryDelete: source now has %A{source.Count} elements."
         Ok()
 
 
@@ -52,7 +53,7 @@ module EchoMsgServiceInfo =
 
     let private save (source : MutableList<'T>) finder e =
         tryDelete source finder |> ignore
-        printfn $"save: adding element %A{e} to source."
+        Logger.logTrace $"save: adding element %A{e} to source."
         source.Add e
         Ok()
 
@@ -102,10 +103,10 @@ module EchoMsgServiceInfo =
     let serviceProxy =
         match useLocalDatabase with
         | false ->
-            printfn "serviceProxy - Using in-memory lists for messaging service."
+            Logger.logInfo "serviceProxy - Using in-memory lists for messaging service."
             getListBasedServiceProxy()
         | true ->
-            printfn "serviceProxy - Using local database for messaging service."
+            Logger.logInfo "serviceProxy - Using local database for messaging service."
             getProxy()
 
 
@@ -135,7 +136,7 @@ module EchoMsgServiceInfo =
 
     let runClient clientData recipient =
         let client = EchoMessagingClient clientData
-        printfn $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
+        Logger.logInfo $"runClient: clientData.msgResponseHandlerData.msgAccessInfo = %A{clientData.msgAccessInfo}"
         let messageProcessor = client :> IMessageProcessor<EchoMessageData>
 
         //let tryProcessMessage = onTryProcessMessage messageProcessor
@@ -143,7 +144,7 @@ module EchoMsgServiceInfo =
         match messageProcessor.tryStart() with
         | Ok() ->
             while true do
-                printfn $"Sending message to: %A{recipient}."
+                Logger.logTrace $"Sending message to: %A{recipient}."
 
                 let m =
                     {
@@ -157,20 +158,20 @@ module EchoMsgServiceInfo =
                     }
 
                 let sendResult = messageProcessor.sendMessage m
-                printfn $"Sent with: %A{sendResult}."
+                Logger.logTrace $"Sent with: %A{sendResult}."
 
-                printfn "Checking messages."
+                Logger.logTrace "Checking messages."
 
                 let checkMessage() =
                     match messageProcessor.tryProcessMessage (fun _ -> Ok()) with
-                    | ProcessedSuccessfully -> printfn $"    Received message: %A{m}."
-                    | ProcessedWithError e -> printfn $"    Received message: %A{m} with error e: %A{e}."
-                    | ProcessedWithFailedToRemove e -> printfn $"    Received message: %A{m} with error: %A{e}."
-                    | FailedToProcess e -> printfn $"    Error e: %A{e}"
-                    | NothingToDo -> printfn "    Nothing to do..."
-                    | BusyProcessing -> printfn "    Busy processing..."
+                    | ProcessedSuccessfully -> Logger.logTrace $"    Received message: %A{m}."
+                    | ProcessedWithError e -> Logger.logError $"    Received message: %A{m} with error e: %A{e}."
+                    | ProcessedWithFailedToRemove e -> Logger.logError $"    Received message: %A{m} with error: %A{e}."
+                    | FailedToProcess e -> Logger.logError $"    Error e: %A{e}"
+                    | NothingToDo -> Logger.logTrace "    Nothing to do..."
+                    | BusyProcessing -> Logger.logTrace "    Busy processing..."
 
                 let _ = [for _ in 1..5 -> ()] |> List.map checkMessage
 
                 Thread.Sleep 10_000
-        | Error e -> printfn $"Error: %A{e}"
+        | Error e -> Logger.logError $"Error: %A{e}"

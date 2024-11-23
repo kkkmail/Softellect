@@ -8,6 +8,7 @@ open System.Management
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.Logging
 open Softellect.Sys.Rop
 open Softellect.Sys.Crypto
 open Softellect.Sys.TimerEvents
@@ -186,14 +187,14 @@ module WorkerNodeService =
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
     let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
-        printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
+        Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
         let fileName = FileName SolverRunnerName
         let elevate f = f |> TryRunSolverProcessErr |> Error
 
         match tryGetSolverLocation q with
         | Ok (Some folderName) ->
-            printfn $"tryRunSolverProcess: folderName = '{folderName}'."
+            Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
             match fileName.tryGetFullFileName(Some folderName) with
             | Ok e ->
                 let run() =
@@ -210,7 +211,7 @@ module WorkerNodeService =
 
                     match ea with
                     | Ok (exeName, args) ->
-                        printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                        Logger.logTrace $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
                         try
                             let procStartInfo =
@@ -232,14 +233,14 @@ module WorkerNodeService =
                             then
                                 p.PriorityClass <- ProcessPriorityClass.Idle
                                 let processId = p.Id |> ProcessId
-                                printfn $"Started: {p.ProcessName} with pid: {processId}."
+                                Logger.logTrace $"Started: {p.ProcessName} with pid: {processId}."
                                 Ok processId
                             else
-                                printfn $"Failed to start process: {fileName}."
+                                Logger.logError $"Failed to start process: {fileName}."
                                 q |> FailedToRunSolverProcessErr |> elevate
                         with
                         | ex ->
-                            printfn $"Failed to start process: {fileName} with exception: {ex}."
+                            Logger.logError $"Failed to start process: {fileName} with exception: {ex}."
                             (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
                     | Error e -> Error e
 
@@ -247,14 +248,14 @@ module WorkerNodeService =
                 match checkRunning (Some (n - 1)) q with
                 | CanRun -> run()
                 | e ->
-                    printfn $"Can't run run queue with id %A{q}: %A{e}."
+                    Logger.logWarn $"Can't run run queue with id %A{q}: %A{e}."
                     q |> CannotRunSolverProcessErr |> elevate
             | Error e ->
-                printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
+                Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
                 q |> FailedToLoadSolverNameErr |> elevate
         | Ok None -> q |> CannotLoadSolverNameErr |> elevate
         | Error e ->
-            printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
+            Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
             q |> FailedToLoadSolverNameErr |> elevate
 
 

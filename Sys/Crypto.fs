@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Security.Cryptography
 open System.Xml.Linq
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
 open Softellect.Sys.Core
@@ -244,7 +245,7 @@ module Crypto =
 
     /// Encrypts and signs the data.
     let tryEncryptAndSign (e : EncryptionType) data senderPrivateKey recipientPublicKey =
-        printfn $"tryEncryptAndSign: Using %A{e}"
+        Logger.logTrace $"tryEncryptAndSign: Using %A{e}"
         let tryEncrypt = e.encryptor
 
         match signData data senderPrivateKey with
@@ -254,7 +255,7 @@ module Crypto =
 
     /// Decrypts and verifies the signed data.
     let tryDecryptAndVerify (e : EncryptionType) encryptedData recipientPrivateKey (senderPublicKey : PublicKey) =
-        printfn $"tryDecryptAndVerify: Using %A{e}"
+        Logger.logTrace $"tryDecryptAndVerify: Using %A{e}"
         let tryDecrypt = e.decryptor
 
         match tryDecrypt encryptedData recipientPrivateKey with

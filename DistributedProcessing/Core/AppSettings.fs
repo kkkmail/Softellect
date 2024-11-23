@@ -20,7 +20,7 @@ open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.AppSettings
-//open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.Sys.Logging
 
 // ==========================================
 // Blank #if template blocks
@@ -203,7 +203,7 @@ module WorkerNodeService =
             }
 
         let result = provider.trySave()
-        printfn $"loadWorkerNodeInfo: result = '%A{result}'."
+        Logger.logInfo $"loadWorkerNodeInfo: result = '%A{result}'."
 
         w
 
@@ -235,7 +235,7 @@ module WorkerNodeService =
         match AppSettingsProvider.tryCreate() with
         | Ok provider -> provider.getFileStorageLocation defaultFileStorageFolder
         | Error e ->
-            printfn $"getStorageFolder: ERROR - Cannot load storage folder. Error: '{e}'."
+            Logger.logError $"getStorageFolder: ERROR - Cannot load storage folder. Error: '{e}'."
             defaultFileStorageFolder
 
 #endif

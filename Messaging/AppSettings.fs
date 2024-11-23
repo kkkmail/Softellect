@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Messaging
 
 open System
+open Softellect.Sys.Logging
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.Errors
 open Softellect.Messaging.ServiceInfo
@@ -30,7 +31,7 @@ module AppSettings =
 
             messagingSvcInfo
         | Error e ->
-            printfn $"loadMessagingServiceAccessInfo - Cannot load settings. Error: '%A{e}'."
+            Logger.logCrit $"loadMessagingServiceAccessInfo - Cannot load settings. Error: '%A{e}'."
             failwith $"loadMessagingServiceAccessInfo - Cannot load settings. Error: '%A{e}'."
 
 
@@ -40,11 +41,13 @@ module AppSettings =
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let s = m.serviceAccessInfo
-            printfn $"updateMessagingSettings - s: '{s}'."
+            Logger.logTrace $"updateMessagingSettings - s: '{s}'."
             let v = s.serialize()
-            printfn $"updateMessagingSettings - v: '{v}'."
+            Logger.logTrace $"updateMessagingSettings - v: '{v}'."
             let result = provider.trySet messagingServiceAccessInfoKey v
-            printfn $"updateMessagingSettings - result: '%A{result}'."
+            Logger.logTrace $"updateMessagingSettings - result: '%A{result}'."
             provider.trySet expirationTimeInMinutesKey (int m.expirationTime.TotalMinutes) |> ignore
             provider.trySave() |> Rop.bindError toErr
-        | Error e -> e |> FileErr |> MsgSettingsErr |> Error
+        | Error e ->
+            Logger.logError $"updateMessagingServiceAccessInfo: ERROR - %A{e}."
+            e |> FileErr |> MsgSettingsErr |> Error

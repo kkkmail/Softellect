@@ -3,6 +3,7 @@
 open System
 open System.Threading
 
+open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 open Softellect.Samples.Wcf.Client.EchoWcfClient
@@ -28,11 +29,13 @@ module Program =
 
         while true do
             try
-                printfn $"Connecting using: %s{url}"
-                "Abcd" |> service.echo |> printfn "%A"
-                createEchoMessage() |> service.complexEcho |> printfn "%A"
+                Logger.logTrace $"Connecting using: %s{url}"
+                let result = "Abcd" |> service.echo
+                Logger.logTrace $"%A{result}"
+                let result1 = createEchoMessage() |> service.complexEcho
+                Logger.logTrace $"%A{result1}"
             with
-            | e -> printfn $"Exception: %A{e}"
+            | e -> Logger.logError $"Exception: %A{e}"
 
             Thread.Sleep(2000)
         ()
@@ -42,6 +45,6 @@ module Program =
     let main _ =
         do callUsingWcf()
 
-        printfn "Hit enter to exit."
+        Logger.logInfo "Hit enter to exit."
         Console.ReadLine() |> ignore
         0

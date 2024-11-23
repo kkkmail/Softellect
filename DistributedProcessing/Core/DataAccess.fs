@@ -9,6 +9,7 @@ open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Errors
+open Softellect.Sys.Logging
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
@@ -145,7 +146,7 @@ module WorkerNodeService =
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
-    let private getConnectionStringImpl() = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
+    let private getConnectionStringImpl() = getConnectionString connectionStringKey ConnectionStringValue
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
     let private getConnectionString() = connectionString.Value
 
@@ -503,7 +504,7 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalResultInfo d (c : ResultInfo) =
-        printfn $"saveLocalResultInfo - d: '%A{d}', c: '%A{c}'."
+        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', c: '%A{c}'."
 
         try
             let getFileName (FileName name) =
@@ -519,7 +520,7 @@ module WorkerNodeService =
             let saveResult (f : string) (c : CalculationResult) =
                 let folder = Path.GetDirectoryName f
                 Directory.CreateDirectory(folder) |> ignore
-                printfn $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c}'."
+                Logger.logTrace $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c}'."
 
                 match c with
                 | TextResult h -> File.WriteAllText(f, h.textContent)
@@ -531,7 +532,7 @@ module WorkerNodeService =
             Ok ()
         with
         | e ->
-            printfn $"saveLocalResultInfo - e: '%A{e}'."
+            Logger.logError $"saveLocalResultInfo - e: '%A{e}'."
             e |> SaveResultsExn |> Error
 
 
@@ -903,7 +904,7 @@ module WorkerNodeService =
         let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
         let g() =
-            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
+            Logger.logTrace $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
             let ctx = getDbContext getConnectionString
             let p = pd.toProgressData()
 

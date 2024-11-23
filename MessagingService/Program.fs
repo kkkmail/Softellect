@@ -4,16 +4,17 @@ open Softellect.Messaging.Service
 open Microsoft.FSharp.Core.Operators
 open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Wcf.Program
 
 module Program =
 
     let messagingMain<'D> messagingProgramName data argv =
-        printfn $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
+        Logger.logInfo $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
             let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            printfn $"saveSettings - result: '%A{result}'."
+            Logger.logInfo $"saveSettings - result: '%A{result}'."
 
         let programData =
             {

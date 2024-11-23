@@ -119,7 +119,7 @@ module Client =
 
 
     let private tryTransmitMessages transmitter =
-//        printfn "tryTransmitMessages: starting..."
+        // Logger.logTrace "tryTransmitMessages: starting..."
         let rec doTryTransmit x c =
             match x with
             | [] -> Ok()
@@ -164,27 +164,27 @@ module Client =
 
 
     let private trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
-        printfn "trySendSingleMessage: starting..."
+        Logger.logTrace "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
         | Ok None ->
-            printfn "trySendSingleMessage: No messages to send."
+            Logger.logTrace "trySendSingleMessage: No messages to send."
             Ok None
         | Ok (Some m) ->
-            printfn $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
+            Logger.logTrace $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
             match proxy.sendMessage m with
             | Ok() ->
                 match proxy.tryDeleteMessage m.messageDataInfo.messageId with
                 | Ok() ->
-                    printfn $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
+                    Logger.logTrace $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
                     m.messageData |> proxy.getMessageSize |> Some |> Ok
                 | Error e ->
-                    printfn $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
+                    Logger.logError $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
                     Error e
             | Error e ->
-                printfn $"trySendSingleMessage: Failed to send message: '%A{m.messageDataInfo}', error: '%A{e}'."
+                Logger.logError $"trySendSingleMessage: Failed to send message: '%A{m.messageDataInfo}', error: '%A{e}'."
                 Error e
         | Error e ->
-            printfn $"trySendSingleMessage: Failed to pick message, error: '%A{e}'."
+            Logger.logError $"trySendSingleMessage: Failed to pick message, error: '%A{e}'."
             Error e
 
 
@@ -322,7 +322,7 @@ module Client =
 
         // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
-            Logger.logDebug $"onTryProcessMessage - starting, callCount = {callCount}."
+            Logger.logTrace $"onTryProcessMessage - starting, callCount = {callCount}."
 
             let retVal =
                 if incrementCount() = 0
@@ -330,7 +330,7 @@ module Client =
                     match proxy.tryPickIncomingMessage() with
                     | Ok (Some m) ->
                         try
-                            printfn $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
+                            Logger.logTrace $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
                             let r = f m
 
                             match proxy.tryDeleteMessage m.messageDataInfo.messageId with
@@ -351,12 +351,12 @@ module Client =
             | Some e, true -> Logger.logError $"%A{e}"
             | _ -> ()
 
-            printfn $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
+            Logger.logTrace $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
             retVal
 
         // Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
         let onProcessMessages (f : Message<'D> -> MessagingUnitResult) : MessagingUnitResult =
-            printfn "onProcessMessages - Starting..."
+            Logger.logTrace "onProcessMessages - Starting..."
             let elevate e = e |> OnGetMessagesErr
             let addError f e = ((elevate f) + e) |> Error
             let toError e = e |> elevate |> Error
@@ -374,7 +374,7 @@ module Client =
                     | BusyProcessing -> toError BusyProcessingErr
 
             let result = doFold [for _ in 1..maxNumberOfMessages -> ()] (Ok())
-            printfn $"onProcessMessages - result = %A{result}."
+            Logger.logTrace $"onProcessMessages - result = %A{result}."
             result
 
         interface IMessageProcessor<'D> with
