@@ -20,7 +20,7 @@ module DataAccess =
 
 
     let getConnectionString (fileName : FileName) connKey defaultValue =
-        printfn $"getConnectionString: fileName = '%A{fileName}', connKey = '%A{connKey}'."
+        // printfn $"getConnectionString: fileName = '%A{fileName}', connKey = '%A{connKey}'."
 
         let r =
             match AppSettingsProvider.tryCreate() with
@@ -30,7 +30,7 @@ module DataAccess =
                     printfn $"getConnectionString: EmptyString."
                     defaultValue
                 | Ok (Some s) ->
-                    printfn $"getConnectionString: s = '%A{s}'."
+                    // printfn $"getConnectionString: s = '%A{s}'."
                     s
                 | _ ->
                     printfn $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."

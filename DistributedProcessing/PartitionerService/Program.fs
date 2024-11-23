@@ -19,7 +19,6 @@ module Program =
     let partitionerMain argv =
         printfn $"partitionerMain - argv: %A{argv}."
         let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
-        let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize
 
         let messagingClientProxyInfo =
@@ -29,7 +28,7 @@ module Program =
                 storageType = MsSqlDatabase
             }
 
-        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getMessageSize messagingClientProxyInfo
 
         let messagingClientData =
             {

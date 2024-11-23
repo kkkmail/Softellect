@@ -47,7 +47,6 @@ module TimerEvents =
     type TimerEventProxy<'E> =
         {
             eventHandler : unit -> UnitResult<'E>
-            getLogger : GetLogger
             toErr : TimerEventError -> 'E
         }
 
@@ -67,7 +66,6 @@ module TimerEvents =
                 timerProxy =
                     {
                         eventHandler = h
-                        getLogger = fun _ -> Logger.defaultValue
                         toErr = e
                     }
             }
@@ -78,7 +76,6 @@ module TimerEvents =
                 timerProxy =
                     {
                         eventHandler = h
-                        getLogger = fun _ -> Logger.defaultValue
                         toErr = e
                     }
             }
@@ -91,23 +88,13 @@ module TimerEvents =
         let refreshInterval = i0.timerEventInfo.refreshInterval |> Option.defaultValue RefreshInterval
         let firstDelay = i0.timerEventInfo.firstDelay |> Option.defaultValue refreshInterval
         let i = { i0 with timerEventInfo.handlerId = Some handlerId; timerEventInfo.refreshInterval = Some refreshInterval; timerEventInfo.firstDelay = Some firstDelay }
-        let logger = i.timerProxy.getLogger (LoggerName $"{nameof(TimerEventHandler)}<{typedefof<'E>.Name}>: {handlerId}")
-        let logError e = logger.logError $"%A{(i.timerProxy.toErr e)}"
-        let logWarn e = logger.logWarn $"%A{(i.timerProxy.toErr e)}"
         let info = $"TimerEventHandler: handlerId = %A{handlerId}, handlerName = %A{i.timerEventInfo.handlerName}"
-//        do $"TimerEventHandler: %A{i}" |> logger.logDebugString
-        //do (printfn $"TimerEventHandler: %A{i} - starting.")
 
         let g() =
             try
                 match i.timerProxy.eventHandler() with
-                | Ok() ->
-//                    logger.logDebugString "proxy.eventHandler() - succeeded."
-                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
-                    ()
-                | Error e ->
-                    printfn $"TimerEventHandler: %A{i.timerEventInfo} - FAILED, error: '%A{e}'."
-                    logger.logError $"%A{e}"
+                | Ok() -> Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
+                | Error e -> Logger.logError $"%A{i.timerEventInfo} - FAILED, error: %A{e}"
             with
             | e ->
                 {
@@ -115,23 +102,21 @@ module TimerEvents =
                     handlerId = handlerId
                     unhandledException = e
                 }
-                |> UnhandledEventHandlerExn |> logError
+                |> UnhandledEventHandlerExn |> Logger.logError
 
         let eventHandler _ =
             try
-//                logger.logDebugString $"eventHandler: %A{i}"
-
                 if Interlocked.Increment(&counter) = 0
                 then
                     lastStartedAt <- DateTime.Now
-                    timedImplementation false logger info g
+                    timedImplementation false info g
                 else
                     {
                         handlerName = i.timerEventInfo.handlerName
                         handlerId = handlerId
                         runTime = DateTime.Now - lastStartedAt
                     }
-                    |> StillRunningEventHandlerErr |> logWarn
+                    |> StillRunningEventHandlerErr |> Logger.logWarn
             finally Interlocked.Decrement(&counter) |> ignore
 
 
@@ -139,7 +124,7 @@ module TimerEvents =
 
         member _.start() =
             try
-                printfn $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
+                Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - starting timer."
                 timer.Change(firstDelay, refreshInterval) |> ignore
             with
             | e ->
@@ -148,11 +133,11 @@ module TimerEvents =
                     handlerId = handlerId
                     unhandledException = e
                 }
-                |> UnhandledEventHandlerExn |> logError
+                |> UnhandledEventHandlerExn |> Logger.logError
 
         member _.stop() =
             try
-                printfn $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
+                Logger.logDebug $"TimerEventHandler: %A{i.timerEventInfo} - stopping timer."
                 timer.Change(Timeout.Infinite, refreshInterval) |> ignore
             with
             | e ->
@@ -161,4 +146,4 @@ module TimerEvents =
                     handlerId = handlerId
                     unhandledException = e
                 }
-                |> UnhandledEventHandlerExn |> logError
+                |> UnhandledEventHandlerExn |> Logger.logError

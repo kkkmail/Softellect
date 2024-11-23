@@ -12,8 +12,7 @@ open Softellect.DistributedProcessing.VersionInfo
 module Program =
 
     let messagingServiceMain name args =
-        let getLogger = fun _ -> Logger.defaultValue
-        let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy getLogger messagingDataVersion
+        let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy messagingDataVersion
         let messagingServiceAccessInfo = loadMessagingServiceAccessInfo messagingDataVersion
 
         let data =

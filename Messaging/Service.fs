@@ -40,7 +40,6 @@ module Service =
             let proxy =
                 {
                     eventHandler = removeExpiredMessagesImpl
-                    getLogger = proxy.getLogger
                     toErr = fun e -> e |> TimerEventErr
                 }
 

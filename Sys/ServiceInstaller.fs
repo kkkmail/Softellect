@@ -19,10 +19,9 @@ module ServiceInstaller =
     type ServiceInfo<'R, 'C> =
         {
             serviceName : ServiceName
-            runService : Logger -> 'R -> 'C option
-            cleanup : Logger -> 'C -> unit
+            runService : 'R -> 'C option
+            cleanup : 'C -> unit
             timeoutMilliseconds : int option
-            logger : Logger
         }
 
         member this.timeout =
@@ -53,74 +52,74 @@ module ServiceInstaller =
         installer
 
 
-    let private installService<'T> (l : Logger) (ServiceName serviceName) =
+    let private installService<'T> (ServiceName serviceName) =
         try
-            l.logInfo $"Attempting to install service %s{serviceName} ..."
+            Logger.logInfo $"Attempting to install service %s{serviceName} ..."
             let i = getInstaller<'T> ()
             let d = System.Collections.Hashtable()
             i.Install(d)
             i.Commit(d)
-            l.logInfo "... services installed successfully.\n"
+            Logger.logInfo "... services installed successfully.\n"
             true
         with
         | e ->
-            l.logError $"{(InstallServiceErr e)}"
+            Logger.logError $"{(InstallServiceErr e)}"
             false
 
 
-    let private uninstallService<'T> (l : Logger) (ServiceName serviceName) =
+    let private uninstallService<'T> (ServiceName serviceName) =
         try
-            l.logInfo $"Attempting to uninstall service %s{serviceName} ..."
+            Logger.logInfo $"Attempting to uninstall service %s{serviceName} ..."
             let i = getInstaller<'T> ()
             let d = System.Collections.Hashtable()
             i.Uninstall(d)
-            l.logInfo "... services uninstalled successfully.\n"
+            Logger.logInfo "... services uninstalled successfully.\n"
             true
         with
         | e ->
-            l.logError $"{(UninstallServiceErr e)}"
+            Logger.logError $"{(UninstallServiceErr e)}"
             false
 
 
     let private startService (i : ServiceInfo<'R, 'C>) =
         try
-            i.logger.logInfo $"Attempting to start service %s{i.serviceName.value} ..."
+            Logger.logInfo $"Attempting to start service %s{i.serviceName.value} ..."
             let service = new ServiceController(i.serviceName.value)
             service.Start ()
             service.WaitForStatus(ServiceControllerStatus.Running, i.timeout)
-            i.logger.logInfo $"... service %s{i.serviceName.value} started successfully.\n"
+            Logger.logInfo $"... service %s{i.serviceName.value} started successfully.\n"
             true
         with
         | e ->
-            i.logger.logError $"{(StartServiceErr e )}"
+            Logger.logError $"{(StartServiceErr e )}"
             false
 
 
     let private stopService (i : ServiceInfo<'R, 'C>) =
         try
-            i.logger.logInfo $"Attempting to stop service %s{i.serviceName.value} ..."
+            Logger.logInfo $"Attempting to stop service %s{i.serviceName.value} ..."
             let service = new ServiceController(i.serviceName.value)
             service.Stop ()
             service.WaitForStatus(ServiceControllerStatus.Stopped, i.timeout)
-            i.logger.logInfo $"... service %s{i.serviceName.value} stopped successfully.\n"
+            Logger.logInfo $"... service %s{i.serviceName.value} stopped successfully.\n"
             true
         with
         | e ->
-            i.logger.logError $"{(StopServiceErr e)}"
+            Logger.logError $"{(StopServiceErr e)}"
             false
 
 
     let private runService (i : ServiceInfo<'R, 'C>) r =
-        i.logger.logInfo "Starting..."
+        Logger.logInfo "Starting..."
         let waitHandle = new ManualResetEvent(false)
-        let c = i.runService i.logger r
+        let c = i.runService r
 
         let cancelHandler() =
             match c with
             | Some v ->
-                i.logger.logInfo $"Performing cleanup for %s{i.serviceName.value} ..."
-                i.cleanup i.logger v
-            | None -> i.logger.logInfo $"NOT performing cleanup for %s{i.serviceName.value} because the service was not created..."
+                Logger.logInfo $"Performing cleanup for %s{i.serviceName.value} ..."
+                i.cleanup v
+            | None -> Logger.logInfo $"NOT performing cleanup for %s{i.serviceName.value} because the service was not created..."
 
             waitHandle.Set() |> ignore
 
@@ -139,13 +138,13 @@ module ServiceInstaller =
 
         member task.run (i : ServiceInfo<'R, 'C>) =
             match task with
-            | InstallServiceTask -> installService<'T> i.logger i.serviceName
+            | InstallServiceTask -> installService<'T> i.serviceName
             | UninstallServiceTask ->
                 match stopService i with
-                | true -> i.logger.logInfo $"Successfully stopped service %s{i.serviceName.value}."
-                | false -> i.logger.logInfo $"Failed to stop service %s{i.serviceName.value}! Proceeding with uninstall anyway."
+                | true -> Logger.logInfo $"Successfully stopped service %s{i.serviceName.value}."
+                | false -> Logger.logInfo $"Failed to stop service %s{i.serviceName.value}! Proceeding with uninstall anyway."
 
-                uninstallService<'T> i.logger i.serviceName
+                uninstallService<'T> i.serviceName
             | StartServiceTask -> startService i
             | StopServiceTask -> stopService i
             | RunServiceTask r -> runService i r

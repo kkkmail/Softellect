@@ -3,6 +3,7 @@
 open System
 
 open Softellect.Sys.Logging
+open Softellect.Sys.Logging
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Messaging.ServiceInfo
@@ -19,7 +20,6 @@ module Proxy =
             tryDeleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
             getMessageSize : MessageData<'D> -> MessageSize
-            getLogger : GetLogger
         }
 
 
@@ -30,7 +30,6 @@ module Proxy =
             saveMessage : Message<'D> -> MessagingUnitResult
             deleteMessage : MessageId -> MessagingUnitResult
             deleteExpiredMessages : TimeSpan -> MessagingUnitResult
-            getLogger : GetLogger
         }
 
 

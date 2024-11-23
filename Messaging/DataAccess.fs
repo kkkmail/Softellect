@@ -29,14 +29,14 @@ module DataAccess =
 
     let private getConnectionStringImpl() =
         let c = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
-        printfn $"getConnectionStringImpl: %A{c}."
+        // printfn $"getConnectionStringImpl: %A{c}."
         c
 
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
 
     let private getConnectionString() =
         let c = connectionString.Value
-        printfn $"getConnectionString: %A{c}."
+        // printfn $"getConnectionString: %A{c}."
         c
 
 

@@ -32,7 +32,6 @@ module Client =
             trySendMessages : unit -> MessagingUnitResult
             tryReceiveMessages : unit -> MessagingUnitResult
             removeExpiredMessages : unit -> MessagingUnitResult
-            getLogger : GetLogger
         }
 
 
@@ -217,17 +216,14 @@ module Client =
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     let private createMessagingClientEventHandlers (w : MessagingClientEventHandlersProxy) =
-        let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers")
-
-        logger.logInfo "createMessagingClientEventHandlers - starting..."
+        Logger.logInfo "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        logger.logInfo $"%A{i}"
+        Logger.logInfo $"%A{i}"
 
         let proxy =
             {
                 eventHandler = eventHandler
-                getLogger = w.getLogger
                 toErr = fun e -> e |> TimerEventErr
             }
 
@@ -275,7 +271,6 @@ module Client =
         let mutable callCount = -1
         let mutable started = false
         let mutable eventHandlers = []
-        let getLogger = d.msgClientProxy.getLogger
 
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
@@ -307,7 +302,6 @@ module Client =
                 trySendMessages = trySendMessages
                 tryReceiveMessages = tryReceiveMessages
                 removeExpiredMessages = removeExpiredMessages
-                getLogger = proxy.getLogger
             }
 
         /// Verifies that we have access to the relevant data storage, starts the timers and removes all expired messages.
@@ -328,8 +322,7 @@ module Client =
 
         // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
-            let logger = getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
-            printfn $"onTryProcessMessage - starting, callCount = {callCount}."
+            Logger.logDebug $"onTryProcessMessage - starting, callCount = {callCount}."
 
             let retVal =
                 if incrementCount() = 0
@@ -355,10 +348,8 @@ module Client =
             decrementCount() |> ignore
 
             match retVal.errorOpt, d.logOnError with
-            | Some e, true ->
-                printfn $"onTryProcessMessage - Error: %A{e}."
-                logger.logError $"%A{e}"
-            | _ -> ignore()
+            | Some e, true -> Logger.logError $"%A{e}"
+            | _ -> ()
 
             printfn $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
             retVal

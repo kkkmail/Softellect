@@ -10,7 +10,6 @@ open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives.WorkerNodeService
-open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
@@ -19,7 +18,6 @@ module Program =
 
     let workerNodeMain argv =
         let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
-        let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize
 
         let messagingClientProxyInfo =
@@ -29,7 +27,7 @@ module Program =
                 storageType = MsSqlDatabase
             }
 
-        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getMessageSize messagingClientProxyInfo
 
         let messagingClientData =
             {
@@ -54,14 +52,14 @@ module Program =
             failwith "saveSettings is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
-            let runner = new WorkerNodeRunner(data)
+            let runner = WorkerNodeRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
 
         let programData =
             {
                 serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
-                getService = fun () -> new WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
-                getWcfService = fun service -> new WorkerNodeWcfService(service)
+                getService = fun () -> WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
+                getWcfService = fun service -> WorkerNodeWcfService(service)
                 saveSettings = saveSettings
                 configureServices = Some configureServices
             }
