@@ -6,6 +6,7 @@ open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Wcf.Program
+open Softellect.Sys.AppSettings
 
 module Program =
 
@@ -16,6 +17,8 @@ module Program =
             let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
             Logger.logInfo $"saveSettings - result: '%A{result}'."
 
+        let projectName = getProjectName() |> Some
+
         let programData =
             {
                 serviceAccessInfo = data.messagingServiceAccessInfo.serviceAccessInfo
@@ -23,8 +26,8 @@ module Program =
                 getWcfService = fun service -> new MessagingWcfService<'D>(service)
                 saveSettings = saveSettings
                 configureServices = None
-                configureServiceLogging = configureServiceLogging
-                configureLogging = configureLogging
+                configureServiceLogging = configureServiceLogging projectName
+                configureLogging = configureLogging projectName
             }
 
         wcfMain<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv

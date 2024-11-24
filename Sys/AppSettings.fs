@@ -57,6 +57,8 @@ module AppSettings =
     type ConfigKey =
         | ConfigKey of string
 
+        static member projectName = ConfigKey "ProjectName"
+
 
     let private trySet jsonObj (ConfigSection section) (ConfigKey key) value =
         try
@@ -311,6 +313,8 @@ module AppSettings =
                 printfn $"ERROR: %A{e}"
                 LogLevel.defaultValue
 
+        member a.getProjectName() = a.getStringOrDefault ConfigKey.projectName ProjectName.defaultValue.value |> ProjectName
+
         member a.save() =
             match a.trySave() with
             | Ok () -> ()
@@ -367,3 +371,11 @@ module AppSettings =
             Logger.logInfo $"setLogLevel: Setting log level to '%A{logLevel}'."
             Logger.setMinLogLevel logLevel
         | Error e -> Logger.logError $"setLogLevel: ERROR - '%A{e}'."
+
+
+    let getProjectName() =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider -> provider.getProjectName()
+        | Error e ->
+            Logger.logError $"setLogLevel: ERROR - '%A{e}'."
+            ProjectName.defaultValue

@@ -59,6 +59,8 @@ module Program =
             let runner = PartitionerRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
 
+        let projectName = getProjectName() |> Some
+
         let programData =
             {
                 serviceAccessInfo = data.partitionerServiceInfo.partitionerServiceAccessInfo
@@ -66,8 +68,8 @@ module Program =
                 getWcfService = PartitionerWcfService
                 saveSettings = saveSettings
                 configureServices = Some configureServices
-                configureServiceLogging = configureServiceLogging
-                configureLogging = configureLogging
+                configureServiceLogging = configureServiceLogging projectName
+                configureLogging = configureLogging projectName
             }
 
         Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."

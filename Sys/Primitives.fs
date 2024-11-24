@@ -318,3 +318,10 @@ module Primitives =
         | PrivateKey of string
 
         member this.value = let (PrivateKey v) = this in v
+
+
+    type ProjectName =
+        | ProjectName of string
+
+        member this.value = let (ProjectName v) = this in v
+        static member defaultValue = ProjectName "Default"

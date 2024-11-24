@@ -6,8 +6,27 @@ open System.Runtime.InteropServices
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
 open log4net
+open Softellect.Sys.Primitives
 
 module Logging =
+
+    let private projectNameProperty = "ProjectName"
+
+
+    let configureProjectName (ProjectName projectName) =
+        let globalContext = GlobalContext.Properties
+        globalContext[projectNameProperty] <- projectName
+
+
+    let private tryConfigureProjectName po =
+        match po with
+        | Some p -> configureProjectName p
+        | None -> ()
+
+
+    /// Configure a default subfolder for logs.
+    let private dummy = configureProjectName ProjectName.defaultValue
+
 
     type LogLevel =
         | TraceLog
@@ -36,6 +55,16 @@ module Logging =
             | WarnLog ->  "Warning"
             | ErrorLog -> "Error"
             | CritLog ->  "Critical"
+
+        /// A Microsoft.Extensions.Logging.LogLevel value.
+        member l.logLevel =
+            match l with
+            | TraceLog -> LogLevel.Trace
+            | DebugLog -> LogLevel.Debug
+            | InfoLog ->  LogLevel.Information
+            | WarnLog ->  LogLevel.Warning
+            | ErrorLog -> LogLevel.Error
+            | CritLog ->  LogLevel.Critical
 
         static member tryDeserialize (s : string) =
             match s.Trim() with
@@ -100,14 +129,16 @@ module Logging =
             Logger.log CritLog message (defaultArg callerName "")
 
 
-    let configureLogging (logging: ILoggingBuilder) =
+    let configureLogging po (logging: ILoggingBuilder) =
+        tryConfigureProjectName po
         logging.ClearProviders() |> ignore
         logging.AddConsole() |> ignore
         logging.AddDebug() |> ignore
         logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
 
-    let configureServiceLogging (logging: ILoggingBuilder) =
+    let configureServiceLogging po (logging: ILoggingBuilder) =
+        tryConfigureProjectName po
         logging.ClearProviders() |> ignore
         logging.AddLog4Net("log4net.config") |> ignore
         logging.SetMinimumLevel(LogLevel.Trace) |> ignore

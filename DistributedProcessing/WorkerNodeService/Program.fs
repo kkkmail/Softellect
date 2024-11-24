@@ -59,6 +59,8 @@ module Program =
             let runner = WorkerNodeRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
 
+        let projectName = getProjectName() |> Some
+
         let programData =
             {
                 serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
@@ -66,8 +68,8 @@ module Program =
                 getWcfService = fun service -> WorkerNodeWcfService(service)
                 saveSettings = saveSettings
                 configureServices = Some configureServices
-                configureServiceLogging = configureServiceLogging
-                configureLogging = configureLogging
+                configureServiceLogging = configureServiceLogging projectName
+                configureLogging = configureLogging projectName
             }
 
         Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
