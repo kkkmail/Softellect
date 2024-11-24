@@ -4,6 +4,7 @@ open System.Diagnostics
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
 open log4net
 
 module Logging =
@@ -103,19 +104,19 @@ module Logging =
         logging.ClearProviders() |> ignore
         logging.AddConsole() |> ignore
         logging.AddDebug() |> ignore
-        logging.SetMinimumLevel(LogLevel.Debug) |> ignore
+        logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
 
     let configureServiceLogging (logging: ILoggingBuilder) =
         logging.ClearProviders() |> ignore
         logging.AddLog4Net("log4net.config") |> ignore
-        logging.SetMinimumLevel(LogLevel.Debug) |> ignore
+        logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
         let log4NetLogger = LogManager.GetLogger("log4net-default")
 
         Logger.configureLogger(fun level callerName message ->
             match level with
-            | TraceLog -> log4NetLogger.Debug($"[{callerName}] {message}")
+            | TraceLog -> log4NetLogger.Trace($"[{callerName}] {message}", null)
             | DebugLog -> log4NetLogger.Debug($"[{callerName}] {message}")
             | InfoLog -> log4NetLogger.Info($"[{callerName}] {message}")
             | WarnLog -> log4NetLogger.Warn($"[{callerName}] {message}")
