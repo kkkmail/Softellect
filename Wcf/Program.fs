@@ -25,6 +25,8 @@ module Program =
             getWcfService : 'IService -> 'WcfService
             saveSettings : unit -> unit
             configureServices : (IServiceCollection -> unit) option
+            configureServiceLogging : ILoggingBuilder -> unit
+            configureLogging : ILoggingBuilder -> unit
         }
 
 
@@ -36,14 +38,21 @@ module Program =
         and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
+        let isService = not Environment.UserInteractive
+
         Host.CreateDefaultBuilder()
             .UseWindowsService()
 
             .ConfigureLogging(fun logging ->
-                logging.ClearProviders() |> ignore
-                logging.AddConsole() |> ignore  // Add console logging
-                logging.AddDebug() |> ignore    // Add debug logging
-                logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
+                match isService with
+                | true -> data.configureServiceLogging logging
+                | false -> data.configureLogging logging)
+
+                // if isService then
+                // else
+                //     logging.AddConsole() |> ignore  // Add console logging
+                //     logging.AddDebug() |> ignore    // Add debug logging
+                //     logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
 
             .ConfigureServices(fun hostContext services ->
                 let service = data.getService()

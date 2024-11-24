@@ -3,148 +3,10 @@
 open System.Diagnostics
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
+open Microsoft.Extensions.Logging
+open log4net
 
 module Logging =
-
-    // /// An encapsulation of a logger name.
-    // type LoggerName =
-    //     | LoggerName of string
-    //
-    //     member this.value = let (LoggerName v) = this in v
-    //
-    //
-    // type LogLevel =
-    //     | CritLog
-    //     | ErrLog
-    //     | WarnLog
-    //     | InfoLog
-    //     | DebugLog
-    //
-    //
-    // type Logger =
-    //     {
-    //         logCrit : string -> unit
-    //         logError : string -> unit
-    //         logWarn : string -> unit
-    //         logInfo : string -> unit
-    //         logDebug : string -> unit
-    //     }
-    //
-    //     member this.logIfError v =
-    //         match v with
-    //         | Ok _ -> ()
-    //         | Error e -> this.logError $"%A{e}"
-    //
-    //         v
-    //
-    //     static member defaultValue =
-    //         {
-    //             logCrit = printfn "CRIT: %A, %A" DateTime.Now
-    //             logError = printfn "ERROR: %A, %A" DateTime.Now
-    //             logWarn = printfn "WARN: %A, %A" DateTime.Now
-    //             logInfo = printfn "INFO: %A, %A" DateTime.Now
-    //             logDebug = printfn "DEBUG: %A, %A" DateTime.Now
-    //         }
-    //
-    //     static member releaseValue =
-    //         {
-    //             logCrit = printfn "CRIT: %A, %A" DateTime.Now
-    //             logError = printfn "ERROR: %A, %A" DateTime.Now
-    //             logWarn = printfn "WARN: %A, %A" DateTime.Now
-    //             logInfo = printfn "INFO: %A, %A" DateTime.Now
-    //             logDebug = fun _ -> ()
-    //         }
-    //
-    //
-    //     static member getCallerName([<Optional; DefaultParameterValue(false)>] ?addTimeStamp: bool, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?memberName: string) =
-    //         let memberName = defaultArg memberName ""
-    //         let a = defaultArg addTimeStamp false
-    //
-    //         if a then $"{memberName}__{DateTime.Now:yyyyMMdd_HHmm}"
-    //         else $"{memberName}"
-    //
-    //
-    // type GetLogger = LoggerName -> Logger
-
-    // type LogLevel =
-    //     | Debug
-    //     | Info
-    //     | Warning
-    //     | Error
-    //     | Critical
-    //
-    // type Logger private () =
-    //     static let mutable logImpl: (LogLevel -> obj -> string -> unit) option =
-    //         Some (fun level message callerName -> printfn $"[{level}] - {callerName}: %A{message}")
-    //
-    //     static member configureLogger (impl: LogLevel -> obj -> string -> unit) = logImpl <- Some impl
-    //     static member disableLogging () = logImpl <- None
-    //
-    //     static member private log (level: LogLevel) (message: obj) (callerName: string) =
-    //         match logImpl with
-    //         | Some logger -> logger level message callerName
-    //         | None -> ()
-    //
-    //     static member logDebug (message : obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Debug message (defaultArg callerName "")
-    //
-    //     static member logInfo (message : obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Info message (defaultArg callerName "")
-    //
-    //     static member logWarning (message : obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Warning message (defaultArg callerName "")
-    //
-    //     static member logError (message : obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Error message (defaultArg callerName "")
-    //
-    //     static member logCritical (message : obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Critical message (defaultArg callerName "")
-
-    // type LogLevel =
-    //     | Debug
-    //     | Info
-    //     | Warning
-    //     | Error
-    //     | Critical
-    //
-    // type Logger private () =
-    //     /// Default log implementation.
-    //     static let mutable logImpl: (LogLevel -> obj -> string -> unit) option =
-    //         Some (fun level message callerName -> printfn $"[{level}] - {callerName}: %A{message}")
-    //
-    //     /// Minimum log level for filtering messages.
-    //     static let mutable minLogLevel = Debug
-    //
-    //     /// Configure the logger implementation.
-    //     static member configureLogger (impl: LogLevel -> obj -> string -> unit) = logImpl <- Some impl
-    //
-    //     /// Disable logging completely.
-    //     static member disableLogging () = logImpl <- None
-    //
-    //     /// Adjust the minimum log level (verbosity).
-    //     static member setMinLogLevel level = minLogLevel <- level
-    //
-    //     /// Private log function with verbosity check.
-    //     static member private log (level: LogLevel) (message: obj) (callerName: string) =
-    //         if level >= minLogLevel then
-    //             match logImpl with
-    //             | Some logger -> logger level message callerName
-    //             | None -> ()
-    //
-    //     static member logDebug (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Debug message (defaultArg callerName "")
-    //
-    //     static member logInfo (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Info message (defaultArg callerName "")
-    //
-    //     static member logWarning (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Warning message (defaultArg callerName "")
-    //
-    //     static member logError (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Error message (defaultArg callerName "")
-    //
-    //     static member logCritical (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
-    //         Logger.log Critical message (defaultArg callerName "")
 
     type LogLevel =
         | TraceLog
@@ -237,11 +99,26 @@ module Logging =
             Logger.log CritLog message (defaultArg callerName "")
 
 
-// /// Convenience functions for direct usage.
-// module Log =
-//     let logTrace = Logging.Logger.logTrace
-//     let logDebug = Logging.Logger.logDebug
-//     let logInfo = Logging.Logger.logInfo
-//     let logWarn = Logging.Logger.logWarn
-//     let logError = Logging.Logger.logError
-//     let logCrit = Logging.Logger.logCrit
+    let configureLogging (logging: ILoggingBuilder) =
+        logging.ClearProviders() |> ignore
+        logging.AddConsole() |> ignore
+        logging.AddDebug() |> ignore
+        logging.SetMinimumLevel(LogLevel.Debug) |> ignore
+
+
+    let configureServiceLogging (logging: ILoggingBuilder) =
+        logging.ClearProviders() |> ignore
+        logging.AddLog4Net("log4net.config") |> ignore
+        logging.SetMinimumLevel(LogLevel.Debug) |> ignore
+
+        let log4NetLogger = LogManager.GetLogger("log4net-default")
+
+        Logger.configureLogger(fun level callerName message ->
+            match level with
+            | TraceLog -> log4NetLogger.Debug($"[{callerName}] {message}")
+            | DebugLog -> log4NetLogger.Debug($"[{callerName}] {message}")
+            | InfoLog -> log4NetLogger.Info($"[{callerName}] {message}")
+            | WarnLog -> log4NetLogger.Warn($"[{callerName}] {message}")
+            | ErrorLog -> log4NetLogger.Error($"[{callerName}] {message}")
+            | CritLog -> log4NetLogger.Fatal($"[{callerName}] {message}")
+            )

@@ -66,6 +66,8 @@ module Program =
                 getWcfService = fun service -> WorkerNodeWcfService(service)
                 saveSettings = saveSettings
                 configureServices = Some configureServices
+                configureServiceLogging = configureServiceLogging
+                configureLogging = configureLogging
             }
 
         Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."

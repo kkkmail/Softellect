@@ -23,6 +23,8 @@ module Program =
                 getWcfService = fun service -> new MessagingWcfService<'D>(service)
                 saveSettings = saveSettings
                 configureServices = None
+                configureServiceLogging = configureServiceLogging
+                configureLogging = configureLogging
             }
 
         wcfMain<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv

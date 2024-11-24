@@ -61,6 +61,9 @@
         <Content Include="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <None Include="..\..\log4net.config" Link="log4net.config">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <Compile Include="..\Core\Primitives.fs" Link="Primitives.fs" />
         <Compile Include="..\Core\AppSettings.fs" Link="AppSettings.fs" />
         <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />

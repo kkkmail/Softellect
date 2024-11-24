@@ -68,7 +68,9 @@
         <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
         <PackageReference Include="FsPickler" Version="5.3.2" />
         <PackageReference Include="FsPickler.Json" Version="5.3.2" />
+        <PackageReference Include="log4net" Version="3.0.3" />
         <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
         <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />

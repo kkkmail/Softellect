@@ -66,6 +66,8 @@ module Program =
                 getWcfService = PartitionerWcfService
                 saveSettings = saveSettings
                 configureServices = Some configureServices
+                configureServiceLogging = configureServiceLogging
+                configureLogging = configureLogging
             }
 
         Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
