@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "")
 
-. ./MessagingFunctions.ps1
-StopMessagingService -messagingDataVersion $messagingDataVersion
+. ./WorkerNodeFunctions.ps1
+StopWorkerNodeService -messagingDataVersion $messagingDataVersion

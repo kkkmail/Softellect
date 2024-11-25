@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "")
 
-. ./MessagingFunctions.ps1
-UninstallMessagingService -messagingDataVersion $messagingDataVersion
+. ./WorkerNodeFunctions.ps1
+UninstallWorkerNodeService -messagingDataVersion $messagingDataVersion

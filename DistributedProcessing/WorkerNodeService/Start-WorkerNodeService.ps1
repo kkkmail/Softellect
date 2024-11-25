@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "")
 
-. ./MessagingFunctions.ps1
-StartMessagingService -messagingDataVersion $messagingDataVersion
+. ./WorkerNodeFunctions.ps1
+StartWorkerNodeService -messagingDataVersion $messagingDataVersion

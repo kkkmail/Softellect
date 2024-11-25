@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "", [string] $versionNumber = "")
 
-. ./WorkerNodeFunctions.ps1
-InstallMessagingService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+. ./PartitionerFunctions.ps1
+InstallPartitionerService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber

@@ -2,7 +2,7 @@
 
 . ./Functions.ps1
 . ./WorkerNodeVersionInfo.ps1
-. ./WorkerNodeerviceName.ps1
+. ./WorkerNodeServiceName.ps1
 
 
 function InstallWorkerNodeService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
