@@ -255,6 +255,7 @@ module Wolfram =
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
                             link.Close() // Close the link when done.
+                            Logger.logTrace $"tryRunMathematicaScript: Completed sucessfully. Loaded {fileBytes.Length} bytes."
                             Ok fileBytes
                         else
                             // If the output file is not found, return an error.

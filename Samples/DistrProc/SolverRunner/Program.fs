@@ -145,7 +145,7 @@ module Program =
                 solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->
-                Console.WriteLine($"Exception: %A{e}.")
+                Logger.logCrit($"Exception: %A{e}.")
                 CriticalError
 
         // Console.ReadLine() |> ignore

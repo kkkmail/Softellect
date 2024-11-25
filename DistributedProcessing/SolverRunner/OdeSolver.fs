@@ -5,6 +5,7 @@ open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Microsoft.FSharp.NativeInterop
 open Softellect.OdePackInterop
 open Microsoft.FSharp.Core
+open Softellect.Sys.Logging
 
 #nowarn "9"
 
@@ -61,6 +62,7 @@ module OdeSolver =
 
     /// F# wrapper around various ODE solvers.
     let createOdeSolver p n =
+        Logger.logTrace $"p: %A{p}, n: %A{n}."
         let startTime = double p.startTime.value
         let endTime = double p.endTime.value
 
@@ -68,7 +70,7 @@ module OdeSolver =
         // c
         match n.odeSolverType with
         | AlgLib CashCarp ->
-            //n.logger.logDebugString "nSolve: Using Cash - Carp Alglib solver."
+            Logger.logTrace "nSolve: Using Cash - Carp Alglib solver."
 
             let solve (_, x0) (c : TryCallBack<double[]>) =
                 let nt = 2
@@ -85,12 +87,13 @@ module OdeSolver =
                 let xEnd = yTbl[nt - 1, *]
                 //notifyAll n (FinalCallBack CompletedCalculation) { progressData = needsCallBackData.progressData; t = p.endTime; x = xEnd }
 
+                Logger.logTrace $"t = %A{p.endTime}"
                 (p.endTime, xEnd)
 
             SolverRunner solve
 
         | OdePack (m, i, nc) ->
-            //n.logger.logDebugString $"nSolve: Using {m} / {i} / {nc} DLSODE solver."
+            Logger.logTrace $"nSolve: Using {m} / {i} / {nc} DLSODE solver."
             let mapResults (r : SolverResult) _ = (decimal r.EndTime |> EvolutionTime, r.X)
 
             let solve (_, x0) (c : TryCallBack<double[]>) =
@@ -119,6 +122,7 @@ module OdeSolver =
                                 n.absoluteTolerance.value)
 
                 //notifyAll n (FinalCallBack CompletedCalculation) result
+                Logger.logTrace $"t = %A{(fst result)}"
                 result
 
             SolverRunner solve

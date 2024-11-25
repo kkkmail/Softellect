@@ -327,12 +327,12 @@ module Runner =
                 progressDetailed = u.solverProxy.getProgressData |> Option.map (fun e -> e modelData t x)
             }
 
-        let getProgressUpdateInfo s p =
-            {
-                runQueueId = d.runQueueId
-                updatedRunQueueStatus = s
-                progressData = p
-            }
+        // let getProgressUpdateInfo s p =
+        //     {
+        //         runQueueId = d.runQueueId
+        //         updatedRunQueueStatus = s
+        //         progressData = p
+        //     }
 
         let updateNeedsCallBackData t v =
             let ncbd = getNeedsCallBackData runQueueId
@@ -355,12 +355,15 @@ module Runner =
         try
             try
                 // Run the computation from the initial data till the end and report progress on the way.
+                Logger.logTrace "runSolver: Calling solverRunner.invoke"
                 let tEnd, xEnd = u.solverRunner.invoke (t0, x0) tryCallBack
+                Logger.logTrace "runSolver: Call to solverRunner.invoke has completed."
 
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
                 notifyResults ctx RegularResultGeneration
+                Logger.logTrace "runSolver: Final results have been sent."
 
                 //(tEnd, xEnd)
             with
@@ -370,9 +373,11 @@ module Runner =
 
                 match ex.cancellationType with
                 | CancelWithResults e ->
+                    Logger.logInfo $"runSolver: Calculation was cancelled with e = %A{e}"
                     notifyResults ctx RegularResultGeneration
                     notifyProgress s (e |> CancelWithResults |> CancelledCalculation |> FinalCallBack) pd
                 | AbortCalculation e ->
+                    Logger.logInfo $"runSolver: Calculation was aborted with e = %A{e}"
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
             | ex ->
                 Logger.logError $"runSolver: Exception: %A{ex}"

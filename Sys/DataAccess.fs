@@ -41,7 +41,7 @@ module DataAccess =
                 defaultValue
             |> ConnectionString
 
-        Logger.logTrace $"getConnectionString: r = %A{r}."
+        // Logger.logTrace $"getConnectionString: r = %A{r}."
         r
 
 
