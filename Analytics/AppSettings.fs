@@ -10,7 +10,8 @@ module AppSettings =
     let private wolframOutputFolderKey = ConfigKey "WolframOutput"
 
 
-    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
+    // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
+    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\math.exe" |> FileName
     let private defaultWolframInputFolder = "C:\\Wolfram\\Input\\" |> FolderName
     let private defaultWolframOutputFolder = "C:\\Wolfram\\Output\\" |> FolderName
 

@@ -235,9 +235,9 @@ module Wolfram =
                     let rnd = Random()
                     let logId = rnd.Next()
 
-                    // let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
+                    let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon' -linklaunch -linkprotocol tcp"
-                    let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon -logfile C:\\Temp\\mathkernel_{logId}.log' -linklaunch"
+                    // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon -logfile C:\\Temp\\mathkernel_{logId}.log' -linklaunch"
 
                     Logger.logTrace $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
