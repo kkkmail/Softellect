@@ -68,11 +68,11 @@ module Program =
             Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
             checkMonitorData()
 
-            match tryChangeResolution MonitorResolution.fullHD with
-            | Ok() -> ()
-            | Error e -> Logger.logError $"%A{e}"
-
-            checkMonitorData()
+            // match tryChangeResolution MonitorResolution.fullHD with
+            // | Ok() -> ()
+            // | Error e -> Logger.logError $"%A{e}"
+            //
+            // checkMonitorData()
 
         let programData =
             {

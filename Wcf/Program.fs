@@ -40,13 +40,11 @@ module Program =
         and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
-        let isService = isService()
-
         Host.CreateDefaultBuilder()
             .UseWindowsService()
 
             .ConfigureLogging(fun logging ->
-                match isService with
+                match isService() with
                 | true -> data.configureServiceLogging logging
                 | false -> data.configureLogging logging)
 
