@@ -11,7 +11,8 @@ module AppSettings =
 
 
     // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
-    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\math.exe" |> FileName
+    // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\math.exe" |> FileName
+    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Wolfram\\14.1\\math.exe" |> FileName
     let private defaultWolframInputFolder = "C:\\Wolfram\\Input\\" |> FolderName
     let private defaultWolframOutputFolder = "C:\\Wolfram\\Output\\" |> FolderName
 

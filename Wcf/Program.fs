@@ -27,6 +27,7 @@ module Program =
             configureServices : (IServiceCollection -> unit) option
             configureServiceLogging : ILoggingBuilder -> unit
             configureLogging : ILoggingBuilder -> unit
+            postBuildHandler : (ServiceAccessInfo -> IHost -> unit) option
         }
 
 
@@ -86,20 +87,33 @@ module Program =
         when 'IService :> IHostedService and 'IService : not struct
         and 'IWcfService : not struct
         and 'WcfService : not struct> programName data argv =
-        Softellect.Sys.Logging.Logger.logInfo $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
-        let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
+
+        let logStarting() =
+            Softellect.Sys.Logging.Logger.logInfo $"wcfMain<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
+
+        let runHost() =
+            let host = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build()
+            logStarting()
+
+            match data.postBuildHandler with
+            | Some p -> p data.serviceAccessInfo host
+            | None -> ()
+
+            host.Run()
 
         try
             let parser = ArgumentParser.Create<SettingsArguments>(programName = programName)
             let results = (parser.Parse argv).GetAllResults()
 
             match SettingsTask.tryCreate data.saveSettings results with
-            | Some task -> task.run()
+            | Some task ->
+                logStarting()
+                task.run()
             | None -> runHost()
 
             CompletedSuccessfully
 
         with
         | exn ->
-            Softellect.Sys.Logging.Logger.logError $"%s{exn.Message}"
+            Softellect.Sys.Logging.Logger.logCrit $"%s{exn.Message}"
             UnknownException

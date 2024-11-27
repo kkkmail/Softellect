@@ -19,7 +19,7 @@ module Program =
 
     let partitionerMain argv =
         setLogLevel()
-        Logger.logTrace $"partitionerMain - argv: %A{argv}."
+
         let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
         let getMessageSize _ = SmallSize
 
@@ -61,6 +61,10 @@ module Program =
 
         let projectName = getProjectName() |> Some
 
+        let postBuildHandler _ _ =
+            Logger.logTrace $"partitionerMain - argv: %A{argv}."
+            Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
+
         let programData =
             {
                 serviceAccessInfo = data.partitionerServiceInfo.partitionerServiceAccessInfo
@@ -70,7 +74,7 @@ module Program =
                 configureServices = Some configureServices
                 configureServiceLogging = configureServiceLogging projectName
                 configureLogging = configureLogging projectName
+                postBuildHandler = Some postBuildHandler
             }
 
-        Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
         wcfMain<IPartitionerService, IPartitionerWcfService, PartitionerWcfService> partitionerServiceProgramName programData argv

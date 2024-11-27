@@ -11,7 +11,8 @@ open Softellect.Sys.AppSettings
 module Program =
 
     let messagingMain<'D> messagingProgramName data argv =
-        Logger.logInfo $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
+        let postBuildHandler _ _ =
+            Logger.logInfo $"main<{typeof<'D>.Name}> - data.messagingServiceAccessInfo = '{data.messagingServiceAccessInfo}'."
 
         let saveSettings() =
             let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
@@ -28,6 +29,7 @@ module Program =
                 configureServices = None
                 configureServiceLogging = configureServiceLogging projectName
                 configureLogging = configureLogging projectName
+                postBuildHandler = Some postBuildHandler
             }
 
         wcfMain<IMessagingService<'D>, IMessagingWcfService, MessagingWcfService<'D>> messagingProgramName programData argv

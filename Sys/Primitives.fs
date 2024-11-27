@@ -325,3 +325,22 @@ module Primitives =
 
         member this.value = let (ProjectName v) = this in v
         static member defaultValue = ProjectName "Default"
+
+    type MonitorResolution =
+        {
+            monitorWidth : int
+            monitorHeight : int
+        }
+
+
+    type MonitorDpi =
+        {
+            dpiX : int
+            dpiY : int
+        }
+
+
+    type ColorDepth =
+        | ColorDepth of int
+
+        member this.value = let (ColorDepth v) = this in v

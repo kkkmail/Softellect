@@ -12,11 +12,13 @@
         <PlatformTarget>x64</PlatformTarget>
         <DefineConstants>DEBUG</DefineConstants>
         <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
         <PlatformTarget>x64</PlatformTarget>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

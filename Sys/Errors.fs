@@ -93,6 +93,11 @@ module Errors =
         | KeyImportMissingIdErr
 
 
+    type WindowsApiError =
+        | WindowsApiExn of exn
+        | WindowsApiCallErr of string
+
+
     type SysError =
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
@@ -101,3 +106,4 @@ module Errors =
         | FileErr of FileError
         | TimerEventErr of TimerEventError
         | CryptoErr of CryptoError
+        | WindowsApiErr of WindowsApiError
