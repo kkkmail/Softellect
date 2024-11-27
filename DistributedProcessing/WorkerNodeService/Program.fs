@@ -8,6 +8,7 @@ open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Sys.WindowsApi
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
@@ -18,14 +19,6 @@ open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
 
 module Program =
-
-    /// Function to check if a monitor data is available.
-    let private checkMonitorData() =
-        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
-        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
-        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
-
-        ()
 
     let workerNodeMain argv =
         setLogLevel()
@@ -72,6 +65,12 @@ module Program =
 
         let postBuildHandler _ _ =
             Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
+            checkMonitorData()
+
+            match tryChangeResolution MonitorResolution.fullHD with
+            | Ok() -> ()
+            | Error e -> Logger.logError $"%A{e}"
+
             checkMonitorData()
 
         let programData =

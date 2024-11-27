@@ -332,6 +332,18 @@ module Primitives =
             monitorHeight : int
         }
 
+        static member fullHD =
+            {
+                monitorWidth = 1920
+                monitorHeight = 1080
+            }
+
+        static member fourK =
+            {
+                monitorWidth = 3840
+                monitorHeight = 2160
+            }
+
 
     type MonitorDpi =
         {

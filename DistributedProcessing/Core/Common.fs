@@ -7,6 +7,8 @@ open Softellect.Wcf.Common
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
+open Softellect.Sys.Logging
+open Softellect.Sys.WindowsApi
 
 module Common =
 
@@ -575,3 +577,11 @@ module Common =
             odeSolverType : OdeSolverType
             derivative : DerivativeCalculator
         }
+
+    /// Function to check if a monitor data is available.
+    let checkMonitorData() =
+        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
+        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
+        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
+
+        ()
