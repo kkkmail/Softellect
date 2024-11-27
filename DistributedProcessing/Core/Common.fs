@@ -577,11 +577,3 @@ module Common =
             odeSolverType : OdeSolverType
             derivative : DerivativeCalculator
         }
-
-    /// Function to check if a monitor data is available.
-    let checkMonitorData() =
-        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
-        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
-        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
-
-        ()

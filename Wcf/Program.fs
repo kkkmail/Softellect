@@ -8,6 +8,7 @@ open Microsoft.Extensions.Logging
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Service
 open Softellect.Wcf.Common
+open Softellect.Sys.Primitives
 open System.Net
 open CoreWCF.Configuration
 open Microsoft.AspNetCore.Hosting
@@ -39,7 +40,7 @@ module Program =
         and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
-        let isService = not Environment.UserInteractive
+        let isService = isService()
 
         Host.CreateDefaultBuilder()
             .UseWindowsService()

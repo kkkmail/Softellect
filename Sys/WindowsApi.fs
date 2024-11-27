@@ -97,21 +97,25 @@ module WindowsApi =
 
     let tryChangeResolution (mr : MonitorResolution) =
         try
-            let mutable devMode = Activator.CreateInstance<DEVMODE>()
-            devMode.dmSize <- int16 (Marshal.SizeOf<DEVMODE>())
-            devMode.dmPelsWidth <- mr.monitorWidth
-            devMode.dmPelsHeight <- mr.monitorHeight
-            devMode.dmFields <- 0x180000 // DM_PELSWIDTH | DM_PELSHEIGHT
+            if isService()
+            then
+                let mutable devMode : DEVMODE = Unchecked.defaultof<DEVMODE>
+                devMode.dmSize <- int16 (Marshal.SizeOf<DEVMODE>())
+                devMode.dmPelsWidth <- mr.monitorWidth
+                devMode.dmPelsHeight <- mr.monitorHeight
+                devMode.dmFields <- 0x180000 // DM_PELSWIDTH | DM_PELSHEIGHT
 
-            let result = ChangeDisplaySettingsEx(null, &devMode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero)
+                let result = ChangeDisplaySettingsEx(null, &devMode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero)
 
-            if result = DISP_CHANGE_SUCCESSFUL then
-                Logger.logInfo $"Resolution changed to %A{mr}"
-                Ok()
+                if result = DISP_CHANGE_SUCCESSFUL then
+                    Logger.logInfo $"Resolution changed to %A{mr}"
+                    Ok()
+                else
+                    let m = $"Failed to change resolution to %A{mr}. Error code: {result}."
+                    Logger.logError m
+                    m |> WindowsApiCallErr |> toError
             else
-                let m = $"Failed to change resolution to %A{mr}. Error code: {result}."
-                Logger.logError m
-                m |> WindowsApiCallErr |> toError
+                "Changing resolution to not a service is currently disallowed." |> WindowsApiDisallowedOperationErr |> toError
         with
         | e -> e |> WindowsApiExn |> toError
 

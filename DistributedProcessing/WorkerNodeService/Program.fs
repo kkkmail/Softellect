@@ -17,6 +17,7 @@ open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Core
 
 module Program =
 

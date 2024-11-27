@@ -10,6 +10,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Core
 
 module Program =
 

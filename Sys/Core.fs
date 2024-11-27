@@ -11,7 +11,7 @@ open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Newtonsoft.Json.Serialization
-open System.Runtime.InteropServices
+open Softellect.Sys.WindowsApi
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -558,3 +558,12 @@ module Core =
             | e ->
                 Logger.logError $"tryGetExtension: Exception: '%A{e}'."
                 e |> TryGetExtensionExn |> Error
+
+
+    /// Function to check if a monitor data is available.
+    let checkMonitorData() =
+        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
+        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
+        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
+
+        ()

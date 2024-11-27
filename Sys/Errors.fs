@@ -96,6 +96,7 @@ module Errors =
     type WindowsApiError =
         | WindowsApiExn of exn
         | WindowsApiCallErr of string
+        | WindowsApiDisallowedOperationErr of string
 
 
     type SysError =

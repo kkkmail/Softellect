@@ -8,6 +8,9 @@ open System.Text.RegularExpressions
 /// Collection of various primitive abstractions.
 module Primitives =
 
+    let isService() = not Environment.UserInteractive
+
+
     [<Literal>]
     let CopyrightInfo = "MIT License - Copyright Konstantin K. Konstantinov and Alisa F. Konstantinova © 2015 - 2024."
 
