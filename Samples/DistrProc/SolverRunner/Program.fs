@@ -87,7 +87,9 @@ module Program =
                 c1.Head.resultData.x
                 |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
 
-            getListLinePlot i o ListLineParams.defaultValue d
+            let p = { ListLineParams.defaultValue with imageSize = UserDefinedImageSize "1000" |> Some}
+
+            getListLinePlot i o p d
         | _ ->
             Logger.logError $"getWolframChart - Cannot get data for: %A{q}."
             None

@@ -33,7 +33,7 @@ module Wolfram =
     type GridLines =
         | Automatic
         // | None
-        | UserDefined of string // You are on your own here.
+        | UserDefinedGridLines of string // You are on your own here.
 
         static member defaultValue = GridLines.Automatic
 
@@ -44,6 +44,7 @@ module Wolfram =
         | Medium
         | Large
         | Full
+        | UserDefinedImageSize of string // You are on your own here.
 
         static member defaultValue = ImageSize.Large
 
@@ -321,7 +322,10 @@ module Wolfram =
         let frame = if p.frame then ", Frame -> True" else ""
         let plotRange = p.plotRange |> Option.map (fun r -> $", PlotRange -> %A{r}") |> Option.defaultValue ""
         let gridLines = p.gridLines |> Option.map (fun g -> $", GridLines -> %A{g}") |> Option.defaultValue ""
-        let imageSize = p.imageSize |> Option.map (fun i -> $", ImageSize -> %A{i}") |> Option.defaultValue ""
+
+        // If the image size is user defined, then send it as is. Otherwise, use %A to get a full name.
+        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue ""
+
         let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
         let plotLegends = ", PlotLegends -> legends"
 
