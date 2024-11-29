@@ -26,6 +26,7 @@ module Wolfram =
         | All
         | Full
         | Automatic
+        | UserDefinedPlotRange of string // You are on your own here.
 
         static member defaultValue = PlotRange.All
 
@@ -233,8 +234,8 @@ module Wolfram =
                 // Start the Wolfram Kernel with explicit link name.
                 match tryGetMathKernelFileName() with
                 | Ok kernelName ->
-                    let rnd = Random()
-                    let logId = rnd.Next()
+                    // let rnd = Random()
+                    // let logId = rnd.Next()
 
                     let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon' -linklaunch -linkprotocol tcp"
@@ -260,7 +261,7 @@ module Wolfram =
                         link.WaitForAnswer() |> ignore
                         Logger.logTrace "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
 
-                        // Check for the output file in the output folder
+                        // Check for the output file in the output folder.
                         if File.Exists(o) then
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
@@ -303,6 +304,7 @@ module Wolfram =
             gridLines : GridLines option
             imageSize : ImageSize option
             labelStyle : LabelStyle option
+            extraParams : string option // Any additional parameters that you want to pass to ListLinePlot. The string will be passed as is.
         }
 
         static member defaultValue =
@@ -312,6 +314,7 @@ module Wolfram =
                 gridLines = Some GridLines.defaultValue
                 imageSize = Some ImageSize.defaultValue
                 labelStyle = Some LabelStyle.defaultValue
+                extraParams = None
             }
 
 
@@ -319,22 +322,22 @@ module Wolfram =
         let legends = d |> Array.map _.dataLabel.value
         let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
         let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
-        let frame = if p.frame then ", Frame -> True" else ""
-        let plotRange = p.plotRange |> Option.map (fun r -> $", PlotRange -> %A{r}") |> Option.defaultValue ""
-        let gridLines = p.gridLines |> Option.map (fun g -> $", GridLines -> %A{g}") |> Option.defaultValue ""
+        let frame = if p.frame then ", Frame -> True" else EmptyString
 
-        // If the image size is user defined, then send it as is. Otherwise, use %A to get a full name.
-        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue ""
-
+        // If the plot size, grid lines, image size are user defined, then send them as is. Otherwise, use %A to get a full name.
+        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
+        let gridLines = p.gridLines |> Option.map (fun g -> ", GridLines -> " + (match g with | UserDefinedGridLines v -> v | _ -> $"%A{g}")) |> Option.defaultValue EmptyString
+        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
         let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
         let plotLegends = ", PlotLegends -> legends"
+        let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
 
         let data =
             [
                 xyData
                 $"legends = {(toWolframNotation legends)};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}], \"PNG\"];"
+                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}{extra}], \"PNG\"];"
             ]
             |> joinStrings Nl
         data |> WolframCode
