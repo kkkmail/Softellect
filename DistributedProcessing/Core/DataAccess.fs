@@ -1201,22 +1201,6 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let setSolverDeployed (solverId : SolverId) =
-        let elevate e = e |> SetSolverDeployedErr
-        let fromDbError e = e |> SetSolverDeployedDbErr |> elevate
-
-        let g() =
-            processSolver
-                solverId
-                (fun ctx s ->
-                    s.IsDeployed <- true
-                    ctx.SubmitUpdates()
-                    Ok())
-                (fun _ -> Error (SolverNotFound solverId))
-
-        tryDbFun fromDbError g
-
-
     let private addSolverRow (ctx : DbContext) (s : Solver) =
         let row = ctx.Dbo.Solver.Create(
                             SolverId = s.solverId.value,
@@ -1240,7 +1224,10 @@ module WorkerNodeService =
                     s.SolverName <- solver.solverName.value
                     s.Description <- solver.description
                     s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
+#if WORKER_NODE
+                    // Worker Node has a separate isDeployed flag.
                     s.IsDeployed <- false
+#endif
 
                     ctx.SubmitUpdates()
                     Ok())
@@ -1249,6 +1236,35 @@ module WorkerNodeService =
 
                     ctx.SubmitUpdates()
                     Ok ())
+
+        tryDbFun fromDbError g
+
+
+    let unpackSolver folderName (solver : Solver) =
+        match solver.solverData with
+        | Some data ->
+            match unzipToFolder data.value folderName true with
+            | Ok _ -> Ok ()
+            | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
+        | None -> Ok()
+
+#endif
+
+
+#if WORKER_NODE
+
+    let setSolverDeployed (solverId : SolverId) =
+        let elevate e = e |> SetSolverDeployedErr
+        let fromDbError e = e |> SetSolverDeployedDbErr |> elevate
+
+        let g() =
+            processSolver
+                solverId
+                (fun ctx s ->
+                    s.IsDeployed <- true
+                    ctx.SubmitUpdates()
+                    Ok())
+                (fun _ -> Error (SolverNotFound solverId))
 
         tryDbFun fromDbError g
 
@@ -1274,14 +1290,5 @@ module WorkerNodeService =
             |> Ok
 
         tryDbFun fromDbError g
-
-
-    let unpackSolver folderName (solver : Solver) =
-        match solver.solverData with
-        | Some data ->
-            match unzipToFolder data.value folderName true with
-            | Ok _ -> Ok ()
-            | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
-        | None -> Ok()
 
 #endif

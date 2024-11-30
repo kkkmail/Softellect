@@ -294,7 +294,7 @@ module WorkerNodeService =
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
-            loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
+            //loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
@@ -308,7 +308,7 @@ module WorkerNodeService =
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed
-                loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
+                //loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
             }
 
 
