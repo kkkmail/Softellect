@@ -174,6 +174,10 @@ module Errors =
         | UpsertWorkerNodeErrDbErr of DbError
 
 
+    type UpdateSolverDeploymentInfoError = 
+        | UpdateSolverDeploymentInfoDbErr of DbError
+
+
     type TryGetAvailableWorkerNodeError =
         | TryGetAvailableWorkerNodeDbErr of DbError
 
@@ -368,6 +372,7 @@ module Errors =
         | UpsertWorkerNodeInfoErr of UpsertWorkerNodeInfoError
         | UpsertWorkerNodeErrErr of UpsertWorkerNodeErrError
         | TryGetAvailableWorkerNodeErr of TryGetAvailableWorkerNodeError
+        | UpdateSolverDeploymentInfoErr of UpdateSolverDeploymentInfoError
 
         | OnProcessMessageErr of OnProcessMessageError
         | UnableToRegisterWorkerNodeErr of MessagingError

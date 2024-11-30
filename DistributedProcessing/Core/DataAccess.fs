@@ -724,10 +724,18 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
+    let private addWorkerNodeSolverRow (ctx : DbContext) (w : WorkerNodeId) (s : SolverId) =
+        let row = ctx.Dbo.WorkerNodeSolver.Create(
+                            WorkerNodeId = w.value.value,
+                            SolverId = s.value)
+
+        row
+
+
     let updateSolverDeploymentInfo (w : WorkerNodeId) (s : SolverId) r =
-        let elevate e = e |> UpsertWorkerNodeErrErr
+        let elevate e = e |> UpdateSolverDeploymentInfoErr
         //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+        let fromDbError e = e |> UpdateSolverDeploymentInfoDbErr |> elevate
 
         Logger.logInfo $"updateSolverDeploymentInfo: %A{w}, %A{r}."
 
@@ -742,9 +750,21 @@ module WorkerNodeService =
                     exactlyOneOrDefault
                 }
 
+            let x1 =
+                match x with
+                | Some v -> v
+                | None -> addWorkerNodeSolverRow ctx w s
+
             match r with
-            | Ok () -> failwith ""
-            | Error e -> failwith ""
+            | Ok () ->
+                x1.IsDeployed <- true
+                x1.DeploymentError <- None
+            | Error e ->
+                x1.IsDeployed <- false
+                x1.DeploymentError <- $"%A{e}" |> Some
+
+            ctx.SubmitUpdates()
+            Ok()
 
         tryDbFun fromDbError g
 
