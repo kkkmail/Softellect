@@ -6,6 +6,8 @@ IF OBJECT_ID('dbo.WorkerNode_Solver') IS NULL begin
         solverId uniqueidentifier not null,
         createdOn datetime not null,
         lastErrorOn datetime null,
+        isDeployed bit not null,
+        deploymentError nvarchar(max) null,
         CONSTRAINT PK_WorkerNode_Solver PRIMARY KEY CLUSTERED 
     (
         workerNodeId ASC,
@@ -14,6 +16,7 @@ IF OBJECT_ID('dbo.WorkerNode_Solver') IS NULL begin
     ) ON [PRIMARY]
 
     ALTER TABLE dbo.WorkerNode_Solver ADD CONSTRAINT DF_WorkerNode_Solver_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.WorkerNode_Solver ADD CONSTRAINT DF_WorkerNode_Solver_isDeployed DEFAULT (0) FOR isDeployed
 
     ALTER TABLE dbo.WorkerNode_Solver  WITH CHECK ADD  CONSTRAINT FK_WorkerNode_Solver_WorkerNode FOREIGN KEY(workerNodeId)
     REFERENCES dbo.WorkerNode (workerNodeId)
