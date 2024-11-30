@@ -13,6 +13,7 @@ open Softellect.Sys.WindowsApi
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives.WorkerNodeService
+open Softellect.DistributedProcessing.Messages
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo

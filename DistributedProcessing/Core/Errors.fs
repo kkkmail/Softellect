@@ -331,6 +331,10 @@ module Errors =
         | UnableToFindMappingErr of RunQueueId
 
 
+    type NotifyOfSolverDeploymentError =
+        | NotifyOfSolverDeploymentMessagingErr of MessagingError
+
+
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
@@ -414,6 +418,7 @@ module Errors =
         | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
         | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
         | TryExportWorkerNodePublicKeyErr of TryExportWorkerNodePublicKeyError
+        | NotifyOfSolverDeploymentErr of NotifyOfSolverDeploymentError
 
         static member addError a b =
             match a, b with

@@ -9,6 +9,7 @@ open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.PartitionerService
 open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.PartitionerService.Partitioner
+open Softellect.DistributedProcessing.Messages
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client

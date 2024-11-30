@@ -7,7 +7,10 @@ open System.Diagnostics
 open System.Management
 
 open Softellect.Messaging.Primitives
+open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.Client
 open Softellect.Messaging.Errors
+open Softellect.Messaging.DataAccess
 open Softellect.Sys.Logging
 open Softellect.Sys.Rop
 open Softellect.Sys.Crypto
@@ -29,6 +32,7 @@ open Softellect.Sys.AppSettings
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.DistributedProcessing.Messages
 
 // ==========================================
 // Blank #if template blocks
@@ -283,6 +287,14 @@ module WorkerNodeService =
         | _ -> p |> TryDecryptSolverCriticalErr |> TryDecryptSolverErr |> Error
 
 
+    // let private notifyOfSolverDeployment (ctx : WorkerNodeC) s r =
+    //     let b =
+    //         match r with
+    //         | Ok () -> Ok ()
+    //         | Error e -> Error $"%A{e}"
+    //     failwith ""
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -294,6 +306,9 @@ module WorkerNodeService =
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+            // notifyOfSolverDeployment : SolverId -> DistributedProcessingUnitResult -> DistributedProcessingUnitResult
             //loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
@@ -308,6 +323,9 @@ module WorkerNodeService =
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
                 setSolverDeployed = setSolverDeployed
+                createMessage = createMessage messagingDataVersion i.workerNodeInfo.workerNodeId.messagingClientId
+                saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
+                // notifyOfSolverDeployment = notifyOfSolverDeployment
                 //loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
             }
 
@@ -318,6 +336,30 @@ module WorkerNodeService =
             workerNodeProxy : WorkerNodeProxy
             messagingClientData : MessagingClientData<DistributedProcessingMessageData>
         }
+
+
+    let notifyOfSolverDeployment (ctx : WorkerNodeRunnerContext) s r =
+        let elevate e = e |> NotifyOfSolverDeploymentMessagingErr |> NotifyOfSolverDeploymentErr
+        let toError e = e |> elevate |> Error
+
+        let r1 =
+            {
+                recipientInfo =
+                    {
+                        recipient = ctx.workerNodeServiceInfo.workerNodeInfo.partitionerId.messagingClientId
+                        deliveryType = GuaranteedDelivery
+                    }
+
+                messageData = (ctx.workerNodeServiceInfo.workerNodeInfo.workerNodeId, s, r) |> SolverDeploymentResultMsg |> PartitionerMsg |> UserMsg
+            }
+            |> ctx.workerNodeProxy.createMessage
+            |> ctx.workerNodeProxy.saveMessage
+
+        match r, r1 with
+        | Ok (), Ok () -> Ok()
+        | Error e, Ok () -> Error e
+        | Ok (), Error e1 -> toError e1
+        | Error e, Error e1 -> e + (elevate e1) |> Error
 
 #endif
 

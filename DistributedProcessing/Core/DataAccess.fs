@@ -723,6 +723,32 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+
+    let updateSolverDeploymentInfo (w : WorkerNodeId) (s : SolverId) r =
+        let elevate e = e |> UpsertWorkerNodeErrErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+
+        Logger.logInfo $"updateSolverDeploymentInfo: %A{w}, %A{r}."
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for r in ctx.Dbo.WorkerNodeSolver do
+                    where (r.WorkerNodeId = w.value.value && r.SolverId = s.value)
+                    select (Some r)
+                    exactlyOneOrDefault
+                }
+
+            match r with
+            | Ok () -> failwith ""
+            | Error e -> failwith ""
+
+        tryDbFun fromDbError g
+
+
 #endif
 
 #if PARTITIONER_ADM

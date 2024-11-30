@@ -38,6 +38,7 @@
         <Compile Include="VersionInfo.fs" />
         <Compile Include="Common.fs" />
         <Compile Include="Errors.fs" />
+        <Compile Include="Messages.fs" />
     </ItemGroup>
 
     <ItemGroup>

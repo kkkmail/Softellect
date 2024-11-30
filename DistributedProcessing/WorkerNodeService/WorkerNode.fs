@@ -12,6 +12,7 @@ open Softellect.Messaging.Proxy
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
+open Softellect.DistributedProcessing.Messages
 open Softellect.Sys.Primitives
 open Softellect.Messaging.Client
 open Microsoft.Extensions.Hosting
@@ -32,18 +33,24 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let private processSolver proxy f (s : Solver) =
+    let private processSolver (i : WorkerNodeRunnerContext) f (s : Solver) =
         Logger.logInfo $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
+        let proxy = i.workerNodeProxy
 
-        match proxy.saveSolver s with
-        | Ok() ->
-            match proxy.unpackSolver f s with
-            | Ok () ->
-                match proxy.setSolverDeployed s.solverId with
-                | Ok () -> Ok()
-                | Error e -> Error e
-            | Error e -> e |> Error
-        | Error e -> Error e
+        let result =
+            match proxy.saveSolver s with
+            | Ok() ->
+                match proxy.unpackSolver f s with
+                | Ok () ->
+                    match proxy.setSolverDeployed s.solverId with
+                    | Ok () ->
+                        Logger.logInfo $"Solver %A{s.solverId} deployed successfully."
+                        Ok()
+                    | Error e -> Error e
+                | Error e -> e |> Error
+            | Error e -> Error e
+
+        notifyOfSolverDeployment i s.solverId result
 
 
     let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
@@ -76,7 +83,7 @@ module WorkerNode =
                 result
             | UpdateSolverWrkMsg e ->
                 match proxy.tryDecryptSolver e (m.messageDataInfo.sender |> PartitionerId) with
-                | Ok s -> processSolver proxy (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
+                | Ok s -> processSolver i (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
                 | Error e -> Error e
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 

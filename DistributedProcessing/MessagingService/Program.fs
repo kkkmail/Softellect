@@ -5,6 +5,7 @@ open Softellect.Messaging.Proxy
 open Softellect.Messaging.ServiceProxy
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.MessagingService.Program
+open Softellect.DistributedProcessing.Messages
 open Softellect.Messaging.Service
 open Softellect.Sys.Logging
 open Softellect.DistributedProcessing.VersionInfo

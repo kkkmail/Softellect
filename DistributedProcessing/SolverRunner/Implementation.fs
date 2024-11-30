@@ -19,6 +19,7 @@ open Softellect.DistributedProcessing.SolverRunner.Runner
 open Softellect.Sys.Core
 open Softellect.DistributedProcessing.AppSettings.SolverRunner
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.DistributedProcessing.Messages
 
 module Implementation =
 

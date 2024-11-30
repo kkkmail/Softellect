@@ -20,6 +20,7 @@ open Softellect.Messaging.Proxy
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Rop
 open Softellect.DistributedProcessing.DataAccess.PartitionerService
+open Softellect.DistributedProcessing.Messages
 
 module Partitioner =
 
@@ -153,6 +154,14 @@ module Partitioner =
         proxy.saveResults c |> bindError (addError SaveResultsRunnerErr (UnableToSaveResultsRunnerErr c.runQueueId))
 
 
+    // let updateSolverDeploymentInfo (proxy : PartitionerProxy) w s r =
+    //     Logger.logInfo $"updateSolverDeploymentInfo: %A{w}, %A{r}."
+    //
+    //     match r with
+    //     | Ok s -> failwith ""
+    //     | Error e -> failwith ""
+
+
     type IPartitionerService =
         inherit IHostedService
 
@@ -209,6 +218,7 @@ module Partitioner =
             | SaveResultsPrtMsg c -> saveResults proxy c
             | RegisterWorkerNodePrtMsg w -> register proxy w
             | UnregisterWorkerNodePrtMsg w -> unregister proxy w
+            | SolverDeploymentResultMsg (w, s, r) -> updateSolverDeploymentInfo w s r
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
 

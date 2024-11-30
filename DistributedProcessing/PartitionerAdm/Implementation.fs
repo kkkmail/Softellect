@@ -5,16 +5,18 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Primitives.PartitionerAdm
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.Client
+open Softellect.Messaging.DataAccess
 open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
+open Softellect.Sys.Logging
 open Softellect.Sys.Crypto
-open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
+open Softellect.DistributedProcessing.Messages
 open Softellect.DistributedProcessing.DataAccess.PartitionerAdm
 open Softellect.DistributedProcessing.VersionInfo
-open Softellect.Messaging.DataAccess
 open Softellect.DistributedProcessing.AppSettings.PartitionerAdm
 
 module Implementation =
@@ -25,14 +27,14 @@ module Implementation =
 
     /// Default implementation of solver encryption.
     let private tryEncryptSolver (i : PartitionerInfo) (solver : Solver) (w : WorkerNodeId) : DistributedProcessingResult<EncryptedSolver> =
-        printfn $"tryEncryptSolver: %A{solver.solverId}, %A{solver.solverName}, %A{w}"
+        Logger.logInfo $"tryEncryptSolver: %A{solver.solverId}, %A{solver.solverName}, %A{w}"
         match tryLoadPartitionerPrivateKey(), tryLoadWorkerNodePublicKey w, trySerialize solverSerializationFormat solver with
         | Ok (Some p1), Ok (Some w1), Ok data ->
-            printfn $"tryEncryptSolver: encrypting - {data.Length:N0} bytes."
+            Logger.logInfo $"tryEncryptSolver: encrypting - {data.Length:N0} bytes."
 
             match tryEncryptAndSign i.solverEncryptionType data p1 w1 with
             | Ok r ->
-                printfn $"tryEncryptSolver: encrypted - {r.Length:N0} bytes."
+                Logger.logInfo $"tryEncryptSolver: encrypted - {r.Length:N0} bytes."
                 r |> EncryptedSolver |> Ok
             | Error e -> e |> TryEncryptSolverSysErr |> TryEncryptSolverErr |> Error
         | _ -> (w, solver.solverId) |> TryEncryptSolverCriticalErr |> TryEncryptSolverErr |> Error
@@ -139,12 +141,15 @@ module Implementation =
                         description = de
                     }
 
-                printfn $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
+                Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
                 ctx.partitionerAdmProxy.saveSolver solver
             | Error e ->
-                printfn $"Error: {e}."
+                Logger.logError $"Error: {e}."
                 UnableToZipSolverErr (s, f, e) |> SaveSolverErr |> Error
-        | _ -> failwith "addSolver: Invalid arguments."
+        | _ ->
+            let m = $"Some of the arguments are invalid: %A{so}, %A{no}, %A{fo}."
+            Logger.logCrit m
+            failwith $"addSolver: {m}."
 
 
     let sendSolver (ctx : PartitionerAdmContext) (x : list<SendSolverArgs>) =
@@ -153,7 +158,7 @@ module Implementation =
 
         match (so, wo) with
         | Some s, Some w ->
-            printfn $"sendSolver: solver with id '{s}' is being sent to worker node '{w}'."
+            Logger.logInfo $"sendSolver: solver with id '{s}' is being sent to worker node '{w}'."
 
             match ctx.partitionerAdmProxy.tryLoadSolver s with
             | Ok solver ->
@@ -170,23 +175,26 @@ module Implementation =
 
                     match result with
                     | Ok () ->
-                        printfn $"sendSolver: solver with id '{s}' was sent to worker node '{w}'."
+                        Logger.logInfo $"sendSolver: solver with id '%A{s}' was sent to worker node '%A{w}'."
                         Ok ()
                     | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
                 | Error e ->
-                    printfn $"sendSolver: Unable to encrypt solver, error: {e}."
+                    Logger.logError $"sendSolver: Unable to encrypt solver, error: %A{e}."
                     Error e
             | Error e ->
-                printfn $"sendSolver: Unable to load solver, error: {e}."
+                Logger.logError $"sendSolver: Unable to load solver, error: %A{e}."
                 Error e
-        | _ -> failwith "sendSolver: Invalid arguments."
+        | _ ->
+            let m = $"Some of the arguments are invalid: %A{so}, %A{wo}."
+            Logger.logCrit m
+            failwith $"sendSolver: {m}."
 
 
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
         let addError = addError TryCancelRunQueueRunnerErr
         let toError = toError TryCancelRunQueueRunnerErr
 
-        printfn $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
+        Logger.logTrace $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
 
         match ctx.partitionerAdmProxy.tryLoadRunQueue q with
         | Ok (Some r) ->
