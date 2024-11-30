@@ -123,7 +123,7 @@ module WorkerNodeService =
             loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
             loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue option>
-            tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
+            tryGetAvailableWorkerNode : SolverId -> DistributedProcessingResult<WorkerNodeId option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult

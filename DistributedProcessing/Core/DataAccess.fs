@@ -600,7 +600,7 @@ module WorkerNodeService =
 
 
     /// Gets the first available worker node to schedule work.
-    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) =
+    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) (s : SolverId) =
         let elevate e = e |> TryGetAvailableWorkerNodeErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryGetAvailableWorkerNodeDbErr |> elevate
@@ -611,7 +611,7 @@ module WorkerNodeService =
             let x =
                 query {
                     for r in ctx.Dbo.VwAvailableWorkerNode do
-                    where (r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
+                    where (r.SolverId = s.value && r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
                     sortByDescending r.NodePriority
                     thenBy r.WorkLoad
                     thenBy r.OrderId
@@ -1295,7 +1295,6 @@ module WorkerNodeService =
         | None -> Ok()
 
 #endif
-
 
 #if WORKER_NODE
 

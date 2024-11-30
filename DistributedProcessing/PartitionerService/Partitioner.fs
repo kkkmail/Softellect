@@ -33,7 +33,7 @@ module Partitioner =
         static member create (i : PartitionerServiceInfo) : PartitionerProxy =
             {
                 tryLoadFirstRunQueue = tryLoadFirstRunQueue
-                tryGetAvailableWorkerNode = fun () -> tryGetAvailableWorkerNode i.partitionerInfo.lastAllowedNodeErr
+                tryGetAvailableWorkerNode = tryGetAvailableWorkerNode i.partitionerInfo.lastAllowedNodeErr
                 upsertRunQueue = upsertRunQueue
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertWorkerNodeInfo = upsertWorkerNodeInfo
@@ -77,7 +77,7 @@ module Partitioner =
 
         match proxy.tryLoadFirstRunQueue() with
         | Ok (Some q) ->
-            match proxy.tryGetAvailableWorkerNode() with
+            match proxy.tryGetAvailableWorkerNode q.solverId with
             | Ok (Some workerNodeId) ->
                 let q1 = { q with workerNodeIdOpt = Some workerNodeId; runQueueStatus = RunRequestedRunQueue }
 
