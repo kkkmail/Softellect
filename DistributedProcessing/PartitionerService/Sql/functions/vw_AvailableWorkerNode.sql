@@ -18,7 +18,7 @@ select
     ,case when isnull(s.lastErrorOn, w.lastErrorOn) is null then null else datediff(minute, getdate(), isnull(s.lastErrorOn, w.lastErrorOn)) end as lastErrMinAgo
 from WorkerNode w
 inner join WorkerNodeSolver s on w.workerNodeId = s.workerNodeId
-where isInactive = 0
+where w.isInactive = 0 and s.isDeployed = 1
 )
 select
     a.*, 
