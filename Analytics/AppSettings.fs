@@ -8,6 +8,7 @@ module AppSettings =
     let private mathKernelFileNameKey = ConfigKey "MathKernelFileName"
     let private wolframInputFolderKey = ConfigKey "WolframInput"
     let private wolframOutputFolderKey = ConfigKey "WolframOutput"
+    let private useMathLinkKey = ConfigKey "UseMathLink"
 
 
     // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
