@@ -35,6 +35,7 @@ module WorkerNode =
     let private tryDeploySolver  (i : WorkerNodeRunnerContext) s =
         let proxy = i.workerNodeProxy
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
+        let toError e = e |> TryDeploySolverErr |> Error
 
         match proxy.checkSolverRunning s.solverName with
         | CanRun ->
@@ -43,13 +44,14 @@ module WorkerNode =
             | Error e -> e |> Error
         | TooManyRunning n ->
             Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
-            Ok()
+            n |> CanNotDeployDueToRunningSolversErr |> toError
         | GetProcessesByNameExn e ->
-            Logger.logError $"Exception: %A{e}"
-            Ok()
+            Logger.logCrit $"Exception: %A{e}."
+            e |> TryDeploySolverExn |> toError
         | AlreadyRunning p ->
-            Logger.logCrit $"This should never happen: %A{p}"
-            Ok()
+            let m = $"This should never happen: %A{p}."
+            Logger.logCrit m
+            m |> TryDeploySolverCriticalErr |> toError
 
 
     let private processSolver (i : WorkerNodeRunnerContext) (s : Solver) =

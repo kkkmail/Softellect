@@ -347,6 +347,11 @@ module Errors =
     type NotifyOfSolverDeploymentError =
         | NotifyOfSolverDeploymentMessagingErr of MessagingError
 
+    type TryDeploySolverError =
+        | CanNotDeployDueToRunningSolversErr of int
+        | TryDeploySolverExn of exn
+        | TryDeploySolverCriticalErr of string
+
 
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
@@ -435,6 +440,7 @@ module Errors =
         | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
         | TryExportWorkerNodePublicKeyErr of TryExportWorkerNodePublicKeyError
         | NotifyOfSolverDeploymentErr of NotifyOfSolverDeploymentError
+        | TryDeploySolverErr of TryDeploySolverError
 
         static member addError a b =
             match a, b with
