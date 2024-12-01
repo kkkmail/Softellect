@@ -5,6 +5,7 @@ open System.Threading
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Logging
@@ -237,7 +238,7 @@ module Client =
         do h.start()
 
         let eventHandler1 _ = w.trySendMessages()
-        let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = RefreshInterval / 3 |> Some }
+        let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = TimerRefreshInterval.defaultValue / 3 |> Some }
 
         let info1 =
             {
@@ -250,7 +251,7 @@ module Client =
         do h1.start()
 
         let eventHandler2 _ = w.removeExpiredMessages()
-        let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
+        let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * TimerRefreshInterval.defaultValue / 3 |> Some }
 
         let info2 =
             {

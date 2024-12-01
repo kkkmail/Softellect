@@ -9,14 +9,12 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
 open log4net
 open Softellect.Sys.Primitives
-open log4net.Appender
-open log4net.Config
-open log4net.Layout
-open log4net.Repository.Hierarchy
 
 module Logging =
 
     let private projectNameProperty = "ProjectName"
+    let private log4netConfig = "log4net.config"
+    let private log4netDefaultLogName = "log4net-default"
 
 
     /// See:
@@ -150,6 +148,13 @@ module Logging =
         static member logCrit (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             Logger.log CritLog message (defaultArg callerName "")
 
+        static member logCritIfError (result, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            match result with
+            | Ok _ -> ()
+            | Error e -> Logger.log CritLog $"%A{e}" (defaultArg callerName "")
+
+            result
+
 
     let configureLogging po (logging: ILoggingBuilder) =
         tryConfigureProjectName po
@@ -162,10 +167,10 @@ module Logging =
     let configureServiceLogging po (logging: ILoggingBuilder) =
         tryConfigureProjectName po
         logging.ClearProviders() |> ignore
-        logging.AddLog4Net("log4net.config") |> ignore
+        logging.AddLog4Net(log4netConfig) |> ignore
         logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
-        let log4NetLogger = LogManager.GetLogger("log4net-default")
+        let log4NetLogger = LogManager.GetLogger(log4netDefaultLogName)
 
         Logger.configureLogger (fun level message callerName ->
             let m = $"{(callerName.PadRight(30))} # {message}"
@@ -178,220 +183,3 @@ module Logging =
             | ErrorLog -> log4NetLogger.Error(m)
             | CritLog -> log4NetLogger.Fatal(m)
             )
-
-    // Does not work: https://chatgpt.com/c/67410229-b9f4-8009-a394-3bde2fd2eb07
-    // let configureServiceLogging po (logging: ILoggingBuilder) =
-    //     tryConfigureProjectName po
-    //     logging.ClearProviders() |> ignore
-    //     logging.AddLog4Net("log4net.config") |> ignore
-    //     logging.SetMinimumLevel(LogLevel.Trace) |> ignore
-    //
-    //     let log4NetLogger, eo =
-    //         try
-    //             // Load log4net.config from the assembly location
-    //             let assemblyLocation = getAssemblyLocation()
-    //             let configPath = Path.Combine(assemblyLocation.value, "log4net.config")
-    //             let hierarchy = LogManager.GetRepository() :?> Hierarchy
-    //             XmlConfigurator.Configure(hierarchy, FileInfo(configPath)) |> ignore
-    //
-    //             // Clone the existing RollingFileAppender and override its layout for F#
-    //             let fsharpAppender =
-    //                 match hierarchy.Root.Appenders |> Seq.tryFind (fun app -> app :? RollingFileAppender) with
-    //                 | Some appender ->
-    //                     let rollingAppender = appender :?> RollingFileAppender
-    //                     let newAppender = new RollingFileAppender()
-    //                     newAppender.Name <- "FSharpRollingFileAppender"
-    //                     newAppender.File <- rollingAppender.File
-    //                     newAppender.AppendToFile <- rollingAppender.AppendToFile
-    //                     newAppender.RollingStyle <- rollingAppender.RollingStyle
-    //                     newAppender.DatePattern <- rollingAppender.DatePattern
-    //                     newAppender.StaticLogFileName <- rollingAppender.StaticLogFileName
-    //
-    //                     // Override the layout for F# logs
-    //                     let fsharpLayout = new PatternLayout()
-    //                     fsharpLayout.ConversionPattern <- "# %date{yyyy-MM-dd HH:mm:ss.fff} # %-5level # %message %newline%newline"
-    //                     fsharpLayout.ActivateOptions()
-    //                     newAppender.Layout <- fsharpLayout
-    //
-    //                     newAppender.ActivateOptions()
-    //                     newAppender
-    //                 | None -> failwith "RollingFileAppender not found in log4net.config"
-    //
-    //             // Create a new logger for F#
-    //             let fsharpLoggerName = "FSharpLogger"
-    //             let fsharpLogger = hierarchy.LoggerFactory.CreateLogger(hierarchy, fsharpLoggerName)
-    //             fsharpLogger.AddAppender(fsharpAppender)
-    //             fsharpLogger.Level <- log4net.Core.Level.All
-    //             fsharpLogger.Repository.Configured <- true
-    //
-    //             // Use the new F# logger
-    //             let logger = LogManager.GetLogger(fsharpLoggerName)
-    //             logger, None
-    //         with
-    //         | e ->
-    //             let defaultLogger = LogManager.GetLogger("log4net-default")
-    //             defaultLogger, Some e
-    //
-    //
-    //     Logger.configureLogger(fun level message callerName ->
-    //         let formattedMessage = $"{(callerName.PadRight(30))} # {message}"
-    //
-    //         match level with
-    //         | TraceLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Trace, formattedMessage, null)
-    //         | DebugLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Debug, formattedMessage, null)
-    //         | InfoLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Info, formattedMessage, null)
-    //         | WarnLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Warn, formattedMessage, null)
-    //         | ErrorLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Error, formattedMessage, null)
-    //         | CritLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Fatal, formattedMessage, null)
-    //     )
-    //
-    //     match eo with
-    //     | Some e -> Logger.logCrit $"%A{e}"
-    //     | None -> ()
-
-    // let configureServiceLogging po (logging: ILoggingBuilder) =
-    //     tryConfigureProjectName po
-    //     logging.ClearProviders() |> ignore
-    //     logging.AddLog4Net("log4net.config") |> ignore
-    //     logging.SetMinimumLevel(LogLevel.Trace) |> ignore
-    //
-    //     let log4NetLogger, eo =
-    //         try
-    //             // Load log4net.config from the assembly location
-    //             let assemblyLocation = getAssemblyLocation()
-    //             let configPath = Path.Combine(assemblyLocation.value, "log4net.config")
-    //             let hierarchy = LogManager.GetRepository() :?> Hierarchy
-    //             XmlConfigurator.Configure(hierarchy, FileInfo(configPath)) |> ignore
-    //
-    //             // Clone the existing RollingFileAppender and override its layout for F#
-    //             let fsharpAppender =
-    //                 match hierarchy.Root.Appenders |> Seq.tryFind (fun app -> app :? RollingFileAppender) with
-    //                 | Some appender ->
-    //                     let rollingAppender = appender :?> RollingFileAppender
-    //
-    //                     // Create a new RollingFileAppender with the same properties
-    //                     let newAppender = new RollingFileAppender()
-    //                     newAppender.Name <- "FSharpRollingFileAppender"
-    //                     newAppender.File <- rollingAppender.File // Use the same file location
-    //                     newAppender.AppendToFile <- rollingAppender.AppendToFile
-    //                     newAppender.RollingStyle <- rollingAppender.RollingStyle
-    //                     newAppender.DatePattern <- rollingAppender.DatePattern
-    //                     newAppender.StaticLogFileName <- rollingAppender.StaticLogFileName
-    //
-    //                     // Override the layout for F# logs
-    //                     let fsharpLayout = new PatternLayout()
-    //                     fsharpLayout.ConversionPattern <- "# %date{yyyy-MM-dd HH:mm:ss.fff} # %-5level # %message %newline%newline"
-    //                     fsharpLayout.ActivateOptions()
-    //                     newAppender.Layout <- fsharpLayout
-    //
-    //                     newAppender.ActivateOptions()
-    //                     newAppender
-    //                 | None -> failwith "RollingFileAppender not found in log4net.config"
-    //
-    //             // Create a new logger for F#
-    //             let fsharpLoggerName = "FSharpLogger"
-    //             let fsharpLogger = hierarchy.LoggerFactory.CreateLogger(hierarchy, fsharpLoggerName)
-    //             fsharpLogger.AddAppender(fsharpAppender)
-    //             fsharpLogger.Level <- log4net.Core.Level.All
-    //
-    //             // Use the new F# logger
-    //             let logger = LogManager.GetLogger(fsharpLoggerName)
-    //             logger, None
-    //         with
-    //         | e ->
-    //             let defaultLogger = LogManager.GetLogger("log4net-default")
-    //             defaultLogger, Some e
-    //
-    //     // Configure the F# Logger for use
-    //     Logger.configureLogger(fun level message callerName ->
-    //         let formattedMessage = $"{(callerName.PadRight(30))} # {message}"
-    //
-    //         match level with
-    //         | TraceLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Trace, formattedMessage, null)
-    //         | DebugLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Debug, formattedMessage, null)
-    //         | InfoLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Info, formattedMessage, null)
-    //         | WarnLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Warn, formattedMessage, null)
-    //         | ErrorLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Error, formattedMessage, null)
-    //         | CritLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Fatal, formattedMessage, null)
-    //     )
-    //
-    //     // Log any configuration error
-    //     match eo with
-    //     | Some e -> Logger.logCrit $"%A{e}"
-    //     | None -> ()
-
-
-    // let configureServiceLogging po (logging: ILoggingBuilder) =
-    //     tryConfigureProjectName po
-    //     logging.ClearProviders() |> ignore
-    //     logging.AddLog4Net("log4net.config") |> ignore
-    //     logging.SetMinimumLevel(LogLevel.Trace) |> ignore
-    //
-    //     let log4NetLogger, eo =
-    //         try
-    //             // Load log4net.config from the assembly location
-    //             let assemblyLocation = getAssemblyLocation()
-    //             let configPath = Path.Combine(assemblyLocation.value, "log4net.config")
-    //             let hierarchy = LogManager.GetRepository() :?> Hierarchy
-    //             XmlConfigurator.Configure(hierarchy, FileInfo(configPath)) |> ignore
-    //
-    //             // Clone the existing RollingFileAppender and override its layout for F#
-    //             let fsharpAppender =
-    //                 match hierarchy.Root.Appenders |> Seq.tryFind (fun app -> app :? RollingFileAppender) with
-    //                 | Some appender ->
-    //                     let rollingAppender = appender :?> RollingFileAppender
-    //
-    //                     // Create a new RollingFileAppender with the same properties
-    //                     let newAppender = new RollingFileAppender()
-    //                     newAppender.Name <- "FSharpRollingFileAppender"
-    //                     newAppender.File <- rollingAppender.File // Use the same base file
-    //                     newAppender.AppendToFile <- rollingAppender.AppendToFile
-    //                     newAppender.RollingStyle <- rollingAppender.RollingStyle
-    //                     newAppender.DatePattern <- rollingAppender.DatePattern
-    //                     newAppender.StaticLogFileName <- rollingAppender.StaticLogFileName
-    //
-    //                     // Override the layout for F# logs
-    //                     let fsharpLayout = new PatternLayout()
-    //                     fsharpLayout.ConversionPattern <- "# %date{yyyy-MM-dd HH:mm:ss.fff} # %-5level # %message %newline%newline"
-    //                     fsharpLayout.ActivateOptions()
-    //                     newAppender.Layout <- fsharpLayout
-    //
-    //                     // Activate and return the appender
-    //                     newAppender.ActivateOptions()
-    //                     newAppender
-    //                 | None -> failwith "RollingFileAppender not found in log4net.config"
-    //
-    //             // Create a new logger for F#
-    //             let fsharpLoggerName = "FSharpLogger"
-    //             let fsharpLogger = hierarchy.LoggerFactory.CreateLogger(hierarchy, fsharpLoggerName)
-    //             fsharpLogger.AddAppender(fsharpAppender)
-    //             fsharpLogger.Level <- log4net.Core.Level.All
-    //
-    //             // Activate the repository to ensure it picks up changes
-    //             hierarchy.Configured <- true
-    //
-    //             // Use the new F# logger
-    //             let logger = LogManager.GetLogger(fsharpLoggerName)
-    //             logger, None
-    //         with
-    //         | e ->
-    //             let defaultLogger = LogManager.GetLogger("log4net-default")
-    //             defaultLogger, Some e
-    //
-    //     // Configure the F# Logger for use
-    //     Logger.configureLogger(fun level message callerName ->
-    //         let formattedMessage = $"{(callerName.PadRight(30))} # {message}"
-    //
-    //         match level with
-    //         | TraceLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Trace, formattedMessage, null)
-    //         | DebugLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Debug, formattedMessage, null)
-    //         | InfoLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Info, formattedMessage, null)
-    //         | WarnLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Warn, formattedMessage, null)
-    //         | ErrorLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Error, formattedMessage, null)
-    //         | CritLog -> log4NetLogger.Logger.Log(null, log4net.Core.Level.Fatal, formattedMessage, null)
-    //     )
-    //
-    //     // Log any configuration error
-    //     match eo with
-    //     | Some e -> Logger.logCrit $"%A{e}"
-    //     | None -> ()

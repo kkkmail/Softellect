@@ -13,7 +13,6 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Messages
-open Softellect.Sys.Primitives
 open Softellect.Messaging.Client
 open Microsoft.Extensions.Hosting
 
@@ -33,27 +32,32 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let private processSolver (i : WorkerNodeRunnerContext) f (s : Solver) =
-        Logger.logInfo $"onProcessMessage: solverId: '{s.solverId}', solverName: '{s.solverName}'."
+    let private tryDeploySolver  (i : WorkerNodeRunnerContext) s =
         let proxy = i.workerNodeProxy
+        let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
+
+        match proxy.checkSolverRunning s.solverName with
+        | CanRun ->
+            match proxy.unpackSolver solverLocation s with
+            | Ok () -> proxy.setSolverDeployed s.solverId
+            | Error e -> e |> Error
+        | TooManyRunning n ->
+            Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
+            Ok()
+        | GetProcessesByNameExn e ->
+            Logger.logError $"Exception: %A{e}"
+            Ok()
+        | AlreadyRunning p ->
+            Logger.logCrit $"This should never happen: %A{p}"
+            Ok()
+
+
+    let private processSolver (i : WorkerNodeRunnerContext) (s : Solver) =
+        Logger.logInfo $"processSolver: solverId: '{s.solverId}', solverName: '{s.solverName}'."
 
         let result =
-            match proxy.saveSolver s with
-            | Ok() ->
-                match proxy.checkSolverRunning s.solverName with
-                | CanRun ->
-                    match proxy.unpackSolver f s with
-                    | Ok () -> proxy.setSolverDeployed s.solverId
-                    | Error e -> e |> Error
-                | TooManyRunning n ->
-                    Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
-                    Ok()
-                | GetProcessesByNameExn e ->
-                    Logger.logError $"Exception: %A{e}"
-                    Ok()
-                | AlreadyRunning p ->
-                    Logger.logCrit $"This should never happen: %A{p}"
-                    Ok()
+            match i.workerNodeProxy.saveSolver s with
+            | Ok() -> tryDeploySolver i s
             | Error e -> Error e
 
         match result with
@@ -61,6 +65,37 @@ module WorkerNode =
         | Error e -> Logger.logError $"Solver %A{s.solverId} deployment failed with error : %A{e}."
 
         notifyOfSolverDeployment i s.solverId result
+
+
+    let startSolvers (i : WorkerNodeRunnerContext) numberOfCores =
+        Logger.logTrace "startSolvers: Starting."
+        match i.workerNodeProxy.loadAllNotStartedRunQueueId() with
+        | Ok m ->
+            Logger.logTrace $"startSolvers: m = '%A{m}'."
+            m
+            |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
+            |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
+            |> foldUnitResults
+        | Error e ->
+            Logger.logError $"startSolvers: ERROR: '%A{e}'."
+            Error e
+
+
+    let private deployAllSolvers (i : WorkerNodeRunnerContext) =
+        let proxy = i.workerNodeProxy
+
+        match proxy.loadAllNotDeployedSolverId() with
+        | Ok x ->
+            let r =
+                x
+                |> List.map proxy.tryLoadSolver
+                |> List.map (fun e -> e |> Result.bind (tryDeploySolver i))
+                |> foldUnitResults
+
+            Logger.logIfError r
+        | Error e ->
+            Logger.logError $"Error loading not deployed solvers: %A{e}"
+            Error e
 
 
     let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
@@ -93,7 +128,7 @@ module WorkerNode =
                 result
             | UpdateSolverWrkMsg e ->
                 match proxy.tryDecryptSolver e (m.messageDataInfo.sender |> PartitionerId) with
-                | Ok s -> processSolver i (getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName) s
+                | Ok s -> processSolver i s
                 | Error e -> Error e
         | _ -> (m.messageDataInfo.messageId, m.messageData.getInfo()) |> InvalidMessageErr |> OnProcessMessageErr |> Error
 
@@ -118,19 +153,8 @@ module WorkerNode =
 
             r1
 
-        let startSolvers() =
-            Logger.logTrace "startSolvers: Starting."
-            match i.workerNodeProxy.loadAllNotStartedRunQueueId() with
-            | Ok m ->
-                Logger.logTrace $"startSolvers: m = '%A{m}'."
-                m
-                |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
-                |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
-                |> foldUnitResults
-            | Error e ->
-                Logger.logError $"startSolvers: ERROR: '%A{e}'."
-                Error e
-
+        let startSolvers() = startSolvers i numberOfCores
+        let deployAllSolvers() = deployAllSolvers i
         let onStartImpl() = if not started then startSolvers() else Ok()
 
         let onRegisterImpl() =
@@ -179,16 +203,23 @@ module WorkerNode =
                             | Ok () -> Ok ()
                             | Error e -> CreateServiceImplWorkerNodeErr e |> Error
 
-                        let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError processMessages "WorkerNodeRunner - processMessages"
+                        let i1 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError processMessages "WorkerNodeRunner - processMessages."
                         let h = TimerEventHandler i1
                         do h.start()
 
                         // Attempt to restart solvers in case they did not start (due to whatever reason) or got killed.
-                        // Use oneHourValue
-                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.defaultValue toError startSolvers "WorkerNodeRunner - start solvers"
+                        // Use oneHourValue from appsettings.json.
+                        let i2 = TimerEventHandlerInfo<DistributedProcessingError>.oneMinuteValue toError startSolvers "WorkerNodeRunner - start solvers."
                         let s = TimerEventHandler i2
                         do s.start()
-                        eventHandlers<- [ h; s ]
+
+                        // Attempt to deploy all solvers in case they were not deployed.
+                        // Use oneHourValue from appsettings.json.
+                        let i3 = TimerEventHandlerInfo<DistributedProcessingError>.oneMinuteValue toError deployAllSolvers "WorkerNodeRunner - deploy solvers."
+                        let d = TimerEventHandler i3
+                        do d.start()
+
+                        eventHandlers <- [ h; s; d ]
 
                         Ok ()
                     | Error e -> UnableToStartMessagingClientErr e |> Error
@@ -201,7 +232,7 @@ module WorkerNode =
 
         let onTryStop() =
             Logger.logInfo "WorkerNodeRunner - stopping timers."
-            eventHandlers |> List.iter (fun h -> h.stop())
+            eventHandlers |> List.iter _.stop()
             Ok()
 
         interface IHostedService with

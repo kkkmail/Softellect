@@ -300,6 +300,9 @@ module Common =
             resultLocation : FolderName
             solverLocation : FolderName
             solverOutputLocation : FolderName
+
+            // TODO kk:20241201 - Add appsettings.json settings for messaging & other timer events.
+            // x : TimerRefreshInterval
         }
 
 

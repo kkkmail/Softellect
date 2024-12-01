@@ -40,7 +40,7 @@ module Primitives =
     let minutesPerHour = 60<minute/hour>
 
 
-    /// IPAddress cannot be serialized by FsPicler.
+    /// IPAddress cannot be serialized by FsPickler.
     /// Extend when needed.
     type IpAddress =
         | Ip4 of string
@@ -359,3 +359,17 @@ module Primitives =
         | ColorDepth of int
 
         member this.value = let (ColorDepth v) = this in v
+
+
+    type TimerRefreshInterval =
+        | TimerRefreshInterval of int<millisecond>
+
+        member this.value = let (TimerRefreshInterval v) = this in v
+        static member (/) (t : TimerRefreshInterval, divisor : int) = t.value / divisor |> TimerRefreshInterval
+        static member (*) (t : TimerRefreshInterval, multiplier : int) = t.value * multiplier |> TimerRefreshInterval
+        static member (*) (multiplier : int, t : TimerRefreshInterval) = t.value * multiplier |> TimerRefreshInterval
+        static member defaultValue = TimerRefreshInterval 10_000<millisecond>
+        static member oneMinuteValue = TimerRefreshInterval 60_000<millisecond>
+        static member fiveMinutesValue = TimerRefreshInterval 300_000<millisecond>
+        static member tenMinutesValue = TimerRefreshInterval 600_000<millisecond>
+        static member oneHourValue = TimerRefreshInterval 3_600_000<millisecond>

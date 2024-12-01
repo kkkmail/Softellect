@@ -331,6 +331,7 @@ module WorkerNodeService =
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
+            tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
         }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
@@ -349,6 +350,7 @@ module WorkerNodeService =
                 createMessage = createMessage messagingDataVersion i.workerNodeInfo.workerNodeId.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
+                tryLoadSolver = tryLoadSolver
             }
 
 
