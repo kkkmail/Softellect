@@ -148,11 +148,9 @@ module WorkerNodeService =
     ///     https://stackoverflow.com/questions/504208/how-to-read-command-line-arguments-of-another-process-in-c
     ///     https://docs.microsoft.com/en-us/dotnet/core/porting/windows-compat-pack
     ///     https://stackoverflow.com/questions/33635852/how-do-i-convert-a-weakly-typed-icollection-into-an-f-list
-    let checkRunning no (RunQueueId q) : CheckRunningResult =
+    let checkRunning (r : CheckRunningRequest) : CheckRunningResult =
+        Logger.logTrace $"r: %A{r}"
         try
-            let v = $"{q}".ToLower()
-            let pid = Process.GetCurrentProcess().Id
-
             let wmiQuery = $"select Handle, CommandLine from Win32_Process where Caption = '{SolverRunnerName}'"
             let searcher = new ManagementObjectSearcher(wmiQuery)
             let retObjectCollection = searcher.Get()
@@ -165,22 +163,40 @@ module WorkerNodeService =
                 |> List.map (fun e -> e.["Handle"], e.["CommandLine"])
                 |> List.map (fun (a, b) -> int $"{a}", $"{b}")
 
-            let run() =
+            match r with
+            | AnyRunning f ->
+                Logger.logTrace $"f: %A{f}, processes: %A{processes}."
+                let v = $"{f.value}".ToLower()
+
                 let p =
                     processes
-                    |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid)
-                    |> List.tryFind snd
+                    |> List.map (fun (_, e) -> e.ToLower())
+                    |> List.filter (fun e -> e.StartsWith v)
 
-                match p with
-                | None -> CanRun
-                | Some (i, _) -> i |> ProcessId |> AlreadyRunning
+                match p.Length with
+                | 0 -> CanRun
+                | _ -> TooManyRunning p.Length
+            | RunQueueRunning (no, q) ->
+                let v = $"{q.value}".ToLower()
+                let pid = Process.GetCurrentProcess().Id
+                Logger.logTrace $"q: %A{q}, no: %A{no}, processes: %A{processes}."
 
-            match no with
-            | Some n ->
-                match processes.Length <= n with
-                | true -> run()
-                | false -> TooManyRunning processes.Length
-            | None -> run()
+                let run() =
+                    let p =
+                        processes
+                        |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid)
+                        |> List.tryFind snd
+
+                    match p with
+                    | None -> CanRun
+                    | Some (i, _) -> i |> ProcessId |> AlreadyRunning
+
+                match no with
+                | Some n ->
+                    match processes.Length <= n with
+                    | true -> run()
+                    | false -> TooManyRunning processes.Length
+                | None -> run()
         with
         | e -> e |> GetProcessesByNameExn
 
@@ -188,19 +204,23 @@ module WorkerNodeService =
 
 #if WORKER_NODE
 
+    let tryGetSolverFullName folderName =
+        let fileName = FileName SolverRunnerName
+        fileName, fileName.tryGetFullFileName(Some folderName)
+
+
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
     let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
         Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
-        let fileName = FileName SolverRunnerName
         let elevate f = f |> TryRunSolverProcessErr |> Error
 
         match tryGetSolverLocation q with
         | Ok (Some folderName) ->
             Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
-            match fileName.tryGetFullFileName(Some folderName) with
-            | Ok e ->
+            match tryGetSolverFullName folderName with
+            | fileName, Ok e ->
                 let run() =
                     let ea =
                         match o with
@@ -249,12 +269,12 @@ module WorkerNodeService =
                     | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
-                match checkRunning (Some (n - 1)) q with
+                match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
                 | CanRun -> run()
                 | e ->
-                    Logger.logWarn $"Can't run run queue with id %A{q}: %A{e}."
+                    Logger.logWarn $"Can't run %A{q}: %A{e}."
                     q |> CannotRunSolverProcessErr |> elevate
-            | Error e ->
+            | _, Error e ->
                 Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
                 q |> FailedToLoadSolverNameErr |> elevate
         | Ok None -> q |> CannotLoadSolverNameErr |> elevate
@@ -265,7 +285,7 @@ module WorkerNodeService =
 
     let getSolverLocation (i : WorkerNodeLocalInto) (solverName : SolverName) =
         i.solverLocation.combine solverName.folderName
-        //FolderName @"C:\GitHub\Softellect\Samples\DistrProc\WorkerNodeService\bin\x64\Debug\net8.0"
+        //FolderName @"C:\GitHub\Softellect\Samples\DistrProc\WorkerNodeService\bin\x64\Release\net9.0"
 
 
     let private tryGetSolverLocation (i : WorkerNodeLocalInto) q =
@@ -287,12 +307,12 @@ module WorkerNodeService =
         | _ -> p |> TryDecryptSolverCriticalErr |> TryDecryptSolverErr |> Error
 
 
-    // let private notifyOfSolverDeployment (ctx : WorkerNodeC) s r =
-    //     let b =
-    //         match r with
-    //         | Ok () -> Ok ()
-    //         | Error e -> Error $"%A{e}"
-    //     failwith ""
+    let private checkSolverRunning (i : WorkerNodeLocalInto) (solverName : SolverName) =
+        let solverLocation = getSolverLocation i solverName
+
+        match tryGetSolverFullName solverLocation with
+        | _, Ok f -> checkRunning (AnyRunning f)
+        | _, Error e -> InvalidOperationException $"%A{e}" :> exn |> GetProcessesByNameExn
 
 
     type WorkerNodeProxy =
@@ -300,16 +320,17 @@ module WorkerNodeService =
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
-            loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+            // loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+            loadAllNotStartedRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
+            checkSolverRunning : SolverName -> CheckRunningResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
-            // notifyOfSolverDeployment : SolverId -> DistributedProcessingUnitResult -> DistributedProcessingUnitResult
-            //loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
+            loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
         }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
@@ -317,16 +338,17 @@ module WorkerNodeService =
                 saveModelData = saveModelData
                 requestCancellation = tryRequestCancelRunQueue
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
-                loadAllActiveRunQueueId = loadAllActiveRunQueueId
+                // loadAllActiveRunQueueId = loadAllActiveRunQueueId
+                loadAllNotStartedRunQueueId = loadAllNotStartedRunQueueId
                 tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
+                checkSolverRunning = checkSolverRunning i.workerNodeLocalInto
                 setSolverDeployed = setSolverDeployed
                 createMessage = createMessage messagingDataVersion i.workerNodeInfo.workerNodeId.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
-                // notifyOfSolverDeployment = notifyOfSolverDeployment
-                //loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
+                loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
             }
 
 

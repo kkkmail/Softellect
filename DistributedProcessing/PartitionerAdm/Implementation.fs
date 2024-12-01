@@ -18,6 +18,7 @@ open Softellect.DistributedProcessing.Messages
 open Softellect.DistributedProcessing.DataAccess.PartitionerAdm
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.DistributedProcessing.AppSettings.PartitionerAdm
+open Softellect.Sys.Rop
 
 module Implementation =
 
@@ -75,6 +76,7 @@ module Implementation =
     type PartitionerAdmProxy =
         {
             saveSolver : Solver -> DistributedProcessingUnitResult
+            tryUndeploySolver : SolverId -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
             tryEncryptSolver : Solver -> WorkerNodeId -> DistributedProcessingResult<EncryptedSolver>
             tryGeneratePartitionerKeys : bool -> DistributedProcessingUnitResult
@@ -91,6 +93,7 @@ module Implementation =
         static member create (i : PartitionerInfo) =
             {
                 saveSolver = saveSolver
+                tryUndeploySolver = tryUndeploySolver
                 tryLoadSolver = tryLoadSolver
                 tryEncryptSolver = tryEncryptSolver i
                 tryGeneratePartitionerKeys = tryGeneratePartitionerKeys i.partitionerId
@@ -142,7 +145,10 @@ module Implementation =
                     }
 
                 Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
-                ctx.partitionerAdmProxy.saveSolver solver
+                let r1 = ctx.partitionerAdmProxy.saveSolver solver
+                let r2 = ctx.partitionerAdmProxy.tryUndeploySolver solver.solverId
+                let r = combineUnitResults DistributedProcessingError.addError r1 r2
+                Logger.logIfError r
             | Error e ->
                 Logger.logError $"Error: {e}."
                 UnableToZipSolverErr (s, f, e) |> SaveSolverErr |> Error

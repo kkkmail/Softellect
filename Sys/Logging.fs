@@ -140,6 +140,13 @@ module Logging =
         static member logError (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             Logger.log ErrorLog message (defaultArg callerName "")
 
+        static member logIfError (result, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            match result with
+            | Ok _ -> ()
+            | Error e -> Logger.log ErrorLog $"%A{e}" (defaultArg callerName "")
+
+            result
+
         static member logCrit (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             Logger.log CritLog message (defaultArg callerName "")
 

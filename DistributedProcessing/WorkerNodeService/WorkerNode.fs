@@ -40,15 +40,25 @@ module WorkerNode =
         let result =
             match proxy.saveSolver s with
             | Ok() ->
-                match proxy.unpackSolver f s with
-                | Ok () ->
-                    match proxy.setSolverDeployed s.solverId with
-                    | Ok () ->
-                        Logger.logInfo $"Solver %A{s.solverId} deployed successfully."
-                        Ok()
-                    | Error e -> Error e
-                | Error e -> e |> Error
+                match proxy.checkSolverRunning s.solverName with
+                | CanRun ->
+                    match proxy.unpackSolver f s with
+                    | Ok () -> proxy.setSolverDeployed s.solverId
+                    | Error e -> e |> Error
+                | TooManyRunning n ->
+                    Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
+                    Ok()
+                | GetProcessesByNameExn e ->
+                    Logger.logError $"Exception: %A{e}"
+                    Ok()
+                | AlreadyRunning p ->
+                    Logger.logCrit $"This should never happen: %A{p}"
+                    Ok()
             | Error e -> Error e
+
+        match result with
+        | Ok () -> Logger.logInfo $"Solver %A{s.solverId} was deployed successfully."
+        | Error e -> Logger.logError $"Solver %A{s.solverId} deployment failed with error : %A{e}."
 
         notifyOfSolverDeployment i s.solverId result
 
@@ -110,7 +120,7 @@ module WorkerNode =
 
         let startSolvers() =
             Logger.logTrace "startSolvers: Starting."
-            match i.workerNodeProxy.loadAllActiveRunQueueId() with
+            match i.workerNodeProxy.loadAllNotStartedRunQueueId() with
             | Ok m ->
                 Logger.logTrace $"startSolvers: m = '%A{m}'."
                 m
@@ -147,10 +157,10 @@ module WorkerNode =
 
             result
 
-        let sr n (q : RunQueueId) =
-            match i.workerNodeProxy.tryRunSolverProcess n q with
-            | Ok _ -> Ok() // The solver will store PID in the database.
-            | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
+        // let sr n (q : RunQueueId) =
+        //     match i.workerNodeProxy.tryRunSolverProcess n q with
+        //     | Ok _ -> Ok() // The solver will store PID in the database.
+        //     | Error e -> (q |> CannotRunModelErr |> OnRunModelErr) + e |> Error
 
         let onTryStart() =
             let toError e =

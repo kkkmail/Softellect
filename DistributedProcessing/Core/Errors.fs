@@ -36,6 +36,10 @@ module Errors =
         | LoadAllActiveRunQueueIdDbErr of DbError
 
 
+    type LoadAllNotStartedRunQueueIdError =
+        | LoadAllNotStartedRunQueueIdDbErr of DbError
+
+
     type LoadAllNotDeployedSolverIdError =
         | LoadAllNotDeployedSolverIdDbErr of DbError
 
@@ -68,6 +72,11 @@ module Errors =
     type TryNotifyRunQueueError =
         | TryNotifyRunQueueDbErr of DbError
         | CannotNotifyRunQueue of RunQueueId
+
+
+    type TryUndeploySolverError =
+        | TryUndeploySolverDbErr of DbError
+        | CannotNotifyUndeploySolverErr of SolverId
 
 
     type TryCheckCancellationError =
@@ -174,7 +183,7 @@ module Errors =
         | UpsertWorkerNodeErrDbErr of DbError
 
 
-    type UpdateSolverDeploymentInfoError = 
+    type UpdateSolverDeploymentInfoError =
         | UpdateSolverDeploymentInfoDbErr of DbError
 
 
@@ -345,12 +354,14 @@ module Errors =
         | TryGetRunningSolversCountErr of TryGetRunningSolversCountError
         | TryPickRunQueueErr of TryPickRunQueueError
         | LoadAllActiveRunQueueIdErr of LoadAllActiveRunQueueIdError
+        | LoadAllNotStartedRunQueueIdErr of LoadAllNotStartedRunQueueIdError
         | TryStartRunQueueErr of TryStartRunQueueError
         | TryCompleteRunQueueErr of TryCompleteRunQueueError
         | TryCancelRunQueueErr of TryCancelRunQueueError
         | TryFailRunQueueErr of TryFailRunQueueError
         | TryRequestCancelRunQueueErr of TryRequestCancelRunQueueError
         | TryNotifyRunQueueErr of TryNotifyRunQueueError
+        | TryUndeploySolverErr of TryUndeploySolverError
         | TryCheckCancellationErr of TryCheckCancellationError
         | TryCheckNotificationErr of TryCheckNotificationError
         | TryClearNotificationErr of TryClearNotificationError

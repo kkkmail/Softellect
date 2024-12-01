@@ -370,6 +370,10 @@ module Common =
         | NoAvailableWorkerNodes
 
 
+    type CheckRunningRequest =
+        | AnyRunning of FileName
+        | RunQueueRunning of int option * RunQueueId
+
     type CheckRunningResult =
         | CanRun
         | AlreadyRunning of ProcessId
