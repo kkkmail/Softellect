@@ -37,21 +37,24 @@ module WorkerNode =
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
         let toError e = e |> TryDeploySolverErr |> Error
 
-        match proxy.checkSolverRunning s.solverName with
-        | CanRun ->
-            match proxy.unpackSolver solverLocation s with
-            | Ok () -> proxy.setSolverDeployed s.solverId
-            | Error e -> e |> Error
-        | TooManyRunning n ->
-            Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
-            n |> CanNotDeployDueToRunningSolversErr |> toError
-        | GetProcessesByNameExn e ->
-            Logger.logCrit $"Exception: %A{e}."
-            e |> TryDeploySolverExn |> toError
-        | AlreadyRunning p ->
-            let m = $"This should never happen: %A{p}."
-            Logger.logCrit m
-            m |> TryDeploySolverCriticalErr |> toError
+        let result =
+            match proxy.checkSolverRunning s.solverName with
+            | CanRun ->
+                match proxy.unpackSolver solverLocation s with
+                | Ok () -> proxy.setSolverDeployed s.solverId
+                | Error e -> e |> Error
+            | TooManyRunning n ->
+                Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
+                n |> CanNotDeployDueToRunningSolversErr |> toError
+            | GetProcessesByNameExn e ->
+                Logger.logCrit $"Exception: %A{e}."
+                e |> TryDeploySolverExn |> toError
+            | AlreadyRunning p ->
+                let m = $"This should never happen: %A{p}."
+                Logger.logCrit m
+                m |> TryDeploySolverCriticalErr |> toError
+
+        notifyOfSolverDeployment i s.solverId result
 
 
     let private processSolver (i : WorkerNodeRunnerContext) (s : Solver) =
@@ -66,7 +69,7 @@ module WorkerNode =
         | Ok () -> Logger.logInfo $"Solver %A{s.solverId} was deployed successfully."
         | Error e -> Logger.logError $"Solver %A{s.solverId} deployment failed with error : %A{e}."
 
-        notifyOfSolverDeployment i s.solverId result
+        result
 
 
     let startSolvers (i : WorkerNodeRunnerContext) numberOfCores =
