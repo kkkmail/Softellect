@@ -634,7 +634,7 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalResultInfo d (c : ResultInfo) =
-        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', runQueueId: '%A{c.runQueueId}'."
+        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{c.info}'."
 
         try
             let getFileName (FileName name) =
@@ -650,7 +650,7 @@ module WorkerNodeService =
             let saveResult (f : string) (c : CalculationResult) =
                 let folder = Path.GetDirectoryName f
                 Directory.CreateDirectory(folder) |> ignore
-                Logger.logTrace $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c}'."
+                Logger.logTrace $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c.info}'."
 
                 match c with
                 | TextResult h -> File.WriteAllText(f, h.textContent)

@@ -287,6 +287,11 @@ module Primitives =
             | TextResult h -> h.fileName
             | BinaryResult b -> b.fileName
 
+        member c.info =
+            match c with
+            | TextResult h -> $"TextResult: '{h.fileName}'"
+            | BinaryResult b -> $"BinaryResult: '{b.fileName}'"
+
 
     let appSettingsFile = FileName "appsettings.json"
 

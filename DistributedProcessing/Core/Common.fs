@@ -330,11 +330,7 @@ module Common =
         }
 
         member r.info =
-            let c =
-                r.results
-                |> List.map (fun e -> match e with | BinaryResult b -> $"BinaryResult: '{b.fileName}'" | TextResult t -> $"TextResult: '{t.fileName}'")
-                |> joinStrings ", "
-
+            let c = r.results|> List.map _.info |> joinStrings ", "
             $"%A{r.runQueueId}, results: {c}"
 
 
