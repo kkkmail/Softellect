@@ -44,9 +44,9 @@
         <Compile Include="NamingConventions.fs" />
         <Compile Include="VersionInfo.fs" />
         <Compile Include="ExitErrorCodes.fs" />
+        <Compile Include="Logging.fs" />
         <Compile Include="Primitives.fs" />
         <Compile Include="Errors.fs" />
-        <Compile Include="Logging.fs" />
         <Compile Include="WindowsApi.fs" />
         <Compile Include="Core.fs" />
         <Compile Include="Rop.fs" />

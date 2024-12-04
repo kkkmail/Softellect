@@ -8,7 +8,7 @@ open System.Runtime.InteropServices
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
 open log4net
-open Softellect.Sys.Primitives
+// open Softellect.Sys.Primitives
 
 module Logging =
 
@@ -17,13 +17,11 @@ module Logging =
     let private log4netDefaultLogName = "log4net-default"
 
 
-    /// See:
-    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
-    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
-    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
-    let getAssemblyLocation() =
-        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        FolderName x
+    type ProjectName =
+        | ProjectName of string
+
+        member this.value = let (ProjectName v) = this in v
+        static member defaultValue = ProjectName "Default"
 
 
     let configureProjectName (ProjectName projectName) =

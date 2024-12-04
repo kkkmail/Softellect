@@ -4,6 +4,7 @@ open System
 open System.Net
 open System.IO
 open System.Text.RegularExpressions
+open Softellect.Sys.Logging
 
 /// Collection of various primitive abstractions.
 module Primitives =
@@ -149,7 +150,7 @@ module Primitives =
                 Path.GetExtension(this.value) |> FileExtension |> Some
             with
             | e ->
-                printfn $"FileName.tryGetExtension - Exception: %A{e}."
+                Logger.logError $"FileName.tryGetExtension - Exception: %A{e}."
                 None
 
 
@@ -322,12 +323,6 @@ module Primitives =
 
         member this.value = let (PrivateKey v) = this in v
 
-
-    type ProjectName =
-        | ProjectName of string
-
-        member this.value = let (ProjectName v) = this in v
-        static member defaultValue = ProjectName "Default"
 
     type MonitorResolution =
         {

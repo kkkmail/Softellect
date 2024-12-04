@@ -329,6 +329,14 @@ module Common =
             results : list<CalculationResult>
         }
 
+        member r.info =
+            let c =
+                r.results
+                |> List.map (fun e -> match e with | BinaryResult b -> $"BinaryResult: '{b.fileName}'" | TextResult t -> $"TextResult: '{t.fileName}'")
+                |> joinStrings ", "
+
+            $"%A{r.runQueueId}, results: {c}"
+
 
     type WorkerNodeServiceName =
         | WorkerNodeServiceName of ServiceName

@@ -634,7 +634,7 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalResultInfo d (c : ResultInfo) =
-        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', c: '%A{c}'."
+        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', runQueueId: '%A{c.runQueueId}'."
 
         try
             let getFileName (FileName name) =

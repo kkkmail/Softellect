@@ -5,6 +5,7 @@ open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.PartitionerAdm.Implementation
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 
 module Program =
 
@@ -26,5 +27,5 @@ module Program =
                     | ImportPublicKey importPublicKeyArgs -> importPublicKey ctx (importPublicKeyArgs.GetAllResults())
                 )
 
-        retVal |> List.map (fun x -> printfn $"%A{x}") |> ignore
+        retVal |> List.map (fun x -> Logger.logInfo $"%A{x}") |> ignore
         CompletedSuccessfully

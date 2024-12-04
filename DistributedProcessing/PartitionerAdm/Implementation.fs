@@ -287,7 +287,7 @@ module Implementation =
                     | Some v -> tryRequestResults ctx q v
                     | None -> Ok ()
         | None ->
-            printfn $"modifyRunQueue: No runQueueId to modify found."
+            Logger.logError $"modifyRunQueue: No runQueueId to modify found."
             Ok ()
 
 
@@ -304,7 +304,7 @@ module Implementation =
         match ofn with
         | Some f -> ctx.partitionerAdmProxy.tryExportPublicKey f o
         | None ->
-            printfn "exportPublicKey - output folder name was not provided."
+            Logger.logError "exportPublicKey - output folder name was not provided."
             Ok()
 
 
@@ -319,5 +319,5 @@ module Implementation =
                 ctx.partitionerAdmProxy.tryUpdateWorkerNodePublicKey w key
             | Error e -> Error e
         | None ->
-            printfn "importPublicKey - input file name was not provided."
+            Logger.logError "importPublicKey - input file name was not provided."
             Ok()
