@@ -13,6 +13,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int not null,
         errorMessage nvarchar(max) null,
+        lastErrorOn datetime null,
+        retryCount int not null,
+        maxRetries int not null,
         progress decimal(38, 16) not null,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
@@ -42,6 +45,8 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_relativeInvariant DEFAULT ((1)) FOR relativeInvariant
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_createdOn DEFAULT (getdate()) FOR createdOn
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_modifiedOn DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_retryCount DEFAULT ((0)) FOR retryCount
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_maxRetries DEFAULT ((0)) FOR maxRetries
 
     ALTER TABLE dbo.RunQueue WITH CHECK ADD CONSTRAINT FK_RunQueue_NotificationType FOREIGN KEY(notificationTypeId)
     REFERENCES dbo.NotificationType (notificationTypeId)

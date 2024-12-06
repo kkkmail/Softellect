@@ -289,7 +289,6 @@ module Common =
             noOfCores : int
             nodePriority : WorkerNodePriority
             isInactive : bool
-            lastErrorDateOpt : DateTime option
             solverEncryptionType : EncryptionType
         }
 

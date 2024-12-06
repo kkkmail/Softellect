@@ -87,6 +87,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int not null,
         errorMessage nvarchar(max) null,
+        lastErrorOn datetime null,
+        retryCount int not null,
+        maxRetries int not null,
         progress decimal(38, 16) not null,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
@@ -116,6 +119,8 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_relativeInvariant DEFAULT ((1)) FOR relativeInvariant
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_createdOn DEFAULT (getdate()) FOR createdOn
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_modifiedOn DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_retryCount DEFAULT ((0)) FOR retryCount
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_maxRetries DEFAULT ((0)) FOR maxRetries
 
     ALTER TABLE dbo.RunQueue WITH CHECK ADD CONSTRAINT FK_RunQueue_NotificationType FOREIGN KEY(notificationTypeId)
     REFERENCES dbo.NotificationType (notificationTypeId)
@@ -508,45 +513,45 @@ end
 go
 
 IF OBJECT_ID('dbo.DeliveryType') IS NULL begin
-	print 'Creating table dbo.DeliveryType ...'
+    print 'Creating table dbo.DeliveryType ...'
 
-	CREATE TABLE dbo.DeliveryType(
-		deliveryTypeId int NOT NULL,
-		deliveryTypeName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_DeliveryType PRIMARY KEY CLUSTERED 
-	(
-		deliveryTypeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+    CREATE TABLE dbo.DeliveryType(
+        deliveryTypeId int NOT NULL,
+        deliveryTypeName nvarchar(50) NOT NULL,
+    CONSTRAINT PK_DeliveryType PRIMARY KEY CLUSTERED 
+    (
+        deliveryTypeId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 end else begin
-	print 'Table dbo.DeliveryType already exists ...'
+    print 'Table dbo.DeliveryType already exists ...'
 end
 go
 
 IF OBJECT_ID('dbo.Message') IS NULL begin
-	print 'Creating table dbo.Message ...'
+    print 'Creating table dbo.Message ...'
 
-	CREATE TABLE dbo.Message(
-		messageId uniqueidentifier NOT NULL,
-		senderId uniqueidentifier NOT NULL,
-		recipientId uniqueidentifier NOT NULL,
-		messageOrder bigint IDENTITY(1,1) NOT NULL,
-		dataVersion int NOT NULL,
-		deliveryTypeId int NOT NULL,
-		messageData varbinary(max) NOT NULL,
-		createdOn datetime NOT NULL,
-	 CONSTRAINT PK_Message PRIMARY KEY CLUSTERED 
-	(
-		messageId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+    CREATE TABLE dbo.Message(
+        messageId uniqueidentifier NOT NULL,
+        senderId uniqueidentifier NOT NULL,
+        recipientId uniqueidentifier NOT NULL,
+        messageOrder bigint IDENTITY(1,1) NOT NULL,
+        dataVersion int NOT NULL,
+        deliveryTypeId int NOT NULL,
+        messageData varbinary(max) NOT NULL,
+        createdOn datetime NOT NULL,
+    CONSTRAINT PK_Message PRIMARY KEY CLUSTERED 
+    (
+        messageId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-	ALTER TABLE dbo.Message  WITH CHECK ADD  CONSTRAINT FK_Message_DeliveryType FOREIGN KEY(deliveryTypeId)
-	REFERENCES dbo.DeliveryType (deliveryTypeId)
+    ALTER TABLE dbo.Message  WITH CHECK ADD  CONSTRAINT FK_Message_DeliveryType FOREIGN KEY(deliveryTypeId)
+    REFERENCES dbo.DeliveryType (deliveryTypeId)
 
-	ALTER TABLE dbo.Message CHECK CONSTRAINT FK_Message_DeliveryType
+    ALTER TABLE dbo.Message CHECK CONSTRAINT FK_Message_DeliveryType
 end else begin
-	print 'Table dbo.Message already exists ...'
+    print 'Table dbo.Message already exists ...'
 end
 go
 

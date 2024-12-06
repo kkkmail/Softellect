@@ -198,7 +198,6 @@ module WorkerNodeService =
                 noOfCores = provider.getNoOfCores defaultNoOfCores
                 nodePriority = provider.getNodePriority WorkerNodePriority.defaultValue
                 isInactive = provider.getIsInactive true
-                lastErrorDateOpt = None
                 solverEncryptionType = provider.getSolverEncryptionType()
             }
 

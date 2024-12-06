@@ -764,7 +764,6 @@ module WorkerNodeService =
             partitionerId = p.partitionerId
             nodePriority = r.NodePriority |> WorkerNodePriority
             isInactive = r.IsInactive
-            lastErrorDateOpt = r.LastErrorOn
             solverEncryptionType = p.solverEncryptionType
         }
 
@@ -797,7 +796,6 @@ module WorkerNodeService =
         r.NumberOfCores <- w.noOfCores
         r.NodePriority <- w.nodePriority.value
         r.ModifiedOn <- DateTime.Now
-        r.LastErrorOn <- w.lastErrorDateOpt
 
         Ok()
 
@@ -808,7 +806,6 @@ module WorkerNodeService =
                             WorkerNodeName = w.workerNodeName.value,
                             NumberOfCores = w.noOfCores,
                             NodePriority = w.nodePriority.value,
-                            LastErrorOn = w.lastErrorDateOpt,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -841,17 +838,17 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let upsertWorkerNodeErr p i =
-        let elevate e = e |> UpsertWorkerNodeErrErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
-
-        let g() =
-            match loadWorkerNodeInfo p i with
-            | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
-            | Error e -> Error e
-
-        tryDbFun fromDbError g
+    // let upsertWorkerNodeErr p i =
+    //     let elevate e = e |> UpsertWorkerNodeErrErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+    //
+    //     let g() =
+    //         match loadWorkerNodeInfo p i with
+    //         | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
+    //         | Error e -> Error e
+    //
+    //     tryDbFun fromDbError g
 
 
     let private addWorkerNodeSolverRow (ctx : DbContext) (w : WorkerNodeId) (s : SolverId) =

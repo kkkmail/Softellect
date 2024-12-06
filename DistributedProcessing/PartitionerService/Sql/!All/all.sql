@@ -84,7 +84,6 @@ IF OBJECT_ID('dbo.WorkerNode') IS NULL begin
         workerNodePublicKey varbinary(max) NULL,
         createdOn datetime NOT NULL,
         modifiedOn datetime NOT NULL,
-        lastErrorOn datetime NULL,
     CONSTRAINT PK_WorkerNode PRIMARY KEY CLUSTERED 
     (
         workerNodeId ASC
@@ -126,6 +125,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int NOT NULL,
         errorMessage nvarchar(max) NULL,
+        lastErrorOn datetime null,
+        retryCount int not null,
+        maxRetries int not null,
         progress decimal(38, 16) NOT NULL,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
@@ -159,6 +161,8 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_relativeInvariant DEFAULT ((1)) FOR relativeInvariant
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_createdOn DEFAULT (getdate()) FOR createdOn
     ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_modifiedOn DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_retryCount DEFAULT ((0)) FOR retryCount
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_maxRetries DEFAULT ((0)) FOR maxRetries
 
     ALTER TABLE dbo.RunQueue WITH CHECK ADD CONSTRAINT FK_RunQueue_NotificationType FOREIGN KEY(notificationTypeId)
     REFERENCES dbo.NotificationType (notificationTypeId)
@@ -243,7 +247,6 @@ IF OBJECT_ID('dbo.WorkerNodeSolver') IS NULL begin
         workerNodeId uniqueidentifier not null,
         solverId uniqueidentifier not null,
         createdOn datetime not null,
-        lastErrorOn datetime null,
         isDeployed bit not null,
         deploymentError nvarchar(max) null,
         CONSTRAINT PK_WorkerNodeSolver PRIMARY KEY CLUSTERED 
@@ -282,39 +285,39 @@ drop function if exists dbo.getAvailableWorkerNode
 go
 
 
-create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
-returns table
-as
-return
-(
-	with a as
-	(
-	select
-		workerNodeId
-		,nodePriority
-		,cast(
-			case
-				when numberOfCores <= 0 then 1
-				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
-			end as money) as workLoad
-		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
-	from WorkerNode w
-	where isInactive = 0
-	),
-	b as
-	(
-		select
-			a.*, 
-			c.new_id
-			from a
-			cross apply (select new_id from vw_newid) c
-	)
-	select top 1
-	workerNodeId
-	from b
-	where noErr = 0 and workLoad < 1
-	order by nodePriority desc, workLoad, new_id
-)
+--create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
+--returns table
+--as
+--return
+--(
+--	with a as
+--	(
+--	select
+--		workerNodeId
+--		,nodePriority
+--		,cast(
+--			case
+--				when numberOfCores <= 0 then 1
+--				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
+--			end as money) as workLoad
+--		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
+--	from WorkerNode w
+--	where isInactive = 0
+--	),
+--	b as
+--	(
+--		select
+--			a.*, 
+--			c.new_id
+--			from a
+--			cross apply (select new_id from vw_newid) c
+--	)
+--	select top 1
+--	workerNodeId
+--	from b
+--	where noErr = 0 and workLoad < 1
+--	order by nodePriority desc, workLoad, new_id
+--)
 go
 
 drop function if exists dbo.RunQueueStatus_NotStarted
@@ -356,7 +359,17 @@ go
 
 create view vw_AvailableWorkerNode
 as
-with a as
+with le as
+(
+select
+    workerNodeId
+    ,solverId
+    ,max(lastErrorOn) as lastErrorOn
+from RunQueue r
+where workerNodeId is not null and lastErrorOn is not null
+group by r.workerNodeId, r.solverId
+)
+,a as
 (
 select
     w.workerNodeId
@@ -367,9 +380,10 @@ select
             when numberOfCores <= 0 then 1
             else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
         end as money), 0) as workLoad
-    ,case when isnull(s.lastErrorOn, w.lastErrorOn) is null then null else datediff(minute, getdate(), isnull(s.lastErrorOn, w.lastErrorOn)) end as lastErrMinAgo
+    ,case when le.lastErrorOn is null then null else datediff(minute, getdate(), le.lastErrorOn) end as lastErrMinAgo
 from WorkerNode w
 inner join WorkerNodeSolver s on w.workerNodeId = s.workerNodeId
+left outer join le on s.workerNodeId = le.solverId and s.solverId = le.solverId
 where w.isInactive = 0 and s.isDeployed = 1
 )
 select

@@ -5,7 +5,6 @@ IF OBJECT_ID('dbo.WorkerNodeSolver') IS NULL begin
         workerNodeId uniqueidentifier not null,
         solverId uniqueidentifier not null,
         createdOn datetime not null,
-        lastErrorOn datetime null,
         isDeployed bit not null,
         deploymentError nvarchar(max) null,
         CONSTRAINT PK_WorkerNodeSolver PRIMARY KEY CLUSTERED 
