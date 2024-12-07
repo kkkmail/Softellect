@@ -74,7 +74,7 @@ module WorkerNode =
 
     let startSolvers (i : WorkerNodeRunnerContext) numberOfCores =
         Logger.logTrace "startSolvers: Starting."
-        match i.workerNodeProxy.loadAllNotStartedRunQueueId() with
+        match i.workerNodeProxy.loadAllNotStartedRunQueueId i.workerNodeServiceInfo.workerNodeLocalInto.lastErrMinAgo with
         | Ok m ->
             Logger.logTrace $"startSolvers: m = '%A{m}'."
             m

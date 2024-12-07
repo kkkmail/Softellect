@@ -211,7 +211,7 @@ module WorkerNodeService =
 
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
+    let tryRunSolverProcess tryGetSolverLocation tryUpdatedFailedSolver o n (q : RunQueueId) =
         Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
         let elevate f = f |> TryRunSolverProcessErr |> Error
@@ -265,7 +265,8 @@ module WorkerNodeService =
                         with
                         | ex ->
                             Logger.logError $"Failed to start process: {fileName} with exception: {ex}."
-                            (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+                            let x = tryUpdatedFailedSolver q
+                            (q, ex, x) |> FailedToRunSolverProcessWithExErr |> elevate
                     | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
@@ -321,7 +322,7 @@ module WorkerNodeService =
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
             // loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-            loadAllNotStartedRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+            loadAllNotStartedRunQueueId : float<minute> -> DistributedProcessingResult<list<RunQueueId>>
             tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
@@ -341,7 +342,7 @@ module WorkerNodeService =
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 // loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 loadAllNotStartedRunQueueId = loadAllNotStartedRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) (Some i.workerNodeLocalInto.solverOutputLocation)
+                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) tryUpdateFailedSolver (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver

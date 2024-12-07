@@ -280,7 +280,7 @@ module Common =
         static member defaultValue = LastAllowedNodeErr 60<minute>
 
 
-    /// Information about a worker node to be passed to partitioner.
+    /// Information about a worker node to be passed to a partitioner.
     type WorkerNodeInfo =
         {
             workerNodeId : WorkerNodeId
@@ -299,6 +299,7 @@ module Common =
             resultLocation : FolderName
             solverLocation : FolderName
             solverOutputLocation : FolderName
+            lastErrMinAgo : float<minute>
 
             // TODO kk:20241201 - Add appsettings.json settings for messaging & other timer events.
             // x : TimerRefreshInterval

@@ -156,6 +156,7 @@ module WorkerNodeService =
     let isInactiveKey = ConfigKey "IsInactive"
     let nodePriorityKey = ConfigKey "NodePriority"
     let fileStorageLocationKey = ConfigKey "FileStorageLocation"
+    let lastErrMinAgoKey = ConfigKey "LastErrMinAgo"
 
 
     type ServiceAccessInfo with
@@ -177,6 +178,7 @@ module WorkerNodeService =
         member p.getNodePriority (WorkerNodePriority d) = p.getIntOrDefault nodePriorityKey d |> WorkerNodePriority
         member p.getIsInactive d = p.getBoolOrDefault isInactiveKey d
         member p.getFileStorageLocation (FolderName f) = p.getStringOrDefault fileStorageLocationKey f |> FolderName
+        member p.getLastErrMinAgo (d : float<minute>) = (p.getDoubleOrDefault lastErrMinAgoKey (float d)) * (1.0<minute>)
 
 
     let loadWorkerNodeInfo (provider : AppSettingsProvider) =
@@ -212,6 +214,7 @@ module WorkerNodeService =
             resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
             solverLocation = provider.getFolderNameOrDefault solverLocationKey FolderName.defaultSolverLocation
             solverOutputLocation = provider.getFolderNameOrDefault solverOutputLocationKey FolderName.defaultSolverOutputLocation
+            lastErrMinAgo = provider.getLastErrMinAgo 5.0<minute>
         }
 
 

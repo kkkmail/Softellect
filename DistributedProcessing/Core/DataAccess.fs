@@ -1161,55 +1161,78 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryPickRunQueue () =
-        let elevate e = e |> TryPickRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+    // let tryPickRunQueue () =
+    //     let elevate e = e |> TryPickRunQueueErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value && q.RetryCount <= q.MaxRetries)
+    //                 sortBy q.RunQueueOrder
+    //                 select (Some q.RunQueueId)
+    //                 exactlyOneOrDefault
+    //             }
+    //
+    //         x |> Option.map RunQueueId |> Ok
+    //
+    //     tryDbFun fromDbError g
+    //
+    //
+    // let tryPickRunQueue (lastErrMinAgo : int) =
+    //     let elevate e = e |> TryPickRunQueueErr
+    //     let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where (
+    //                     q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value &&
+    //                     q.RetryCount <= q.MaxRetries &&
+    //                     (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(-float lastErrMinAgo))
+    //                 )
+    //                 sortBy q.RunQueueOrder
+    //                 select (Some q.RunQueueId)
+    //                 exactlyOneOrDefault
+    //             }
+    //
+    //         x |> Option.map RunQueueId |> Ok
+    //
+    //     tryDbFun fromDbError g
 
-        let g() =
-            let ctx = getDbContext getConnectionString
 
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value)
-                    sortBy q.RunQueueOrder
-                    select (Some q.RunQueueId)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map RunQueueId |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let loadAllActiveRunQueueId () =
-        let elevate e = e |> LoadAllActiveRunQueueIdErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId =
-                        RunQueueStatus.NotStartedRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
-                    select q.RunQueueId
-                }
-
-            x
-            |> Seq.toList
-            |> List.map RunQueueId
-            |> Ok
-
-        tryDbFun fromDbError g
+    // let loadAllActiveRunQueueId (lastErrMinAgo : int) =
+    //     let elevate e = e |> LoadAllActiveRunQueueIdErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where ((q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value  || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+    //                        && q.RetryCount <= q.MaxRetries && (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(- float lastErrMinAgo)))
+    //                 select q.RunQueueId
+    //             }
+    //
+    //         x
+    //         |> Seq.toList
+    //         |> List.map RunQueueId
+    //         |> Ok
+    //
+    //     tryDbFun fromDbError g
 
 
-    let loadAllNotStartedRunQueueId () =
+    let loadAllNotStartedRunQueueId (lastErrMinAgo : float<minute>) =
         let elevate e = e |> LoadAllNotStartedRunQueueIdErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> LoadAllNotStartedRunQueueIdDbErr |> elevate
@@ -1220,7 +1243,7 @@ module WorkerNodeService =
             let x =
                 query {
                     for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value)
+                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value && q.RetryCount <= q.MaxRetries && (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(- float lastErrMinAgo)))
                     select q.RunQueueId
                 }
 
@@ -1367,5 +1390,9 @@ module WorkerNodeService =
             |> Ok
 
         tryDbFun fromDbError g
+
+
+    let tryUpdateFailedSolver q =
+        failwith ""
 
 #endif
