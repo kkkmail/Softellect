@@ -142,6 +142,67 @@ module WorkerNodeService =
 
 #if SOLVER_RUNNER || WORKER_NODE
 
+    type FailedSolverProxy =
+        {
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
+        }
+
+
+    let private getFailedProgress q s =
+        {
+            runQueueId = q
+            updatedRunQueueStatus = Some FailedRunQueue
+            progressData =
+                {
+                    progressInfo =
+                        {
+                            progress = 0.0m
+                            callCount = 0L
+                            evolutionTime = EvolutionTime.defaultValue
+                            relativeInvariant = RelativeInvariant.defaultValue
+                            errorMessageOpt = Some (ErrorMessage s)
+                        }
+                    progressDetailed = None
+                }
+        }
+
+
+    let private getFailedSolverMessageInfo partitionerId q s =
+        let p = getFailedProgress q s
+
+        {
+            partitionerRecipient = partitionerId
+            deliveryType = GuaranteedDelivery
+            messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
+        }
+
+
+    let private onFailedSolver (proxy : FailedSolverProxy) (q : RunQueueId) e=
+        let failRunQueue s =
+            let r =
+                (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
+                |> proxy.createMessage
+                |> proxy.saveMessage
+
+            Ok()
+
+        match proxy.tryUpdateFailedSolver q e with
+        | Ok r ->
+            match r with
+            | CanRetry -> Ok()
+            | ExceededRetryCount v ->
+                let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
+                Logger.logWarn m
+                failRunQueue m
+        | Error e1 ->
+            let m = $"Error: {(e1 + e)}."
+            Logger.logError m
+            failRunQueue m
+
+
     /// Returns CanRun when a given RunQueueId is NOT used by any of the running solvers
     /// except the current one and when a number of running solvers is less than a maximum allowed value.
     ///
@@ -208,68 +269,13 @@ module WorkerNodeService =
     type TryRunSolverProcessProxy =
         {
             tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
-            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
-            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
-            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
-            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
+            failedSolverProxy : FailedSolverProxy
         }
 
 
     let private tryGetSolverFullName folderName =
         let fileName = FileName SolverRunnerName
         fileName, fileName.tryGetFullFileName(Some folderName)
-
-
-    let private getFailedProgress q s =
-        {
-            runQueueId = q
-            updatedRunQueueStatus = Some FailedRunQueue
-            progressData =
-                {
-                    progressInfo =
-                        {
-                            progress = 0.0m
-                            callCount = 0L
-                            evolutionTime = EvolutionTime.defaultValue
-                            relativeInvariant = RelativeInvariant.defaultValue
-                            errorMessageOpt = Some (ErrorMessage s)
-                        }
-                    progressDetailed = None
-                }
-        }
-
-
-    let private getFailedSolverMessageInfo partitionerId q s =
-        let p = getFailedProgress q s
-
-        {
-            partitionerRecipient = partitionerId
-            deliveryType = GuaranteedDelivery
-            messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
-        }
-
-
-    let private onFailedSolverStart (proxy : TryRunSolverProcessProxy) (q : RunQueueId) e=
-        let failRunQueue s =
-            let r =
-                (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
-                |> proxy.createMessage
-                |> proxy.saveMessage
-
-            Ok()
-
-        match proxy.tryUpdateFailedSolver q e with
-        | Ok r ->
-            match r with
-            | CanRetry -> Ok()
-            | ExceededRetryCount v ->
-                let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
-                Logger.logWarn m
-                failRunQueue m
-        | Error e1 ->
-            let m = $"Error: {(e1 + e)}."
-            Logger.logError m
-            failRunQueue m
 
 
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
@@ -284,7 +290,7 @@ module WorkerNodeService =
             match result with
             | Ok r -> Ok r
             | Error e ->
-                onFailedSolverStart p q e |> Logger.logIfError |> ignore
+                onFailedSolver p.failedSolverProxy q e |> Logger.logIfError |> ignore
                 Error e
 
         match p.tryGetSolverLocation q with
@@ -411,10 +417,13 @@ module WorkerNodeService =
         member p.tryRunSolverProcessProxy =
             {
                 tryGetSolverLocation = p.tryGetSolverLocation
-                tryUpdateFailedSolver = p.tryUpdateFailedSolver
-                createMessage = p.createMessage
-                saveMessage = p.saveMessage
-                getFailedSolverMessageInfo = p.getFailedSolverMessageInfo
+                failedSolverProxy =
+                    {
+                        tryUpdateFailedSolver = p.tryUpdateFailedSolver
+                        createMessage = p.createMessage
+                        saveMessage = p.saveMessage
+                        getFailedSolverMessageInfo = p.getFailedSolverMessageInfo
+                    }
             }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
