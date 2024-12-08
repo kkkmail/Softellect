@@ -416,7 +416,10 @@ module WorkerNodeService =
                             RunQueueId = r.runQueueId.value,
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
+                            // ProcessId = ???.,
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
+                            RetryCount = r.retryCount,
+                            MaxRetries = r.maxRetries,
                             EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             Progress = r.progressData.progressInfo.progress,
                             CallCount = r.progressData.progressInfo.callCount,
@@ -454,7 +457,6 @@ module WorkerNodeService =
         let elevate e = e |> TryUpdateRunQueueRowErr
         let toError e = e |> elevate |> Error
         //let fromDbError e = e |> TryUpdateRunQueueRowDbErr |> elevate
-
         //let toError e = e |> RunQueueTryUpdateRowErr |> DbErr |> Error
 
         let g s u =
@@ -623,6 +625,7 @@ module WorkerNodeService =
                             RunQueueId = r.value,
                             SolverId = s.value,
                             RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
+                            MaxRetries = defaultMaxRetries,
                             CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
 
@@ -1421,7 +1424,7 @@ module WorkerNodeService =
                 q
                 (fun ctx s ->
                     let x =
-                        match s.RetryCount <= s.MaxRetries with
+                        match s.RetryCount < s.MaxRetries with
                         | true -> CanRetry
                         | false -> ExceededRetryCount { retryCount = s.RetryCount; maxRetries = s.MaxRetries }
 

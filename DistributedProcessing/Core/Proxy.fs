@@ -181,18 +181,23 @@ module WorkerNodeService =
 
 
     let private onFailedSolver (proxy : FailedSolverProxy) (q : RunQueueId) e=
+        Logger.logTrace $"onFailedSolver: %A{q}, error: '%A{e}'."
+
         let failRunQueue s =
             let r =
                 (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
                 |> proxy.createMessage
                 |> proxy.saveMessage
 
+            Logger.logTrace $"onFailedSolver: %A{r}."
             Ok()
 
         match proxy.tryUpdateFailedSolver q e with
         | Ok r ->
             match r with
-            | CanRetry -> Ok()
+            | CanRetry ->
+                Logger.logTrace $"onFailedSolver: can retry for %A{q}."
+                Ok()
             | ExceededRetryCount v ->
                 let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
                 Logger.logWarn m
@@ -287,6 +292,8 @@ module WorkerNodeService =
         let toError e = e |> elevate |> Error
 
         let onFailedSolverStart result =
+            Logger.logTrace $"onFailedSolverStart: %A{q}, result: '%A{result}'."
+
             match result with
             | Ok r -> Ok r
             | Error e ->
@@ -315,6 +322,10 @@ module WorkerNodeService =
                         Logger.logTrace $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
                         try
+                            // Uncomment temporarily when testing failed solver start.
+                            // Thread.Sleep(20_000)
+                            // failwith $"tryRunSolverProcess: testing failed run: %A{q}."
+
                             let procStartInfo =
                                 ProcessStartInfo(
                                     RedirectStandardOutput = false,
@@ -347,7 +358,10 @@ module WorkerNodeService =
 
                 // Decrease max value by one to account for the solver to be started.
                 match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
-                | CanRun -> run() |> onFailedSolverStart
+                | CanRun ->
+                    let r = run()
+                    Logger.logTrace $"About to call onFailedSolverStart '%A{r}'."
+                    onFailedSolverStart r
                 | e ->
                     Logger.logWarn $"Can't run %A{q}: %A{e}."
                     q |> CannotRunSolverProcessErr |> toError

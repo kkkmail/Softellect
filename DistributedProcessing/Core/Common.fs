@@ -24,6 +24,10 @@ module Common =
     let SolverRunnerProcessName = "SolverRunner"
 
 
+    /// TODO kk:20241208 - Make it configurable.
+    let defaultMaxRetries = 3
+
+
     /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
     /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
     let private serializationFormat = BinaryZippedFormat
