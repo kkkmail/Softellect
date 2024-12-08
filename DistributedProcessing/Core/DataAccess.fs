@@ -247,6 +247,22 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
 
+    let private processRunQueue (runQueueId : RunQueueId) m f =
+        let ctx = getDbContext getConnectionString
+
+        let x =
+            query {
+                for s in ctx.Dbo.RunQueue do
+                where (s.RunQueueId = runQueueId.value)
+                select (Some s)
+                exactlyOneOrDefault
+            }
+
+        match x with
+        | Some s -> m ctx s
+        | None -> f ctx
+
+
     let private mapSolver (s : SolverEntity) =
         {
             solverId = SolverId s.SolverId
@@ -360,6 +376,9 @@ module WorkerNodeService =
                     }
 
                 createdOn = r.CreatedOn
+                lastErrorOn = r.LastErrorOn
+                retryCount = r.RetryCount
+                maxRetries = r.MaxRetries
             }
             |> Ok
         | None -> toError (CannotMapRunQueue runQueueId)
@@ -1392,7 +1411,22 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryUpdateFailedSolver q =
-        failwith ""
+    let tryUpdateFailedSolver (q : RunQueueId) e =
+        let elevate e = e |> TryUpdateFailedSolverErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryUpdateFailedSolverDbErr |> elevate
+
+        let g() =
+            processRunQueue
+                q
+                (fun ctx s ->
+                    s.RetryCount <- (s.RetryCount + 1)
+                    s.LastErrorOn <- (Some DateTime.Now)
+                    s.ErrorMessage <- (Some $"%A{e}")
+                    ctx.SubmitUpdates()
+                    Ok())
+                (fun _ -> Error (q |> TryUpdateFailedSolverNoRunQueueErr |> TryUpdateFailedSolverErr))
+
+        tryDbFun fromDbError g
 
 #endif

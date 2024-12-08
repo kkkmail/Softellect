@@ -44,6 +44,10 @@ module Errors =
         | LoadAllNotDeployedSolverIdDbErr of DbError
 
 
+    type TryUpdateFailedSolverError =
+        | TryUpdateFailedSolverDbErr of DbError
+        | TryUpdateFailedSolverNoRunQueueErr of RunQueueId
+
     type TryStartRunQueueError =
         | TryStartRunQueueDbErr of DbError
         | CannotStartRunQueue of RunQueueId
@@ -197,7 +201,8 @@ module Errors =
 
     type TryRunSolverProcessError =
         | FailedToRunSolverProcessErr of RunQueueId
-        | FailedToRunSolverProcessWithExErr of (RunQueueId * exn * UnitResult<DbError>)
+        | FailedToRunSolverProcessExn of RunQueueId * exn
+        | FailedToRunSolverProcessWithExErr of (RunQueueId * exn)
         | CannotRunSolverProcessErr of RunQueueId
         | CannotLoadSolverNameErr of RunQueueId
         | FailedToLoadSolverNameErr of RunQueueId
@@ -426,6 +431,7 @@ module Errors =
         | SetSolverDeployedErr of SetSolverDeployedError
         | SolverNotFound of SolverId
         | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
+        | TryUpdateFailedSolverErr of TryUpdateFailedSolverError
 
         // Some errors
         | SaveResultsExn of exn

@@ -204,6 +204,15 @@ module WorkerNodeService =
 
 #if WORKER_NODE
 
+    type TryRunSolverProcessProxy =
+        {
+            tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingUnitResult
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+        }
+
+
     let tryGetSolverFullName folderName =
         let fileName = FileName SolverRunnerName
         fileName, fileName.tryGetFullFileName(Some folderName)
@@ -211,12 +220,12 @@ module WorkerNodeService =
 
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess tryGetSolverLocation tryUpdatedFailedSolver o n (q : RunQueueId) =
+    let tryRunSolverProcess o (p : TryRunSolverProcessProxy) n (q : RunQueueId) =
         Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
         let elevate f = f |> TryRunSolverProcessErr |> Error
 
-        match tryGetSolverLocation q with
+        match p.tryGetSolverLocation q with
         | Ok (Some folderName) ->
             Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
             match tryGetSolverFullName folderName with
@@ -265,8 +274,8 @@ module WorkerNodeService =
                         with
                         | ex ->
                             Logger.logError $"Failed to start process: {fileName} with exception: {ex}."
-                            let x = tryUpdatedFailedSolver q
-                            (q, ex, x) |> FailedToRunSolverProcessWithExErr |> elevate
+                            let x = p.tryUpdateFailedSolver q (FailedToRunSolverProcessExn (q, ex) |> TryRunSolverProcessErr)
+                            (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
                     | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
@@ -323,7 +332,8 @@ module WorkerNodeService =
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
             // loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
             loadAllNotStartedRunQueueId : float<minute> -> DistributedProcessingResult<list<RunQueueId>>
-            tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
+            tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
+            tryRunSolverProcess : TryRunSolverProcessProxy -> int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
@@ -333,7 +343,16 @@ module WorkerNodeService =
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingUnitResult
         }
+
+        member p.tryRunSolverProcessProxy =
+            {
+                tryGetSolverLocation = p.tryGetSolverLocation
+                tryUpdateFailedSolver = p.tryUpdateFailedSolver
+                createMessage = p.createMessage
+                saveMessage = p.saveMessage
+            }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
             {
@@ -342,7 +361,8 @@ module WorkerNodeService =
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
                 // loadAllActiveRunQueueId = loadAllActiveRunQueueId
                 loadAllNotStartedRunQueueId = loadAllNotStartedRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i.workerNodeLocalInto) tryUpdateFailedSolver (Some i.workerNodeLocalInto.solverOutputLocation)
+                tryGetSolverLocation = tryGetSolverLocation i.workerNodeLocalInto
+                tryRunSolverProcess = tryRunSolverProcess (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
@@ -352,6 +372,7 @@ module WorkerNodeService =
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
                 tryLoadSolver = tryLoadSolver
+                tryUpdateFailedSolver = tryUpdateFailedSolver
             }
 
 

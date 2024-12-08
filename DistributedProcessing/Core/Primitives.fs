@@ -126,6 +126,9 @@ module WorkerNodeService =
             workerNodeIdOpt : WorkerNodeId option
             progressData : ProgressData
             createdOn : DateTime
+            lastErrorOn : DateTime option
+            retryCount : int
+            maxRetries : int
         }
 
 #endif
@@ -138,6 +141,9 @@ module WorkerNodeService =
             runQueueStatus : RunQueueStatus
             progressData : ProgressData
             createdOn : DateTime
+            lastErrorOn : DateTime option
+            retryCount : int
+            maxRetries : int
         }
 
 #endif

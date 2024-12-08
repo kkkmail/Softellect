@@ -78,7 +78,7 @@ module WorkerNode =
         | Ok m ->
             Logger.logTrace $"startSolvers: m = '%A{m}'."
             m
-            |> List.map (i.workerNodeProxy.tryRunSolverProcess numberOfCores)
+            |> List.map (i.workerNodeProxy.tryRunSolverProcess i.workerNodeProxy.tryRunSolverProcessProxy numberOfCores)
             |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
             |> foldUnitResults
         | Error e ->
