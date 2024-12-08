@@ -202,7 +202,6 @@ module Errors =
     type TryRunSolverProcessError =
         | FailedToRunSolverProcessErr of RunQueueId
         | FailedToRunSolverProcessExn of RunQueueId * exn
-        | FailedToRunSolverProcessWithExErr of (RunQueueId * exn)
         | CannotRunSolverProcessErr of RunQueueId
         | CannotLoadSolverNameErr of RunQueueId
         | FailedToLoadSolverNameErr of RunQueueId

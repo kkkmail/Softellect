@@ -1420,11 +1420,16 @@ module WorkerNodeService =
             processRunQueue
                 q
                 (fun ctx s ->
+                    let x =
+                        match s.RetryCount <= s.MaxRetries with
+                        | true -> CanRetry
+                        | false -> ExceededRetryCount { retryCount = s.RetryCount; maxRetries = s.MaxRetries }
+
                     s.RetryCount <- (s.RetryCount + 1)
                     s.LastErrorOn <- (Some DateTime.Now)
                     s.ErrorMessage <- (Some $"%A{e}")
                     ctx.SubmitUpdates()
-                    Ok())
+                    Ok x)
                 (fun _ -> Error (q |> TryUpdateFailedSolverNoRunQueueErr |> TryUpdateFailedSolverErr))
 
         tryDbFun fromDbError g

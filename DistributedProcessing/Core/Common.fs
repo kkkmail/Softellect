@@ -508,3 +508,15 @@ module Common =
             odeSolverType : OdeSolverType
             derivative : DerivativeCalculator
         }
+
+
+    type RetryInto =
+        {
+            retryCount : int
+            maxRetries : int
+        }
+
+
+    type RetryState =
+        | CanRetry
+        | ExceededRetryCount of RetryInto

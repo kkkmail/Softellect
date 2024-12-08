@@ -11,6 +11,7 @@ open Softellect.Messaging.ServiceInfo
 open Softellect.Messaging.Client
 open Softellect.Messaging.Errors
 open Softellect.Messaging.DataAccess
+open Softellect.Sys.Errors
 open Softellect.Sys.Logging
 open Softellect.Sys.Rop
 open Softellect.Sys.Crypto
@@ -207,15 +208,68 @@ module WorkerNodeService =
     type TryRunSolverProcessProxy =
         {
             tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
-            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingUnitResult
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
         }
 
 
-    let tryGetSolverFullName folderName =
+    let private tryGetSolverFullName folderName =
         let fileName = FileName SolverRunnerName
         fileName, fileName.tryGetFullFileName(Some folderName)
+
+
+    let private getFailedProgress q s =
+        {
+            runQueueId = q
+            updatedRunQueueStatus = Some FailedRunQueue
+            progressData =
+                {
+                    progressInfo =
+                        {
+                            progress = 0.0m
+                            callCount = 0L
+                            evolutionTime = EvolutionTime.defaultValue
+                            relativeInvariant = RelativeInvariant.defaultValue
+                            errorMessageOpt = Some (ErrorMessage s)
+                        }
+                    progressDetailed = None
+                }
+        }
+
+
+    let private getFailedSolverMessageInfo partitionerId q s =
+        let p = getFailedProgress q s
+
+        {
+            partitionerRecipient = partitionerId
+            deliveryType = GuaranteedDelivery
+            messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
+        }
+
+
+    let private onFailedSolverStart (proxy : TryRunSolverProcessProxy) (q : RunQueueId) e=
+        let failRunQueue s =
+            let r =
+                (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
+                |> proxy.createMessage
+                |> proxy.saveMessage
+
+            Ok()
+
+        match proxy.tryUpdateFailedSolver q e with
+        | Ok r ->
+            match r with
+            | CanRetry -> Ok()
+            | ExceededRetryCount v ->
+                let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
+                Logger.logWarn m
+                failRunQueue m
+        | Error e1 ->
+            let m = $"Error: {(e1 + e)}."
+            Logger.logError m
+            failRunQueue m
 
 
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
@@ -223,7 +277,15 @@ module WorkerNodeService =
     let tryRunSolverProcess o (p : TryRunSolverProcessProxy) n (q : RunQueueId) =
         Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
-        let elevate f = f |> TryRunSolverProcessErr |> Error
+        let elevate f = f |> TryRunSolverProcessErr
+        let toError e = e |> elevate |> Error
+
+        let onFailedSolverStart result =
+            match result with
+            | Ok r -> Ok r
+            | Error e ->
+                onFailedSolverStart p q e |> Logger.logIfError |> ignore
+                Error e
 
         match p.tryGetSolverLocation q with
         | Ok (Some folderName) ->
@@ -240,7 +302,7 @@ module WorkerNodeService =
                             | Ok() ->
                                 let a = $"/c {e.value} q {q.value} > {outputFile.value} 2>&1 3>&1 4>&1 5>&1 6>&1"
                                 ("cmd.exe", a) |> Ok
-                            | Error e -> (q, f, e) |> FailedToCreateOutputFolderErr |> elevate
+                            | Error e -> (q, f, e) |> FailedToCreateOutputFolderErr |> toError
 
                     match ea with
                     | Ok (exeName, args) ->
@@ -270,27 +332,26 @@ module WorkerNodeService =
                                 Ok processId
                             else
                                 Logger.logError $"Failed to start process: {fileName}."
-                                q |> FailedToRunSolverProcessErr |> elevate
+                                q |> FailedToRunSolverProcessErr |> toError
                         with
                         | ex ->
                             Logger.logError $"Failed to start process: {fileName} with exception: {ex}."
-                            let x = p.tryUpdateFailedSolver q (FailedToRunSolverProcessExn (q, ex) |> TryRunSolverProcessErr)
-                            (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+                            (q, ex) |> FailedToRunSolverProcessExn |> toError
                     | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
                 match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
-                | CanRun -> run()
+                | CanRun -> run() |> onFailedSolverStart
                 | e ->
                     Logger.logWarn $"Can't run %A{q}: %A{e}."
-                    q |> CannotRunSolverProcessErr |> elevate
+                    q |> CannotRunSolverProcessErr |> toError
             | _, Error e ->
                 Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
-                q |> FailedToLoadSolverNameErr |> elevate
-        | Ok None -> q |> CannotLoadSolverNameErr |> elevate
+                q |> FailedToLoadSolverNameErr |> toError |> onFailedSolverStart
+        | Ok None -> q |> CannotLoadSolverNameErr |> toError |> onFailedSolverStart
         | Error e ->
             Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
-            q |> FailedToLoadSolverNameErr |> elevate
+            q |> FailedToLoadSolverNameErr |> toError |> onFailedSolverStart
 
 
     let getSolverLocation (i : WorkerNodeLocalInto) (solverName : SolverName) =
@@ -343,7 +404,8 @@ module WorkerNodeService =
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
-            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingUnitResult
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
+            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
         }
 
         member p.tryRunSolverProcessProxy =
@@ -352,6 +414,7 @@ module WorkerNodeService =
                 tryUpdateFailedSolver = p.tryUpdateFailedSolver
                 createMessage = p.createMessage
                 saveMessage = p.saveMessage
+                getFailedSolverMessageInfo = p.getFailedSolverMessageInfo
             }
 
         static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
@@ -373,6 +436,7 @@ module WorkerNodeService =
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
                 tryLoadSolver = tryLoadSolver
                 tryUpdateFailedSolver = tryUpdateFailedSolver
+                getFailedSolverMessageInfo = getFailedSolverMessageInfo i.workerNodeInfo.partitionerId
             }
 
 

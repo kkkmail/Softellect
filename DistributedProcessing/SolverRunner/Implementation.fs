@@ -34,7 +34,7 @@ module Implementation =
     let AllowedOverhead = 0.20
 
 
-    // Send the message directly to local database.
+    /// Send the message directly to local database.
     let private sendMessage messagingDataVersion m i =
         createMessage messagingDataVersion m i
         |> saveMessage<DistributedProcessingMessageData> messagingDataVersion
