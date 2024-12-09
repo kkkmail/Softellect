@@ -344,7 +344,7 @@ module Errors =
 
 
     type OnUpdateProgressError =
-        | UnableToSendProgressMsgErr of RunQueueId
+        | UnableToSendProgressMsgErr of (RunQueueId * MessagingError)
         | UnableToFindMappingErr of RunQueueId
 
 

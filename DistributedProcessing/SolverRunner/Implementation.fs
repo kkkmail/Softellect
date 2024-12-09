@@ -122,7 +122,7 @@ module Implementation =
         let r1 =
             match r11 with
             | Ok v -> Ok v
-            | Error e -> OnUpdateProgressErr (UnableToSendProgressMsgErr p.runQueueId) |> Error
+            | Error e -> OnUpdateProgressErr (UnableToSendProgressMsgErr (p.runQueueId, e)) |> Error
 
         let result =
             if completed
