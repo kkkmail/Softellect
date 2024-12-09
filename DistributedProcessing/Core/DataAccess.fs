@@ -653,6 +653,23 @@ module WorkerNodeService =
 
 #endif
 
+#if SOLVER_RUNNER || WORKER_NODE
+
+    let deleteRunQueue (q : RunQueueId) =
+        let elevate e = e |> DeleteRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = DeleteRunQueueEntryErr e |> elevate
+        let fromDbError e = e |> DeleteRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.DeleteRunQueue.Invoke(``@runQueueId`` = q.value)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+#endif
+
 #if PARTITIONER
 
     let saveLocalResultInfo d (c : ResultInfo) =
@@ -1086,20 +1103,6 @@ module WorkerNodeService =
         let g() =
             let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryClearNotificationRunQueue.Invoke(``@runQueueId`` = q.value)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
-    let deleteRunQueue (q : RunQueueId) =
-        let elevate e = e |> DeleteRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = DeleteRunQueueEntryErr e |> elevate
-        let fromDbError e = e |> DeleteRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.DeleteRunQueue.Invoke(``@runQueueId`` = q.value)
             r.ResultSet |> bindIntScalar x q
 
         tryDbFun fromDbError g

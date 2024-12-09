@@ -336,6 +336,10 @@ module Errors =
         | NoWorkerNodePublicKeyErr
         | TryExpWorkerNodePublicKeyErr of SysError
 
+
+    type OnFaileSolverError =
+        | FailRunQueueMessagingErr of MessagingError
+
     // ==================================
     // Solver Runner errors
 
@@ -431,6 +435,7 @@ module Errors =
         | SolverNotFound of SolverId
         | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
         | TryUpdateFailedSolverErr of TryUpdateFailedSolverError
+        | OnFaileSolverErr of OnFaileSolverError
 
         // Some errors
         | SaveResultsExn of exn
@@ -456,10 +461,6 @@ module Errors =
 
         static member (+) (a, b) = DistributedProcessingError.addError a b
         member a.add b = a + b
-
-    // ==================================
-    // Partitioner errors
-
 
     // ==================================
 
