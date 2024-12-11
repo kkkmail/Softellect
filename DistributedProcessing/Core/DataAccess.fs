@@ -342,6 +342,28 @@ module WorkerNodeService =
             | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
         | None -> Ok()
 
+
+    let tryGetSolverName (r : RunQueueId) =
+        let elevate e = e |> TryGetSolverNameErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
+                    where (q.RunQueueId = r.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
+
+        tryDbFun fromDbError g
+
 #endif
 
 #if PARTITIONER || PARTITIONER_ADM
@@ -672,8 +694,8 @@ module WorkerNodeService =
 
 #if PARTITIONER
 
-    let saveLocalResultInfo d (c : ResultInfo) =
-        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{c.info}'."
+    let saveLocalResultInfo d (i : ResultInfo) =
+        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
 
         try
             let getFileName (FileName name) =
@@ -683,7 +705,15 @@ module WorkerNodeService =
 
                     match g with
                     | Some (FolderName e) -> Path.Combine(f, e, fileName)
-                    | None -> Path.Combine(f, fileName)
+                    | None ->
+                        match tryGetSolverName i.runQueueId with
+                        | Ok (Some (SolverName n)) -> Path.Combine(f, n, fileName)
+                        | Ok None ->
+                            Logger.logError $"Cannot get solver name for %A{i.runQueueId}."
+                            Path.Combine(f, fileName)
+                        | Error e ->
+                            Logger.logError $"Error getting solver name: '%A{e}' for %A{i.runQueueId}."
+                            Path.Combine(f, fileName)
                 | None -> name
 
             let saveResult (f : string) (c : CalculationResult) =
@@ -695,7 +725,7 @@ module WorkerNodeService =
                 | TextResult h -> File.WriteAllText(f, h.textContent)
                 | BinaryResult b -> File.WriteAllBytes(f, b.binaryContent)
 
-            c.results
+            i.results
             |> List.map (fun e -> saveResult (getFileName e.fileName) e)
             |> ignore
             Ok ()
@@ -1276,28 +1306,6 @@ module WorkerNodeService =
             |> Seq.toList
             |> List.map RunQueueId
             |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let tryGetSolverName (r : RunQueueId) =
-        let elevate e = e |> TryGetSolverNameErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
-                    where (q.RunQueueId = r.value)
-                    select (Some s.SolverName)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 
