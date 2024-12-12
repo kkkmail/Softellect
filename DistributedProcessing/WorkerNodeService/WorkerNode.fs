@@ -41,8 +41,11 @@ module WorkerNode =
             match proxy.checkSolverRunning s.solverName with
             | CanRun ->
                 match proxy.unpackSolver solverLocation s with
-                | Ok () -> proxy.setSolverDeployed s.solverId
-                | Error e -> e |> Error
+                | Ok () ->
+                    match proxy.copyAppSettings solverLocation with
+                    | Ok() -> proxy.setSolverDeployed s.solverId
+                    | Error e -> Error e
+                | Error e -> Error e
             | TooManyRunning n ->
                 Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
                 n |> CanNotDeployDueToRunningSolversErr |> toError

@@ -22,9 +22,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="..\..\..\DistributedProcessing\WorkerNodeService\appsettings.json" Link="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <Compile Include="Program.fs" />
     </ItemGroup>
 

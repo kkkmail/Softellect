@@ -362,6 +362,13 @@ module Errors =
         | TryDeploySolverCriticalErr of string
 
 
+    type CopyAppSettingsError =
+        | CopyAppSettingsInputFileErr of FileError
+        | CopyAppSettingsOutputFileErr of FileError
+        | CopyAppSettingsFileErr of FileError * FileError
+        | CopyAppSettingsExn of exn
+
+
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
@@ -452,6 +459,7 @@ module Errors =
         | TryExportWorkerNodePublicKeyErr of TryExportWorkerNodePublicKeyError
         | NotifyOfSolverDeploymentErr of NotifyOfSolverDeploymentError
         | TryDeploySolverErr of TryDeploySolverError
+        | CopyAppSettingsErr of CopyAppSettingsError
 
         static member addError a b =
             match a, b with

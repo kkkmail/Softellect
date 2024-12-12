@@ -421,6 +421,20 @@ module WorkerNodeService =
         | _, Error e -> InvalidOperationException $"%A{e}" :> exn |> GetProcessesByNameExn
 
 
+    let private copyAppSettings solverFolder =
+        let toError e = e |> CopyAppSettingsErr |> Error
+        try
+            match appSettingsFile.tryGetFullFileName(), (appSettingsFile.combine solverFolder).tryGetFullFileName() with
+            | Ok i, Ok o ->
+                File.Copy(i.value, o.value, true)
+                Ok()
+            | Ok _, Error e2 -> e2 |> CopyAppSettingsOutputFileErr |> toError
+            | Error e1, Ok _ -> e1 |> CopyAppSettingsInputFileErr |> toError
+            | Error e1, Error e2 -> (e1, e2) |> CopyAppSettingsFileErr |> toError
+        with
+        | e -> e |> CopyAppSettingsExn |> toError
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -433,6 +447,7 @@ module WorkerNodeService =
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
+            copyAppSettings : FolderName -> DistributedProcessingUnitResult
             checkSolverRunning : SolverName -> CheckRunningResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
@@ -469,6 +484,7 @@ module WorkerNodeService =
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
+                copyAppSettings = copyAppSettings
                 checkSolverRunning = checkSolverRunning i.workerNodeLocalInto
                 setSolverDeployed = setSolverDeployed
                 createMessage = createMessage messagingDataVersion i.workerNodeInfo.workerNodeId.messagingClientId

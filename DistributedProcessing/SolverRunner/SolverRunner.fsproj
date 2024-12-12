@@ -31,9 +31,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="..\WorkerNodeService\appsettings.json" Link="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
