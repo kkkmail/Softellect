@@ -206,7 +206,7 @@ module Runner =
         let s = ctx.systemProxy
 
         let modelData = ctx.runnerData.modelData.modelData
-        match u.resultGenerator.generateDetailedResults ctx.runnerData.runQueueId modelData t x with
+        match u.resultGenerator.generateDetailedResults ctx.runnerData.runnerData.runQueueId modelData t x with
         | Some c ->
             Logger.logTrace $"notifyResultsDetailed: c.Length = %A{c.Length}"
             s.callBackProxy.resultCallBack.invoke c
@@ -231,7 +231,7 @@ module Runner =
         let modelData = ctx.runnerData.modelData.modelData
         let cd = s.getResultData()
 
-        match u.resultGenerator.generateResults ctx.runnerData.runQueueId modelData t cd with
+        match u.resultGenerator.generateResults ctx.runnerData.runnerData.runQueueId modelData t cd with
         | Some c ->
             Logger.logInfo $"notifyResults: c.Length = %A{c.Length}"
             s.callBackProxy.resultCallBack.invoke c
@@ -244,7 +244,7 @@ module Runner =
     let private notifyRequestedResults ctx =
         Logger.logTrace $"notifyRequestedResults: Starting."
         let s = ctx.systemProxy
-        let runQueueId = ctx.runnerData.runQueueId
+        let runQueueId = ctx.runnerData.runnerData.runQueueId
 
         match s.checkNotification runQueueId with
         | Some t ->
@@ -265,7 +265,7 @@ module Runner =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
-        let runQueueId = d.runQueueId
+        let runQueueId = d.runnerData.runQueueId
         let modelData = d.modelData.modelData
         let i = d.modelData.solverInputParams
         let o = d.modelData.solverOutputParams
@@ -287,7 +287,7 @@ module Runner =
             }
 
         let ncbd1 = { ncbd with progressData = pd.toProgressData() }
-        let ncbd2, ct = checkCancellation runQueueId d.cancellationCheckFreq c ncbd1
+        let ncbd2, ct = checkCancellation runQueueId d.runnerData.cancellationCheckFreq c ncbd1
 
         match ct with
         | Some v ->
@@ -317,7 +317,7 @@ module Runner =
         let u = ctx.userProxy
         let s = ctx.systemProxy
 
-        let runQueueId = d.runQueueId
+        let runQueueId = d.runnerData.runQueueId
         let modelData = d.modelData.modelData
         Logger.logInfo $"runSolver: Starting runQueueId: '%A{runQueueId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData = '%A{modelData}'."
 
@@ -364,8 +364,6 @@ module Runner =
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
                 notifyResults ctx RegularResultGeneration
                 Logger.logTrace "runSolver: Final results have been sent."
-
-                //(tEnd, xEnd)
             with
             | :? ComputationAbortedException<'P> as ex ->
                 Logger.logInfo $"runSolver: ComputationAbortedException: %A{ex}."
@@ -381,9 +379,9 @@ module Runner =
                     notifyProgress s (e |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
             | ex ->
                 Logger.logError $"runSolver: Exception: %A{ex}"
-                let ncbd = getNeedsCallBackData d.runQueueId
-                let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"{ex}" |> Some }; progressDetailed = None }
-                notifyProgress s (Some $"{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
+                let ncbd = getNeedsCallBackData d.runnerData.runQueueId
+                let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"%A{ex}" |> Some }; progressDetailed = None }
+                notifyProgress s (Some $"%A{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
             Logger.logTrace $"runSolver: Stopping timers."
             h.stop()

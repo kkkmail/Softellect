@@ -201,6 +201,19 @@ module WorkerNodeService =
         with
         | e -> e |> GetProcessesByNameExn
 
+    let getFailedProgressData e =
+        {
+            progressInfo =
+                {
+                    progress = 0.0m
+                    callCount = 0L
+                    evolutionTime = EvolutionTime.defaultValue
+                    relativeInvariant = RelativeInvariant.defaultValue
+                    errorMessageOpt = Some (ErrorMessage $"%A{e}")
+                }
+            progressDetailed = None
+        }
+
 #endif
 
 #if WORKER_NODE
@@ -219,18 +232,7 @@ module WorkerNodeService =
         {
             runQueueId = q
             updatedRunQueueStatus = Some FailedRunQueue
-            progressData =
-                {
-                    progressInfo =
-                        {
-                            progress = 0.0m
-                            callCount = 0L
-                            evolutionTime = EvolutionTime.defaultValue
-                            relativeInvariant = RelativeInvariant.defaultValue
-                            errorMessageOpt = Some (ErrorMessage s)
-                        }
-                    progressDetailed = None
-                }
+            progressData = getFailedProgressData s
         }
 
 

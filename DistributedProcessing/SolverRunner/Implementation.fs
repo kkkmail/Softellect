@@ -52,7 +52,7 @@ module Implementation =
         max ((float noOfCores) * (1.0 + AllowedOverhead) |> int) (noOfCores + 1)
 
 
-    let private onSaveResults<'D, 'P> (data : RunnerData<'D>) c =
+    let private onSaveResults<'P> (data : RunnerData) c =
         let i =
             {
                 results = c
@@ -90,7 +90,7 @@ module Implementation =
         | None -> (NonGuaranteedDelivery, false)
 
 
-    let private onUpdateProgress<'D, 'P> (data : RunnerData<'D>) cb (pd : ProgressData<'P>) =
+    let private onUpdateProgress<'P> (data : RunnerData) cb (pd : ProgressData<'P>) =
         let p =
             {
                 runQueueId = data.runQueueId
@@ -136,15 +136,15 @@ module Implementation =
 
 
     /// TODO kk:20240928 - Add error handling.
-    let private createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
+    let private createSystemProxy<'P, 'X, 'C> (data : RunnerData) =
         let updater = AsyncUpdater<ResultInitData, ResultSliceData<'C>, ResultData<'C>>(ResultDataUpdater<'C>(), ()) :> IAsyncUpdater<ResultSliceData<'C>, ResultData<'C>>
 
-        let proxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
+        let proxy : SolverRunnerSystemProxy<'P, 'X, 'C> =
             {
                 callBackProxy =
                     {
-                        progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'D, 'P> data cb pd |> ignore)
-                        resultCallBack = ResultCallBack (fun c -> onSaveResults<'D, 'P> data c |> ignore)
+                        progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'P> data cb pd |> ignore)
+                        resultCallBack = ResultCallBack (fun c -> onSaveResults<'P> data c |> ignore)
                         checkCancellation = CheckCancellation (fun q -> tryCheckCancellation q |> toOption |> Option.bind id)
                     }
                 addResultData = updater.addContent
@@ -156,9 +156,9 @@ module Implementation =
         proxy
 
 
-    type SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
+    type SolverRunnerSystemProxy<'P, 'X, 'C>
         with
-        static member create (data : RunnerData<'D>) = createSystemProxy<'D, 'P, 'X, 'C> data
+        static member create (data : RunnerData) = createSystemProxy<'P, 'X, 'C> data
 
 
     type SolverRunnerSystemContext<'D, 'P, 'X, 'C>
@@ -191,16 +191,34 @@ module Implementation =
     let runSolverProcess<'D, 'P, 'X, 'C> (ctx: SolverRunnerSystemContext<'D, 'P, 'X, 'C>) getUserProxy (data : SolverRunnerData) =
         let logCrit = ctx.logCrit
         let q = data.runQueueId
+        let i = ctx.workerNodeServiceInfo
 
         let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
         Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
 
-        let exitWithLogCrit e x =
-            Logger.logCrit $"runSolver: ERROR: {e}, exit code: {x}."
-            SolverRunnerCriticalError.create q e |> logCrit |> ignore
+        let runnerData =
+            {
+                runQueueId = q
+                partitionerId = i.workerNodeInfo.partitionerId
+                workerNodeId = i.workerNodeInfo.workerNodeId
+                messagingDataVersion = data.messagingDataVersion
+                started = DateTime.Now
+                cancellationCheckFreq = data.cancellationCheckFreq
+            }
+
+        let proxy = ctx.createSystemProxy runnerData
+
+        let exitWithLogWarn e x =
+            Logger.logWarn $"runSolver: ERROR: %A{e}, exit code: %A{x}."
             x
 
-        let i = ctx.workerNodeServiceInfo
+        let abortWithLogCrit e x =
+            let cb = Some $"%A{e}, %A{x}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack
+            let pd = getFailedProgressData e
+            let r = onUpdateProgress<'P> runnerData cb pd
+            Logger.logCrit $"runSolver: ERROR: %A{e}, exit code: %A{x}, r: %A{r}."
+            SolverRunnerCriticalError.create q e |> logCrit |> ignore
+            x
 
         match ctx.tryLoadRunQueue q with
         | Ok (w, st) ->
@@ -218,22 +236,16 @@ module Implementation =
                         match ctx.tryStartRunQueue q with
                         | Ok() ->
                             Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
-                            let data : RunnerData<'D> =
-                                {
-                                    runQueueId = q
-                                    partitionerId = i.workerNodeInfo.partitionerId
-                                    workerNodeId = i.workerNodeInfo.workerNodeId
-                                    messagingDataVersion = data.messagingDataVersion
-                                    modelData = w
-                                    started = DateTime.Now
-                                    cancellationCheckFreq = data.cancellationCheckFreq
-                                }
 
-                            let proxy = ctx.createSystemProxy data
+                            let rd : RunnerData<'D> =
+                                {
+                                    runnerData = runnerData
+                                    modelData = w
+                                }
 
                             let ctxr =
                                 {
-                                    runnerData = data
+                                    runnerData = rd
                                     systemProxy = proxy
                                     userProxy = getUserProxy w.modelData
                                 }
@@ -244,18 +256,15 @@ module Implementation =
                             CompletedSuccessfully
                         | Error e ->
                             Logger.logError $"runSolver: ERROR: {e}."
-                            exitWithLogCrit e UnknownException
+                            abortWithLogCrit e UnknownException
                     | CancelRequestedRunQueue ->
                         // If we got here that means that the solver was terminated before it had a chance to process cancellation.
                         // At this point we have no choice but abort the calculation because there is no data available to continue.
                         let errMessage = "The solver was terminated before processing cancellation. Aborting."
-                        //let p0 = ProgressData.defaultValue
-                        //let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
-                        //getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
-                        exitWithLogCrit errMessage NotProcessedCancellation
-                    | _ -> exitWithLogCrit $"Invalid run queue status: {st}" InvalidRunQueueStatus
-                | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
-                | TooManyRunning n -> exitWithLogCrit (TooManyRunning n) TooManySolversRunning
-                | GetProcessesByNameExn e -> exitWithLogCrit e CriticalError
-            | false -> exitWithLogCrit $"Invalid solverId: {w.solverId}, expected: {data.solverId}" InvalidSolverId
-        | Error e -> exitWithLogCrit e DatabaseErrorOccurred
+                        abortWithLogCrit errMessage NotProcessedCancellation
+                    | _ -> abortWithLogCrit $"Invalid run queue status: %A{st}" InvalidRunQueueStatus
+                | AlreadyRunning p -> exitWithLogWarn (AlreadyRunning p) SolverAlreadyRunning
+                | TooManyRunning n -> exitWithLogWarn (TooManyRunning n) TooManySolversRunning
+                | GetProcessesByNameExn e -> abortWithLogCrit e CriticalError
+            | false -> abortWithLogCrit $"Invalid solverId: {w.solverId}, expected: {data.solverId}" InvalidSolverId
+        | Error e -> abortWithLogCrit e DatabaseErrorOccurred
