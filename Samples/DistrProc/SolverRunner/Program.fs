@@ -134,6 +134,7 @@ module Program =
                             getInitialData = _.initialValues
                             getProgressData = None
                             getInvariant = fun _ _ _ -> RelativeInvariant 1.0
+                            getOptionalFolder = fun _ _ -> None
                         }
 
                     {

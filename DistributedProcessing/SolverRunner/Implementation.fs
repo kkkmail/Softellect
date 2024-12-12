@@ -57,6 +57,7 @@ module Implementation =
             {
                 results = c
                 runQueueId = data.runQueueId
+                optionalFolder = data.optionalFolder
             }
 
         Logger.logTrace $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
@@ -193,10 +194,7 @@ module Implementation =
         let q = data.runQueueId
         let i = ctx.workerNodeServiceInfo
 
-        let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
-        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
-
-        let runnerData =
+        let runnerDataCrit =
             {
                 runQueueId = q
                 partitionerId = i.workerNodeInfo.partitionerId
@@ -204,9 +202,11 @@ module Implementation =
                 messagingDataVersion = data.messagingDataVersion
                 started = DateTime.Now
                 cancellationCheckFreq = data.cancellationCheckFreq
+                optionalFolder = None
             }
 
-        let proxy = ctx.createSystemProxy runnerData
+        let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
+        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
 
         let exitWithLogWarn e x =
             Logger.logWarn $"runSolver: ERROR: %A{e}, exit code: %A{x}."
@@ -215,7 +215,7 @@ module Implementation =
         let abortWithLogCrit e x =
             let cb = Some $"%A{e}, %A{x}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack
             let pd = getFailedProgressData e
-            let r = onUpdateProgress<'P> runnerData cb pd
+            let r = onUpdateProgress<'P> runnerDataCrit cb pd
             Logger.logCrit $"runSolver: ERROR: %A{e}, exit code: %A{x}, r: %A{r}."
             SolverRunnerCriticalError.create q e |> logCrit |> ignore
             x
@@ -236,6 +236,8 @@ module Implementation =
                         match ctx.tryStartRunQueue q with
                         | Ok() ->
                             Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
+                            let userProxy = getUserProxy w.modelData
+                            let runnerData = { runnerDataCrit with optionalFolder = userProxy.solverProxy.getOptionalFolder q w }
 
                             let rd : RunnerData<'D> =
                                 {
@@ -243,11 +245,13 @@ module Implementation =
                                     modelData = w
                                 }
 
+                            let proxy = ctx.createSystemProxy runnerData
+
                             let ctxr =
                                 {
                                     runnerData = rd
                                     systemProxy = proxy
-                                    userProxy = getUserProxy w.modelData
+                                    userProxy = userProxy
                                 }
 
                             // The call below does not return until the run is completed OR cancelled in some way.

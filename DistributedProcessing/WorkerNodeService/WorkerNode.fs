@@ -32,7 +32,7 @@ module WorkerNode =
     let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
-    let private tryDeploySolver  (i : WorkerNodeRunnerContext) s =
+    let private tryDeploySolver  (i : WorkerNodeRunnerContext) (s : Solver) =
         let proxy = i.workerNodeProxy
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
         let toError e = e |> TryDeploySolverErr |> Error

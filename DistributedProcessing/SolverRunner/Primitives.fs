@@ -168,6 +168,7 @@ module Primitives =
             getInitialData : 'D -> 'X // Get the initial data from the model data.
             getProgressData : ('D -> EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
             getInvariant : 'D -> EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
+            getOptionalFolder : RunQueueId -> ModelData<'D> -> FolderName option // Get optional bottom level subfolder for the results.
         }
 
 
@@ -199,6 +200,7 @@ module Primitives =
             messagingDataVersion : MessagingDataVersion
             started : DateTime
             cancellationCheckFreq : TimeSpan // How often to check if cancellation is requested.
+            optionalFolder : FolderName option
         }
 
 
@@ -227,7 +229,7 @@ module Primitives =
         {
             logCrit : SolverRunnerCriticalError -> UnitResult<SysError>
             workerNodeServiceInfo : WorkerNodeServiceInfo
-            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<(ModelData<'D> * RunQueueStatus)>
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<ModelData<'D> * RunQueueStatus>
             getAllowedSolvers : WorkerNodeInfo -> int
             checkRunning : int option -> RunQueueId -> CheckRunningResult
             tryStartRunQueue : RunQueueId -> DistributedProcessingUnitResult

@@ -28,6 +28,21 @@ module Partitioner =
     let private addError g f e = ((f |> g) + e) |> Error
     let private combineUnitResults = combineUnitResults DistributedProcessingError.addError
 
+
+    let private saveResultsImpl l (r : ResultInfo)=
+        match tryGetSolverName r.runQueueId with
+        | Ok (Some s) ->
+            let i =
+                {
+                    resultLocation = l
+                    solverName = s
+                }
+            saveLocalResultInfo i r
+        | Ok None -> r.runQueueId |> UnableToFindSolverNameErr |> TryGetSolverNameErr |> Error
+        | Error e -> Error e
+        |> Logger.logIfError
+
+
     type PartitionerProxy
         with
         static member create (i : PartitionerServiceInfo) : PartitionerProxy =
@@ -38,7 +53,7 @@ module Partitioner =
                 tryLoadRunQueue = tryLoadRunQueue
                 upsertWorkerNodeInfo = upsertWorkerNodeInfo
                 loadWorkerNodeInfo = loadWorkerNodeInfo i.partitionerInfo
-                saveResults = saveLocalResultInfo (Some (i.partitionerInfo.resultLocation, None))
+                saveResults = saveResultsImpl i.partitionerInfo.resultLocation
                 loadModelBinaryData = loadModelBinaryData
             }
 

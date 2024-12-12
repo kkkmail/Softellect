@@ -197,6 +197,7 @@ module Errors =
 
     type TryGetSolverNameError =
         | TryGetSolverNameDbErr of DbError
+        | UnableToFindSolverNameErr of RunQueueId
 
 
     type TryRunSolverProcessError =

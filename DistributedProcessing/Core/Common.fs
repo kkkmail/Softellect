@@ -331,11 +331,20 @@ module Common =
         {
             runQueueId : RunQueueId
             results : list<CalculationResult>
+            optionalFolder : FolderName option
         }
 
         member r.info =
             let c = r.results|> List.map _.info |> joinStrings ", "
             $"%A{r.runQueueId}, results: {c}"
+
+
+    /// Results are stored in: resultLocation\solverName[\optionalFolder]
+    type ResultLocationInfo =
+        {
+            resultLocation : FolderName
+            solverName : SolverName
+        }
 
 
     type WorkerNodeServiceName =

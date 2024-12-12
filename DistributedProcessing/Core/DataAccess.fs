@@ -694,29 +694,19 @@ module WorkerNodeService =
 
 #if PARTITIONER
 
-    let saveLocalResultInfo d (i : ResultInfo) =
+    let saveLocalResultInfo (d : ResultLocationInfo) (i : ResultInfo) =
         Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
 
         try
             let getFileName (FileName name) =
-                match d with
-                | Some (FolderName f, g) ->
-                    let fileName = Path.GetFileName name
+                let fileName = Path.GetFileName name
 
-                    match g with
-                    | Some (FolderName e) -> Path.Combine(f, e, fileName)
-                    | None ->
-                        match tryGetSolverName i.runQueueId with
-                        | Ok (Some (SolverName n)) -> Path.Combine(f, n, fileName)
-                        | Ok None ->
-                            Logger.logError $"Cannot get solver name for %A{i.runQueueId}."
-                            Path.Combine(f, fileName)
-                        | Error e ->
-                            Logger.logError $"Error getting solver name: '%A{e}' for %A{i.runQueueId}."
-                            Path.Combine(f, fileName)
-                | None -> name
+                match i.optionalFolder with
+                | Some (FolderName f) -> Path.Combine(d.resultLocation.value, d.solverName.value, f, fileName)
+                | None -> Path.Combine(d.resultLocation.value, d.solverName.value, fileName)
+                |> FileName
 
-            let saveResult (f : string) (c : CalculationResult) =
+            let saveResult (FileName f) (c : CalculationResult) =
                 let folder = Path.GetDirectoryName f
                 Directory.CreateDirectory(folder) |> ignore
                 Logger.logTrace $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c.info}'."
