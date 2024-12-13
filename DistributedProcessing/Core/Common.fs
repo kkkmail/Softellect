@@ -339,11 +339,18 @@ module Common =
             $"%A{r.runQueueId}, results: {c}"
 
 
-    /// Results are stored in: resultLocation\solverName[\optionalFolder]
-    type ResultLocationInfo =
+    type LocationInfo =
         {
-            resultLocation : FolderName
+            location : FolderName
             solverName : SolverName
+        }
+
+
+    /// Same as LocationInfo but with additional optional folder.
+    type LocationDetailedInfo =
+        {
+            locationInfo : LocationInfo
+            optionalFolder : FolderName option
         }
 
 

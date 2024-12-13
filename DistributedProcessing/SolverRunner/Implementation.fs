@@ -20,6 +20,7 @@ open Softellect.Sys.Core
 open Softellect.DistributedProcessing.AppSettings.SolverRunner
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.DistributedProcessing.Messages
+open Softellect.Analytics.AppSettings
 
 module Implementation =
 
@@ -157,6 +158,55 @@ module Implementation =
         proxy
 
 
+    type WolframParams
+        with
+
+        member w.inputLocationInto s =
+            {
+                locationInfo =
+                    {
+                        location = w.wolframInputFolder
+                        solverName = s
+                    }
+                optionalFolder = None
+            }
+
+        member w.outputLocationInto s =
+            {
+                locationInfo =
+                    {
+                        location = w.wolframOutputFolder
+                        solverName = s
+                    }
+                optionalFolder = None
+            }
+
+
+    let getWolframParams q =
+        let w = loadWolframParams()
+
+        match tryGetSolverName q with
+        | Ok (Some s) ->
+            match getFolderLocation (w.inputLocationInto s), getFolderLocation (w.outputLocationInto s) with
+            | Ok i, Ok o ->
+                { w with wolframInputFolder = i; wolframOutputFolder = o }
+            | Error e1, Ok o ->
+                Logger.logError $"Input folder error: '%A{e1}', output folder: '%A{o}'."
+                w
+            | Ok i, Error e2 ->
+                Logger.logError $"Input folder: '%A{i}', output folder error: '%A{e2}'."
+                w
+            | Error e1, Error e2 ->
+                Logger.logError $"Input folder error: '%A{e1}', output folder error: '%A{e2}'."
+                w
+        | Ok None ->
+            Logger.logError $"Unable to get solver name for '%A{q}'."
+            w
+        | Error e ->
+            Logger.logError $"Error gettint solver name for '%A{q}', e: '%A{e}'."
+            w
+
+
     type SolverRunnerSystemProxy<'P, 'X, 'C>
         with
         static member create (data : RunnerData) = createSystemProxy<'P, 'X, 'C> data
@@ -205,8 +255,9 @@ module Implementation =
                 optionalFolder = None
             }
 
-        let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
-        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+        // let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
+        // Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
 
         let exitWithLogWarn e x =
             Logger.logWarn $"runSolver: ERROR: %A{e}, exit code: %A{x}."

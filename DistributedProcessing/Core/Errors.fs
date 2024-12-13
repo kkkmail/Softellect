@@ -369,6 +369,10 @@ module Errors =
         | CopyAppSettingsExn of exn
 
 
+    type GetLocationError =
+        | GetLocationExn of exn
+
+
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
@@ -460,6 +464,7 @@ module Errors =
         | NotifyOfSolverDeploymentErr of NotifyOfSolverDeploymentError
         | TryDeploySolverErr of TryDeploySolverError
         | CopyAppSettingsErr of CopyAppSettingsError
+        | GetLocationErr of GetLocationError
 
         static member addError a b =
             match a, b with

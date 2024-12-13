@@ -3,6 +3,7 @@ namespace Softellect.DistributedProcessing.DataAccess
 
 open System
 open System.Threading
+open System.IO
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
@@ -185,6 +186,38 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
+
+    /// Combines pieces of LocationDetailedInfo into a full path.
+    let getFileLocation (location : LocationDetailedInfo) (fileName : FileName) =
+        try
+            let i = location.locationInfo
+            match location.optionalFolder with
+            | Some (FolderName f) -> Path.Combine(i.location.value, i.solverName.value, f, fileName.value)
+            | None -> Path.Combine(i.location.value, i.solverName.value, fileName.value)
+            |> FileName
+            |> Ok
+        with
+        | e ->
+            Logger.logError $"location: %A{location}, exception: %A{e}."
+            e |> GetLocationExn |> GetLocationErr |> Error
+
+
+    let getFolderLocation (location : LocationDetailedInfo)=
+        try
+            let i = location.locationInfo
+            match location.optionalFolder with
+            | Some (FolderName f) -> Path.Combine(i.location.value, i.solverName.value, f)
+            | None -> Path.Combine(i.location.value, i.solverName.value)
+            |> FolderName
+            |> Ok
+        with
+        | e ->
+            Logger.logError $"location: %A{location}, exception: %A{e}."
+            e |> GetLocationExn |> GetLocationErr |> Error
+
+#endif
+
 #if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
     /// Tries loading a public or private key out of setting using a given key name.
@@ -240,6 +273,31 @@ module WorkerNodeService =
             // Save changes to the database
             ctx.SubmitUpdates()
             Ok ()
+
+        tryDbFun fromDbError g
+
+#endif
+
+#if PARTITIONER || PARTITIONER_ADM || SOLVER_RUNNER || WORKER_NODE
+
+    let tryGetSolverName (r : RunQueueId) =
+        let elevate e = e |> TryGetSolverNameErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
+                    where (q.RunQueueId = r.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 
@@ -341,28 +399,6 @@ module WorkerNodeService =
             | Ok _ -> Ok ()
             | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
         | None -> Ok()
-
-
-    let tryGetSolverName (r : RunQueueId) =
-        let elevate e = e |> TryGetSolverNameErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
-                    where (q.RunQueueId = r.value)
-                    select (Some s.SolverName)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map SolverName |> Ok
-
-        tryDbFun fromDbError g
 
 #endif
 
@@ -694,29 +730,30 @@ module WorkerNodeService =
 
 #if PARTITIONER
 
-    let saveLocalResultInfo (d : ResultLocationInfo) (i : ResultInfo) =
+    let saveLocalResultInfo (d : LocationInfo) (i : ResultInfo) =
         Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
+        let location = { locationInfo = d; optionalFolder = i.optionalFolder }
 
         try
-            let getFileName (FileName name) =
-                let fileName = Path.GetFileName name
+            let saveResult (c : CalculationResult) =
+                let fileName = Path.GetFileName c.fileName.value |> FileName
 
-                match i.optionalFolder with
-                | Some (FolderName f) -> Path.Combine(d.resultLocation.value, d.solverName.value, f, fileName)
-                | None -> Path.Combine(d.resultLocation.value, d.solverName.value, fileName)
-                |> FileName
+                match getFileLocation location fileName with
+                | Ok fn ->
+                    let folder = Path.GetDirectoryName fn.value
+                    Directory.CreateDirectory(folder) |> ignore
+                    Logger.logTrace $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'."
 
-            let saveResult (FileName f) (c : CalculationResult) =
-                let folder = Path.GetDirectoryName f
-                Directory.CreateDirectory(folder) |> ignore
-                Logger.logTrace $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c.info}'."
-
-                match c with
-                | TextResult h -> File.WriteAllText(f, h.textContent)
-                | BinaryResult b -> File.WriteAllBytes(f, b.binaryContent)
+                    match c with
+                    | TextResult h -> File.WriteAllText(fn.value, h.textContent)
+                    | BinaryResult b -> File.WriteAllBytes(fn.value, b.binaryContent)
+                    Ok()
+                | Error e ->
+                    Logger.logError $"Error saving result, c: '%A{c.info}', exception: '%A{e}'."
+                    Error e
 
             i.results
-            |> List.map (fun e -> saveResult (getFileName e.fileName) e)
+            |> List.map (fun e -> saveResult e)
             |> ignore
             Ok ()
         with
@@ -986,7 +1023,10 @@ module WorkerNodeService =
         let g() =
             let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryUndeploySolver.Invoke(``@solverId`` = solverId.value)
-            r.ResultSet |> bindIntScalar x solverId
+            let m = r.ResultSet |> mapIntScalar
+            Logger.logTrace $"Updated {m} row(s) for solverId: '{solverId}'."
+            // r.ResultSet |> bindIntScalar x solverId
+            Ok() // Ignore the result as we don't care about it here.
 
         tryDbFun fromDbError g
 

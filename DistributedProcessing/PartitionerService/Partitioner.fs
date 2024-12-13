@@ -34,7 +34,7 @@ module Partitioner =
         | Ok (Some s) ->
             let i =
                 {
-                    resultLocation = l
+                    location = l
                     solverName = s
                 }
             saveLocalResultInfo i r
