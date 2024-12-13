@@ -1,7 +1,6 @@
 ﻿namespace Softellect.Samples.DistrProc.SolverRunner
 
 open System
-open Softellect.Sys.AppSettings
 open Softellect.Sys.ExitErrorCodes
 open Softellect.DistributedProcessing.SolverRunner.Implementation
 open Softellect.DistributedProcessing.SolverRunner.Program
@@ -76,7 +75,7 @@ module Program =
 
 
     let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        let w = getWolframParams q
+        let w = getSolverWolframParams solverId
 
         match tryGetInputFileName w.wolframInputFolder q, tryGetOutputFileName w.wolframOutputFolder q with
         | Ok i, Ok o ->

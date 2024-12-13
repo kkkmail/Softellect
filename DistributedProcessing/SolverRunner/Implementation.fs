@@ -182,10 +182,10 @@ module Implementation =
             }
 
 
-    let getWolframParams q =
+    let getSolverWolframParams (s : SolverId) =
         let w = loadWolframParams()
 
-        match tryGetSolverName q with
+        match tryGetSolverName s with
         | Ok (Some s) ->
             match getFolderLocation (w.inputLocationInto s), getFolderLocation (w.outputLocationInto s) with
             | Ok i, Ok o ->
@@ -200,10 +200,10 @@ module Implementation =
                 Logger.logError $"Input folder error: '%A{e1}', output folder error: '%A{e2}'."
                 w
         | Ok None ->
-            Logger.logError $"Unable to get solver name for '%A{q}'."
+            Logger.logError $"Unable to get solver name for '%A{s}'."
             w
         | Error e ->
-            Logger.logError $"Error gettint solver name for '%A{q}', e: '%A{e}'."
+            Logger.logError $"Error gettint solver name for '%A{s}', e: '%A{e}'."
             w
 
 

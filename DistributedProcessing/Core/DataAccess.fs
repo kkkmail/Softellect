@@ -278,7 +278,7 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
 
     let tryGetSolverName (r : RunQueueId) =
         let elevate e = e |> TryGetSolverNameErr
@@ -301,9 +301,6 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
-#endif
-
-#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
 
     let private processRunQueue (runQueueId : RunQueueId) m f =
         let ctx = getDbContext getConnectionString
@@ -1194,6 +1191,27 @@ module WorkerNodeService =
                                         ``@relativeInvariant`` = p.progressInfo.relativeInvariant.value)
 
             r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
+
+    let tryGetSolverName (solverId : SolverId) =
+        let elevate e = e |> TryGetSolverNameErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.SolverId = solverId.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 
