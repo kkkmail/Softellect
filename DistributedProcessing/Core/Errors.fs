@@ -289,8 +289,8 @@ module Errors =
         | OnGetMessagesRunnerErr of OnGetMessagesError
 
 
-    type TryGetAvailableWorkerNodeRunnerError =
-        | A
+    // type TryGetAvailableWorkerNodeRunnerError =
+    //     | A
 
 
     type TryEncryptSolverError =
@@ -338,7 +338,7 @@ module Errors =
         | TryExpWorkerNodePublicKeyErr of SysError
 
 
-    type OnFaileSolverError =
+    type OnFailedSolverError =
         | FailRunQueueMessagingErr of MessagingError
 
     // ==================================
@@ -371,6 +371,14 @@ module Errors =
 
     type GetLocationError =
         | GetLocationExn of exn
+
+
+    type LoadAllActiveSolverIdsError =
+        | LoadAllActiveSolverIdsDbErr of DbError
+
+
+    type LoadAllActiveWorkerNodeIdsError =
+        | LoadAllActiveWorkerNodeIdsDbErr of DbError
 
 
     type DistributedProcessingError =
@@ -431,7 +439,7 @@ module Errors =
         | SaveResultRunnerErr of SaveResultRunnerError
         | SaveResultsRunnerErr of SaveResultsRunnerError
         | ProcessMessageRunnerErr of ProcessMessageRunnerError
-        | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
+        // | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
 
         | WorkerNodeWcfErr of WorkerNodeWcfError
         | TryGetSolverNameErr of TryGetSolverNameError
@@ -447,7 +455,7 @@ module Errors =
         | SolverNotFound of SolverId
         | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
         | TryUpdateFailedSolverErr of TryUpdateFailedSolverError
-        | OnFaileSolverErr of OnFaileSolverError
+        | OnFailedSolverErr of OnFailedSolverError
 
         // Some errors
         | SaveResultsExn of exn
@@ -465,6 +473,8 @@ module Errors =
         | TryDeploySolverErr of TryDeploySolverError
         | CopyAppSettingsErr of CopyAppSettingsError
         | GetLocationErr of GetLocationError
+        | LoadAllActiveSolverIdsErr of LoadAllActiveSolverIdsError
+        | LoadAllActiveWorkerNodeIdsErr of LoadAllActiveWorkerNodeIdsError
 
         static member addError a b =
             match a, b with

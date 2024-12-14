@@ -1027,6 +1027,56 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+
+    let loadAllActiveSolverIds () =
+        let elevate e = e |> LoadAllActiveSolverIdsErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllActiveSolverIdsDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.IsInactive = false)
+                    select s.SolverId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map SolverId
+            |> Ok
+
+        tryDbFun fromDbError g
+
+
+    /// TODO kk:20241214 - Parameters s and force are not supported yet.
+    ///
+    /// If force is false, then this function should load only worker node ids where a given solver id
+    /// is not scheduled for deployment.
+    let loadAllActiveWorkerNodeIds (SolverId s) (force : bool) =
+        let elevate e = e |> LoadAllActiveWorkerNodeIdsErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllActiveWorkerNodeIdsDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for w in ctx.Dbo.WorkerNode do
+                    where (w.IsInactive = false)
+                    select w.WorkerNodeId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map (fun e -> e |> MessagingClientId |>  WorkerNodeId)
+            |> Ok
+
+        tryDbFun fromDbError g
+
 #endif
 
 #if SOLVER_RUNNER

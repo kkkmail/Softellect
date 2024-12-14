@@ -18,7 +18,7 @@ group by r.workerNodeId, r.solverId
 (
 select
     w.workerNodeId
-    ,s.solverId
+    ,ws.solverId
     ,nodePriority
     ,isnull(cast(
         case
@@ -27,9 +27,10 @@ select
         end as money), 0) as workLoad
     ,case when le.lastErrorOn is null then null else datediff(minute, getdate(), le.lastErrorOn) end as lastErrMinAgo
 from WorkerNode w
-inner join WorkerNodeSolver s on w.workerNodeId = s.workerNodeId
-left outer join le on s.workerNodeId = le.solverId and s.solverId = le.solverId
-where w.isInactive = 0 and s.isDeployed = 1
+inner join WorkerNodeSolver ws on w.workerNodeId = ws.workerNodeId
+inner join le on ws.workerNodeId = le.solverId and ws.solverId = le.solverId
+inner join Solver s on ws.solverId = s.solverId
+where w.isInactive = 0 and ws.isDeployed = 1 and s.isInactive = 0
 )
 select
     a.*, 

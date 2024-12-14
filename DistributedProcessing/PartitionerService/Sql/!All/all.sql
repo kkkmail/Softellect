@@ -52,6 +52,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
         description nvarchar(2000) null, 
         solverData varbinary(max) null,
         createdOn datetime not null,
+        isInactive bit not null,
     CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
     (
         solverId ASC
@@ -59,6 +60,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
     ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_isInactive DEFAULT (getdate()) FOR isInactive
 
     CREATE UNIQUE NONCLUSTERED INDEX UX_Solver_solverName ON dbo.Solver
     (
@@ -373,7 +375,7 @@ group by r.workerNodeId, r.solverId
 (
 select
     w.workerNodeId
-    ,s.solverId
+    ,ws.solverId
     ,nodePriority
     ,isnull(cast(
         case
@@ -382,9 +384,10 @@ select
         end as money), 0) as workLoad
     ,case when le.lastErrorOn is null then null else datediff(minute, getdate(), le.lastErrorOn) end as lastErrMinAgo
 from WorkerNode w
-inner join WorkerNodeSolver s on w.workerNodeId = s.workerNodeId
-left outer join le on s.workerNodeId = le.solverId and s.solverId = le.solverId
-where w.isInactive = 0 and s.isDeployed = 1
+inner join WorkerNodeSolver ws on w.workerNodeId = ws.workerNodeId
+inner join le on ws.workerNodeId = le.solverId and ws.solverId = le.solverId
+inner join Solver s on ws.solverId = s.solverId
+where w.isInactive = 0 and ws.isDeployed = 1 and s.isInactive = 0
 )
 select
     a.*, 

@@ -24,6 +24,7 @@ module Implementation =
 
     let private toError g f = f |> g |> Error
     let private addError g f e = ((f |> g) + e) |> Error
+    let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
 
 
     /// Default implementation of solver encryption.
@@ -88,8 +89,8 @@ module Implementation =
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
-            loadAllSolverIds : unit -> DistributedProcessingResult<List<SolverId>>
-            loadAllActiveWorkerNodeIds : unit -> DistributedProcessingResult<List<WorkerNodeId>>
+            loadAllActiveSolverIds : unit -> DistributedProcessingResult<List<SolverId>>
+            loadAllActiveWorkerNodeIds : SolverId -> bool -> DistributedProcessingResult<List<WorkerNodeId>>
         }
 
         static member create (i : PartitionerInfo) =
@@ -107,7 +108,7 @@ module Implementation =
                 createMessage = createMessage messagingDataVersion i.partitionerId.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 tryResetRunQueue = tryResetRunQueue
-                loadAllSolverIds = loadAllSolverIds
+                loadAllActiveSolverIds = loadAllActiveSolverIds
                 loadAllActiveWorkerNodeIds = loadAllActiveWorkerNodeIds
             }
 
@@ -205,7 +206,25 @@ module Implementation =
 
     let sendAllSolvers (ctx : PartitionerAdmContext) (x : list<SendAllSolversArgs>) =
         let force = x |> List.tryPick (fun e -> match e with | SendAllSolversArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
-        0
+
+        let sendAll s wl =
+            match wl with
+            | Ok r ->
+                r
+                |> List.map (sendSolverImpl ctx s)
+                |> foldUnitResults
+            | Error e -> Error e
+
+        match ctx.partitionerAdmProxy.loadAllActiveSolverIds() with
+        | Ok sl ->
+            let r =
+                sl
+                |> List.map (fun e -> e, ctx.partitionerAdmProxy.loadAllActiveWorkerNodeIds e force)
+                |> List.map (fun (s, wl) -> sendAll s wl)
+                |> foldUnitResults
+
+            r
+        | Error e -> Error e
 
 
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =

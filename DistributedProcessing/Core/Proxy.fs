@@ -265,7 +265,7 @@ module WorkerNodeService =
                 proxy.deleteRunQueue q
             | Error e1 ->
                 Logger.logError $"Failed to delete %A{q} with: '%A{e1}', outer error: '%A{e}'."
-                (e1 |> FailRunQueueMessagingErr |> OnFaileSolverErr) + e |> Error
+                (e1 |> FailRunQueueMessagingErr |> OnFailedSolverErr) + e |> Error
 
         match proxy.tryUpdateFailedSolver q e with
         | Ok r ->
