@@ -39,6 +39,17 @@ module CommandLine =
 
     and
         [<CliPrefix(CliPrefix.Dash)>]
+        SendAllSolversArgs =
+        | [<Unique>] [<AltCommandLine("-f")>] Force of bool
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Force _ -> "pass true to force re-sending all solvers to all worker nodes."
+
+
+    and
+        [<CliPrefix(CliPrefix.Dash)>]
         ModifyRunQueueArgs =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-q")>] RunQueueIdToModify of Guid
         |               [<Unique>] [<AltCommandLine("-c")>] CancelOrAbort of bool
@@ -93,6 +104,7 @@ module CommandLine =
         PartitionerAdmArgs =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddSolver of ParseResults<AddSolverArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendSolver of ParseResults<SendSolverArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendAllSolvers of ParseResults<SendAllSolversArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ModifyRunQueue of ParseResults<ModifyRunQueueArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
@@ -103,6 +115,7 @@ module CommandLine =
                 match this with
                 | AddSolver _ -> "add a solver."
                 | SendSolver _ -> "send a solver to a worker node."
+                | SendAllSolvers _ -> "send all solver to all worker nodes."
                 | ModifyRunQueue _ -> "tries to modify a run queue."
                 | GenerateKeys _ -> "generates encryption keys."
                 | ExportPublicKey _ -> "exports partitioner public key."

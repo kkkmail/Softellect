@@ -8,6 +8,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
         description nvarchar(2000) null, 
         solverData varbinary(max) null,
         createdOn datetime not null,
+        isInactive bit not null,
     CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
     (
         solverId ASC
@@ -15,6 +16,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
     ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_isInactive DEFAULT (getdate()) FOR isInactive
 
     CREATE UNIQUE NONCLUSTERED INDEX UX_Solver_solverName ON dbo.Solver
     (

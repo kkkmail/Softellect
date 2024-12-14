@@ -21,6 +21,7 @@ module Program =
                     match r with
                     | AddSolver addSolverArgs -> addSolver ctx (addSolverArgs.GetAllResults())
                     | SendSolver sendSolverArgs -> sendSolver ctx (sendSolverArgs.GetAllResults())
+                    | SendAllSolvers sendAllSolversArgs -> sendAllSolvers ctx (sendAllSolversArgs.GetAllResults())
                     | ModifyRunQueue modifyRunQueueArgs -> modifyRunQueue ctx (modifyRunQueueArgs.GetAllResults())
                     | GenerateKeys generateKeysArgs -> generateKeys ctx (generateKeysArgs.GetAllResults())
                     | ExportPublicKey exportPublicKeyArgs -> exportPublicKey ctx (exportPublicKeyArgs.GetAllResults())

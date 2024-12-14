@@ -88,6 +88,8 @@ module Implementation =
             createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
             saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            loadAllSolverIds : unit -> DistributedProcessingResult<List<SolverId>>
+            loadAllActiveWorkerNodeIds : unit -> DistributedProcessingResult<List<WorkerNodeId>>
         }
 
         static member create (i : PartitionerInfo) =
@@ -105,6 +107,8 @@ module Implementation =
                 createMessage = createMessage messagingDataVersion i.partitionerId.messagingClientId
                 saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 tryResetRunQueue = tryResetRunQueue
+                loadAllSolverIds = loadAllSolverIds
+                loadAllActiveWorkerNodeIds = loadAllActiveWorkerNodeIds
             }
 
 
@@ -158,42 +162,50 @@ module Implementation =
             failwith $"addSolver: {m}."
 
 
+    let private sendSolverImpl (ctx : PartitionerAdmContext) s w =
+        Logger.logInfo $"sendSolver: solver with id '{s}' is being sent to worker node '{w}'."
+
+        match ctx.partitionerAdmProxy.tryLoadSolver s with
+        | Ok solver ->
+            match ctx.partitionerAdmProxy.tryEncryptSolver solver w with
+            | Ok encryptedSolver ->
+                let result =
+                    {
+                        workerNodeRecipient = w
+                        deliveryType = GuaranteedDelivery
+                        messageData = UpdateSolverWrkMsg encryptedSolver
+                    }.getMessageInfo()
+                    |> ctx.partitionerAdmProxy.createMessage
+                    |> ctx.partitionerAdmProxy.saveMessage
+
+                match result with
+                | Ok () ->
+                    Logger.logInfo $"sendSolver: solver with id '%A{s}' was sent to worker node '%A{w}'."
+                    Ok ()
+                | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
+            | Error e ->
+                Logger.logError $"sendSolver: Unable to encrypt solver, error: %A{e}."
+                Error e
+        | Error e ->
+            Logger.logError $"sendSolver: Unable to load solver, error: %A{e}."
+            Error e
+
+
     let sendSolver (ctx : PartitionerAdmContext) (x : list<SendSolverArgs>) =
         let so = x |> List.tryPick (fun e -> match e with | SendSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
         let wo = x |> List.tryPick (fun e -> match e with | SendSolverArgs.WorkerNodeId id -> id |> MessagingClientId |> WorkerNodeId |> Some | _ -> None)
 
         match (so, wo) with
-        | Some s, Some w ->
-            Logger.logInfo $"sendSolver: solver with id '{s}' is being sent to worker node '{w}'."
-
-            match ctx.partitionerAdmProxy.tryLoadSolver s with
-            | Ok solver ->
-                match ctx.partitionerAdmProxy.tryEncryptSolver solver w with
-                | Ok encryptedSolver ->
-                    let result =
-                        {
-                            workerNodeRecipient = w
-                            deliveryType = GuaranteedDelivery
-                            messageData = UpdateSolverWrkMsg encryptedSolver
-                        }.getMessageInfo()
-                        |> ctx.partitionerAdmProxy.createMessage
-                        |> ctx.partitionerAdmProxy.saveMessage
-
-                    match result with
-                    | Ok () ->
-                        Logger.logInfo $"sendSolver: solver with id '%A{s}' was sent to worker node '%A{w}'."
-                        Ok ()
-                    | Error e -> (s, w, e) |> UnableToSendSolverErr |> SendSolverErr |> Error
-                | Error e ->
-                    Logger.logError $"sendSolver: Unable to encrypt solver, error: %A{e}."
-                    Error e
-            | Error e ->
-                Logger.logError $"sendSolver: Unable to load solver, error: %A{e}."
-                Error e
+        | Some s, Some w -> sendSolverImpl ctx s w
         | _ ->
             let m = $"Some of the arguments are invalid: %A{so}, %A{wo}."
             Logger.logCrit m
             failwith $"sendSolver: {m}."
+
+
+    let sendAllSolvers (ctx : PartitionerAdmContext) (x : list<SendAllSolversArgs>) =
+        let force = x |> List.tryPick (fun e -> match e with | SendAllSolversArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
+        0
 
 
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
@@ -292,7 +304,7 @@ module Implementation =
 
 
     let generateKeys (ctx : PartitionerAdmContext) (x : list<GenerateKeysArgs>) =
-        let force = x |> List.tryPick (fun e -> match e with | Force e -> Some e | _ -> None) |> Option.defaultValue false
+        let force = x |> List.tryPick (fun e -> match e with | GenerateKeysArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
         let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys force
         result
 
