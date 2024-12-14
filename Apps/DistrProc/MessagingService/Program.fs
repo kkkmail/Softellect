@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.DistrProc.MessagingService
+﻿namespace Softellect.Apps.DistrProc.MessagingService
 
 open Softellect.DistributedProcessing.MessagingService.Program
 

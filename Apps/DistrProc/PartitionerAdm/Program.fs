@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.DistrProc.PartitionerAdm
+﻿namespace Softellect.Apps.DistrProc.PartitionerAdm
 
 open Softellect.DistributedProcessing.PartitionerAdm.Program
 

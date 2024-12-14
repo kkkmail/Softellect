@@ -1,4 +1,4 @@
-﻿namespace Softellect.Samples.DistrProc.WorkerNodeService
+﻿namespace Softellect.Apps.DistrProc.WorkerNodeService
 
 open Softellect.DistributedProcessing.WorkerNodeService.Program
 
