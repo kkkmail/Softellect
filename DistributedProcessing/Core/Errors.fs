@@ -131,6 +131,10 @@ module Errors =
         | UnableToFindRunQueue of RunQueueId
 
 
+    type GetSolverHashError =
+        | GetSolverHashDbErr of DbError
+
+
     type TryResetRunQueueError =
         | TryResetRunQueueDbErr of DbError
         | ResetRunQueueEntryErr of RunQueueId
@@ -405,6 +409,7 @@ module Errors =
         | LoadRunQueueProgressErr of LoadRunQueueProgressError
         | TryLoadFirstRunQueueErr of TryLoadFirstRunQueueError
         | TryLoadRunQueueErr of TryLoadRunQueueError
+        | GetSolverHashErr of GetSolverHashError
 
         | TryResetRunQueueErr of TryResetRunQueueError
         | SaveRunQueueErr of SaveRunQueueError

@@ -230,6 +230,7 @@ module Common =
             solverName : SolverName
             description : string option
             solverData : SolverData option
+            solverHash : Sha256Hash
         }
 
 

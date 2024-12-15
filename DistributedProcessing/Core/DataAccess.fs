@@ -11,6 +11,7 @@ open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Errors
 open Softellect.Sys.Logging
+open Softellect.Sys.Crypto
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
@@ -324,6 +325,15 @@ module WorkerNodeService =
             solverName = SolverName s.SolverName
             description = s.Description
             solverData = s.SolverData |> Option.map (fun e -> SolverData e)
+
+#if PARTITIONER || PARTITIONER_ADM
+            solverHash = s.SolverHash |> Sha256Hash
+#endif
+
+#if WORKER_NODE
+            // We don't really care about solver hash for Worker Node, but we need to have it for consistency.
+            solverHash = s.SolverData |> Option.defaultValue [||] |> calculateSha256Hash
+#endif
         }
 
 
@@ -373,6 +383,12 @@ module WorkerNodeService =
                     s.SolverName <- solver.solverName.value
                     s.Description <- solver.description
                     s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
+
+#if PARTITIONER || PARTITIONER_ADM
+                    // Partitioner has a separate solverHash column.
+                    s.SolverHash <- solver.solverHash.value
+#endif
+
 #if WORKER_NODE
                     // Worker Node has a separate isDeployed flag.
                     s.IsDeployed <- false
@@ -400,6 +416,27 @@ module WorkerNodeService =
 #endif
 
 #if PARTITIONER || PARTITIONER_ADM
+
+    let getSolverHash (solverId : SolverId) =
+        let elevate e = e |> GetSolverHashErr
+        let fromDbError e = e |> GetSolverHashDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.SolverId = solverId.value)
+                    select (Some s.SolverHash)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> Sha256Hash |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
 
     let private mapRunQueue (r: RunQueueEntity) =
         let elevate e = e |> MapRunQueueErr

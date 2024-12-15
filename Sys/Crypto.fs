@@ -270,3 +270,12 @@ module Crypto =
             | Ok () -> Ok originalData
             | Error e -> Error e
         | Error e -> Error e
+
+
+    /// Calculates SHA256 hash checksum of a byte array.
+    let calculateSha256Hash (s: byte[]) =
+        let byteSum = s |> Array.sumBy int64
+        Logger.logTrace $"Length: {s.Length}, byteSum: {byteSum}."
+        use sha256 = SHA256.Create()
+        let hash = sha256.ComputeHash(s)
+        hash |> Array.map _.ToString("x2") |> String.concat "" |> Sha256Hash

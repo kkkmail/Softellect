@@ -51,6 +51,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
         solverName nvarchar(100) not null,
         description nvarchar(2000) null, 
         solverData varbinary(max) null,
+        solverHash char(64) not null,
         createdOn datetime not null,
         isInactive bit not null,
     CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
@@ -385,7 +386,7 @@ select
     ,case when le.lastErrorOn is null then null else datediff(minute, getdate(), le.lastErrorOn) end as lastErrMinAgo
 from WorkerNode w
 inner join WorkerNodeSolver ws on w.workerNodeId = ws.workerNodeId
-inner join le on ws.workerNodeId = le.solverId and ws.solverId = le.solverId
+left outer join le on ws.workerNodeId = le.solverId and ws.solverId = le.solverId
 inner join Solver s on ws.solverId = s.solverId
 where w.isInactive = 0 and ws.isDeployed = 1 and s.isInactive = 0
 )

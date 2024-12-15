@@ -24,7 +24,8 @@ module Implementation =
 
     let private toError g f = f |> g |> Error
     let private addError g f e = ((f |> g) + e) |> Error
-    let private foldUnitResults r = foldUnitResults DistributedProcessingError.addError r
+    let private foldUnitResults = foldUnitResults DistributedProcessingError.addError
+    let private combineUnitResults = combineUnitResults DistributedProcessingError.addError
 
 
     /// Default implementation of solver encryption.
@@ -76,6 +77,7 @@ module Implementation =
 
     type PartitionerAdmProxy =
         {
+            getSolverHash : SolverId -> DistributedProcessingResult<Sha256Hash option>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryUndeploySolver : SolverId -> DistributedProcessingUnitResult
             tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
@@ -95,6 +97,7 @@ module Implementation =
 
         static member create (i : PartitionerInfo) =
             {
+                getSolverHash = getSolverHash
                 saveSolver = saveSolver
                 tryUndeploySolver = tryUndeploySolver
                 tryLoadSolver = tryLoadSolver
@@ -136,23 +139,44 @@ module Implementation =
         let no = x |> List.tryPick (fun e -> match e with | Name name -> SolverName name |> Some | _ -> None)
         let fo = x |> List.tryPick (fun e -> match e with | Folder folder -> FolderName folder |> Some | _ -> None)
         let de = x |> List.tryPick (fun e -> match e with | Description description -> description |> Some | _ -> None)
+        let force = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
 
         match (so, no, fo) with
         | Some s, Some n, Some f ->
             match zipFolder f with
             | Ok d ->
-                let solver =
-                    {
-                        solverId = s
-                        solverName = n
-                        solverData = d |> SolverData |> Some
-                        description = de
-                    }
+                let hash = calculateSha256Hash d
 
-                Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map (fun e -> e.value.Length) |> Option.defaultValue 0):N0}"
-                let r1 = ctx.partitionerAdmProxy.saveSolver solver
-                let r2 = ctx.partitionerAdmProxy.tryUndeploySolver solver.solverId
-                let r = combineUnitResults DistributedProcessingError.addError r1 r2
+                let doAddSolver() =
+                    let solver =
+                        {
+                            solverId = s
+                            solverName = n
+                            solverData = d |> SolverData |> Some
+                            solverHash = hash
+                            description = de
+                        }
+
+                    Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map _.value.Length |> Option.defaultValue 0):N0}"
+                    let r1 = ctx.partitionerAdmProxy.saveSolver solver
+                    let r2 = ctx.partitionerAdmProxy.tryUndeploySolver solver.solverId
+                    let r = combineUnitResults r1 r2
+                    r
+
+                let r =
+                    match ctx.partitionerAdmProxy.getSolverHash s with
+                    | Ok (Some h) ->
+                        match h = hash, force with
+                        | true, true ->
+                            Logger.logInfo $"Solver with %A{s} with hash: '{hash}' is forced through."
+                            doAddSolver()
+                        | true, false ->
+                            Logger.logInfo $"Solver with %A{s} with hash: '{hash}' was already added. Pass '-f true' to force it through."
+                            Ok()
+                        | _  -> doAddSolver()
+                    | Ok None -> doAddSolver()
+                    | Error e -> combineUnitResults (Error e) (doAddSolver())
+
                 Logger.logIfError r
             | Error e ->
                 Logger.logError $"Error: {e}."

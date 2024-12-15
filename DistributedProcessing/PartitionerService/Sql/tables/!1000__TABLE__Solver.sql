@@ -7,6 +7,7 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
         solverName nvarchar(100) not null,
         description nvarchar(2000) null, 
         solverData varbinary(max) null,
+        solverHash char(64) not null,
         createdOn datetime not null,
         isInactive bit not null,
     CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 

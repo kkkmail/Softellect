@@ -66,14 +66,15 @@ module Core =
                     let rec zipFiles folderPath archiveFolder =
                         let directory = DirectoryInfo(folderPath)
 
-                        for file in directory.GetFiles() do
+                        for file in directory.GetFiles() |> Array.sortBy _.Name do
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
+                            entry.LastWriteTime <- file.CreationTime
                             use entryStream = entry.Open()
                             use fileStream = file.OpenRead()
                             fileStream.CopyTo(entryStream)
 
-                        for subfolder in directory.GetDirectories() do
+                        for subfolder in directory.GetDirectories() |> Array.sortBy _.Name do
                             let subfolderArchivePath = Path.Combine(archiveFolder, subfolder.Name)
                             zipFiles subfolder.FullName subfolderArchivePath
 

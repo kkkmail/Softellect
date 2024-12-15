@@ -14,6 +14,7 @@ module CommandLine =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-n")>] Name of string
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-s")>] Folder of string
         |               [<Unique>] [<AltCommandLine("-d")>] Description of string
+        |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -22,6 +23,7 @@ module CommandLine =
                 | Name _ -> "solver name."
                 | Folder _ -> "solver folder."
                 | Description _ -> "solver description."
+                | Force _ -> "pass true to force updating solver with the same hash."
 
 
     and

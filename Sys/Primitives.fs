@@ -331,6 +331,12 @@ module Primitives =
         member this.value = let (PrivateKey v) = this in v
 
 
+    type Sha256Hash =
+        | Sha256Hash of string
+
+        member this.value = let (Sha256Hash v) = this in v
+
+
     type MonitorResolution =
         {
             monitorWidth : int
