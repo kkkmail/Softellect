@@ -35,7 +35,9 @@ module Implementation =
             | Error e1, Error e2 -> e1 + e2 |> Error
 
         match tryLoadWorkerNodePrivateKey (), tryLoadWorkerNodePublicKey (), force with
-        | Ok (Some _), Ok (Some _), false -> Ok()
+        | Ok (Some _), Ok (Some _), false ->
+            Logger.logInfo "Keys are already generated. Pass '-f true' to force re-generation of the keys."
+            Ok()
         | _ -> g()
 
 
