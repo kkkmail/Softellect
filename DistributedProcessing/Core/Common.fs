@@ -129,6 +129,7 @@ module Common =
         {
             progress : decimal // Progress in the range [0.0, 1.0]
             callCount : int64
+            processId : ProcessId option
             evolutionTime : EvolutionTime // Evolution time of the system. May coincide with callCount in some cases.
             relativeInvariant : RelativeInvariant // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
@@ -138,6 +139,7 @@ module Common =
             {
                 progress = 0.0m
                 callCount = 0L
+                processId = None
                 evolutionTime = EvolutionTime.defaultValue
                 relativeInvariant = RelativeInvariant.defaultValue
                 errorMessageOpt = None

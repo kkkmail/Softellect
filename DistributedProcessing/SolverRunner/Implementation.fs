@@ -42,7 +42,7 @@ module Implementation =
 
 
     let private tryStartRunQueue q =
-        let pid = Process.GetCurrentProcess().Id |> ProcessId
+        let pid = ProcessId.getCurrentProcessId()
         let result = tryStartRunQueue q pid
         Logger.logTrace $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
         result

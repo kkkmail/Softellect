@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Diagnostics
 open System.Net
 open System.IO
 open System.Text.RegularExpressions
@@ -262,6 +263,7 @@ module Primitives =
         | ProcessId of int
 
         member this.value = let (ProcessId v) = this in v
+        static member getCurrentProcessId() = Process.GetCurrentProcess().Id |> ProcessId
 
 
     type TextResult =

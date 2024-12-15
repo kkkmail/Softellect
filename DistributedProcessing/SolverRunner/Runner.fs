@@ -1,6 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
+open System.Diagnostics
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
@@ -18,7 +19,10 @@ module Runner =
     let private getNeedsCallBackData runQueueId =
         match needsCallBackDataDictionary.TryGetValue(runQueueId) with
         | true, v -> v
-        | false, _ -> NeedsCallBackData.defaultValue
+        | false, _ ->
+            let pid = ProcessId.getCurrentProcessId()
+            let ncbd = NeedsCallBackData.defaultValue
+            { ncbd with progressData.progressInfo.processId = Some pid }
 
 
     let private setNeedsCallBackData runQueueId data =
@@ -279,6 +283,7 @@ module Runner =
                     {
                         progress = calculateProgress i t
                         callCount = ncbd.progressData.progressInfo.callCount + 1L
+                        processId = ncbd.progressData.progressInfo.processId
                         evolutionTime = t
                         relativeInvariant = u.solverProxy.getInvariant modelData t x
                         errorMessageOpt = None

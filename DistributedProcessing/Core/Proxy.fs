@@ -179,13 +179,13 @@ module WorkerNodeService =
                 | _ -> TooManyRunning p.Length
             | RunQueueRunning (no, q) ->
                 let v = $"{q.value}".ToLower()
-                let pid = Process.GetCurrentProcess().Id
+                let pid = ProcessId.getCurrentProcessId()
                 Logger.logTrace $"q: %A{q}, no: %A{no}, processes: %A{processes}."
 
                 let run() =
                     let p =
                         processes
-                        |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid)
+                        |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid.value)
                         |> List.tryFind snd
 
                     match p with
@@ -201,12 +201,14 @@ module WorkerNodeService =
         with
         | e -> e |> GetProcessesByNameExn
 
+
     let getFailedProgressData e =
         {
             progressInfo =
                 {
                     progress = 0.0m
                     callCount = 0L
+                    processId = None
                     evolutionTime = EvolutionTime.defaultValue
                     relativeInvariant = RelativeInvariant.defaultValue
                     errorMessageOpt = Some (ErrorMessage $"%A{e}")

@@ -119,6 +119,10 @@ module Program =
     let main argv =
         let retVal =
             try
+                // To check that invariant is actually passed back.
+                let rnd = Random()
+                let getInvariant() = (1.0 + (rnd.NextDouble() - 0.5) * 0.0001) |> RelativeInvariant
+
                 let chartGenerator =
                     {
                         getResultData = fun _ _ (x : double[]) -> { x = x }
@@ -133,7 +137,7 @@ module Program =
                         {
                             getInitialData = _.initialValues
                             getProgressData = None
-                            getInvariant = fun _ _ _ -> RelativeInvariant 1.0
+                            getInvariant = fun _ _ _ -> getInvariant()
                             getOptionalFolder = fun _ _ -> None
                         }
 

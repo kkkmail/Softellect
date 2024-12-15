@@ -422,6 +422,7 @@ module WorkerNodeService =
                             {
                                 progress = r.Progress
                                 callCount = r.CallCount
+                                processId = r.ProcessId |> Option.bind (fun e -> e |> ProcessId |> Some)
                                 evolutionTime = EvolutionTime r.EvolutionTime
                                 relativeInvariant = RelativeInvariant r.RelativeInvariant
                                 errorMessageOpt = r.ErrorMessage |> Option.map ErrorMessage
@@ -471,7 +472,7 @@ module WorkerNodeService =
                             RunQueueId = r.runQueueId.value,
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
-                            // ProcessId = ???.,
+                            ProcessId = (r.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)),
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
                             RetryCount = r.retryCount,
                             MaxRetries = r.maxRetries,
