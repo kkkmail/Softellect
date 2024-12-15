@@ -516,9 +516,9 @@ module WorkerNodeService =
         //let toError e = e |> RunQueueTryUpdateRowErr |> DbErr |> Error
 
         let g s u =
-            //r.RunQueueId <- q.runQueueId.value
             r.WorkerNodeId <- (q.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value))
             r.Progress <- q.progressData.progressInfo.progress
+            r.ProcessId <- q.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)
             r.EvolutionTime <- q.progressData.progressInfo.evolutionTime.value
             r.CallCount <- q.progressData.progressInfo.callCount
             r.RelativeInvariant <- q.progressData.progressInfo.relativeInvariant.value

@@ -7,8 +7,6 @@ open Softellect.Wcf.Common
 open Softellect.Messaging.ServiceInfo
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
-open Softellect.Sys.Logging
-open Softellect.Sys.WindowsApi
 
 module Common =
 
@@ -135,11 +133,11 @@ module Common =
             errorMessageOpt : ErrorMessage option
         }
 
-        static member defaultValue : ProgressInfo =
+        static member defaultValue pid =
             {
                 progress = 0.0m
                 callCount = 0L
-                processId = None
+                processId = pid
                 evolutionTime = EvolutionTime.defaultValue
                 relativeInvariant = RelativeInvariant.defaultValue
                 errorMessageOpt = None
@@ -154,9 +152,9 @@ module Common =
             progressDetailed : string option
         }
 
-        static member defaultValue : ProgressData =
+        static member defaultValue pid =
             {
-                progressInfo = ProgressInfo.defaultValue
+                progressInfo = ProgressInfo.defaultValue pid
                 progressDetailed = None
             }
 
@@ -170,9 +168,9 @@ module Common =
             progressDetailed : 'P option
         }
 
-        static member defaultValue : ProgressData<'P> =
+        static member defaultValue pid : ProgressData<'P> =
             {
-                progressInfo = ProgressInfo.defaultValue
+                progressInfo = ProgressInfo.defaultValue pid
                 progressDetailed = None
             }
 

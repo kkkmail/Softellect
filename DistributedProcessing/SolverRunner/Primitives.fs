@@ -128,9 +128,9 @@ module Primitives =
             nextResultDetailedProgress : decimal
         }
 
-        static member defaultValue =
+        static member defaultValue pid =
             {
-                progressData = ProgressData.defaultValue
+                progressData = ProgressData.defaultValue pid
                 lastCheck = DateTime.Now
                 nextProgress = 0.0M
                 nextResultProgress = 0.0M

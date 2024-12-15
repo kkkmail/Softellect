@@ -1,7 +1,6 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
-open System.Diagnostics
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
@@ -21,8 +20,9 @@ module Runner =
         | true, v -> v
         | false, _ ->
             let pid = ProcessId.getCurrentProcessId()
-            let ncbd = NeedsCallBackData.defaultValue
-            { ncbd with progressData.progressInfo.processId = Some pid }
+            let ncbd = NeedsCallBackData.defaultValue (Some pid)
+            Logger.logTrace $"ncbd: %A{ncbd}."
+            ncbd
 
 
     let private setNeedsCallBackData runQueueId data =
@@ -314,6 +314,7 @@ module Runner =
                     updateResults ctx t x
                 | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
+            Logger.logTrace $"ncbd3: %A{ncbd3}."
             ncbd3
 
 
