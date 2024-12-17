@@ -135,6 +135,10 @@ module Errors =
         | GetSolverHashDbErr of DbError
 
 
+    type CheckIfSolverDeployedError =
+        | CheckIfSolverDeployedDbErr of DbError
+
+
     type TryResetRunQueueError =
         | TryResetRunQueueDbErr of DbError
         | ResetRunQueueEntryErr of RunQueueId
@@ -410,6 +414,7 @@ module Errors =
         | TryLoadFirstRunQueueErr of TryLoadFirstRunQueueError
         | TryLoadRunQueueErr of TryLoadRunQueueError
         | GetSolverHashErr of GetSolverHashError
+        | CheckIfSolverDeployedErr of CheckIfSolverDeployedError
 
         | TryResetRunQueueErr of TryResetRunQueueError
         | SaveRunQueueErr of SaveRunQueueError

@@ -31,12 +31,14 @@ module CommandLine =
         SendSolverArgs =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-i")>] SolverId of Guid
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-w")>] WorkerNodeId of Guid
+        |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
 
         interface IArgParserTemplate with
             member this.Usage =
                 match this with
                 | SolverId _ -> "solver id."
                 | WorkerNodeId _ -> "worker node id."
+                | Force _ -> "pass true to force sending already deployed solver."
 
 
     and

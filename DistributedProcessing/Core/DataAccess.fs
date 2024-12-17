@@ -417,6 +417,28 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM
 
+    let checkIfSolverDeployed (solverId : SolverId) (w : WorkerNodeId) =
+        let elevate e = e |> CheckIfSolverDeployedErr
+        let fromDbError e = e |> CheckIfSolverDeployedDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.WorkerNodeSolver do
+                    where (s.SolverId = solverId.value && s.WorkerNodeId = w.value.value && s.IsDeployed)
+                    select (Some s.WorkerNodeId)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some _ -> Ok true
+            | None -> Ok false
+
+        tryDbFun fromDbError g
+
+
     let getSolverHash (solverId : SolverId) =
         let elevate e = e |> GetSolverHashErr
         let fromDbError e = e |> GetSolverHashDbErr |> elevate
@@ -437,6 +459,7 @@ module WorkerNodeService =
             | None -> Ok None
 
         tryDbFun fromDbError g
+
 
     let private mapRunQueue (r: RunQueueEntity) =
         let elevate e = e |> MapRunQueueErr
@@ -1089,11 +1112,7 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    /// TODO kk:20241214 - Parameters s and force are not supported yet.
-    ///
-    /// If force is false, then this function should load only worker node ids where a given solver id
-    /// is not scheduled for deployment.
-    let loadAllActiveWorkerNodeIds (SolverId s) (force : bool) =
+    let loadAllActiveWorkerNodeIds () =
         let elevate e = e |> LoadAllActiveWorkerNodeIdsErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> LoadAllActiveWorkerNodeIdsDbErr |> elevate
