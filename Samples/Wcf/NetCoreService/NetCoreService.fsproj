@@ -33,7 +33,10 @@
 
     <ItemGroup>
         <PackageReference Update="FSharp.Core" Version="9.0.100" />
-        <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
 </Project>
