@@ -5,7 +5,6 @@ open CoreWCF.Configuration
 //open Microsoft.AspNetCore.Hosting
 //open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.Extensions.Hosting
-open Microsoft.AspNetCore.Hosting
 
 open Softellect.Samples.Wcf.NetCoreService.Startup
 
