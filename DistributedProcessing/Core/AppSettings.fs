@@ -5,6 +5,7 @@ open System.Threading
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.FileSystemTypes
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 
@@ -19,7 +20,7 @@ open Softellect.Sys.Core
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.AppSettings
 open Softellect.Messaging.AppSettings
-//open Softellect.DistributedProcessing.WorkerNodeService.Primitives
+open Softellect.Sys.Logging
 
 // ==========================================
 // Blank #if template blocks
@@ -42,7 +43,7 @@ open Softellect.Messaging.AppSettings
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -64,6 +65,10 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
@@ -71,17 +76,19 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     let partitionerIdKey = ConfigKey "PartitionerId"
     let resultLocationKey = ConfigKey "ResultLocation"
     let solverLocationKey = ConfigKey "SolverLocation"
     let solverOutputLocationKey = ConfigKey "SolverOutputLocation"
+    let solverEncryptionKey = ConfigKey "SolverEncryption"
 
 
     type AppSettingsProvider
         with
         member p.getPartitionerId (PartitionerId d) = p.getGuidOrDefault partitionerIdKey d.value |> MessagingClientId |> PartitionerId
+        member p.getSolverEncryptionType () = p.getStringOrDefault solverEncryptionKey EncryptionType.defaultValue.value |> EncryptionType.create
 
 #endif
 
@@ -111,6 +118,7 @@ module WorkerNodeService =
                 partitionerId = provider.getPartitionerId defaultPartitionerId
                 resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
                 lastAllowedNodeErr = LastAllowedNodeErr.defaultValue
+                solverEncryptionType = provider.getSolverEncryptionType()
             }
 
         w
@@ -135,7 +143,7 @@ module WorkerNodeService =
 
 #endif
 
-#if SOLVER_RUNNER || WORKER_NODE
+#if SOLVER_RUNNER || WORKER_NODE || WORKERNODE_ADM
 
     [<Literal>]
     let WorkerNodeWcfServiceName = "WorkerNodeWcfService"
@@ -147,6 +155,8 @@ module WorkerNodeService =
     let noOfCoresKey = ConfigKey "NoOfCores"
     let isInactiveKey = ConfigKey "IsInactive"
     let nodePriorityKey = ConfigKey "NodePriority"
+    let fileStorageLocationKey = ConfigKey "FileStorageLocation"
+    let lastErrMinAgoKey = ConfigKey "LastErrMinAgo"
 
 
     type ServiceAccessInfo with
@@ -167,6 +177,8 @@ module WorkerNodeService =
         member p.getNoOfCores d = p.getIntOrDefault noOfCoresKey d
         member p.getNodePriority (WorkerNodePriority d) = p.getIntOrDefault nodePriorityKey d |> WorkerNodePriority
         member p.getIsInactive d = p.getBoolOrDefault isInactiveKey d
+        member p.getFileStorageLocation (FolderName f) = p.getStringOrDefault fileStorageLocationKey f |> FolderName
+        member p.getLastErrMinAgo (d : float<minute>) = (p.getDoubleOrDefault lastErrMinAgoKey (float d)) * (1.0<minute>)
 
 
     let loadWorkerNodeInfo (provider : AppSettingsProvider) =
@@ -188,11 +200,11 @@ module WorkerNodeService =
                 noOfCores = provider.getNoOfCores defaultNoOfCores
                 nodePriority = provider.getNodePriority WorkerNodePriority.defaultValue
                 isInactive = provider.getIsInactive true
-                lastErrorDateOpt = None
+                solverEncryptionType = provider.getSolverEncryptionType()
             }
 
         let result = provider.trySave()
-        printfn $"loadWorkerNodeInfo: result = '%A{result}'."
+        Logger.logInfo $"loadWorkerNodeInfo: result = '%A{result}'."
 
         w
 
@@ -202,6 +214,7 @@ module WorkerNodeService =
             resultLocation = provider.getFolderNameOrDefault resultLocationKey FolderName.defaultResultLocation
             solverLocation = provider.getFolderNameOrDefault solverLocationKey FolderName.defaultSolverLocation
             solverOutputLocation = provider.getFolderNameOrDefault solverOutputLocationKey FolderName.defaultSolverOutputLocation
+            lastErrMinAgo = provider.getLastErrMinAgo 5.0<minute>
         }
 
 
@@ -218,5 +231,13 @@ module WorkerNodeService =
 
             workerNodeSvcInfo
         | Error e -> failwith $"Cannot load settings. Error: '{e}'."
+
+
+    let getStorageFolder () =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider -> provider.getFileStorageLocation defaultFileStorageFolder
+        | Error e ->
+            Logger.logError $"getStorageFolder: ERROR - Cannot load storage folder. Error: '{e}'."
+            defaultFileStorageFolder
 
 #endif

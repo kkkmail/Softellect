@@ -36,9 +36,17 @@ module Errors =
         | LoadAllActiveRunQueueIdDbErr of DbError
 
 
+    type LoadAllNotStartedRunQueueIdError =
+        | LoadAllNotStartedRunQueueIdDbErr of DbError
+
+
     type LoadAllNotDeployedSolverIdError =
         | LoadAllNotDeployedSolverIdDbErr of DbError
 
+
+    type TryUpdateFailedSolverError =
+        | TryUpdateFailedSolverDbErr of DbError
+        | TryUpdateFailedSolverNoRunQueueErr of RunQueueId
 
     type TryStartRunQueueError =
         | TryStartRunQueueDbErr of DbError
@@ -68,6 +76,11 @@ module Errors =
     type TryNotifyRunQueueError =
         | TryNotifyRunQueueDbErr of DbError
         | CannotNotifyRunQueue of RunQueueId
+
+
+    type TryUndeploySolverError =
+        | TryUndeploySolverDbErr of DbError
+        | CannotNotifyUndeploySolverErr of SolverId
 
 
     type TryCheckCancellationError =
@@ -118,6 +131,14 @@ module Errors =
         | UnableToFindRunQueue of RunQueueId
 
 
+    type GetSolverHashError =
+        | GetSolverHashDbErr of DbError
+
+
+    type CheckIfSolverDeployedError =
+        | CheckIfSolverDeployedDbErr of DbError
+
+
     type TryResetRunQueueError =
         | TryResetRunQueueDbErr of DbError
         | ResetRunQueueEntryErr of RunQueueId
@@ -135,6 +156,7 @@ module Errors =
 
     type SendSolverError =
         | UnableToSendSolverErr of (SolverId * WorkerNodeId * MessagingError)
+        | UnableToEncryptSolverErr of (SolverId * WorkerNodeId * SysError)
 
 
     type MapSolverError =
@@ -173,26 +195,31 @@ module Errors =
         | UpsertWorkerNodeErrDbErr of DbError
 
 
+    type UpdateSolverDeploymentInfoError =
+        | UpdateSolverDeploymentInfoDbErr of DbError
+
+
     type TryGetAvailableWorkerNodeError =
         | TryGetAvailableWorkerNodeDbErr of DbError
 
 
     type TryGetSolverNameError =
         | TryGetSolverNameDbErr of DbError
+        | UnableToFindSolverNameErr of RunQueueId
 
 
     type TryRunSolverProcessError =
         | FailedToRunSolverProcessErr of RunQueueId
-        | FailedToRunSolverProcessWithExErr of (RunQueueId * exn)
+        | FailedToRunSolverProcessExn of RunQueueId * exn
         | CannotRunSolverProcessErr of RunQueueId
         | CannotLoadSolverNameErr of RunQueueId
         | FailedToLoadSolverNameErr of RunQueueId
+        | FailedToCreateOutputFolderErr of (RunQueueId * FolderName * FileError)
 
 
     type OnRunModelError =
         | CannotRunModelErr of RunQueueId
         | CannotDeleteRunQueueErr of RunQueueId
-
 
     type OnProcessMessageError =
         | CannotSaveModelDataErr of MessageId * RunQueueId
@@ -219,7 +246,7 @@ module Errors =
 
     type TryRunFirstModelRunnerError =
         | TryLoadFirstRunQueueRunnerErr
-        | TryGetAvailableWorkerNodelRunnerErr
+        | TryGetAvailableWorkerNodeRunnerErr
         | UpsertRunQueueRunnerErr
         | UnableToRunModelRunnerErr
         | UnableToRunModelAndUpsertStatusRunnerErr
@@ -244,7 +271,7 @@ module Errors =
         | UnableToLoadRunQueueRunnerErr of RunQueueId
         | UnableToFindLoadRunQueueRunnerErr of RunQueueId
         | InvalidRunQueueStatusRunnerErr of RunQueueId
-        | CompletelyInvalidRunQueueStatusRunnerErr of RunQueueId // This should never happen but we still have to account for it. It if does, then we are in a BIG trouble.
+        | CompletelyInvalidRunQueueStatusRunnerErr of RunQueueId // This should never happen, but we still have to account for it. If it does, then we are in a BIG trouble.
 
 
     type RegisterRunnerError =
@@ -270,8 +297,57 @@ module Errors =
         | OnGetMessagesRunnerErr of OnGetMessagesError
 
 
-    type TryGetAvailableWorkerNodeRunnerError =
-        | A
+    // type TryGetAvailableWorkerNodeRunnerError =
+    //     | A
+
+
+    type TryEncryptSolverError =
+        | TryEncryptSolverSysErr of SysError
+        | TryEncryptSolverCriticalErr of (WorkerNodeId * SolverId)
+
+
+    type TryDecryptSolverError =
+        | TryDecryptSolverSysErr of SysError
+        | TryDecryptSolverSerializationErr of SerializationError
+        | TryDecryptSolverCriticalErr of PartitionerId
+
+
+    type TryLoadPartitionerPrivateKeyError =
+        | TryLoadPartitionerPrivateKeyDbErr of DbError
+
+
+    type TryLoadEncryptionKeyError =
+        | TryLoadEncryptionKeyDbErr of DbError
+
+
+    type TrySaveEncryptionKeyError =
+        | TrySaveEncryptionKeyDbErr of DbError
+
+
+    type TryLoadPartitionerPublicKeyError =
+        | TryLoadPartitionerPublicKeyDbErr of DbError
+        | NoPartitionerPublicKeyErr
+        | TryExportPartitionerPublicKeyErr of SysError
+        | KeyMismatchPartitionerPublicKeyErr
+
+
+    type TryLoadWorkerNodePublicKeyError =
+        | TryLoadWorkerNodePublicKeyDbErr of DbError
+        | TryImportWorkerNodePublicKeyErr of SysError
+
+
+    type TryUpdateWorkerNodePublicKeyError =
+        | TryUpdateWorkerNodePublicKeyDbErr of DbError
+        | UnableToFindWorkerNodeErr of WorkerNodeId
+
+
+    type TryExportWorkerNodePublicKeyError =
+        | NoWorkerNodePublicKeyErr
+        | TryExpWorkerNodePublicKeyErr of SysError
+
+
+    type OnFailedSolverError =
+        | FailRunQueueMessagingErr of MessagingError
 
     // ==================================
     // Solver Runner errors
@@ -281,8 +357,36 @@ module Errors =
 
 
     type OnUpdateProgressError =
-        | UnableToSendProgressMsgErr of RunQueueId
+        | UnableToSendProgressMsgErr of (RunQueueId * MessagingError)
         | UnableToFindMappingErr of RunQueueId
+
+
+    type NotifyOfSolverDeploymentError =
+        | NotifyOfSolverDeploymentMessagingErr of MessagingError
+
+    type TryDeploySolverError =
+        | CanNotDeployDueToRunningSolversErr of int
+        | TryDeploySolverExn of exn
+        | TryDeploySolverCriticalErr of string
+
+
+    type CopyAppSettingsError =
+        | CopyAppSettingsInputFileErr of FileError
+        | CopyAppSettingsOutputFileErr of FileError
+        | CopyAppSettingsFileErr of FileError * FileError
+        | CopyAppSettingsExn of exn
+
+
+    type GetLocationError =
+        | GetLocationExn of exn
+
+
+    type LoadAllActiveSolverIdsError =
+        | LoadAllActiveSolverIdsDbErr of DbError
+
+
+    type LoadAllActiveWorkerNodeIdsError =
+        | LoadAllActiveWorkerNodeIdsDbErr of DbError
 
 
     type DistributedProcessingError =
@@ -291,12 +395,14 @@ module Errors =
         | TryGetRunningSolversCountErr of TryGetRunningSolversCountError
         | TryPickRunQueueErr of TryPickRunQueueError
         | LoadAllActiveRunQueueIdErr of LoadAllActiveRunQueueIdError
+        | LoadAllNotStartedRunQueueIdErr of LoadAllNotStartedRunQueueIdError
         | TryStartRunQueueErr of TryStartRunQueueError
         | TryCompleteRunQueueErr of TryCompleteRunQueueError
         | TryCancelRunQueueErr of TryCancelRunQueueError
         | TryFailRunQueueErr of TryFailRunQueueError
         | TryRequestCancelRunQueueErr of TryRequestCancelRunQueueError
         | TryNotifyRunQueueErr of TryNotifyRunQueueError
+        | TryUndeploySolverErr of TryUndeploySolverError
         | TryCheckCancellationErr of TryCheckCancellationError
         | TryCheckNotificationErr of TryCheckNotificationError
         | TryClearNotificationErr of TryClearNotificationError
@@ -307,6 +413,8 @@ module Errors =
         | LoadRunQueueProgressErr of LoadRunQueueProgressError
         | TryLoadFirstRunQueueErr of TryLoadFirstRunQueueError
         | TryLoadRunQueueErr of TryLoadRunQueueError
+        | GetSolverHashErr of GetSolverHashError
+        | CheckIfSolverDeployedErr of CheckIfSolverDeployedError
 
         | TryResetRunQueueErr of TryResetRunQueueError
         | SaveRunQueueErr of SaveRunQueueError
@@ -318,6 +426,7 @@ module Errors =
         | UpsertWorkerNodeInfoErr of UpsertWorkerNodeInfoError
         | UpsertWorkerNodeErrErr of UpsertWorkerNodeErrError
         | TryGetAvailableWorkerNodeErr of TryGetAvailableWorkerNodeError
+        | UpdateSolverDeploymentInfoErr of UpdateSolverDeploymentInfoError
 
         | OnProcessMessageErr of OnProcessMessageError
         | UnableToRegisterWorkerNodeErr of MessagingError
@@ -340,7 +449,7 @@ module Errors =
         | SaveResultRunnerErr of SaveResultRunnerError
         | SaveResultsRunnerErr of SaveResultsRunnerError
         | ProcessMessageRunnerErr of ProcessMessageRunnerError
-        | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
+        // | TryGetAvailableWorkerNodeRunnerErr of TryGetAvailableWorkerNodeRunnerError
 
         | WorkerNodeWcfErr of WorkerNodeWcfError
         | TryGetSolverNameErr of TryGetSolverNameError
@@ -355,10 +464,27 @@ module Errors =
         | SetSolverDeployedErr of SetSolverDeployedError
         | SolverNotFound of SolverId
         | LoadAllNotDeployedSolverIdErr of LoadAllNotDeployedSolverIdError
+        | TryUpdateFailedSolverErr of TryUpdateFailedSolverError
+        | OnFailedSolverErr of OnFailedSolverError
 
         // Some errors
         | SaveResultsExn of exn
         | PartitionerWcfErr of PartitionerWcfError
+        | TryEncryptSolverErr of TryEncryptSolverError
+        | TryDecryptSolverErr of TryDecryptSolverError
+        | TryLoadEncryptionKeyErr of TryLoadEncryptionKeyError
+        | TrySaveEncryptionKeyErr of TrySaveEncryptionKeyError
+        | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
+        | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
+        | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
+        | TryLoadPartitionerPublicKeyErr of TryLoadPartitionerPublicKeyError
+        | TryExportWorkerNodePublicKeyErr of TryExportWorkerNodePublicKeyError
+        | NotifyOfSolverDeploymentErr of NotifyOfSolverDeploymentError
+        | TryDeploySolverErr of TryDeploySolverError
+        | CopyAppSettingsErr of CopyAppSettingsError
+        | GetLocationErr of GetLocationError
+        | LoadAllActiveSolverIdsErr of LoadAllActiveSolverIdsError
+        | LoadAllActiveWorkerNodeIdsErr of LoadAllActiveWorkerNodeIdsError
 
         static member addError a b =
             match a, b with
@@ -369,10 +495,6 @@ module Errors =
 
         static member (+) (a, b) = DistributedProcessingError.addError a b
         member a.add b = a + b
-
-    // ==================================
-    // Partitioner errors
-
 
     // ==================================
 

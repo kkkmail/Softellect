@@ -5,8 +5,9 @@ open System.Data.SQLite
 open System.IO
 open FSharp.Data.Sql
 open System.Data
-open System.Data.SqlClient
+open Microsoft.Data.SqlClient
 
+open Softellect.Sys.Logging
 open Softellect.Sys.Retry
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Errors
@@ -19,28 +20,28 @@ module DataAccess =
     let AppConfigFile : string = __SOURCE_DIRECTORY__ + @"\app.config"
 
 
-    let getConnectionString (fileName : FileName) connKey defaultValue =
-        printfn $"getConnectionString: fileName = '%A{fileName}', connKey = '%A{connKey}'."
+    let getConnectionString connKey defaultValue =
+        // printfn $"getConnectionString: fileName = '%A{fileName}', connKey = '%A{connKey}'."
 
         let r =
             match AppSettingsProvider.tryCreate() with
             | Ok provider ->
                 match provider.tryGetConnectionString connKey with
                 | Ok (Some EmptyString) ->
-                    printfn $"getConnectionString: EmptyString."
+                    Logger.logError $"getConnectionString: EmptyString."
                     defaultValue
                 | Ok (Some s) ->
-                    printfn $"getConnectionString: s = '%A{s}'."
+                    // printfn $"getConnectionString: s = '%A{s}'."
                     s
                 | _ ->
-                    printfn $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."
+                    Logger.logError $"getConnectionString: no data, defaultValue = '%A{defaultValue}'."
                     defaultValue
             | _ ->
-                printfn $"getConnectionString: no provider, defaultValue = '%A{defaultValue}'."
+                Logger.logError $"getConnectionString: no provider, defaultValue = '%A{defaultValue}'."
                 defaultValue
             |> ConnectionString
 
-        printfn $"getConnectionString: r = %A{r}."
+        // Logger.logTrace $"getConnectionString: r = %A{r}."
         r
 
 
@@ -81,7 +82,7 @@ module DataAccess =
                 g()
             with
             | e ->
-                printfn $"tryDbFun: e = %A{e}."
+                Logger.logError $"tryDbFun: e = %A{e}."
                 mapExceptionToError f e
 
         tryRopFun (mapException f) w
@@ -93,7 +94,7 @@ module DataAccess =
     /// This function is mostly used to get the number of updated rows.
     let mapIntScalar (r : Common.SqlEntity[]) =
         r
-        |> Array.map(fun e -> printfn $"mapIntScalar: '%A{e.ColumnValues}'.")
+        |> Array.map(fun e -> Logger.logTrace $"mapIntScalar: '%A{e.ColumnValues}'.")
         |> ignore
 
         let result =
@@ -104,7 +105,7 @@ module DataAccess =
             |> Array.tryHead
             |> Option.bind id
 
-        printfn $"mapIntScalar: result = %A{result}."
+        Logger.logTrace $"mapIntScalar: result = %A{result}."
         result
 
 

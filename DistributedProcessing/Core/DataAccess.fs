@@ -3,12 +3,15 @@ namespace Softellect.DistributedProcessing.DataAccess
 
 open System
 open System.Threading
+open System.IO
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Errors
+open Softellect.Sys.Logging
+open Softellect.Sys.Crypto
 
 open Softellect.Wcf.Common
 open Softellect.Wcf.Client
@@ -45,10 +48,13 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if SOLVER_RUNNER
 #endif
 
+#if WORKERNODE_ADM
+#endif
+
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -91,26 +97,33 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
 
 // ==========================================
-// To make a compiler happy.
+// Common for all.
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
-    let private dummy = 0
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
+
+    let private partitionerPublicKeySetting = "395A5869D3104C2D9FD87421B501D622"
+    let private partitionerPrivateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
+
+    let private workerNodePublicKeySetting = "BD95B603BBFB4C5BB8C74A4C36783EB3"
+    let private workerNodePrivateKeySetting = "A895B4BDC0354D6EB776D26DD30BA943"
+
 #endif
 
 // ==========================================
 // Database access
 
-#if PARTITIONER || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
-#endif
-
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR
 
-    /// Both partitioner and ModelGenerator use the same database.
+    /// Both Partitioner, PartitionerAdm, and ModelGenerator use the same database.
     let connectionStringKey = ConfigKey "PartitionerService"
 
 
@@ -119,10 +132,7 @@ module WorkerNodeService =
 
 #endif
 
-#if SOLVER_RUNNER
-#endif
-
-#if SOLVER_RUNNER || WORKER_NODE
+#if SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     /// Both WorkerNodeService and SolverRunner use the same database.
     let private connectionStringKey = ConfigKey "WorkerNodeService"
@@ -133,12 +143,12 @@ module WorkerNodeService =
 
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
     [<Literal>]
     let private ConnectionStringValue = "Server=localhost;Database=" + DbName + ";Integrated Security=SSPI;TrustServerCertificate=yes;"
 
-    let private getConnectionStringImpl() = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
+    let private getConnectionStringImpl() = getConnectionString connectionStringKey ConnectionStringValue
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
     let private getConnectionString() = connectionString.Value
 
@@ -161,9 +171,10 @@ module WorkerNodeService =
 // ==========================================
 // Specific Types
 
-#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
     type private SolverEntity = DbContext.``dbo.SolverEntity``
+    type private SettingDataEntity = DbContext.``dbo.SettingEntity``
 
 #endif
 
@@ -176,7 +187,279 @@ module WorkerNodeService =
 // ==========================================
 // Code
 
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
+
+    /// Combines pieces of LocationDetailedInfo into a full path.
+    let getFileLocation (location : LocationDetailedInfo) (fileName : FileName) =
+        try
+            let i = location.locationInfo
+            match location.optionalFolder with
+            | Some (FolderName f) -> Path.Combine(i.location.value, i.solverName.value, f, fileName.value)
+            | None -> Path.Combine(i.location.value, i.solverName.value, fileName.value)
+            |> FileName
+            |> Ok
+        with
+        | e ->
+            Logger.logError $"location: %A{location}, exception: %A{e}."
+            e |> GetLocationExn |> GetLocationErr |> Error
+
+
+    let getFolderLocation (location : LocationDetailedInfo)=
+        try
+            let i = location.locationInfo
+            match location.optionalFolder with
+            | Some (FolderName f) -> Path.Combine(i.location.value, i.solverName.value, f)
+            | None -> Path.Combine(i.location.value, i.solverName.value)
+            |> FolderName
+            |> Ok
+        with
+        | e ->
+            Logger.logError $"location: %A{location}, exception: %A{e}."
+            e |> GetLocationExn |> GetLocationErr |> Error
+
+#endif
+
+#if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
+
+    /// Tries loading a public or private key out of setting using a given key name.
+    let private tryLoadEncryptionKey toKey keyName =
+        let elevate e = e |> TryLoadEncryptionKeyErr
+        let fromDbError e = e |> TryLoadEncryptionKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select s.SettingBinary
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> toKey |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let private trySaveEncryptionKey fromKey keyName encryptionKey =
+        let elevate e = e |> TrySaveEncryptionKeyErr
+        let fromDbError e = e |> TrySaveEncryptionKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            // Retrieve the current key if it exists
+            let existingKey =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match existingKey with
+            | Some setting ->
+                // Update the existing key
+                setting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+            | None ->
+                // Insert a new key
+                let newSetting = ctx.Dbo.Setting.Create()
+                newSetting.SettingName <- keyName
+                newSetting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+                //ctx.Dbo.Setting.Add(newSetting) |> ignore
+
+            // Save changes to the database
+            ctx.SubmitUpdates()
+            Ok ()
+
+        tryDbFun fromDbError g
+
+#endif
+
+#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
+
+    let tryGetSolverName (r : RunQueueId) =
+        let elevate e = e |> TryGetSolverNameErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for q in ctx.Dbo.RunQueue do
+                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
+                    where (q.RunQueueId = r.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let private processRunQueue (runQueueId : RunQueueId) m f =
+        let ctx = getDbContext getConnectionString
+
+        let x =
+            query {
+                for s in ctx.Dbo.RunQueue do
+                where (s.RunQueueId = runQueueId.value)
+                select (Some s)
+                exactlyOneOrDefault
+            }
+
+        match x with
+        | Some s -> m ctx s
+        | None -> f ctx
+
+
+    let private mapSolver (s : SolverEntity) =
+        {
+            solverId = SolverId s.SolverId
+            solverName = SolverName s.SolverName
+            description = s.Description
+            solverData = s.SolverData |> Option.map (fun e -> SolverData e)
+
 #if PARTITIONER || PARTITIONER_ADM
+            solverHash = s.SolverHash |> Sha256Hash
+#endif
+
+#if WORKER_NODE
+            // We don't really care about solver hash for Worker Node, but we need to have it for consistency.
+            solverHash = s.SolverData |> Option.defaultValue [||] |> calculateSha256Hash
+#endif
+        }
+
+
+    let private processSolver (solverId : SolverId) m f =
+        let ctx = getDbContext getConnectionString
+
+        let x =
+            query {
+                for s in ctx.Dbo.Solver do
+                where (s.SolverId = solverId.value)
+                select (Some s)
+                exactlyOneOrDefault
+            }
+
+        match x with
+        | Some s -> m ctx s
+        | None -> f ctx
+
+
+    let tryLoadSolver (solverId : SolverId) =
+        let elevate e = e |> MapSolverErr
+        let fromDbError e = e |> MapSolverDbErr |> elevate
+        let g() = processSolver solverId (fun _ s -> mapSolver s |> Ok) (fun _ -> Error (SolverNotFound solverId))
+        tryDbFun fromDbError g
+
+
+    let private addSolverRow (ctx : DbContext) (s : Solver) =
+        let row = ctx.Dbo.Solver.Create(
+                            SolverId = s.solverId.value,
+                            SolverName = s.solverName.value,
+                            Description = s.description,
+                            SolverData = (s.solverData |> Option.map (fun e -> e.value)))
+
+        row
+
+
+    /// Saves incoming solver into a database for further processing.
+    let saveSolver (solver : Solver) =
+        let elevate e = e |> SaveSolverErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> SaveSolverDbErr |> elevate
+
+        let g() =
+            processSolver
+                solver.solverId
+                (fun ctx s ->
+                    s.SolverName <- solver.solverName.value
+                    s.Description <- solver.description
+                    s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
+
+#if PARTITIONER || PARTITIONER_ADM
+                    // Partitioner has a separate solverHash column.
+                    s.SolverHash <- solver.solverHash.value
+#endif
+
+#if WORKER_NODE
+                    // Worker Node has a separate isDeployed flag.
+                    s.IsDeployed <- false
+#endif
+
+                    ctx.SubmitUpdates()
+                    Ok())
+                (fun ctx ->
+                    let _ = addSolverRow ctx solver
+
+                    ctx.SubmitUpdates()
+                    Ok ())
+
+        tryDbFun fromDbError g
+
+
+    let unpackSolver folderName (solver : Solver) =
+        match solver.solverData with
+        | Some data ->
+            match unzipToFolder data.value folderName true with
+            | Ok _ -> Ok ()
+            | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
+        | None -> Ok()
+
+#endif
+
+#if PARTITIONER || PARTITIONER_ADM
+
+    let checkIfSolverDeployed (solverId : SolverId) (w : WorkerNodeId) =
+        let elevate e = e |> CheckIfSolverDeployedErr
+        let fromDbError e = e |> CheckIfSolverDeployedDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.WorkerNodeSolver do
+                    where (s.SolverId = solverId.value && s.WorkerNodeId = w.value.value && s.IsDeployed)
+                    select (Some s.WorkerNodeId)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some _ -> Ok true
+            | None -> Ok false
+
+        tryDbFun fromDbError g
+
+
+    let getSolverHash (solverId : SolverId) =
+        let elevate e = e |> GetSolverHashErr
+        let fromDbError e = e |> GetSolverHashDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.SolverId = solverId.value)
+                    select (Some s.SolverHash)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> Sha256Hash |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
 
     let private mapRunQueue (r: RunQueueEntity) =
         let elevate e = e |> MapRunQueueErr
@@ -199,6 +482,7 @@ module WorkerNodeService =
                             {
                                 progress = r.Progress
                                 callCount = r.CallCount
+                                processId = r.ProcessId |> Option.bind (fun e -> e |> ProcessId |> Some)
                                 evolutionTime = EvolutionTime r.EvolutionTime
                                 relativeInvariant = RelativeInvariant r.RelativeInvariant
                                 errorMessageOpt = r.ErrorMessage |> Option.map ErrorMessage
@@ -208,6 +492,9 @@ module WorkerNodeService =
                     }
 
                 createdOn = r.CreatedOn
+                lastErrorOn = r.LastErrorOn
+                retryCount = r.RetryCount
+                maxRetries = r.MaxRetries
             }
             |> Ok
         | None -> toError (CannotMapRunQueue runQueueId)
@@ -245,7 +532,10 @@ module WorkerNodeService =
                             RunQueueId = r.runQueueId.value,
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
+                            ProcessId = (r.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)),
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
+                            RetryCount = r.retryCount,
+                            MaxRetries = r.maxRetries,
                             EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             Progress = r.progressData.progressInfo.progress,
                             CallCount = r.progressData.progressInfo.callCount,
@@ -283,13 +573,12 @@ module WorkerNodeService =
         let elevate e = e |> TryUpdateRunQueueRowErr
         let toError e = e |> elevate |> Error
         //let fromDbError e = e |> TryUpdateRunQueueRowDbErr |> elevate
-
         //let toError e = e |> RunQueueTryUpdateRowErr |> DbErr |> Error
 
         let g s u =
-            //r.RunQueueId <- q.runQueueId.value
             r.WorkerNodeId <- (q.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value))
             r.Progress <- q.progressData.progressInfo.progress
+            r.ProcessId <- q.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)
             r.EvolutionTime <- q.progressData.progressInfo.evolutionTime.value
             r.CallCount <- q.progressData.progressInfo.callCount
             r.RelativeInvariant <- q.progressData.progressInfo.relativeInvariant.value
@@ -372,40 +661,162 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
+
+    let tryLoadWorkerNodePublicKey (w : WorkerNodeId) : DistributedProcessingResult<PublicKey option> =
+        let elevate e = e |> TryLoadWorkerNodePublicKeyErr
+        let fromDbError e = e |> TryLoadWorkerNodePublicKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.WorkerNode do
+                    where (s.WorkerNodeId = w.value.value)
+                    select s.WorkerNodePublicKey
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v -> v |> unZip |> PublicKey |> Some |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let tryUpdateWorkerNodePublicKey (w: WorkerNodeId) (PublicKey newPublicKey) =
+        let elevate e = e |> TryUpdateWorkerNodePublicKeyErr
+        let fromDbError e = e |> TryUpdateWorkerNodePublicKeyDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            // Retrieve the row for the specified WorkerNodeId
+            let workerNode =
+                query {
+                    for s in ctx.Dbo.WorkerNode do
+                    where (s.WorkerNodeId = w.value.value)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match workerNode with
+            | Some row ->
+                // Update the public key for the WorkerNode
+                row.WorkerNodePublicKey <- newPublicKey |> zip |> Some
+                ctx.SubmitUpdates()  // Persist changes to the database
+                Ok ()
+            | None ->
+                // The row must exist; if not, return an error
+                w |> UnableToFindWorkerNodeErr |> elevate |> Error
+
+        tryDbFun fromDbError g
+
+
+    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySetting
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+
+    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySetting privateKey
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+
+#endif
+
+#if WORKERNODE_ADM || WORKER_NODE
+
+    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
+    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting
+
+    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySetting publicKey
+    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySetting privateKey
+
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+
+#endif
+
+#if MODEL_GENERATOR || WORKER_NODE
+
+    let private addRunQueueRow (ctx : DbContext) (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
+        let row = ctx.Dbo.RunQueue.Create(
+                            RunQueueId = r.value,
+                            SolverId = s.value,
+                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
+                            MaxRetries = defaultMaxRetries,
+                            CreatedOn = DateTime.Now,
+                            ModifiedOn = DateTime.Now)
+
+        let md = ctx.Dbo.ModelData.Create(
+                            RunQueueId = r.value,
+                            ModelData = (w |> serializeData))
+
+        (row, md)
+
+
+    /// Saves a new model data into a database fur further processing.
+    let saveModelData (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
+        let elevate e = e |> SaveRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            addRunQueueRow ctx r s w |> ignore
+            ctx.SubmitUpdates()
+
+            Ok()
+
+        tryDbFun fromDbError g
+
+#endif
+
+#if SOLVER_RUNNER || WORKER_NODE
+
+    let deleteRunQueue (q : RunQueueId) =
+        let elevate e = e |> DeleteRunQueueErr
+        //let toError e = e |> elevate |> Error
+        let x e = DeleteRunQueueEntryErr e |> elevate
+        let fromDbError e = e |> DeleteRunQueueDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.DeleteRunQueue.Invoke(``@runQueueId`` = q.value)
+            r.ResultSet |> bindIntScalar x q
+
+        tryDbFun fromDbError g
+
 #endif
 
 #if PARTITIONER
 
-    let saveLocalResultInfo d (c : ResultInfo) =
-        printfn $"saveLocalResultInfo - d: '%A{d}', c: '%A{c}'."
+    let saveLocalResultInfo (d : LocationInfo) (i : ResultInfo) =
+        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
+        let location = { locationInfo = d; optionalFolder = i.optionalFolder }
 
         try
-            let getFileName (FileName name) =
-                match d with
-                | Some (FolderName f, g) ->
-                    let fileName = Path.GetFileName name
+            let saveResult (c : CalculationResult) =
+                let fileName = Path.GetFileName c.fileName.value |> FileName
 
-                    match g with
-                    | Some (FolderName e) -> Path.Combine(f, e, fileName)
-                    | None -> Path.Combine(f, fileName)
-                | None -> name
+                match getFileLocation location fileName with
+                | Ok fn ->
+                    let folder = Path.GetDirectoryName fn.value
+                    Directory.CreateDirectory(folder) |> ignore
+                    Logger.logTrace $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'."
 
-            let saveResult (f : string) (c : CalculationResult) =
-                let folder = Path.GetDirectoryName f
-                Directory.CreateDirectory(folder) |> ignore
-                printfn $"saveLocalResultInfo - saveResult - f: '%A{f}', c: '%A{c}'."
+                    match c with
+                    | TextResult h -> File.WriteAllText(fn.value, h.textContent)
+                    | BinaryResult b -> File.WriteAllBytes(fn.value, b.binaryContent)
+                    Ok()
+                | Error e ->
+                    Logger.logError $"Error saving result, c: '%A{c.info}', exception: '%A{e}'."
+                    Error e
 
-                match c with
-                | TextResult h -> File.WriteAllText(f, h.textContent)
-                | BinaryResult b -> File.WriteAllBytes(f, b.binaryContent)
-
-            c.results
-            |> List.map (fun e -> saveResult (getFileName e.fileName) e)
+            i.results
+            |> List.map (fun e -> saveResult e)
             |> ignore
             Ok ()
         with
         | e ->
-            printfn $"saveLocalResultInfo - e: '%A{e}'."
+            Logger.logError $"saveLocalResultInfo - e: '%A{e}'."
             e |> SaveResultsExn |> Error
 
 
@@ -473,7 +884,7 @@ module WorkerNodeService =
 
 
     /// Gets the first available worker node to schedule work.
-    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) =
+    let tryGetAvailableWorkerNode (LastAllowedNodeErr m) (s : SolverId) =
         let elevate e = e |> TryGetAvailableWorkerNodeErr
         //let toError e = e |> elevate |> Error
         let fromDbError e = e |> TryGetAvailableWorkerNodeDbErr |> elevate
@@ -484,7 +895,7 @@ module WorkerNodeService =
             let x =
                 query {
                     for r in ctx.Dbo.VwAvailableWorkerNode do
-                    where (r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
+                    where (r.SolverId = s.value && r.WorkLoad < 1.0m && (r.LastErrMinAgo = None || r.LastErrMinAgo.Value < (m / 1<minute>)))
                     sortByDescending r.NodePriority
                     thenBy r.WorkLoad
                     thenBy r.OrderId
@@ -499,19 +910,19 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private createWorkerNodeInfo p (r : WorkerNodeEntity) =
+    let private createWorkerNodeInfo (p : PartitionerInfo) (r : WorkerNodeEntity) =
         {
             workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
             workerNodeName = r.WorkerNodeName |> WorkerNodeName
             noOfCores = r.NumberOfCores
-            partitionerId = p
+            partitionerId = p.partitionerId
             nodePriority = r.NodePriority |> WorkerNodePriority
             isInactive = r.IsInactive
-            lastErrorDateOpt = r.LastErrorOn
+            solverEncryptionType = p.solverEncryptionType
         }
 
 
-    let loadWorkerNodeInfo p (i : WorkerNodeId) =
+    let loadWorkerNodeInfo (p : PartitionerInfo) (i : WorkerNodeId) =
         let elevate e = e |> LoadWorkerNodeInfoErr
         let toError e = e |> elevate |> Error
         let fromDbError e = e |> LoadWorkerNodeInfoDbErr |> elevate
@@ -539,7 +950,6 @@ module WorkerNodeService =
         r.NumberOfCores <- w.noOfCores
         r.NodePriority <- w.nodePriority.value
         r.ModifiedOn <- DateTime.Now
-        r.LastErrorOn <- w.lastErrorDateOpt
 
         Ok()
 
@@ -550,7 +960,6 @@ module WorkerNodeService =
                             WorkerNodeName = w.workerNodeName.value,
                             NumberOfCores = w.noOfCores,
                             NodePriority = w.nodePriority.value,
-                            LastErrorOn = w.lastErrorDateOpt,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -583,17 +992,63 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let upsertWorkerNodeErr p i =
-        let elevate e = e |> UpsertWorkerNodeErrErr
+    // let upsertWorkerNodeErr p i =
+    //     let elevate e = e |> UpsertWorkerNodeErrErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+    //
+    //     let g() =
+    //         match loadWorkerNodeInfo p i with
+    //         | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
+    //         | Error e -> Error e
+    //
+    //     tryDbFun fromDbError g
+
+
+    let private addWorkerNodeSolverRow (ctx : DbContext) (w : WorkerNodeId) (s : SolverId) =
+        let row = ctx.Dbo.WorkerNodeSolver.Create(
+                            WorkerNodeId = w.value.value,
+                            SolverId = s.value)
+
+        row
+
+
+    let updateSolverDeploymentInfo (w : WorkerNodeId) (s : SolverId) r =
+        let elevate e = e |> UpdateSolverDeploymentInfoErr
         //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
+        let fromDbError e = e |> UpdateSolverDeploymentInfoDbErr |> elevate
+
+        Logger.logInfo $"updateSolverDeploymentInfo: %A{w}, %A{r}."
 
         let g() =
-            match loadWorkerNodeInfo p i with
-            | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
-            | Error e -> Error e
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for r in ctx.Dbo.WorkerNodeSolver do
+                    where (r.WorkerNodeId = w.value.value && r.SolverId = s.value)
+                    select (Some r)
+                    exactlyOneOrDefault
+                }
+
+            let x1 =
+                match x with
+                | Some v -> v
+                | None -> addWorkerNodeSolverRow ctx w s
+
+            match r with
+            | Ok () ->
+                x1.IsDeployed <- true
+                x1.DeploymentError <- None
+            | Error e ->
+                x1.IsDeployed <- false
+                x1.DeploymentError <- $"%A{e}" |> Some
+
+            ctx.SubmitUpdates()
+            Ok()
 
         tryDbFun fromDbError g
+
 
 #endif
 
@@ -613,6 +1068,69 @@ module WorkerNodeService =
             match m with
             | Some 1 -> Ok ()
             | _ -> toError (ResetRunQueueEntryErr q)
+
+        tryDbFun fromDbError g
+
+
+    let tryUndeploySolver (solverId : SolverId) =
+        let elevate e = e |> TryUndeploySolverErr
+        //let toError e = e |> elevate |> Error
+        let x e = CannotNotifyUndeploySolverErr e |> elevate
+        let fromDbError e = e |> TryUndeploySolverDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+            let r = ctx.Procedures.TryUndeploySolver.Invoke(``@solverId`` = solverId.value)
+            let m = r.ResultSet |> mapIntScalar
+            Logger.logTrace $"Updated {m} row(s) for solverId: '{solverId}'."
+            // r.ResultSet |> bindIntScalar x solverId
+            Ok() // Ignore the result as we don't care about it here.
+
+        tryDbFun fromDbError g
+
+
+    let loadAllActiveSolverIds () =
+        let elevate e = e |> LoadAllActiveSolverIdsErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllActiveSolverIdsDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.IsInactive = false)
+                    select s.SolverId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map SolverId
+            |> Ok
+
+        tryDbFun fromDbError g
+
+
+    let loadAllActiveWorkerNodeIds () =
+        let elevate e = e |> LoadAllActiveWorkerNodeIdsErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> LoadAllActiveWorkerNodeIdsDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for w in ctx.Dbo.WorkerNode do
+                    where (w.IsInactive = false)
+                    select w.WorkerNodeId
+                }
+
+            x
+            |> Seq.toList
+            |> List.map (fun e -> e |> MessagingClientId |>  WorkerNodeId)
+            |> Ok
 
         tryDbFun fromDbError g
 
@@ -754,20 +1272,6 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let deleteRunQueue (q : RunQueueId) =
-        let elevate e = e |> DeleteRunQueueErr
-        //let toError e = e |> elevate |> Error
-        let x e = DeleteRunQueueEntryErr e |> elevate
-        let fromDbError e = e |> DeleteRunQueueDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-            let r = ctx.Procedures.DeleteRunQueue.Invoke(``@runQueueId`` = q.value)
-            r.ResultSet |> bindIntScalar x q
-
-        tryDbFun fromDbError g
-
-
     /// Can modify progress related information when state is InProgress or CancelRequested.
     let tryUpdateProgress<'P> (q : RunQueueId) (pd : ProgressData<'P>) =
         let elevate e = e |> TryUpdateProgressErr
@@ -776,7 +1280,7 @@ module WorkerNodeService =
         let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
         let g() =
-            printfn $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
+            Logger.logTrace $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
             let ctx = getDbContext getConnectionString
             let p = pd.toProgressData()
 
@@ -797,37 +1301,24 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
-#endif
 
-#if MODEL_GENERATOR || WORKER_NODE
-
-    let private addRunQueueRow (ctx : DbContext) (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
-        let row = ctx.Dbo.RunQueue.Create(
-                            RunQueueId = r.value,
-                            SolverId = s.value,
-                            RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value,
-                            CreatedOn = DateTime.Now,
-                            ModifiedOn = DateTime.Now)
-
-        let md = ctx.Dbo.ModelData.Create(
-                            RunQueueId = r.value,
-                            ModelData = (w |> serializeData))
-
-        (row, md)
-
-
-    /// Saves a new model data into a database fur further processing.
-    let saveModelData (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
-        let elevate e = e |> SaveRunQueueErr
+    let tryGetSolverName (solverId : SolverId) =
+        let elevate e = e |> TryGetSolverNameErr
         //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> SaveRunQueueDbErr |> elevate
+        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
 
         let g() =
             let ctx = getDbContext getConnectionString
-            addRunQueueRow ctx r s w |> ignore
-            ctx.SubmitUpdates()
 
-            Ok()
+            let x =
+                query {
+                    for s in ctx.Dbo.Solver do
+                    where (s.SolverId = solverId.value)
+                    select (Some s.SolverName)
+                    exactlyOneOrDefault
+                }
+
+            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 
@@ -846,7 +1337,8 @@ module WorkerNodeService =
             let x =
                 query {
                     for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
+                    where (s.IsDeployed = false && (q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value))
                     select (q.RunQueueId, q.ProcessId)
                 }
 
@@ -879,10 +1371,81 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryPickRunQueue () =
-        let elevate e = e |> TryPickRunQueueErr
+    // let tryPickRunQueue () =
+    //     let elevate e = e |> TryPickRunQueueErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value && q.RetryCount <= q.MaxRetries)
+    //                 sortBy q.RunQueueOrder
+    //                 select (Some q.RunQueueId)
+    //                 exactlyOneOrDefault
+    //             }
+    //
+    //         x |> Option.map RunQueueId |> Ok
+    //
+    //     tryDbFun fromDbError g
+    //
+    //
+    // let tryPickRunQueue (lastErrMinAgo : int) =
+    //     let elevate e = e |> TryPickRunQueueErr
+    //     let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where (
+    //                     q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value &&
+    //                     q.RetryCount <= q.MaxRetries &&
+    //                     (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(-float lastErrMinAgo))
+    //                 )
+    //                 sortBy q.RunQueueOrder
+    //                 select (Some q.RunQueueId)
+    //                 exactlyOneOrDefault
+    //             }
+    //
+    //         x |> Option.map RunQueueId |> Ok
+    //
+    //     tryDbFun fromDbError g
+
+
+    // let loadAllActiveRunQueueId (lastErrMinAgo : int) =
+    //     let elevate e = e |> LoadAllActiveRunQueueIdErr
+    //     //let toError e = e |> elevate |> Error
+    //     let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
+    //
+    //     let g() =
+    //         let ctx = getDbContext getConnectionString
+    //
+    //         let x =
+    //             query {
+    //                 for q in ctx.Dbo.RunQueue do
+    //                 where ((q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value  || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+    //                        && q.RetryCount <= q.MaxRetries && (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(- float lastErrMinAgo)))
+    //                 select q.RunQueueId
+    //             }
+    //
+    //         x
+    //         |> Seq.toList
+    //         |> List.map RunQueueId
+    //         |> Ok
+    //
+    //     tryDbFun fromDbError g
+
+
+    let loadAllNotStartedRunQueueId (lastErrMinAgo : float<minute>) =
+        let elevate e = e |> LoadAllNotStartedRunQueueIdErr
         //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryPickRunQueueDbErr |> elevate
+        let fromDbError e = e |> LoadAllNotStartedRunQueueIdDbErr |> elevate
 
         let g() =
             let ctx = getDbContext getConnectionString
@@ -890,32 +1453,7 @@ module WorkerNodeService =
             let x =
                 query {
                     for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value)
-                    sortBy q.RunQueueOrder
-                    select (Some q.RunQueueId)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map RunQueueId |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let loadAllActiveRunQueueId () =
-        let elevate e = e |> LoadAllActiveRunQueueIdErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> LoadAllActiveRunQueueIdDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    where (q.RunQueueStatusId =
-                        RunQueueStatus.NotStartedRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.InProgressRunQueue.value
-                        || q.RunQueueStatusId = RunQueueStatus.CancelRequestedRunQueue.value)
+                    where (q.RunQueueStatusId = RunQueueStatus.NotStartedRunQueue.value && q.RetryCount <= q.MaxRetries && (q.LastErrorOn = None || q.LastErrorOn.Value < DateTime.Now.AddMinutes(- float lastErrMinAgo)))
                     select q.RunQueueId
                 }
 
@@ -923,28 +1461,6 @@ module WorkerNodeService =
             |> Seq.toList
             |> List.map RunQueueId
             |> Ok
-
-        tryDbFun fromDbError g
-
-
-    let tryGetSolverName (r : RunQueueId) =
-        let elevate e = e |> TryGetSolverNameErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> TryGetSolverNameDbErr |> elevate
-
-        let g() =
-            let ctx = getDbContext getConnectionString
-
-            let x =
-                query {
-                    for q in ctx.Dbo.RunQueue do
-                    join s in ctx.Dbo.Solver on (q.SolverId = s.SolverId)
-                    where (q.RunQueueId = r.value)
-                    select (Some s.SolverName)
-                    exactlyOneOrDefault
-                }
-
-            x |> Option.map SolverName |> Ok
 
         tryDbFun fromDbError g
 
@@ -1024,41 +1540,6 @@ module WorkerNodeService =
 
         tryDbFun fromDbError g
 
-#endif
-
-#if PARTITIONER || PARTITIONER_ADM || WORKER_NODE
-
-    let private mapSolver (s : SolverEntity) =
-        {
-            solverId = SolverId s.SolverId
-            solverName = SolverName s.SolverName
-            description = s.Description
-            solverData = s.SolverData
-        }
-
-
-    let private processSolver (solverId : SolverId) m f =
-        let ctx = getDbContext getConnectionString
-
-        let x =
-            query {
-                for s in ctx.Dbo.Solver do
-                where (s.SolverId = solverId.value)
-                select (Some s)
-                exactlyOneOrDefault
-            }
-
-        match x with
-        | Some s -> m ctx s
-        | None -> f ctx
-
-
-    let tryLoadSolver (solverId : SolverId) =
-        let elevate e = e |> MapSolverErr
-        let fromDbError e = e |> MapSolverDbErr |> elevate
-        let g() = processSolver solverId (fun _ s -> mapSolver s |> Ok) (fun _ -> Error (SolverNotFound solverId))
-        tryDbFun fromDbError g
-
 
     let setSolverDeployed (solverId : SolverId) =
         let elevate e = e |> SetSolverDeployedErr
@@ -1072,42 +1553,6 @@ module WorkerNodeService =
                     ctx.SubmitUpdates()
                     Ok())
                 (fun _ -> Error (SolverNotFound solverId))
-
-        tryDbFun fromDbError g
-
-
-    let private addSolverRow (ctx : DbContext) (s : Solver) =
-        let row = ctx.Dbo.Solver.Create(
-                            SolverId = s.solverId.value,
-                            SolverName = s.solverName.value,
-                            Description = s.description,
-                            SolverData = s.solverData)
-
-        row
-
-
-    /// Saves intocoming solver into a database for further processing.
-    let saveSolver (solver : Solver) =
-        let elevate e = e |> SaveSolverErr
-        //let toError e = e |> elevate |> Error
-        let fromDbError e = e |> SaveSolverDbErr |> elevate
-
-        let g() =
-            processSolver
-                solver.solverId
-                (fun ctx s ->
-                    s.SolverName <- solver.solverName.value
-                    s.Description <- solver.description
-                    s.SolverData <- solver.solverData
-                    s.IsDeployed <- false
-
-                    ctx.SubmitUpdates()
-                    Ok())
-                (fun ctx ->
-                    let _ = addSolverRow ctx solver
-
-                    ctx.SubmitUpdates()
-                    Ok ())
 
         tryDbFun fromDbError g
 
@@ -1135,12 +1580,27 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let unpackSolver folderName (solver : Solver) =
-        match solver.solverData with
-        | Some data ->
-            match unzipToFolder data folderName true with
-            | Ok _ -> Ok ()
-            | Error e -> UnableToDeploySolverErr (solver.solverId, folderName, e) |> SaveSolverErr |> Error
-        | None -> Ok()
+    let tryUpdateFailedSolver (q : RunQueueId) e =
+        let elevate e = e |> TryUpdateFailedSolverErr
+        //let toError e = e |> elevate |> Error
+        let fromDbError e = e |> TryUpdateFailedSolverDbErr |> elevate
+
+        let g() =
+            processRunQueue
+                q
+                (fun ctx s ->
+                    let x =
+                        match s.RetryCount < s.MaxRetries with
+                        | true -> CanRetry
+                        | false -> ExceededRetryCount { retryCount = s.RetryCount; maxRetries = s.MaxRetries }
+
+                    s.RetryCount <- (s.RetryCount + 1)
+                    s.LastErrorOn <- (Some DateTime.Now)
+                    s.ErrorMessage <- (Some $"%A{e}")
+                    ctx.SubmitUpdates()
+                    Ok x)
+                (fun _ -> Error (q |> TryUpdateFailedSolverNoRunQueueErr |> TryUpdateFailedSolverErr))
+
+        tryDbFun fromDbError g
 
 #endif

@@ -128,9 +128,9 @@ module Primitives =
             nextResultDetailedProgress : decimal
         }
 
-        static member defaultValue =
+        static member defaultValue pid =
             {
-                progressData = ProgressData.defaultValue
+                progressData = ProgressData.defaultValue pid
                 lastCheck = DateTime.Now
                 nextProgress = 0.0M
                 nextResultProgress = 0.0M
@@ -168,6 +168,7 @@ module Primitives =
             getInitialData : 'D -> 'X // Get the initial data from the model data.
             getProgressData : ('D -> EvolutionTime -> 'X -> 'P) option // Get optional detailed progress data from the computation state.
             getInvariant : 'D -> EvolutionTime -> 'X -> RelativeInvariant // Get invariant from the computation state.
+            getOptionalFolder : RunQueueId -> ModelData<'D> -> FolderName option // Get optional bottom level subfolder for the results.
         }
 
 
@@ -181,7 +182,7 @@ module Primitives =
 
 
     /// A system proxy to run the solver. Is implemented by the system but can be overridden.
-    type SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
+    type SolverRunnerSystemProxy<'P, 'X, 'C> =
         {
             callBackProxy : CallBackProxy<'P>
             addResultData : ResultSliceData<'C> -> unit
@@ -191,16 +192,23 @@ module Primitives =
         }
 
 
-    /// A model data and supporting data that is needed to run the solver.
-    type RunnerData<'D> =
+    type RunnerData =
         {
             runQueueId : RunQueueId
             partitionerId : PartitionerId
             workerNodeId : WorkerNodeId
             messagingDataVersion : MessagingDataVersion
-            modelData : ModelData<'D>
             started : DateTime
             cancellationCheckFreq : TimeSpan // How often to check if cancellation is requested.
+            optionalFolder : FolderName option
+        }
+
+
+    /// A model data and supporting data that is needed to run the solver.
+    type RunnerData<'D> =
+        {
+            runnerData : RunnerData
+            modelData : ModelData<'D>
         }
 
 
@@ -211,7 +219,7 @@ module Primitives =
     type SolverRunnerContext<'D, 'P, 'X, 'C> =
         {
             runnerData : RunnerData<'D>
-            systemProxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
+            systemProxy : SolverRunnerSystemProxy<'P, 'X, 'C>
             userProxy : SolverRunnerUserProxy<'D, 'P, 'X, 'C>
         }
 
@@ -221,11 +229,11 @@ module Primitives =
         {
             logCrit : SolverRunnerCriticalError -> UnitResult<SysError>
             workerNodeServiceInfo : WorkerNodeServiceInfo
-            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<(ModelData<'D> * RunQueueStatus)>
+            tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<ModelData<'D> * RunQueueStatus>
             getAllowedSolvers : WorkerNodeInfo -> int
             checkRunning : int option -> RunQueueId -> CheckRunningResult
             tryStartRunQueue : RunQueueId -> DistributedProcessingUnitResult
-            createSystemProxy : RunnerData<'D> -> SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
+            createSystemProxy : RunnerData -> SolverRunnerSystemProxy<'P, 'X, 'C>
             runSolver : SolverRunnerContext<'D, 'P, 'X, 'C> -> unit
         }
 

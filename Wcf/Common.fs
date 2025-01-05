@@ -2,6 +2,7 @@
 
 open System
 
+open Softellect.Sys.Logging
 open Softellect.Wcf.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
@@ -50,7 +51,7 @@ module Common =
                 jsonDeserialize<WcfCommunicationType> s |> Some
             with
             | e ->
-                printfn $"tryCreate: Exception: '%A{e}'."
+                Logger.logError $"tryCreate: Exception: '%A{e}'."
                 None
 
         member c.value = c.ToString()
@@ -116,7 +117,7 @@ module Common =
             match nameof(d.httpServiceAddress) |> tryDeserializeServiceAddress p, nameof(d.httpServicePort) |> tryDeserializeServicePort p, nameof(d.httpServiceName) |> tryDeserializeServiceName p with
             | Some a, Some b, Some c -> HttpServiceAccessInfo.create a b c |> Some
             | _ ->
-                printfn $"HttpServiceAccessInfo.tryDeserialize - Invalid input: '{s}'."
+                Logger.logError $"HttpServiceAccessInfo.tryDeserialize - Invalid input: '{s}'."
                 None
 
 
@@ -151,7 +152,7 @@ module Common =
             match nameof(d.netTcpServiceAddress) |> tryDeserializeServiceAddress p, nameof(d.netTcpServicePort) |> tryDeserializeServicePort p, nameof(d.netTcpServiceName) |> tryDeserializeServiceName p, nameof(d.netTcpSecurityMode) |> tryDeserializeSecurityMode p with
             | Some a, Some b, Some c, Some d -> NetTcpServiceAccessInfo.create a b c d |> Some
             | _ ->
-                printfn $"NetTcpServiceAccessInfo.tryDeserialize - Invalid input: '{s}'."
+                Logger.logError $"NetTcpServiceAccessInfo.tryDeserialize - Invalid input: '{s}'."
                 None
 
 

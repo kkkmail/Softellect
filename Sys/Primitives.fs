@@ -1,12 +1,17 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Diagnostics
 open System.Net
 open System.IO
 open System.Text.RegularExpressions
+open Softellect.Sys.Logging
 
 /// Collection of various primitive abstractions.
 module Primitives =
+
+    let isService() = not Environment.UserInteractive
+
 
     [<Literal>]
     let CopyrightInfo = "MIT License - Copyright Konstantin K. Konstantinov and Alisa F. Konstantinova © 2015 - 2024."
@@ -37,7 +42,7 @@ module Primitives =
     let minutesPerHour = 60<minute/hour>
 
 
-    /// IPAddress cannot be serialized by FsPicler.
+    /// IPAddress cannot be serialized by FsPickler.
     /// Extend when needed.
     type IpAddress =
         | Ip4 of string
@@ -132,6 +137,9 @@ module Primitives =
 
         member this.value = let (FileName v) = this in v
         member this.combine (subFolder : FolderName) = Path.Combine(subFolder.value, this.value) |> FileName
+        member this.addExtension(FileExtension extension) =
+            if extension.StartsWith "." then this.value + extension |> FileName
+            else failwith this.value + "." + extension |> FileName
 
         static member tryCreate (s: string) = FileName s |> Ok
 
@@ -143,7 +151,7 @@ module Primitives =
                 Path.GetExtension(this.value) |> FileExtension |> Some
             with
             | e ->
-                printfn $"FileName.tryGetExtension - Exception: %A{e}."
+                Logger.logError $"FileName.tryGetExtension - Exception: %A{e}."
                 None
 
 
@@ -203,10 +211,11 @@ module Primitives =
 
         member format.fileExtension =
             match format with
-            | BinaryFormat -> "bin"
-            | BinaryZippedFormat -> "binz"
-            | JSonFormat -> "json"
-            | XmlFormat -> "xml"
+            | BinaryFormat -> ".bin"
+            | BinaryZippedFormat -> ".binz"
+            | JSonFormat -> ".json"
+            | XmlFormat -> ".xml"
+            |> FileExtension
 
 
     type RunQueueId =
@@ -254,6 +263,7 @@ module Primitives =
         | ProcessId of int
 
         member this.value = let (ProcessId v) = this in v
+        static member getCurrentProcessId() = Process.GetCurrentProcess().Id |> ProcessId
 
 
     type TextResult =
@@ -279,5 +289,95 @@ module Primitives =
             | TextResult h -> h.fileName
             | BinaryResult b -> b.fileName
 
+        member c.info =
+            match c with
+            | TextResult h -> $"TextResult: '{h.fileName}'"
+            | BinaryResult b -> $"BinaryResult: '{b.fileName}'"
+
 
     let appSettingsFile = FileName "appsettings.json"
+
+
+    type EncryptionType =
+        | AES
+        | RSA
+
+        static member defaultValue = AES
+
+        member e.value = $"%A{e}"
+
+        static member create (s : string) =
+            match s.ToUpper() with
+            | "AES" -> AES
+            | "RSA" -> RSA
+            | _ -> EncryptionType.defaultValue
+
+
+    type KeyId =
+        | KeyId of Guid
+
+        member this.value = let (KeyId v) = this in v
+
+
+    type PublicKey =
+        | PublicKey of string
+
+        member this.value = let (PublicKey v) = this in v
+
+
+    type PrivateKey =
+        | PrivateKey of string
+
+        member this.value = let (PrivateKey v) = this in v
+
+
+    type Sha256Hash =
+        | Sha256Hash of string
+
+        member this.value = let (Sha256Hash v) = this in v
+
+
+    type MonitorResolution =
+        {
+            monitorWidth : int
+            monitorHeight : int
+        }
+
+        static member fullHD =
+            {
+                monitorWidth = 1920
+                monitorHeight = 1080
+            }
+
+        static member fourK =
+            {
+                monitorWidth = 3840
+                monitorHeight = 2160
+            }
+
+
+    type MonitorDpi =
+        {
+            dpiX : int
+            dpiY : int
+        }
+
+
+    type ColorDepth =
+        | ColorDepth of int
+
+        member this.value = let (ColorDepth v) = this in v
+
+
+    type TimerRefreshInterval =
+        | TimerRefreshInterval of int<millisecond>
+
+        member this.value = let (TimerRefreshInterval v) = this in v
+        static member (/) (t : TimerRefreshInterval, divisor : int) = t.value / divisor |> TimerRefreshInterval
+        static member (*) (t : TimerRefreshInterval, multiplier : int) = t.value * multiplier |> TimerRefreshInterval
+        static member (*) (multiplier : int, t : TimerRefreshInterval) = t.value * multiplier |> TimerRefreshInterval
+        static member defaultValue = TimerRefreshInterval 10_000<millisecond>
+        static member oneMinuteValue = TimerRefreshInterval 60_000<millisecond>
+        static member fiveMinutesValue = TimerRefreshInterval 300_000<millisecond>
+        static member tenMinutesValue = TimerRefreshInterval 600_000<millisecond>
+        static member oneHourValue = TimerRefreshInterval 3_600_000<millisecond>

@@ -4,6 +4,7 @@ open System
 
 open System.Threading
 open CoreWCF
+open Softellect.Sys.Logging
 open Softellect.Wcf.Service
 
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfErrors
@@ -20,11 +21,11 @@ module EchoWcfService =
             }
 
         let echoImpl (m : string) : UnitResult =
-            printfn $"Simple message: %A{m}"
+            Logger.logTrace $"Simple message: %A{m}"
             Ok()
 
         let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
-            printfn $"Complex message: %A{m}"
+            Logger.logTrace $"Complex message: %A{m}"
             m |> getReply |> Ok
 
         interface IEchoService with
@@ -38,7 +39,7 @@ module EchoWcfService =
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type EchoWcfService private (data : EchoServiceData) =
         let count = Interlocked.Increment(&serviceCount)
-        do printfn $"EchoWcfService: count = {count}."
+        do Logger.logTrace $"EchoWcfService: count = {count}."
 
         static let getData() = EchoServiceData.create()
         let service = EchoService(data) :> IEchoService

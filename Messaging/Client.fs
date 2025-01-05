@@ -5,6 +5,7 @@ open System.Threading
 
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Sys.Logging
@@ -32,7 +33,6 @@ module Client =
             trySendMessages : unit -> MessagingUnitResult
             tryReceiveMessages : unit -> MessagingUnitResult
             removeExpiredMessages : unit -> MessagingUnitResult
-            getLogger : GetLogger
         }
 
 
@@ -120,7 +120,7 @@ module Client =
 
 
     let private tryTransmitMessages transmitter =
-//        printfn "tryTransmitMessages: starting..."
+        // Logger.logTrace "tryTransmitMessages: starting..."
         let rec doTryTransmit x c =
             match x with
             | [] -> Ok()
@@ -165,27 +165,27 @@ module Client =
 
 
     let private trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
-        printfn "trySendSingleMessage: starting..."
+        Logger.logTrace "trySendSingleMessage: starting..."
         match proxy.tryPickOutgoingMessage() with
         | Ok None ->
-            printfn "trySendSingleMessage: No messages to send."
+            Logger.logTrace "trySendSingleMessage: No messages to send."
             Ok None
         | Ok (Some m) ->
-            printfn $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
+            Logger.logTrace $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
             match proxy.sendMessage m with
             | Ok() ->
                 match proxy.tryDeleteMessage m.messageDataInfo.messageId with
                 | Ok() ->
-                    printfn $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
+                    Logger.logTrace $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
                     m.messageData |> proxy.getMessageSize |> Some |> Ok
                 | Error e ->
-                    printfn $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
+                    Logger.logError $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
                     Error e
             | Error e ->
-                printfn $"trySendSingleMessage: Failed to send message: '%A{m.messageDataInfo}', error: '%A{e}'."
+                Logger.logError $"trySendSingleMessage: Failed to send message: '%A{m.messageDataInfo}', error: '%A{e}'."
                 Error e
         | Error e ->
-            printfn $"trySendSingleMessage: Failed to pick message, error: '%A{e}'."
+            Logger.logError $"trySendSingleMessage: Failed to pick message, error: '%A{e}'."
             Error e
 
 
@@ -217,17 +217,14 @@ module Client =
 
     /// Call this function to create timer events necessary for automatic MessagingClient operation.
     let private createMessagingClientEventHandlers (w : MessagingClientEventHandlersProxy) =
-        let logger = w.getLogger (LoggerName $"createMessagingClientEventHandlers")
-
-        logger.logInfo "createMessagingClientEventHandlers - starting..."
+        Logger.logInfo "createMessagingClientEventHandlers - starting..."
         let eventHandler _ = w.tryReceiveMessages()
         let i = TimerEventInfo.defaultValue "MessagingClient - tryReceiveMessages"
-        logger.logInfo $"%A{i}"
+        Logger.logInfo $"%A{i}"
 
         let proxy =
             {
                 eventHandler = eventHandler
-                getLogger = w.getLogger
                 toErr = fun e -> e |> TimerEventErr
             }
 
@@ -241,7 +238,7 @@ module Client =
         do h.start()
 
         let eventHandler1 _ = w.trySendMessages()
-        let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = RefreshInterval / 3 |> Some }
+        let i1 = { TimerEventInfo.defaultValue "MessagingClient - trySendMessages" with firstDelay = TimerRefreshInterval.defaultValue / 3 |> Some }
 
         let info1 =
             {
@@ -254,7 +251,7 @@ module Client =
         do h1.start()
 
         let eventHandler2 _ = w.removeExpiredMessages()
-        let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * RefreshInterval / 3 |> Some }
+        let i2 = { TimerEventInfo.oneHourValue "MessagingClient - removeExpiredMessages" with firstDelay = 2 * TimerRefreshInterval.defaultValue / 3 |> Some }
 
         let info2 =
             {
@@ -275,7 +272,6 @@ module Client =
         let mutable callCount = -1
         let mutable started = false
         let mutable eventHandlers = []
-        let getLogger = d.msgClientProxy.getLogger
 
         let incrementCount() = Interlocked.Increment(&callCount)
         let decrementCount() = Interlocked.Decrement(&callCount)
@@ -307,7 +303,6 @@ module Client =
                 trySendMessages = trySendMessages
                 tryReceiveMessages = tryReceiveMessages
                 removeExpiredMessages = removeExpiredMessages
-                getLogger = proxy.getLogger
             }
 
         /// Verifies that we have access to the relevant data storage, starts the timers and removes all expired messages.
@@ -328,8 +323,7 @@ module Client =
 
         // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
-            let logger = getLogger (LoggerName $"onTryProcessMessage<{typedefof<'D>.Name}>")
-            printfn $"onTryProcessMessage - starting, callCount = {callCount}."
+            Logger.logTrace $"onTryProcessMessage - starting, callCount = {callCount}."
 
             let retVal =
                 if incrementCount() = 0
@@ -337,7 +331,7 @@ module Client =
                     match proxy.tryPickIncomingMessage() with
                     | Ok (Some m) ->
                         try
-                            printfn $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
+                            Logger.logTrace $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
                             let r = f m
 
                             match proxy.tryDeleteMessage m.messageDataInfo.messageId with
@@ -355,17 +349,15 @@ module Client =
             decrementCount() |> ignore
 
             match retVal.errorOpt, d.logOnError with
-            | Some e, true ->
-                printfn $"onTryProcessMessage - Error: %A{e}."
-                logger.logError $"%A{e}"
-            | _ -> ignore()
+            | Some e, true -> Logger.logError $"%A{e}"
+            | _ -> ()
 
-            printfn $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
+            Logger.logTrace $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
             retVal
 
         // Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
         let onProcessMessages (f : Message<'D> -> MessagingUnitResult) : MessagingUnitResult =
-            printfn "onProcessMessages - Starting..."
+            Logger.logTrace "onProcessMessages - Starting..."
             let elevate e = e |> OnGetMessagesErr
             let addError f e = ((elevate f) + e) |> Error
             let toError e = e |> elevate |> Error
@@ -383,7 +375,7 @@ module Client =
                     | BusyProcessing -> toError BusyProcessingErr
 
             let result = doFold [for _ in 1..maxNumberOfMessages -> ()] (Ok())
-            printfn $"onProcessMessages - result = %A{result}."
+            Logger.logTrace $"onProcessMessages - result = %A{result}."
             result
 
         interface IMessageProcessor<'D> with

@@ -5,6 +5,7 @@ namespace Softellect.Messaging
 open System
 open FSharp.Data.Sql
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Messaging.VersionInfo
 open Softellect.Sys.Core
@@ -28,15 +29,15 @@ module DataAccess =
 
 
     let private getConnectionStringImpl() =
-        let c = getConnectionString appSettingsFile connectionStringKey ConnectionStringValue
-        printfn $"getConnectionStringImpl: %A{c}."
+        let c = getConnectionString connectionStringKey ConnectionStringValue
+        // Logger.logTrace $"getConnectionStringImpl: %A{c}."
         c
 
     let private connectionString = Lazy<ConnectionString>(getConnectionStringImpl)
 
     let private getConnectionString() =
         let c = connectionString.Value
-        printfn $"getConnectionString: %A{c}."
+        // Logger.logTrace $"getConnectionString: %A{c}."
         c
 
 
@@ -178,7 +179,7 @@ module DataAccess =
     ///                when matched then
     ///                    update set senderId = source.senderId, recipientId = source.recipientId, dataVersion = source.dataVersion, deliveryTypeId = source.deliveryTypeId, messageData = source.messageData, createdOn = source.createdOn;
     // let saveMessage<'D> (v : MessagingDataVersion) (m : Message<'D>) =
-    //     printfn $"saveMessage: %A{m.messageDataInfo}"
+    //     Logger.logTrace $"saveMessage: %A{m.messageDataInfo}"
     //     let elevate e = e |> SaveMessageErr
     //     let toError e = e |> CannotSaveMessageErr |> elevate
     //     let fromDbError e = e |> SaveMessageDbErr |> elevate
@@ -197,10 +198,10 @@ module DataAccess =
     //         r.ResultSet |> bindIntScalar toError m.messageDataInfo.messageId
     //
     //     let result = tryDbFun fromDbError g
-    //     printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+    //     Logger.logTrace $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
     //     result
     // let saveMessage<'D> (v : MessagingDataVersion) (m : Message<'D>) =
-    //     printfn $"saveMessage: %A{m.messageDataInfo}"
+    //     Logger.logTrace $"saveMessage: %A{m.messageDataInfo}"
     //     let elevate e = e |> SaveMessageErr
     //     let toError e = e |> CannotSaveMessageErr |> elevate
     //     let fromDbError e = e |> SaveMessageDbErr |> elevate
@@ -219,22 +220,22 @@ module DataAccess =
     //         let x =
     //             match r.ResultSet |> mapIntScalar with
     //             | Some 1 ->
-    //                 printfn $"saveMessage: messageId with %A{m.messageDataInfo.messageId} inserted."
+    //                 Logger.logTrace $"saveMessage: messageId with %A{m.messageDataInfo.messageId} inserted."
     //                 Ok()
     //             | Some v ->
-    //                 printfn $"saveMessage: No row inserted - possible duplicate messageId or constraint issue, %A{m.messageDataInfo.messageId}, v = {v}."
+    //                 Logger.logError $"saveMessage: No row inserted - possible duplicate messageId or constraint issue, %A{m.messageDataInfo.messageId}, v = {v}."
     //                 Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
     //             | None ->
-    //                 printfn $"saveMessage: No row inserted - %A{m.messageDataInfo.messageId}, unknown error."
+    //                 Logger.logError $"saveMessage: No row inserted - %A{m.messageDataInfo.messageId}, unknown error."
     //                 Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
     //
     //         x
     //
     //     let result = tryDbFun fromDbError g
-    //     printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+    //     Logger.logTrace $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
     //     result
     let saveMessage<'D> (v: MessagingDataVersion) (m: Message<'D>) =
-        printfn $"saveMessage: %A{m.messageDataInfo}"
+        Logger.logTrace $"saveMessage: %A{m.messageDataInfo}"
         let elevate e = e |> SaveMessageErr
         let toError e = e |> CannotSaveMessageErr |> elevate
         let fromDbError e = e |> SaveMessageDbErr |> elevate
@@ -253,7 +254,7 @@ module DataAccess =
 
             match existingMessage with
             | Some _ ->
-                printfn $"saveMessage: No row inserted - duplicate messageId %A{m.messageDataInfo.messageId}."
+                Logger.logError $"saveMessage: No row inserted - duplicate messageId %A{m.messageDataInfo.messageId}."
                 Error <| elevate (CannotSaveMessageErr m.messageDataInfo.messageId)
             | None ->
                 // Create a new Message and insert it
@@ -268,20 +269,20 @@ module DataAccess =
 
                 try
                     ctx.SubmitUpdates()
-                    printfn $"saveMessage: messageId %A{m.messageDataInfo.messageId} inserted."
+                    Logger.logTrace $"saveMessage: messageId %A{m.messageDataInfo.messageId} inserted."
                     Ok()
                 with
                 | ex ->
-                    printfn $"saveMessage: Failed to insert messageId %A{m.messageDataInfo.messageId} with exception: %s{ex.Message}."
+                    Logger.logError $"saveMessage: Failed to insert messageId %A{m.messageDataInfo.messageId} with exception: %s{ex.Message}."
                     Error <| elevate (SaveMessageDbErr (DbExn ex))
 
         let result = tryDbFun fromDbError g
-        printfn $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+        Logger.logTrace $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
         result
 
 
     let deleteMessage (messageId : MessageId) =
-        printfn $"deleteMessage: %A{messageId}"
+        Logger.logTrace $"deleteMessage: %A{messageId}"
         let elevate e = e |> DeleteMessageErr
         let toError e = e |> CannotDeleteMessageErr |> elevate
         let fromDbError e = e |> DeleteMessageDbErr |> elevate
@@ -292,7 +293,7 @@ module DataAccess =
             r.ResultSet |> bindIntScalar toError messageId
 
         let result = tryDbFun fromDbError g
-        printfn $"deleteMessage: %A{messageId}, result: %A{result}."
+        Logger.logTrace $"deleteMessage: %A{messageId}, result: %A{result}."
         result
 
 

@@ -11,7 +11,7 @@ open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Newtonsoft.Json.Serialization
-open System.Runtime.InteropServices
+open Softellect.Sys.WindowsApi
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -51,8 +51,14 @@ module Core =
     let unZip (b : byte[]) = b |> unZipBytes |> fromByteArray
 
 
+    let private getCurrentYearStart() : DateTimeOffset =
+        DateTimeOffset(DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0), TimeSpan.Zero)
+
+
     /// Zips the contents of the specified folder and all subfolders.
     let zipFolder (FolderName folderPath) =
+        let dt = getCurrentYearStart()
+
         try
             if not (Directory.Exists(folderPath)) then Error $"Folder {folderPath} does not exist."
             else
@@ -66,14 +72,15 @@ module Core =
                     let rec zipFiles folderPath archiveFolder =
                         let directory = DirectoryInfo(folderPath)
 
-                        for file in directory.GetFiles() do
+                        for file in directory.GetFiles() |> Array.sortBy _.Name do
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
+                            entry.LastWriteTime <- dt // Must use that for a deterministic archive. It will force an update once a year.
                             use entryStream = entry.Open()
                             use fileStream = file.OpenRead()
                             fileStream.CopyTo(entryStream)
 
-                        for subfolder in directory.GetDirectories() do
+                        for subfolder in directory.GetDirectories() |> Array.sortBy _.Name do
                             let subfolderArchivePath = Path.Combine(archiveFolder, subfolder.Name)
                             zipFiles subfolder.FullName subfolderArchivePath
 
@@ -212,7 +219,7 @@ module Core =
             Ok b
         with
         | e ->
-            printfn $"trySerialize: Exception: '%A{e}'."
+            Logger.logTrace $"trySerialize: Exception: '%A{e}'."
             e |> SerializationExn |> Error
 
 
@@ -268,13 +275,13 @@ module Core =
     let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
 
 
-    let timedImplementation<'A> b (l : Logger) name (f : unit -> 'A) =
+    let timedImplementation<'A> b name (f : unit -> 'A) =
         let r, t = time f ()
 
         if t.TotalSeconds <= 10.0
         then
-            if b then l.logInfo $"%s{name}: Execution time: %A{t}"
-        else l.logInfo $"%s{name}: !!! LARGE Execution time: %A{t}"
+            if b then Logger.logInfo $"%s{name}: Execution time: %A{t}"
+        else Logger.logInfo $"%s{name}: !!! LARGE Execution time: %A{t}"
 
         r
 
@@ -485,15 +492,6 @@ module Core =
         p.GetValue(this, null) :?> 'Result
 
 
-    /// See:
-    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
-    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
-    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
-    let getAssemblyLocation() =
-        let x = Uri(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
-        FolderName x
-
-
     type FolderName
         with
 
@@ -505,8 +503,17 @@ module Core =
                 Ok ()
             with
             | e ->
-                printfn $"tryEnsureDirectoryExists: Exception: '%A{e}'."
+                Logger.logError $"tryEnsureDirectoryExists: Exception: '%A{e}'."
                 e |> TryEnsureFolderExistsExn |> Error
+
+
+    /// See:
+    ///     https://stackoverflow.com/questions/278761/is-there-a-net-framework-method-for-converting-file-uris-to-paths-with-drive-le
+    ///     https://stackoverflow.com/questions/837488/how-can-i-get-the-applications-path-in-a-net-console-application
+    ///     https://stackoverflow.com/questions/52797/how-do-i-get-the-path-of-the-assembly-the-code-is-in
+    let getAssemblyLocation() =
+        let x = Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)).LocalPath
+        FolderName x
 
 
     type FileName
@@ -531,11 +538,11 @@ module Core =
                             then Path.Combine(folder, fileName)
                             else Path.Combine(assemblyLocation, folder, fileName)
 
-                printfn $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                Logger.logTrace $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
                 FileName fullPath |> Ok
             with
             | e ->
-                printfn $"tryGetFullFileName: Exception: '%A{e}'."
+                Logger.logError $"tryGetFullFileName: Exception: '%A{e}'."
                 e |> TryGetFullFileNameExn |> Error
 
         member f.tryGetFullFileName() = f.tryGetFullFileName None
@@ -543,11 +550,11 @@ module Core =
         member f.tryGetFullFolderName() =
             try
                 match f.tryGetFullFileName() with
-                | Ok fileName -> Path.GetDirectoryName (fileName.value) |> FolderName |> Ok
+                | Ok fileName -> Path.GetDirectoryName fileName.value |> FolderName |> Ok
                 | Error e -> Error e
             with
             | e ->
-                printfn $"tryGetFolderName: Exception: '%A{e}'."
+                Logger.logError $"tryGetFolderName: Exception: '%A{e}'."
                 e |> TryGetFolderNameExn |> Error
 
         member f.tryEnsureFolderExists() =
@@ -557,7 +564,7 @@ module Core =
                 | Error e -> Error e
             with
             | e ->
-                printfn $"tryEnsureFolderExists: Exception: '%A{e}'."
+                Logger.logError $"tryEnsureFolderExists: Exception: '%A{e}'."
                 e |> TryEnsureFolderExistsExn |> Error
 
         member f.tryGetExtension() =
@@ -565,6 +572,14 @@ module Core =
                 Path.GetExtension(f.value) |> FileExtension |> Ok
             with
             | e ->
-                printfn $"tryGetExtension: Exception: '%A{e}'."
+                Logger.logError $"tryGetExtension: Exception: '%A{e}'."
                 e |> TryGetExtensionExn |> Error
 
+
+    /// Function to check if a monitor data is available.
+    let checkMonitorData() =
+        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
+        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
+        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
+
+        ()

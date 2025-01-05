@@ -2,12 +2,12 @@
 
 . ./Functions.ps1
 . ./WorkerNodeVersionInfo.ps1
-. ./WorkerNodeerviceName.ps1
+. ./WorkerNodeServiceName.ps1
 
 
-function InstallWorkerNodeService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
+function InstallWorkerNodeService([string] $messagingDataVersion = "",  [string] $versionNumber = "", [string] $login = "NT AUTHORITY\LOCAL SERVICE", [string] $password = "")
 {
-    InstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+    InstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber -login $login -password $password
 }
 
 function UninstallWorkerNodeService([string] $messagingDataVersion = "")

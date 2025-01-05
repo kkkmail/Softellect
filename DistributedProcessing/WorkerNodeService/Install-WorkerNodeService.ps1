@@ -1,4 +1,4 @@
-param([string] $messagingDataVersion = "", [string] $versionNumber = "")
+param([string] $messagingDataVersion = "", [string] $versionNumber = "", [string] $login = "NT AUTHORITY\LOCAL SERVICE", [string] $password = "")
 
 . ./WorkerNodeFunctions.ps1
-InstallMessagingService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+InstallWorkerNodeService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber -login $login -password $password

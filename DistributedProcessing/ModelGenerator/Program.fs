@@ -2,13 +2,17 @@
 
 open Softellect.DistributedProcessing.Proxy.ModelGenerator
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
+open Softellect.Sys.AppSettings
 
 module Program =
 
     /// Parameters systemProxy and solverId are passed first, so that they can be baked in and then reused
     /// with different proxies (= models).
     let generateModel<'I, 'D> (systemProxy : ModelGeneratorSystemProxy) solverId (userProxy : ModelGeneratorUserProxy<'I, 'D>) =
+        setLogLevel()
+
         let ctx =
             {
                 userProxy = userProxy
@@ -27,7 +31,7 @@ module Program =
                 modelData = ctx.userProxy.generateModelData input
             }
 
-        printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData: '%A{modelData}'."
+        Logger.logInfo $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', modelData.GetType().Name = '%A{modelData.GetType().Name}', modelData: '%A{modelData}'."
 
         let binaryData = modelData.toModelBinaryData()
         let runQueueId = RunQueueId.getNewId()
@@ -35,5 +39,5 @@ module Program =
         match ctx.systemProxy.saveModelData runQueueId ctx.solverId binaryData with
         | Ok() -> Ok binaryData
         | Error e ->
-            printfn $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', ERROR: '%A{e}'."
+            Logger.logError $"generateModel<{typeof<'I>.Name}, {typeof<'D>.Name}> - solverId: '{solverId}', ERROR: '%A{e}'."
             Error e

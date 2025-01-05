@@ -22,14 +22,20 @@ module Common =
     let SolverRunnerProcessName = "SolverRunner"
 
 
+    /// TODO kk:20241208 - Make it configurable.
+    let defaultMaxRetries = 3
+
+
     /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
     /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
     let private serializationFormat = BinaryZippedFormat
 
 
-    /// The progress data should be human readable, so that a query can be run to check the detailed progress.
+    /// The progress data should be human-readable, so that a query can be run to check the detailed progress.
     /// JSON is supported by MSSQL and so it is a good choice.
     let private progressSerializationFormat = JSonFormat
+
+    let solverSerializationFormat = BinaryZippedFormat
 
     let serializeProgress = jsonSerialize
     let deserializeProgress<'T> = jsonDeserialize<'T>
@@ -121,15 +127,17 @@ module Common =
         {
             progress : decimal // Progress in the range [0.0, 1.0]
             callCount : int64
+            processId : ProcessId option
             evolutionTime : EvolutionTime // Evolution time of the system. May coincide with callCount in some cases.
             relativeInvariant : RelativeInvariant // Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
             errorMessageOpt : ErrorMessage option
         }
 
-        static member defaultValue : ProgressInfo =
+        static member defaultValue pid =
             {
                 progress = 0.0m
                 callCount = 0L
+                processId = pid
                 evolutionTime = EvolutionTime.defaultValue
                 relativeInvariant = RelativeInvariant.defaultValue
                 errorMessageOpt = None
@@ -144,9 +152,9 @@ module Common =
             progressDetailed : string option
         }
 
-        static member defaultValue : ProgressData =
+        static member defaultValue pid =
             {
-                progressInfo = ProgressInfo.defaultValue
+                progressInfo = ProgressInfo.defaultValue pid
                 progressDetailed = None
             }
 
@@ -160,9 +168,9 @@ module Common =
             progressDetailed : 'P option
         }
 
-        static member defaultValue : ProgressData<'P> =
+        static member defaultValue pid : ProgressData<'P> =
             {
-                progressInfo = ProgressInfo.defaultValue
+                progressInfo = ProgressInfo.defaultValue pid
                 progressDetailed = None
             }
 
@@ -210,13 +218,26 @@ module Common =
         member this.folderName = this.value |> FolderName
 
 
+    type SolverData =
+        | SolverData of byte[]
+
+        member this.value = let (SolverData v) = this in v
+
+
     type Solver =
         {
             solverId : SolverId
             solverName : SolverName
             description : string option
-            solverData : byte[] option
+            solverData : SolverData option
+            solverHash : Sha256Hash
         }
+
+
+    type EncryptedSolver =
+        | EncryptedSolver of byte[]
+
+        member this.value = let (EncryptedSolver v) = this in v
 
 
     type SolverRunnerInfo =
@@ -256,20 +277,6 @@ module Common =
         }
 
 
-    type WorkerNodeMessage =
-        | RunModelWrkMsg of (RunQueueId * SolverId * ModelBinaryData)
-        | CancelRunWrkMsg of (RunQueueId * CancellationType)
-        | RequestResultsWrkMsg of (RunQueueId * ResultNotificationType)
-        | UpdateSolverWrkMsg of Solver
-
-        member this.messageSize =
-            match this with
-            | RunModelWrkMsg _ -> LargeSize
-            | CancelRunWrkMsg _ -> SmallSize
-            | RequestResultsWrkMsg _ -> SmallSize
-            | UpdateSolverWrkMsg _ -> LargeSize
-
-
     /// Number of minutes for worker node errors to expire before the node can be again included in work distribution.
     type LastAllowedNodeErr =
         | LastAllowedNodeErr of int<minute>
@@ -278,7 +285,7 @@ module Common =
         static member defaultValue = LastAllowedNodeErr 60<minute>
 
 
-    /// Information about a worker node to be passed to partitioner.
+    /// Information about a worker node to be passed to a partitioner.
     type WorkerNodeInfo =
         {
             workerNodeId : WorkerNodeId
@@ -287,7 +294,7 @@ module Common =
             noOfCores : int
             nodePriority : WorkerNodePriority
             isInactive : bool
-            lastErrorDateOpt : DateTime option
+            solverEncryptionType : EncryptionType
         }
 
 
@@ -297,6 +304,10 @@ module Common =
             resultLocation : FolderName
             solverLocation : FolderName
             solverOutputLocation : FolderName
+            lastErrMinAgo : float<minute>
+
+            // TODO kk:20241201 - Add appsettings.json settings for messaging & other timer events.
+            // x : TimerRefreshInterval
         }
 
 
@@ -305,6 +316,7 @@ module Common =
             partitionerId : PartitionerId
             resultLocation : FolderName
             lastAllowedNodeErr : LastAllowedNodeErr
+            solverEncryptionType : EncryptionType
         }
 
 
@@ -320,73 +332,27 @@ module Common =
         {
             runQueueId : RunQueueId
             results : list<CalculationResult>
+            optionalFolder : FolderName option
         }
 
-
-    type PartitionerMessage =
-        | UpdateProgressPrtMsg of ProgressUpdateInfo
-        | SaveResultsPrtMsg of ResultInfo
-        | RegisterWorkerNodePrtMsg of WorkerNodeInfo
-        | UnregisterWorkerNodePrtMsg of WorkerNodeId
-
-        member this.messageSize =
-            match this with
-            | UpdateProgressPrtMsg _ -> SmallSize
-            | SaveResultsPrtMsg _ -> MediumSize
-            | RegisterWorkerNodePrtMsg _ -> SmallSize
-            | UnregisterWorkerNodePrtMsg _ -> SmallSize
+        member r.info =
+            let c = r.results|> List.map _.info |> joinStrings ", "
+            $"%A{r.runQueueId}, results: {c}"
 
 
-    type DistributedProcessingMessageData =
-        | PartitionerMsg of PartitionerMessage // A message sent from worker node to partitioner.
-        | WorkerNodeMsg of WorkerNodeMessage // A message sent from partitioner to worker node.
-
-        static member maxInfoLength = 500
-
-        member this.getMessageSize() =
-            match this with
-            | PartitionerMsg m -> m.messageSize
-            | WorkerNodeMsg m -> m.messageSize
-
-
-    type DistributedProcessingMessage = Message<DistributedProcessingMessageData>
-    type DistributedProcessingMessageInfo = MessageInfo<DistributedProcessingMessageData>
-
-
-    type PartitionerMessageInfo =
+    type LocationInfo =
         {
-            partitionerRecipient : PartitionerId
-            deliveryType : MessageDeliveryType
-            messageData : PartitionerMessage
+            location : FolderName
+            solverName : SolverName
         }
 
-        member this.getMessageInfo() =
-            {
-                recipientInfo =
-                    {
-                        recipient = this.partitionerRecipient.messagingClientId
-                        deliveryType = this.deliveryType
-                    }
-                messageData = this.messageData |> PartitionerMsg |> UserMsg
-            }
 
-
-    type WorkerNodeMessageInfo =
+    /// Same as LocationInfo but with additional optional folder.
+    type LocationDetailedInfo =
         {
-            workerNodeRecipient : WorkerNodeId
-            deliveryType : MessageDeliveryType
-            messageData : WorkerNodeMessage
+            locationInfo : LocationInfo
+            optionalFolder : FolderName option
         }
-
-        member this.getMessageInfo() =
-            {
-                recipientInfo =
-                    {
-                        recipient = this.workerNodeRecipient.messagingClientId
-                        deliveryType = this.deliveryType
-                    }
-                messageData = this.messageData |> WorkerNodeMsg |> UserMsg
-            }
 
 
     type WorkerNodeServiceName =
@@ -431,6 +397,10 @@ module Common =
         | NoWork
         | NoAvailableWorkerNodes
 
+
+    type CheckRunningRequest =
+        | AnyRunning of FileName
+        | RunQueueRunning of int option * RunQueueId
 
     type CheckRunningResult =
         | CanRun
@@ -559,3 +529,15 @@ module Common =
             odeSolverType : OdeSolverType
             derivative : DerivativeCalculator
         }
+
+
+    type RetryInto =
+        {
+            retryCount : int
+            maxRetries : int
+        }
+
+
+    type RetryState =
+        | CanRetry
+        | ExceededRetryCount of RetryInto

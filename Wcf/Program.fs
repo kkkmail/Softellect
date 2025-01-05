@@ -8,6 +8,7 @@ open Microsoft.Extensions.Logging
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Wcf.Service
 open Softellect.Wcf.Common
+open Softellect.Sys.Primitives
 open System.Net
 open CoreWCF.Configuration
 open Microsoft.AspNetCore.Hosting
@@ -25,25 +26,33 @@ module Program =
             getWcfService : 'IService -> 'WcfService
             saveSettings : unit -> unit
             configureServices : (IServiceCollection -> unit) option
+            configureServiceLogging : ILoggingBuilder -> unit
+            configureLogging : ILoggingBuilder -> unit
+            postBuildHandler : (ServiceAccessInfo -> IHost -> unit) option
         }
 
 
     /// IService is the underlying service that does the actual work.
     /// IWcfService is the WCF service interface that is exposed to the client.
     /// WcfService is the implementation of the WCF service.
-    let private createHostBuilder<'IService, 'IWcfService, 'WcfService 
+    let private createHostBuilder<'IService, 'IWcfService, 'WcfService
         when 'IService :> IHostedService and 'IService : not struct
-        and 'IWcfService : not struct 
+        and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
         Host.CreateDefaultBuilder()
             .UseWindowsService()
 
             .ConfigureLogging(fun logging ->
-                logging.ClearProviders() |> ignore
-                logging.AddConsole() |> ignore  // Add console logging
-                logging.AddDebug() |> ignore    // Add debug logging
-                logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
+                match isService() with
+                | true -> data.configureServiceLogging logging
+                | false -> data.configureLogging logging)
+
+                // if isService then
+                // else
+                //     logging.AddConsole() |> ignore  // Add console logging
+                //     logging.AddDebug() |> ignore    // Add debug logging
+                //     logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
 
             .ConfigureServices(fun hostContext services ->
                 let service = data.getService()
@@ -77,20 +86,33 @@ module Program =
         when 'IService :> IHostedService and 'IService : not struct
         and 'IWcfService : not struct
         and 'WcfService : not struct> programName data argv =
-        printfn $"main<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
-        let runHost() = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build().Run()
+
+        let logStarting() =
+            Softellect.Sys.Logging.Logger.logInfo $"wcfMain<{typeof<'IService>.Name}, {typeof<'IWcfService>.Name}, {typeof<'WcfService>.Name}> - data.serviceAccessInfo = '{data.serviceAccessInfo}'."
+
+        let runHost() =
+            let host = createHostBuilder<'IService, 'IWcfService, 'WcfService>(data).Build()
+            logStarting()
+
+            match data.postBuildHandler with
+            | Some p -> p data.serviceAccessInfo host
+            | None -> ()
+
+            host.Run()
 
         try
             let parser = ArgumentParser.Create<SettingsArguments>(programName = programName)
             let results = (parser.Parse argv).GetAllResults()
 
             match SettingsTask.tryCreate data.saveSettings results with
-            | Some task -> task.run()
+            | Some task ->
+                logStarting()
+                task.run()
             | None -> runHost()
 
             CompletedSuccessfully
 
         with
         | exn ->
-            printfn $"%s{exn.Message}"
+            Softellect.Sys.Logging.Logger.logCrit $"%s{exn.Message}"
             UnknownException

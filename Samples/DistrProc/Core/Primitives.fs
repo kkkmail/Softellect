@@ -3,6 +3,7 @@
 open System
 open System.Threading
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Logging
 
 module Primitives =
 
@@ -25,7 +26,7 @@ module Primitives =
     /// https://en.wikipedia.org/wiki/Lorenz_system
     /// Interesting values: sigma = 10, rho = 28, beta = 8/3
     let lorenzSystem (sigma: double) (rho: double) (beta: double) (t: double) (x: double[]) (i: int): double =
-        printfn $"lorenzSystem: t = {t}."
+        Logger.logTrace $"lorenzSystem: t = {t}."
         // Thread.Sleep(1_000_000) // Frees the derivative like forever.
 
         match i with
@@ -64,13 +65,13 @@ module Primitives =
                     let g t x i =
                         if i = 0
                         then
-                            printfn $"Sleeping for {e} ms..."
+                            Logger.logTrace $"Sleeping for {e} ms..."
                             Thread.Sleep(e)
                         f t x i
                     OneByOne g
                 | FullArray f ->
                     let g t x =
-                        printfn $"Sleeping for {e} ms..."
+                        Logger.logTrace $"Sleeping for {e} ms..."
                         Thread.Sleep(e)
                         f t x
                     FullArray g

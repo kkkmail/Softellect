@@ -1,13 +1,14 @@
 ﻿namespace Softellect.Samples.DistrProc.SolverRunner
 
 open System
-open Softellect.Sys.AppSettings
 open Softellect.Sys.ExitErrorCodes
+open Softellect.DistributedProcessing.SolverRunner.Implementation
 open Softellect.DistributedProcessing.SolverRunner.Program
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Samples.DistrProc.Core.Primitives
 open Softellect.DistributedProcessing.SolverRunner.Primitives
 open Softellect.DistributedProcessing.SolverRunner.OdeSolver
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open Plotly.NET
@@ -74,7 +75,7 @@ module Program =
 
 
     let getWolframChart (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        let w = loadWolframParams()
+        let w = getSolverWolframParams solverId
 
         match tryGetInputFileName w.wolframInputFolder q, tryGetOutputFileName w.wolframOutputFolder q with
         | Ok i, Ok o ->
@@ -86,14 +87,16 @@ module Program =
                 c1.Head.resultData.x
                 |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
 
-            getListLinePlot i o ListLineParams.defaultValue d
+            let p = { ListLineParams.defaultValue with imageSize = UserDefinedImageSize "1000" |> Some}
+
+            getListLinePlot i o p d
         | _ ->
-            printfn $"getWolframChart - Cannot get data for: %A{q}."
+            Logger.logError $"getWolframChart - Cannot get data for: %A{q}."
             None
 
 
     let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        printfn $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
+        Logger.logTrace $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
 
         let charts =
             match c |> List.tryHead with
@@ -116,6 +119,10 @@ module Program =
     let main argv =
         let retVal =
             try
+                // To check that invariant is actually passed back.
+                let rnd = Random()
+                let getInvariant() = (1.0 + (rnd.NextDouble() - 0.5) * 0.0001) |> RelativeInvariant
+
                 let chartGenerator =
                     {
                         getResultData = fun _ _ (x : double[]) -> { x = x }
@@ -130,7 +137,8 @@ module Program =
                         {
                             getInitialData = _.initialValues
                             getProgressData = None
-                            getInvariant = fun _ _ _ -> RelativeInvariant 1.0
+                            getInvariant = fun _ _ _ -> getInvariant()
+                            getOptionalFolder = fun _ _ -> None
                         }
 
                     {
@@ -140,11 +148,11 @@ module Program =
                     }
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>
-                printfn "Calling solverRunnerMain..."
+                Logger.logTrace "Calling solverRunnerMain..."
                 solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->
-                Console.WriteLine($"Exception: %A{e}.")
+                Logger.logCrit($"Exception: %A{e}.")
                 CriticalError
 
         // Console.ReadLine() |> ignore

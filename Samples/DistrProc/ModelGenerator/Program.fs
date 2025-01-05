@@ -7,6 +7,7 @@ open Softellect.Sys.ExitErrorCodes
 open Softellect.DistributedProcessing.Proxy.ModelGenerator
 open Softellect.Samples.DistrProc.ModelGenerator.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.Sys.Logging
 
 module Program =
 
@@ -45,6 +46,6 @@ module Program =
         let systemProxy = ModelGeneratorSystemProxy.create()
 
         let result = generateModel<TestInitialData, TestSolverData> systemProxy solverId userProxy
-        printfn $"result: '%A{result}'."
+        Logger.logInfo $"result: '%A{result}'."
 
         CompletedSuccessfully

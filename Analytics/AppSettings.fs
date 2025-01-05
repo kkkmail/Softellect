@@ -1,15 +1,19 @@
 ﻿namespace Softellect.Analytics
 
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 
 module AppSettings =
     let private mathKernelFileNameKey = ConfigKey "MathKernelFileName"
     let private wolframInputFolderKey = ConfigKey "WolframInput"
     let private wolframOutputFolderKey = ConfigKey "WolframOutput"
+    let private useMathLinkKey = ConfigKey "UseMathLink"
 
 
-    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
+    // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\mathkernel.exe" |> FileName
+    // let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Mathematica\\13.0\\math.exe" |> FileName
+    let private defaultMathKernelFileName = "C:\\Program Files\\Wolfram Research\\Wolfram\\14.1\\math.exe" |> FileName
     let private defaultWolframInputFolder = "C:\\Wolfram\\Input\\" |> FolderName
     let private defaultWolframOutputFolder = "C:\\Wolfram\\Output\\" |> FolderName
 
@@ -42,13 +46,13 @@ module AppSettings =
             let w = appSettingsProvider.getWolframParams()
 
             if save then
-                printfn $"loadWolframParams - w = %A{w}."
+                Logger.logTrace $"loadWolframParams - w = %A{w}."
                 match appSettingsProvider.trySave() with
-                | Ok () -> printfn $"loadWolframParams - saved."
-                | Error e -> printfn $"loadWolframParams - error: %A{e}."
+                | Ok () -> Logger.logTrace $"loadWolframParams - saved."
+                | Error e -> Logger.logError $"loadWolframParams - error: %A{e}."
             w
         | Error e ->
-            printfn $"loadWolframParams - error: %A{e}."
+            Logger.logError $"loadWolframParams - error: %A{e}."
 
             {
                 mathKernel = defaultMathKernelFileName

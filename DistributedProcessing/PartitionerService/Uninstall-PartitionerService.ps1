@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "")
 
-. ./MessagingFunctions.ps1
-UninstallMessagingService -messagingDataVersion $messagingDataVersion
+. ./PartitionerFunctions.ps1
+UninstallPartitionergService -messagingDataVersion $messagingDataVersion

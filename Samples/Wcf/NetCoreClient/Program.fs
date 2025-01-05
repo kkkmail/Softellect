@@ -7,6 +7,7 @@ open System.IO
 open System.Net.Http
 
 open Softellect.Samples.Wcf.NetCoreClient.EchoClient
+open Softellect.Sys.Logging
 
 /// Port of C# CoreWCF client example.
 module Program =
@@ -26,7 +27,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        printfn "%s" ("http Echo(\"Hello\") => " + channel.echo("Hello"))
+        Logger.logTrace (sprintf "%s" ("http Echo(\"Hello\") => " + channel.echo("Hello")))
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -34,7 +35,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        printfn "%s" ("net.tcp Echo(\"Hello\") => " + channel.echo("Hello"))
+        Logger.logTrace (sprintf "%s" ("net.tcp Echo(\"Hello\") => " + channel.echo("Hello")))
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -43,7 +44,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        printfn "%s" ("http EchoMessage(\"Complex Hello\") => " + channel.complexEcho(createEchoMessage()))
+        Logger.logTrace (sprintf "%s" ("http EchoMessage(\"Complex Hello\") => " + channel.complexEcho(createEchoMessage())))
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -67,7 +68,7 @@ module Program =
         //let response = httpClient.Send(webRequest)
         //let reader = new StreamReader(response.Content.ReadAsStream())
         //let responseBody = reader.ReadToEnd()
-        //printfn "%s" ("Http SOAP Response: " + responseBody)
+        //Logger.logTrace (sprintf "%s" ("Http SOAP Response: " + responseBody))
 
         // Prepare the raw content.
         let utf8Encoder = new UTF8Encoding()
@@ -88,7 +89,7 @@ module Program =
         use responseStream = webRequest.GetResponse().GetResponseStream()
         use responseReader = new StreamReader(responseStream)
         let soapResponse = responseReader.ReadToEnd()
-        printfn "%s" ("Http SOAP Response: " + soapResponse)
+        Logger.logTrace (sprintf "%s" ("Http SOAP Response: " + soapResponse))
         ()
 
 
@@ -97,6 +98,6 @@ module Program =
         do callUsingWcf()
         do callUsingWebRequest()
 
-        printfn "Hit enter to exit."
+        Logger.logInfo "Hit enter to exit."
         Console.ReadLine() |> ignore
         0

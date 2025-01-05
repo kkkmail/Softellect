@@ -7,19 +7,24 @@ open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.WorkerNodeService.Worker
 open Softellect.DistributedProcessing.WorkerNodeService.WorkerNode
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeService
+open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
+open Softellect.Sys.WindowsApi
 open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.WorkerNodeService
 open Softellect.DistributedProcessing.Primitives.WorkerNodeService
-open Softellect.Sys.Logging
+open Softellect.DistributedProcessing.Messages
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
+open Softellect.Sys.Core
 
 module Program =
 
     let workerNodeMain argv =
+        setLogLevel()
         let workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
-        let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize
 
         let messagingClientProxyInfo =
@@ -29,7 +34,7 @@ module Program =
                 storageType = MsSqlDatabase
             }
 
-        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getMessageSize messagingClientProxyInfo
 
         let messagingClientData =
             {
@@ -39,7 +44,7 @@ module Program =
             }
 
 
-        let proxy = WorkerNodeProxy.create workerNodeServiceInfo.workerNodeLocalInto
+        let proxy = WorkerNodeProxy.create workerNodeServiceInfo
 
         let data =
             {
@@ -50,21 +55,37 @@ module Program =
 
         let saveSettings() =
             //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            //printfn $"saveSettings - result: '%A{result}'."
+            //Logger.logCrit $"saveSettings - result: '%A{result}'."
+            Logger.logCrit $"saveSettings is not implemented yet'."
             failwith "saveSettings is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
-            let runner = new WorkerNodeRunner(data)
+            let runner = WorkerNodeRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
+
+        let projectName = getProjectName() |> Some
+
+        let postBuildHandler _ _ =
+            Logger.logInfo $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
+            checkMonitorData()
+
+            // match tryChangeResolution MonitorResolution.fullHD with
+            // | Ok() -> ()
+            // | Error e -> Logger.logError $"%A{e}"
+            //
+            // checkMonitorData()
 
         let programData =
             {
                 serviceAccessInfo = data.workerNodeServiceInfo.workerNodeServiceAccessInfo
-                getService = fun () -> new WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
-                getWcfService = fun service -> new WorkerNodeWcfService(service)
+                getService = fun () -> WorkerNodeService(data.workerNodeServiceInfo) :> IWorkerNodeService
+                getWcfService = fun service -> WorkerNodeWcfService(service)
                 saveSettings = saveSettings
                 configureServices = Some configureServices
+                configureServiceLogging = configureServiceLogging projectName
+                configureLogging = configureLogging projectName
+                postBuildHandler = Some postBuildHandler
             }
 
-        printfn $"workerNodeMain - workerNodeServiceInfo: %A{workerNodeServiceInfo}."
+
         wcfMain<IWorkerNodeService, IWorkerNodeWcfService, WorkerNodeWcfService> workerNodeServiceProgramName programData argv

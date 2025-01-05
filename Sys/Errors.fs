@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open Softellect.Sys.Primitives
 
 /// Collection of general errors & related functionality.
 module Errors =
@@ -42,7 +43,7 @@ module Errors =
         | GeneralFileExn of exn
         | GetFolderNameExn of exn
         | GetFileNameExn of exn
-        | FileNotFoundErr of string
+        | FileNotFoundErr of FileName
         | ReadFileExn of exn
         | WriteFileExn of exn
         | DeleteFileExn of exn
@@ -75,6 +76,29 @@ module Errors =
         | StillRunningEventHandlerErr of LongRunningEventInfo
 
 
+    type CryptoError =
+        | SignDataExn of exn
+        | TryEncryptAesExn of exn
+        | TryDecryptAesExn of exn
+        | TryEncryptRsaExn of exn
+        | TryDecryptRsaExn of exn
+        | VerifySignatureExn of exn
+        | VerifySignatureFailedError
+        | KeyFileExistErr of FileName
+        | MissingKeyId
+        | KeyExportExn of exn
+        | KeyMismatchErr of (KeyId * FileName)
+        | KeyImportExn of exn
+        | KeyImportFileErr of FileError
+        | KeyImportMissingIdErr
+
+
+    type WindowsApiError =
+        | WindowsApiExn of exn
+        | WindowsApiCallErr of string
+        | WindowsApiDisallowedOperationErr of string
+
+
     type SysError =
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
@@ -82,3 +106,5 @@ module Errors =
         | DbErr of DbError
         | FileErr of FileError
         | TimerEventErr of TimerEventError
+        | CryptoErr of CryptoError
+        | WindowsApiErr of WindowsApiError

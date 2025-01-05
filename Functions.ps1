@@ -98,7 +98,7 @@ function UninstallService([string] $serviceName)
     }
 }
 
-function StartSertice([string] $serviceName)
+function StartService([string] $serviceName)
 {
     Write-Host "Attempting to start service: $serviceName..."
     $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
@@ -176,7 +176,7 @@ function ReinstallService ([string] $serviceName, [string] $binaryPath, [string]
     Write-Host "    Installed service: $serviceName."
 
     # Trying to start new service.
-    StartSertice -serviceName $serviceName
+    StartService -serviceName $serviceName
 }
 
 function GetValueOrDefault([string] $value, [string] $messagingDataVersion, [string] $defaultValue)
@@ -208,13 +208,13 @@ function GetDescription([string] $serviceName, [string] $messagingDataVersion, [
     return $description
 }
 
-function InstallSvc([string] $serviceName, [string] $messagingDataVersion = "",  [string] $versionNumber = "")
+function InstallSvc([string] $serviceName, [string] $messagingDataVersion = "",  [string] $versionNumber = "", [string] $login = "NT AUTHORITY\LOCAL SERVICE", [string] $password = "")
 {
     $versionNumber = GetValueOrDefault -value $versionNumber -defaultValue $global:versionNumber
     [string] $windowsServiceName = GetServiceName -serviceName $serviceName -messagingDataVersion $messagingDataVersion
     [string] $binaryPath = GetBinaryPathName -serviceName $serviceName
     [string] $description = GetDescription -serviceName $serviceName -versionNumber $versionNumber -messagingDataVersion $messagingDataVersion
-    ReinstallService -serviceName $windowsServiceName -binaryPath $binaryPath -description $description
+    ReinstallService -serviceName $windowsServiceName -binaryPath $binaryPath -description $description -login $login -password $password
 }
 
 function UninstallSvc([string] $serviceName, [string] $messagingDataVersion = "")
@@ -227,7 +227,7 @@ function UninstallSvc([string] $serviceName, [string] $messagingDataVersion = ""
 function StartSvc([string] $serviceName, [string] $messagingDataVersion = "")
 {
     [string] $windowsServiceName = GetServiceName -serviceName $serviceName -messagingDataVersion $messagingDataVersion
-    StartSertice -serviceName $windowsServiceName
+    StartService -serviceName $windowsServiceName
 }
 
 function StopSvc([string] $serviceName, [string] $messagingDataVersion = "")

@@ -1,4 +1,5 @@
 ﻿namespace Softellect.Sys
+open Microsoft.Identity.Client
 open Newtonsoft.Json.Linq
 
 open System
@@ -10,6 +11,7 @@ open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
+open Softellect.Sys.Logging
 
 module AppSettings =
 
@@ -49,10 +51,13 @@ module AppSettings =
 
         static member appSettings = ConfigSection "appSettings"
         static member connectionStrings = ConfigSection "connectionStrings"
+        static member logging = ConfigSection "Logging"
 
 
     type ConfigKey =
         | ConfigKey of string
+
+        static member projectName = ConfigKey "ProjectName"
 
 
     let private trySet jsonObj (ConfigSection section) (ConfigKey key) value =
@@ -101,6 +106,27 @@ module AppSettings =
                     | true, value when value <> null -> value.ToString() |> Some |> Ok
                     | _ -> Ok None
             | _ -> Ok None
+        with
+        | e -> Error e
+
+
+    let private tryGetNestedString (jsonObj: JObject) (sections: string list) =
+        try
+            let rec getValue (currentObj: JObject) (keys: string list) =
+                match keys with
+                | [] -> Ok None // No more keys to traverse
+                | [lastKey] -> // Final key to retrieve the value
+                    match currentObj.TryGetValue(lastKey) with
+                    | true, value when value <> null -> Ok(Some(value.ToString()))
+                    | _ -> Ok None
+                | key :: rest -> // Traverse deeper into the JSON object
+                    match currentObj.TryGetValue(key) with
+                    | true, value ->
+                        match value with
+                        | :? JObject as nestedObj -> getValue nestedObj rest
+                        | _ -> Ok None
+                    | _ -> Ok None
+            getValue jsonObj sections
         with
         | e -> Error e
 
@@ -242,15 +268,6 @@ module AppSettings =
     /// Currently it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
     type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject, setOnMissing : bool) =
-        // member _.tryGetString key = tryGetString jsonObj ConfigSection.appSettings key
-        // member _.tryGetInt key = tryGetInt jsonObj ConfigSection.appSettings key
-        // member _.tryGetDecimal key = tryGetDecimal jsonObj ConfigSection.appSettings key
-        // member _.tryGetDouble key = tryGetDouble jsonObj ConfigSection.appSettings key
-        // member _.tryGetGuid key = tryGetGuid jsonObj ConfigSection.appSettings key
-        // member _.tryGetBool key = tryGetBool jsonObj ConfigSection.appSettings key
-        // member _.tryGetFolderName key = tryGetFolderName jsonObj ConfigSection.appSettings key
-        // member _.tryGetFileName key = tryGetFileName jsonObj ConfigSection.appSettings key
-
         member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
@@ -275,16 +292,33 @@ module AppSettings =
         member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
 
         member _.trySave() =
-            printfn $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
+            Logger.logTrace $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
             trySaveJson fileName jsonObj
 
         member _.trySaveAs newFileName = trySaveJson newFileName jsonObj
         member _.setOnMissing = setOnMissing
 
+        member _.getLogLevel() =
+            match tryGetNestedString jsonObj ["Logging"; "LogLevel"; "Default"] with
+            | Ok(Some value) ->
+                match LogLevel.tryDeserialize value with
+                | Some v -> v
+                | None ->
+                    printfn $"Invalid log level value: '{value}'."
+                    LogLevel.defaultValue
+            | Ok None ->
+                printfn "Logging key not found"
+                LogLevel.defaultValue
+            | Error e ->
+                printfn $"ERROR: %A{e}"
+                LogLevel.defaultValue
+
+        member a.getProjectName() = a.getStringOrDefault ConfigKey.projectName ProjectName.defaultValue.value |> ProjectName
+
         member a.save() =
             match a.trySave() with
             | Ok () -> ()
-            | Error e -> printfn $"AppSettingsProvider.save - ERROR: '%A{e}'."
+            | Error e -> Logger.logError $"AppSettingsProvider.save - ERROR: '%A{e}'."
 
         static member tryCreate (fileName : FileName) =
             match fileName.tryGetFullFileName() with
@@ -328,3 +362,20 @@ module AppSettings =
                 SettingsTask.tryCreateSaveSettingsTask s
             ]
             |> List.tryPick (fun e -> e p)
+
+
+    let setLogLevel() =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let logLevel = provider.getLogLevel()
+            Logger.logInfo $"setLogLevel: Setting log level to '%A{logLevel}'."
+            Logger.setMinLogLevel logLevel
+        | Error e -> Logger.logError $"setLogLevel: ERROR - '%A{e}'."
+
+
+    let getProjectName() =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider -> provider.getProjectName()
+        | Error e ->
+            Logger.logError $"setLogLevel: ERROR - '%A{e}'."
+            ProjectName.defaultValue

@@ -9,17 +9,19 @@ open Softellect.Wcf.Program
 open Softellect.DistributedProcessing.Proxy.PartitionerService
 open Softellect.DistributedProcessing.Primitives.PartitionerService
 open Softellect.DistributedProcessing.PartitionerService.Partitioner
+open Softellect.DistributedProcessing.Messages
 open Softellect.Sys.Logging
 open Softellect.Messaging.ServiceProxy
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
 
 module Program =
 
     let partitionerMain argv =
-        printfn $"partitionerMain - argv: %A{argv}."
+        setLogLevel()
+
         let partitionerServiceInfo : PartitionerServiceInfo = loadPartitionerServiceInfo messagingDataVersion
-        let getLogger = fun _ -> Logger.defaultValue
         let getMessageSize _ = SmallSize
 
         let messagingClientProxyInfo =
@@ -29,7 +31,7 @@ module Program =
                 storageType = MsSqlDatabase
             }
 
-        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getLogger getMessageSize messagingClientProxyInfo
+        let msgClientProxy = createMessagingClientProxy<DistributedProcessingMessageData> getMessageSize messagingClientProxyInfo
 
         let messagingClientData =
             {
@@ -49,13 +51,20 @@ module Program =
             }
 
         let saveSettings() =
-            //let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            //printfn $"saveSettings - result: '%A{result}'."
-            failwith ""
+            // let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
+            // Logger.logTrace $"saveSettings - result: '%A{result}'."
+            Logger.logCrit $"saveSettings - is not implemented yet."
+            failwith "saveSettings - is not implemented yet."
 
         let configureServices (services : IServiceCollection) =
             let runner = PartitionerRunner(data)
             services.AddSingleton<IHostedService>(runner :> IHostedService) |> ignore
+
+        let projectName = getProjectName() |> Some
+
+        let postBuildHandler _ _ =
+            Logger.logTrace $"partitionerMain - argv: %A{argv}."
+            Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
 
         let programData =
             {
@@ -64,7 +73,9 @@ module Program =
                 getWcfService = PartitionerWcfService
                 saveSettings = saveSettings
                 configureServices = Some configureServices
+                configureServiceLogging = configureServiceLogging projectName
+                configureLogging = configureLogging projectName
+                postBuildHandler = Some postBuildHandler
             }
 
-        printfn $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
         wcfMain<IPartitionerService, IPartitionerWcfService, PartitionerWcfService> partitionerServiceProgramName programData argv

@@ -8,6 +8,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.FSharp.Core.Operators
 open Softellect.Sys.Core
+open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 
 module Service =
@@ -30,23 +31,23 @@ module Service =
     /// Service reply.
     let tryReply p f a =
 //        let count = Interlocked.Increment(&serviceCount)
-//        printfn $"tryReply - {count}: Starting..."
+//        Logger.logTrace $"tryReply - {count}: Starting..."
 
         let reply =
             match tryDeserialize wcfSerializationFormat a with
             | Ok m -> p m
             | Error e ->
-                printfn $"tryReply - Error on reply: '{e}'."
+                Logger.logError $"tryReply - Error on reply: '{e}'."
                 toWcfSerializationError f e
 
         let retVal =
             match trySerialize wcfSerializationFormat reply with
             | Ok r -> r
             | Error e ->
-                printfn $"tryReply - Error: '{e}'."
+                Logger.logError $"tryReply - Error: '{e}'."
                 [||]
 
-//        printfn $"tryReply - {count}: retVal.Length = {retVal.Length}."
+        // Logger.logTrace $"tryReply - retVal.Length = {retVal.Length}."
         retVal
 
 
@@ -90,11 +91,11 @@ module Service =
                 match d with
                 | HttpServiceInfo i ->
                     let httpBinding = getBasicHttpBinding()
-                    printfn $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}'."
+                    Logger.logInfo $"createServiceModel - httpBinding: '{httpBinding}', httpServiceName: '{i.httpServiceName}'."
                     b.AddServiceEndpoint<'WcfService, 'IWcfService>(httpBinding, "/" + i.httpServiceName.value)
                 | NetTcpServiceInfo i ->
                     let netTcpBinding = getNetTcpBinding i.netTcpSecurityMode
-                    printfn $"createServiceModel - netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
+                    Logger.logInfo $"createServiceModel - netTcpBinding: '{netTcpBinding}', netTcpServiceName: '{i.netTcpServiceName}'."
                     b.AddServiceEndpoint<'WcfService, 'IWcfService>(netTcpBinding, "/" + i.netTcpServiceName.value)
 
             builder
@@ -107,5 +108,5 @@ module Service =
                 services.AddServiceModelServices() |> ignore
                 services.AddTransient<'WcfService>() |> ignore
 
-        member _.Configure(app : IApplicationBuilder, env : IWebHostEnvironment) =
+        member _.Configure(app : IApplicationBuilder, _ : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore

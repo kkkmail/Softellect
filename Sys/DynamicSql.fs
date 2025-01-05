@@ -1,4 +1,4 @@
-﻿namespace Softellect.Data
+﻿namespace Softellect.Sys
 
 open System
 open System.Data

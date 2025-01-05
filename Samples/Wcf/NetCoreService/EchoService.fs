@@ -2,6 +2,7 @@
 
 open CoreWCF
 open System.Runtime.Serialization
+open Softellect.Sys.Logging
 
 module EchoService =
 
@@ -9,7 +10,7 @@ module EchoService =
     type EchoMessage() =
 
         [<DataMember>]
-        member val text = "" with get, set        
+        member val text = "" with get, set
 
 
     [<ServiceContract>]
@@ -20,7 +21,7 @@ module EchoService =
 
         [<OperationContract(Name = "complexEcho")>]
         abstract complexEcho : text:EchoMessage -> string
-        
+
 
     type EchoService() =
 
@@ -28,9 +29,9 @@ module EchoService =
             with
 
             member _.echo text =
-                printfn $"Received %s{text} from client!"
+                Logger.logTrace $"Received %s{text} from client!"
                 text
 
             member _.complexEcho text =
-                printfn $"Received %s{text.text} from client!"
+                Logger.logTrace $"Received %s{text.text} from client!"
                 text.text

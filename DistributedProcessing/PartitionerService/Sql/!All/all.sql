@@ -1,43 +1,43 @@
 IF OBJECT_ID('dbo.NotificationType') IS NULL begin
-	print 'Creating table dbo.NotificationType ...'
+    print 'Creating table dbo.NotificationType ...'
 
-	CREATE TABLE dbo.NotificationType(
-		notificationTypeId int NOT NULL,
-		notificationTypeName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_NotificationType PRIMARY KEY CLUSTERED 
-	(
-		notificationTypeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+    CREATE TABLE dbo.NotificationType(
+        notificationTypeId int NOT NULL,
+        notificationTypeName nvarchar(50) NOT NULL,
+    CONSTRAINT PK_NotificationType PRIMARY KEY CLUSTERED 
+    (
+        notificationTypeId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX UX_NotificationType ON dbo.NotificationType
-	(
-		notificationTypeName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CREATE UNIQUE NONCLUSTERED INDEX UX_NotificationType ON dbo.NotificationType
+    (
+        notificationTypeName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table dbo.NotificationType already exists ...'
+    print 'Table dbo.NotificationType already exists ...'
 end
 go
 
 
 IF OBJECT_ID('dbo.RunQueueStatus') IS NULL begin
-	print 'Creating table dbo.RunQueueStatus ...'
+    print 'Creating table dbo.RunQueueStatus ...'
 
-	CREATE TABLE dbo.RunQueueStatus(
-		runQueueStatusId int NOT NULL,
-		runQueueStatusName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_RunQueueStatus PRIMARY KEY CLUSTERED 
-	(
-		runQueueStatusId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+    CREATE TABLE dbo.RunQueueStatus(
+        runQueueStatusId int NOT NULL,
+        runQueueStatusName nvarchar(50) NOT NULL,
+    CONSTRAINT PK_RunQueueStatus PRIMARY KEY CLUSTERED 
+    (
+        runQueueStatusId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX UX_RunQueueStatus ON dbo.RunQueueStatus
-	(
-		runQueueStatusName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CREATE UNIQUE NONCLUSTERED INDEX UX_RunQueueStatus ON dbo.RunQueueStatus
+    (
+        runQueueStatusName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table dbo.RunQueueStatus already exists ...'
+    print 'Table dbo.RunQueueStatus already exists ...'
 end
 go
 
@@ -51,71 +51,72 @@ IF OBJECT_ID('dbo.Solver') IS NULL begin
         solverName nvarchar(100) not null,
         description nvarchar(2000) null, 
         solverData varbinary(max) null,
+        solverHash char(64) not null,
         createdOn datetime not null,
-        isDeployed bit not null,
-        CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
-        (
-            solverId ASC
-        ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-        ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+        isInactive bit not null,
+    CONSTRAINT PK_Solver PRIMARY KEY CLUSTERED 
+    (
+        solverId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-    ALTER TABLE dbo.Solver ADD DEFAULT (getdate()) FOR createdOn
-    ALTER TABLE dbo.Solver ADD DEFAULT (0) FOR isDeployed
+    ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.Solver ADD CONSTRAINT DF_Solver_isInactive DEFAULT (getdate()) FOR isInactive
 
-    CREATE UNIQUE NONCLUSTERED INDEX IX_Solver_solverName ON dbo.Solver
+    CREATE UNIQUE NONCLUSTERED INDEX UX_Solver_solverName ON dbo.Solver
     (
         solverName ASC
     ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 
 end else begin
-	print 'Table dbo.Solver already exists ...'
+    print 'Table dbo.Solver already exists ...'
 end
 go
 
 IF OBJECT_ID('dbo.WorkerNode') IS NULL begin
-	print 'Creating table dbo.WorkerNode ...'
+    print 'Creating table dbo.WorkerNode ...'
 
-	CREATE TABLE dbo.WorkerNode(
-		workerNodeId uniqueidentifier NOT NULL,
-		workerNodeOrder bigint IDENTITY(1,1) NOT NULL,
-		workerNodeName nvarchar(100) NOT NULL,
-		nodePriority int NOT NULL,
-		numberOfCores int NOT NULL,
-		description nvarchar(1000) NULL,
-		isInactive bit NOT NULL,
-		createdOn datetime NOT NULL,
-		modifiedOn datetime NOT NULL,
-		lastErrorOn datetime NULL,
-	 CONSTRAINT PK_WorkerNode PRIMARY KEY CLUSTERED 
-	(
-		workerNodeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+    CREATE TABLE dbo.WorkerNode(
+        workerNodeId uniqueidentifier NOT NULL,
+        workerNodeOrder bigint IDENTITY(1,1) NOT NULL,
+        workerNodeName nvarchar(100) NOT NULL,
+        nodePriority int NOT NULL,
+        numberOfCores int NOT NULL,
+        description nvarchar(1000) NULL,
+        isInactive bit NOT NULL,
+        workerNodePublicKey varbinary(max) NULL,
+        createdOn datetime NOT NULL,
+        modifiedOn datetime NOT NULL,
+    CONSTRAINT PK_WorkerNode PRIMARY KEY CLUSTERED 
+    (
+        workerNodeId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 
-	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_isInactive  DEFAULT ((0)) FOR isInactive
-	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_nodePriority  DEFAULT ((100)) FOR nodePriority
-	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_numberOfCores  DEFAULT ((0)) FOR numberOfCores
-	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_createdOn  DEFAULT (getdate()) FOR createdOn
-	ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_modifiedOn  DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_isInactive  DEFAULT ((0)) FOR isInactive
+    ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_nodePriority  DEFAULT ((100)) FOR nodePriority
+    ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_numberOfCores  DEFAULT ((0)) FOR numberOfCores
+    ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_createdOn  DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.WorkerNode ADD  CONSTRAINT DF_WorkerNode_modifiedOn  DEFAULT (getdate()) FOR modifiedOn
 
-	CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeName ON dbo.WorkerNode
-	(
-		workerNodeName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeName ON dbo.WorkerNode
+    (
+        workerNodeName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeOrder ON dbo.WorkerNode
-	(
-		workerNodeOrder ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CREATE UNIQUE NONCLUSTERED INDEX UX_WorkerNodeOrder ON dbo.WorkerNode
+    (
+        workerNodeOrder ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
-	print 'Table dbo.WorkerNode already exists ...'
+    print 'Table dbo.WorkerNode already exists ...'
 end
 go
 
 IF OBJECT_ID('dbo.RunQueue') IS NULL begin
-	print 'Creating table dbo.RunQueue ...'
+    print 'Creating table dbo.RunQueue ...'
 
-	CREATE TABLE dbo.RunQueue(
+    CREATE TABLE dbo.RunQueue(
         runQueueId uniqueidentifier NOT NULL,
         runQueueOrder bigint IDENTITY(1,1) NOT NULL,
 
@@ -127,6 +128,9 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         processId int NULL,
         notificationTypeId int NOT NULL,
         errorMessage nvarchar(max) NULL,
+        lastErrorOn datetime null,
+        retryCount int not null,
+        maxRetries int not null,
         progress decimal(38, 16) NOT NULL,
 
         -- Additional progress data (if any) used for further analysis and / or for earlier termination.
@@ -140,26 +144,28 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
         relativeInvariant float NOT NULL,
 
         createdOn datetime NOT NULL,
-        modifiedOn datetime NOT NULL,
         startedOn datetime NULL,
+        modifiedOn datetime NOT NULL,
 
         -- Partitioner has extra column to account for the worker node running the calculation.
         workerNodeId uniqueidentifier NULL,
 
-        CONSTRAINT PK_RunQueue PRIMARY KEY CLUSTERED 
-        (
-	        runQueueId ASC
-        ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CONSTRAINT PK_RunQueue PRIMARY KEY CLUSTERED 
+    (
+        runQueueId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR runQueueStatusId
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR notificationTypeId
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR progress
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR callCount
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((0)) FOR evolutionTime
-    ALTER TABLE dbo.RunQueue ADD DEFAULT ((1)) FOR relativeInvariant
-    ALTER TABLE dbo.RunQueue ADD DEFAULT (getdate()) FOR createdOn
-    ALTER TABLE dbo.RunQueue ADD DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_runQueueStatusId DEFAULT ((0)) FOR runQueueStatusId
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_notificationTypeId DEFAULT ((0)) FOR notificationTypeId
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_progress DEFAULT ((0)) FOR progress
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_callCount DEFAULT ((0)) FOR callCount
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_evolutionTime DEFAULT ((0)) FOR evolutionTime
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_relativeInvariant DEFAULT ((1)) FOR relativeInvariant
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_modifiedOn DEFAULT (getdate()) FOR modifiedOn
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_retryCount DEFAULT ((0)) FOR retryCount
+    ALTER TABLE dbo.RunQueue ADD CONSTRAINT DF_RunQueue_maxRetries DEFAULT ((0)) FOR maxRetries
 
     ALTER TABLE dbo.RunQueue WITH CHECK ADD CONSTRAINT FK_RunQueue_NotificationType FOREIGN KEY(notificationTypeId)
     REFERENCES dbo.NotificationType (notificationTypeId)
@@ -178,24 +184,24 @@ IF OBJECT_ID('dbo.RunQueue') IS NULL begin
     ALTER TABLE dbo.RunQueue CHECK CONSTRAINT FK_RunQueue_WorkerNode
 
 end else begin
-	print 'Table dbo.RunQueue already exists ...'
+    print 'Table dbo.RunQueue already exists ...'
 end
 go
 
 IF OBJECT_ID('dbo.ModelData') IS NULL begin
-	print 'Creating table dbo.ModelData ...'
+    print 'Creating table dbo.ModelData ...'
 
-	CREATE TABLE dbo.ModelData(
+    CREATE TABLE dbo.ModelData(
         runQueueId uniqueidentifier NOT NULL,
 
         -- All the initial data that is needed to run the calculation.
         -- It is designed to be huge, and so zipped binary format is used.
         modelData varbinary(max) NOT NULL,
 
-        CONSTRAINT PK_ModelData PRIMARY KEY CLUSTERED 
-        (
-	        runQueueId ASC
-        ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    CONSTRAINT PK_ModelData PRIMARY KEY CLUSTERED 
+    (
+	    runQueueId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
     ALTER TABLE dbo.ModelData WITH CHECK ADD CONSTRAINT FK_ModelData_RunQueue FOREIGN KEY(runQueueId)
@@ -208,31 +214,66 @@ end
 go
 
 IF OBJECT_ID('dbo.Setting') IS NULL begin
-	print 'Creating table dbo.Setting ...'
+    print 'Creating table dbo.Setting ...'
 
-	CREATE TABLE dbo.Setting(
-		settingId int NOT NULL,
-		settingName nvarchar(50) NOT NULL,
-		settingBool bit NULL,
-		settingGuid uniqueidentifier NULL,
-		settingLong bigint NULL,
-		settingText nvarchar(1000) NULL,
-	 CONSTRAINT PK_Setting PRIMARY KEY CLUSTERED 
-	(
-		settingId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+    CREATE TABLE dbo.Setting(
+        settingName nvarchar(100) NOT NULL,
+        settingBool bit NULL,
+        settingGuid uniqueidentifier NULL,
+        settingLong bigint NULL,
+        settingText nvarchar(max) NULL,
+        settingBinary varbinary(max) NULL,
+        createdOn datetime not null,
+    CONSTRAINT PK_Setting PRIMARY KEY CLUSTERED 
+    (
+        settingName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 
-	CREATE UNIQUE NONCLUSTERED INDEX IX_Setting ON dbo.Setting
-	(
-		settingName ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ALTER TABLE dbo.Setting ADD CONSTRAINT DF_Setting_createdOn DEFAULT (getdate()) FOR createdOn
+
+    CREATE UNIQUE NONCLUSTERED INDEX UX_Setting ON dbo.Setting
+    (
+        settingName ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 end else begin
 	print 'Table dbo.Setting already exists ...'
 end
 go
 
 
+
+IF OBJECT_ID('dbo.WorkerNodeSolver') IS NULL begin
+    print 'Creating table dbo.WorkerNodeSolver ...'
+
+    CREATE TABLE dbo.WorkerNodeSolver(
+        workerNodeId uniqueidentifier not null,
+        solverId uniqueidentifier not null,
+        createdOn datetime not null,
+        isDeployed bit not null,
+        deploymentError nvarchar(max) null,
+        CONSTRAINT PK_WorkerNodeSolver PRIMARY KEY CLUSTERED 
+    (
+        workerNodeId ASC,
+        solverId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
+
+    ALTER TABLE dbo.WorkerNodeSolver ADD CONSTRAINT DF_WorkerNodeSolver_createdOn DEFAULT (getdate()) FOR createdOn
+    ALTER TABLE dbo.WorkerNodeSolver ADD CONSTRAINT DF_WorkerNodeSolver_isDeployed DEFAULT (0) FOR isDeployed
+
+    ALTER TABLE dbo.WorkerNodeSolver  WITH CHECK ADD  CONSTRAINT FK_WorkerNodeSolver_WorkerNode FOREIGN KEY(workerNodeId)
+    REFERENCES dbo.WorkerNode (workerNodeId)
+    ALTER TABLE dbo.WorkerNodeSolver CHECK CONSTRAINT FK_WorkerNodeSolver_WorkerNode
+
+    ALTER TABLE dbo.WorkerNodeSolver  WITH CHECK ADD  CONSTRAINT FK_WorkerNodeSolver_Solver FOREIGN KEY(solverId)
+    REFERENCES dbo.Solver (solverId)
+    ALTER TABLE dbo.WorkerNodeSolver CHECK CONSTRAINT FK_WorkerNodeSolver_Solver
+
+end else begin
+    print 'Table dbo.WorkerNodeSolver already exists ...'
+end
+go
 
 drop view if exists vw_newid
 go
@@ -247,39 +288,39 @@ drop function if exists dbo.getAvailableWorkerNode
 go
 
 
-create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
-returns table
-as
-return
-(
-	with a as
-	(
-	select
-		workerNodeId
-		,nodePriority
-		,cast(
-			case
-				when numberOfCores <= 0 then 1
-				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
-			end as money) as workLoad
-		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
-	from WorkerNode w
-	where isInactive = 0
-	),
-	b as
-	(
-		select
-			a.*, 
-			c.new_id
-			from a
-			cross apply (select new_id from vw_newid) c
-	)
-	select top 1
-	workerNodeId
-	from b
-	where noErr = 0 and workLoad < 1
-	order by nodePriority desc, workLoad, new_id
-)
+--create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
+--returns table
+--as
+--return
+--(
+--	with a as
+--	(
+--	select
+--		workerNodeId
+--		,nodePriority
+--		,cast(
+--			case
+--				when numberOfCores <= 0 then 1
+--				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
+--			end as money) as workLoad
+--		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
+--	from WorkerNode w
+--	where isInactive = 0
+--	),
+--	b as
+--	(
+--		select
+--			a.*, 
+--			c.new_id
+--			from a
+--			cross apply (select new_id from vw_newid) c
+--	)
+--	select top 1
+--	workerNodeId
+--	from b
+--	where noErr = 0 and workLoad < 1
+--	order by nodePriority desc, workLoad, new_id
+--)
 go
 
 drop function if exists dbo.RunQueueStatus_NotStarted
@@ -321,25 +362,39 @@ go
 
 create view vw_AvailableWorkerNode
 as
-with a as
+with le as
 (
 select
-	workerNodeId
-	,nodePriority
-	,isnull(cast(
-		case
-			when numberOfCores <= 0 then 1
-			else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
-		end as money), 0) as workLoad
-	,case when lastErrorOn is null then null else datediff(minute, getdate(), lastErrorOn) end as lastErrMinAgo
+    workerNodeId
+    ,solverId
+    ,max(lastErrorOn) as lastErrorOn
+from RunQueue r
+where workerNodeId is not null and lastErrorOn is not null
+group by r.workerNodeId, r.solverId
+)
+,a as
+(
+select
+    w.workerNodeId
+    ,ws.solverId
+    ,nodePriority
+    ,isnull(cast(
+        case
+            when numberOfCores <= 0 then 1
+            else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
+        end as money), 0) as workLoad
+    ,case when le.lastErrorOn is null then null else datediff(minute, getdate(), le.lastErrorOn) end as lastErrMinAgo
 from WorkerNode w
-where isInactive = 0
+inner join WorkerNodeSolver ws on w.workerNodeId = ws.workerNodeId
+left outer join le on ws.workerNodeId = le.solverId and ws.solverId = le.solverId
+inner join Solver s on ws.solverId = s.solverId
+where w.isInactive = 0 and ws.isDeployed = 1 and s.isInactive = 0
 )
 select
-	a.*, 
-	c.new_id as OrderId
-	from a
-	cross apply (select new_id from vw_newid) c
+    a.*, 
+    c.new_id as OrderId
+    from a
+    cross apply (select new_id from vw_newid) c
 
 go
 
@@ -623,46 +678,71 @@ begin
 end
 go
 
-IF OBJECT_ID('dbo.DeliveryType') IS NULL begin
-	print 'Creating table dbo.DeliveryType ...'
+drop procedure if exists dbo.tryUndeploySolver
+go
 
-	CREATE TABLE dbo.DeliveryType(
-		deliveryTypeId int NOT NULL,
-		deliveryTypeName nvarchar(50) NOT NULL,
-	 CONSTRAINT PK_DeliveryType PRIMARY KEY CLUSTERED 
-	(
-		deliveryTypeId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY]
+
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+create procedure dbo.tryUndeploySolver (@solverId uniqueidentifier)
+as
+begin
+	declare @rowCount int
+	set nocount on;
+
+	update dbo.WorkerNodeSolver
+	set isDeployed = 0
+	where solverId = @solverId
+
+	set @rowCount = @@rowcount
+	select @rowCount as [RowCount]
+end
+go
+
+IF OBJECT_ID('dbo.DeliveryType') IS NULL begin
+    print 'Creating table dbo.DeliveryType ...'
+
+    CREATE TABLE dbo.DeliveryType(
+        deliveryTypeId int NOT NULL,
+        deliveryTypeName nvarchar(50) NOT NULL,
+    CONSTRAINT PK_DeliveryType PRIMARY KEY CLUSTERED 
+    (
+        deliveryTypeId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY]
 end else begin
-	print 'Table dbo.DeliveryType already exists ...'
+    print 'Table dbo.DeliveryType already exists ...'
 end
 go
 
 IF OBJECT_ID('dbo.Message') IS NULL begin
-	print 'Creating table dbo.Message ...'
+    print 'Creating table dbo.Message ...'
 
-	CREATE TABLE dbo.Message(
-		messageId uniqueidentifier NOT NULL,
-		senderId uniqueidentifier NOT NULL,
-		recipientId uniqueidentifier NOT NULL,
-		messageOrder bigint IDENTITY(1,1) NOT NULL,
-		dataVersion int NOT NULL,
-		deliveryTypeId int NOT NULL,
-		messageData varbinary(max) NOT NULL,
-		createdOn datetime NOT NULL,
-	 CONSTRAINT PK_Message PRIMARY KEY CLUSTERED 
-	(
-		messageId ASC
-	) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-	) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+    CREATE TABLE dbo.Message(
+        messageId uniqueidentifier NOT NULL,
+        senderId uniqueidentifier NOT NULL,
+        recipientId uniqueidentifier NOT NULL,
+        messageOrder bigint IDENTITY(1,1) NOT NULL,
+        dataVersion int NOT NULL,
+        deliveryTypeId int NOT NULL,
+        messageData varbinary(max) NOT NULL,
+        createdOn datetime NOT NULL,
+    CONSTRAINT PK_Message PRIMARY KEY CLUSTERED 
+    (
+        messageId ASC
+    ) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+    ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 
-	ALTER TABLE dbo.Message  WITH CHECK ADD  CONSTRAINT FK_Message_DeliveryType FOREIGN KEY(deliveryTypeId)
-	REFERENCES dbo.DeliveryType (deliveryTypeId)
+    ALTER TABLE dbo.Message  WITH CHECK ADD  CONSTRAINT FK_Message_DeliveryType FOREIGN KEY(deliveryTypeId)
+    REFERENCES dbo.DeliveryType (deliveryTypeId)
 
-	ALTER TABLE dbo.Message CHECK CONSTRAINT FK_Message_DeliveryType
+    ALTER TABLE dbo.Message CHECK CONSTRAINT FK_Message_DeliveryType
 end else begin
-	print 'Table dbo.Message already exists ...'
+    print 'Table dbo.Message already exists ...'
 end
 go
 
@@ -864,15 +944,15 @@ go
 		select * 
 		from 
 		( values
-			  (0, 'Suspended', 0, NULL, NULL, NULL)
+			  ('Suspended', 0, NULL, NULL, NULL, NULL, getdate())
 
-		) as a (settingId, settingName, settingBool, settingGuid, settingLong, settingText)
+		) as a (settingName, settingBool, settingGuid, settingLong, settingText, settingBinary, createdOn)
 	)
 insert into Setting
 select valTbl.*
 from valTbl
-left outer join Setting on valTbl.settingId = Setting.settingId
-where Setting.settingId is null
+left outer join Setting on valTbl.settingName = Setting.settingName
+where Setting.settingName is null
 go
 
 

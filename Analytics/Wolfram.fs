@@ -5,6 +5,7 @@ open Microsoft.FSharp.Reflection
 open System.Text
 open Softellect.Analytics.Primitives
 open Softellect.Sys.AppSettings
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Core
 open System.IO
@@ -25,6 +26,7 @@ module Wolfram =
         | All
         | Full
         | Automatic
+        | UserDefinedPlotRange of string // You are on your own here.
 
         static member defaultValue = PlotRange.All
 
@@ -32,7 +34,7 @@ module Wolfram =
     type GridLines =
         | Automatic
         // | None
-        | UserDefined of string // You are on your own here.
+        | UserDefinedGridLines of string // You are on your own here.
 
         static member defaultValue = GridLines.Automatic
 
@@ -43,6 +45,7 @@ module Wolfram =
         | Medium
         | Large
         | Full
+        | UserDefinedImageSize of string // You are on your own here.
 
         static member defaultValue = ImageSize.Large
 
@@ -231,42 +234,67 @@ module Wolfram =
                 // Start the Wolfram Kernel with explicit link name.
                 match tryGetMathKernelFileName() with
                 | Ok kernelName ->
+                    // let rnd = Random()
+                    // let logId = rnd.Next()
+
                     let linkArgs = $"-linkname '{kernelName.value} -mathlink' -linklaunch"
-                    printfn $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
+                    // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon' -linklaunch -linkprotocol tcp"
+                    // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon -logfile C:\\Temp\\mathkernel_{logId}.log' -linklaunch"
+
+                    Logger.logTrace $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
+                    Logger.logTrace $"tryRunMathematicaScript - link created."
 
                     try
                         // Discard the initial kernel output.
                         link.WaitAndDiscardAnswer()
+                        Logger.logTrace $"tryRunMathematicaScript - call to link.WaitAndDiscardAnswer() completed."
 
                         // Load the .m or .wl file as a script and run it.
                         // Wolfram wants "\\\\" for each "\\" in the path. Don't ask why.
                         let scriptCommand = $"<< \"%s{i.toWolframNotation()}\"" // Use "<< file.m" to load the script.
-                        printfn $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
+                        Logger.logTrace $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
                         link.Evaluate(scriptCommand)
+                        Logger.logTrace $"tryRunMathematicaScript - call to link.Evaluate(scriptCommand) completed."
 
                         // Wait for the result of the evaluation.
                         link.WaitForAnswer() |> ignore
-                        printfn "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
+                        Logger.logTrace "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
 
-                        // Check for the output file in the output folder
+                        // Check for the output file in the output folder.
                         if File.Exists(o) then
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
                             link.Close() // Close the link when done.
+                            Logger.logTrace $"tryRunMathematicaScript: Completed successfully. Loaded {fileBytes.Length} bytes."
                             Ok fileBytes
                         else
                             // If the output file is not found, return an error.
                             link.Close()
-                            Error $"Output file '{o}' is not found."
+                            Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                            let message = $"Output file '{o}' is not found."
+                            Logger.logError message
+                            Error message
                     with
                     | ex ->
                         link.Close()
-                        Error $"An error occurred during Wolfram evaluation: {ex.Message}"
-                | Error e -> Error $"%A{e}"
-            | _ -> failwith $"tryRunMathematicaScript failed for request: '%A{request}'."
+                        Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                        let message = $"An error occurred during Wolfram evaluation: {ex.Message}"
+                        Logger.logError message
+                        Error message
+                | Error e ->
+                    let message = $"%A{e}"
+                    Logger.logError message
+                    Error message
+            | _ ->
+                let message = $"tryRunMathematicaScript failed for request: '%A{request}'."
+                Logger.logCrit message
+                failwith message
         with
-        | ex -> Error $"An error occurred: {ex.Message}"
+        | ex ->
+            let message = $"An error occurred: {ex.Message}"
+            Logger.logError message
+            Error message
 
 
     type ListLineParams =
@@ -276,6 +304,7 @@ module Wolfram =
             gridLines : GridLines option
             imageSize : ImageSize option
             labelStyle : LabelStyle option
+            extraParams : string option // Any additional parameters that you want to pass to ListLinePlot. The string will be passed as is.
         }
 
         static member defaultValue =
@@ -285,26 +314,30 @@ module Wolfram =
                 gridLines = Some GridLines.defaultValue
                 imageSize = Some ImageSize.defaultValue
                 labelStyle = Some LabelStyle.defaultValue
+                extraParams = None
             }
 
 
     let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D array) =
-        let legends = d |> Array.map (_.dataLabel.value)
+        let legends = d |> Array.map _.dataLabel.value
         let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
         let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
-        let frame = if p.frame then ", Frame -> True" else ""
-        let plotRange = p.plotRange |> Option.map (fun r -> $", PlotRange -> %A{r}") |> Option.defaultValue ""
-        let gridLines = p.gridLines |> Option.map (fun g -> $", GridLines -> %A{g}") |> Option.defaultValue ""
-        let imageSize = p.imageSize |> Option.map (fun i -> $", ImageSize -> %A{i}") |> Option.defaultValue ""
+        let frame = if p.frame then ", Frame -> True" else EmptyString
+
+        // If the plot size, grid lines, image size are user defined, then send them as is. Otherwise, use %A to get a full name.
+        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
+        let gridLines = p.gridLines |> Option.map (fun g -> ", GridLines -> " + (match g with | UserDefinedGridLines v -> v | _ -> $"%A{g}")) |> Option.defaultValue EmptyString
+        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
         let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
         let plotLegends = ", PlotLegends -> legends"
+        let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
 
         let data =
             [
                 xyData
                 $"legends = {(toWolframNotation legends)};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}], \"PNG\"];"
+                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}{extra}], \"PNG\"];"
             ]
             |> joinStrings Nl
         data |> WolframCode
@@ -329,5 +362,5 @@ module Wolfram =
             |> BinaryResult
             |> Some
         | Error e ->
-            printfn $"getListLinePlot - Error: %A{e}."
+            Logger.logError $"getListLinePlot - Error: %A{e}."
             None

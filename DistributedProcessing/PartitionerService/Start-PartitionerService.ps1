@@ -1,4 +1,4 @@
 param([string] $messagingDataVersion = "")
 
-. ./MessagingFunctions.ps1
-StartMessagingService -messagingDataVersion $messagingDataVersion
+. ./PartitionerFunctions.ps1
+StartPartitionerService -messagingDataVersion $messagingDataVersion

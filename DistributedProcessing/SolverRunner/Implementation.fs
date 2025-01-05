@@ -1,6 +1,7 @@
 ﻿namespace Softellect.DistributedProcessing.SolverRunner
 
 open System
+open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.Primitives
@@ -18,11 +19,12 @@ open Softellect.DistributedProcessing.SolverRunner.Runner
 open Softellect.Sys.Core
 open Softellect.DistributedProcessing.AppSettings.SolverRunner
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.DistributedProcessing.Messages
+open Softellect.Analytics.AppSettings
 
 module Implementation =
 
-    [<Literal>]
-    let SolverProgramName = "SolverRunner"
+    let solverProgramName = ServiceName "SolverRunner"
 
     /// Extra solver's "overhead" allowed when running SolverRunner by hands.
     /// This is needed when two versions share the same machine and one version has some stuck
@@ -33,16 +35,16 @@ module Implementation =
     let AllowedOverhead = 0.20
 
 
-    // Send the message directly to local database.
+    /// Send the message directly to local database.
     let private sendMessage messagingDataVersion m i =
         createMessage messagingDataVersion m i
         |> saveMessage<DistributedProcessingMessageData> messagingDataVersion
 
 
     let private tryStartRunQueue q =
-        let pid = Process.GetCurrentProcess().Id |> ProcessId
+        let pid = ProcessId.getCurrentProcessId()
         let result = tryStartRunQueue q pid
-        printfn $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
+        Logger.logTrace $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
         result
 
 
@@ -51,14 +53,15 @@ module Implementation =
         max ((float noOfCores) * (1.0 + AllowedOverhead) |> int) (noOfCores + 1)
 
 
-    let private onSaveResults<'D, 'P> (data : RunnerData<'D>) c =
+    let private onSaveResults<'P> (data : RunnerData) c =
         let i =
             {
                 results = c
                 runQueueId = data.runQueueId
+                optionalFolder = data.optionalFolder
             }
 
-        printfn $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
+        Logger.logTrace $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
 
         let result =
             {
@@ -89,7 +92,7 @@ module Implementation =
         | None -> (NonGuaranteedDelivery, false)
 
 
-    let private onUpdateProgress<'D, 'P> (data : RunnerData<'D>) cb (pd : ProgressData<'P>) =
+    let private onUpdateProgress<'P> (data : RunnerData) cb (pd : ProgressData<'P>) =
         let p =
             {
                 runQueueId = data.runQueueId
@@ -106,7 +109,7 @@ module Implementation =
                 progressData = pd
             }
 
-        printfn $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
+        Logger.logTrace $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
         let t, completed = toDeliveryType p
         let r0 = tryUpdateProgress<'P> p.runQueueId p.progressData
 
@@ -121,7 +124,7 @@ module Implementation =
         let r1 =
             match r11 with
             | Ok v -> Ok v
-            | Error e -> OnUpdateProgressErr (UnableToSendProgressMsgErr p.runQueueId) |> Error
+            | Error e -> OnUpdateProgressErr (UnableToSendProgressMsgErr (p.runQueueId, e)) |> Error
 
         let result =
             if completed
@@ -130,20 +133,20 @@ module Implementation =
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
 
-        printfn $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
+        Logger.logTrace $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
         result
 
 
     /// TODO kk:20240928 - Add error handling.
-    let private createSystemProxy<'D, 'P, 'X, 'C> (data : RunnerData<'D>) =
+    let private createSystemProxy<'P, 'X, 'C> (data : RunnerData) =
         let updater = AsyncUpdater<ResultInitData, ResultSliceData<'C>, ResultData<'C>>(ResultDataUpdater<'C>(), ()) :> IAsyncUpdater<ResultSliceData<'C>, ResultData<'C>>
 
-        let proxy : SolverRunnerSystemProxy<'D, 'P, 'X, 'C> =
+        let proxy : SolverRunnerSystemProxy<'P, 'X, 'C> =
             {
                 callBackProxy =
                     {
-                        progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'D, 'P> data cb pd |> ignore)
-                        resultCallBack = ResultCallBack (fun c -> onSaveResults<'D, 'P> data c |> ignore)
+                        progressCallBack = ProgressCallBack (fun cb pd -> onUpdateProgress<'P> data cb pd |> ignore)
+                        resultCallBack = ResultCallBack (fun c -> onSaveResults<'P> data c |> ignore)
                         checkCancellation = CheckCancellation (fun q -> tryCheckCancellation q |> toOption |> Option.bind id)
                     }
                 addResultData = updater.addContent
@@ -155,20 +158,69 @@ module Implementation =
         proxy
 
 
-    type SolverRunnerSystemProxy<'D, 'P, 'X, 'C>
+    type WolframParams
         with
-        static member create (data : RunnerData<'D>) = createSystemProxy<'D, 'P, 'X, 'C> data
+
+        member w.inputLocationInto s =
+            {
+                locationInfo =
+                    {
+                        location = w.wolframInputFolder
+                        solverName = s
+                    }
+                optionalFolder = None
+            }
+
+        member w.outputLocationInto s =
+            {
+                locationInfo =
+                    {
+                        location = w.wolframOutputFolder
+                        solverName = s
+                    }
+                optionalFolder = None
+            }
+
+
+    let getSolverWolframParams (s : SolverId) =
+        let w = loadWolframParams()
+
+        match tryGetSolverName s with
+        | Ok (Some s) ->
+            match getFolderLocation (w.inputLocationInto s), getFolderLocation (w.outputLocationInto s) with
+            | Ok i, Ok o ->
+                { w with wolframInputFolder = i; wolframOutputFolder = o }
+            | Error e1, Ok o ->
+                Logger.logError $"Input folder error: '%A{e1}', output folder: '%A{o}'."
+                w
+            | Ok i, Error e2 ->
+                Logger.logError $"Input folder: '%A{i}', output folder error: '%A{e2}'."
+                w
+            | Error e1, Error e2 ->
+                Logger.logError $"Input folder error: '%A{e1}', output folder error: '%A{e2}'."
+                w
+        | Ok None ->
+            Logger.logError $"Unable to get solver name for '%A{s}'."
+            w
+        | Error e ->
+            Logger.logError $"Error gettint solver name for '%A{s}', e: '%A{e}'."
+            w
+
+
+    type SolverRunnerSystemProxy<'P, 'X, 'C>
+        with
+        static member create (data : RunnerData) = createSystemProxy<'P, 'X, 'C> data
 
 
     type SolverRunnerSystemContext<'D, 'P, 'X, 'C>
         with
         static member create () =
             {
-                logCrit = saveSolverRunnerErrFs SolverProgramName
+                logCrit = saveSolverRunnerErrFs solverProgramName
                 workerNodeServiceInfo = loadWorkerNodeServiceInfo messagingDataVersion
                 tryLoadRunQueue = tryLoadRunQueue<'D>
                 getAllowedSolvers = getAllowedSolvers
-                checkRunning = checkRunning
+                checkRunning = fun no q -> checkRunning (RunQueueRunning (no, q))
                 tryStartRunQueue = tryStartRunQueue
                 createSystemProxy = createSystemProxy
                 runSolver = runSolver
@@ -190,16 +242,34 @@ module Implementation =
     let runSolverProcess<'D, 'P, 'X, 'C> (ctx: SolverRunnerSystemContext<'D, 'P, 'X, 'C>) getUserProxy (data : SolverRunnerData) =
         let logCrit = ctx.logCrit
         let q = data.runQueueId
+        let i = ctx.workerNodeServiceInfo
 
-        let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
-        printfn $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+        let runnerDataCrit =
+            {
+                runQueueId = q
+                partitionerId = i.workerNodeInfo.partitionerId
+                workerNodeId = i.workerNodeInfo.workerNodeId
+                messagingDataVersion = data.messagingDataVersion
+                started = DateTime.Now
+                cancellationCheckFreq = data.cancellationCheckFreq
+                optionalFolder = None
+            }
 
-        let exitWithLogCrit e x =
-            printfn $"runSolver: ERROR: {e}, exit code: {x}."
-            SolverRunnerCriticalError.create q e |> logCrit |> ignore
+        // let logCritResult = logCrit (SolverRunnerCriticalError.create q "runSolver: Starting solver.")
+        // Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}, logCritResult = %A{logCritResult}."
+        Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
+
+        let exitWithLogWarn e x =
+            Logger.logWarn $"runSolver: ERROR: %A{e}, exit code: %A{x}."
             x
 
-        let i = ctx.workerNodeServiceInfo
+        let abortWithLogCrit e x =
+            let cb = Some $"%A{e}, %A{x}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack
+            let pd = getFailedProgressData e
+            let r = onUpdateProgress<'P> runnerDataCrit cb pd
+            Logger.logCrit $"runSolver: ERROR: %A{e}, exit code: %A{x}, r: %A{r}."
+            SolverRunnerCriticalError.create q e |> logCrit |> ignore
+            x
 
         match ctx.tryLoadRunQueue q with
         | Ok (w, st) ->
@@ -216,45 +286,40 @@ module Implementation =
                     | NotStartedRunQueue | InProgressRunQueue ->
                         match ctx.tryStartRunQueue q with
                         | Ok() ->
-                            printfn $"runSolver: Starting solver with runQueueId: {q}."
-                            let data : RunnerData<'D> =
+                            Logger.logInfo $"runSolver: Starting solver with runQueueId: {q}."
+                            let userProxy = getUserProxy w.modelData
+                            let runnerData = { runnerDataCrit with optionalFolder = userProxy.solverProxy.getOptionalFolder q w }
+
+                            let rd : RunnerData<'D> =
                                 {
-                                    runQueueId = q
-                                    partitionerId = i.workerNodeInfo.partitionerId
-                                    workerNodeId = i.workerNodeInfo.workerNodeId
-                                    messagingDataVersion = data.messagingDataVersion
+                                    runnerData = runnerData
                                     modelData = w
-                                    started = DateTime.Now
-                                    cancellationCheckFreq = data.cancellationCheckFreq
                                 }
 
-                            let proxy = ctx.createSystemProxy data
+                            let proxy = ctx.createSystemProxy runnerData
 
                             let ctxr =
                                 {
-                                    runnerData = data
+                                    runnerData = rd
                                     systemProxy = proxy
-                                    userProxy = getUserProxy w.modelData
+                                    userProxy = userProxy
                                 }
 
                             // The call below does not return until the run is completed OR cancelled in some way.
                             ctx.runSolver ctxr
-                            printfn "runSolver: Call to solver.run() completed."
+                            Logger.logInfo $"runSolver: Call to solver.run() with runQueueId: {q} completed."
                             CompletedSuccessfully
                         | Error e ->
-                            printfn $"runSolver: ERROR: {e}."
-                            exitWithLogCrit e UnknownException
+                            Logger.logError $"runSolver: ERROR: {e}."
+                            abortWithLogCrit e UnknownException
                     | CancelRequestedRunQueue ->
                         // If we got here that means that the solver was terminated before it had a chance to process cancellation.
                         // At this point we have no choice but abort the calculation because there is no data available to continue.
                         let errMessage = "The solver was terminated before processing cancellation. Aborting."
-                        //let p0 = ProgressData.defaultValue
-                        //let p = { p0 with progressData = { p0.progressData with errorMessageOpt = errMessage |> ErrorMessage |> Some } }
-                        //getProgress w (Some FailedRunQueue) p |> (updateFinalProgress solverProxy q errMessage)
-                        exitWithLogCrit errMessage NotProcessedCancellation
-                    | _ -> exitWithLogCrit $"Invalid run queue status: {st}" InvalidRunQueueStatus
-                | AlreadyRunning p -> exitWithLogCrit (AlreadyRunning p) SolverAlreadyRunning
-                | TooManyRunning n -> exitWithLogCrit (TooManyRunning n) TooManySolversRunning
-                | GetProcessesByNameExn e -> exitWithLogCrit e CriticalError
-            | false -> exitWithLogCrit $"Invalid solverId: {w.solverId}, expected: {data.solverId}" InvalidSolverId
-        | Error e -> exitWithLogCrit e DatabaseErrorOccurred
+                        abortWithLogCrit errMessage NotProcessedCancellation
+                    | _ -> abortWithLogCrit $"Invalid run queue status: %A{st}" InvalidRunQueueStatus
+                | AlreadyRunning p -> exitWithLogWarn (AlreadyRunning p) SolverAlreadyRunning
+                | TooManyRunning n -> exitWithLogWarn (TooManyRunning n) TooManySolversRunning
+                | GetProcessesByNameExn e -> abortWithLogCrit e CriticalError
+            | false -> abortWithLogCrit $"Invalid solverId: {w.solverId}, expected: {data.solverId}" InvalidSolverId
+        | Error e -> abortWithLogCrit e DatabaseErrorOccurred

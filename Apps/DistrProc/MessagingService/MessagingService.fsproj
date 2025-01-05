@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <AssemblyName>DistributedProcessingMessagingService</AssemblyName>
+        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <DefineConstants>DEBUG</DefineConstants>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <PlatformTarget>x64</PlatformTarget>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\DistributedProcessing\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\DistributedProcessing\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\MessagingService\MessagingFunctions.ps1" Link="MessagingFunctions.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\MessagingService\Start-MessagingService.ps1" Link="Start-MessagingService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\MessagingService\Stop-MessagingService.ps1" Link="Stop-MessagingService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\MessagingService\Uninstall-MessagingService.ps1" Link="Uninstall-MessagingService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <Content Include="..\..\..\DistributedProcessing\MessagingService\appsettings.json" Link="appsettings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
+        <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
+        <ProjectReference Include="..\..\..\DistributedProcessing\MessagingService\MessagingService.fsproj" />
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+    </ItemGroup>
+
+</Project>

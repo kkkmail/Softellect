@@ -5,15 +5,17 @@ open Softellect.Messaging.Proxy
 open Softellect.Messaging.ServiceProxy
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.MessagingService.Program
+open Softellect.DistributedProcessing.Messages
 open Softellect.Messaging.Service
 open Softellect.Sys.Logging
 open Softellect.DistributedProcessing.VersionInfo
+open Softellect.Sys.AppSettings
 
 module Program =
 
     let messagingServiceMain name args =
-        let getLogger = fun _ -> Logger.defaultValue
-        let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy getLogger messagingDataVersion
+        setLogLevel()
+        let serviceProxy :  MessagingServiceProxy<DistributedProcessingMessageData> = createMessagingServiceProxy messagingDataVersion
         let messagingServiceAccessInfo = loadMessagingServiceAccessInfo messagingDataVersion
 
         let data =

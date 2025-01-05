@@ -3,6 +3,7 @@
 open System
 open System.ServiceModel
 
+open Softellect.Sys.Logging
 open Softellect.Wcf.Errors
 open Softellect.Sys.Core
 open Softellect.Wcf.Common
@@ -74,10 +75,10 @@ module Client =
     /// Tries getting a Wcf Client.
     let tryGetWcfService<'T> t url =
         try
-            printfn $"tryGetWcfService - t: '%A{t}', url: '%A{url}'."
+            Logger.logTrace $"tryGetWcfService - t: '%A{t}', url: '%A{url}'."
             let binding = getBinding t
             let address = EndpointAddress(url)
-            printfn $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'."
+            Logger.logTrace $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'."
 
             let channelFactory =
                 match binding with
@@ -96,13 +97,13 @@ module Client =
             match t() with
             | Ok (service, factoryCloser) ->
                 try
-                    printfn "tryCommunicate: Checking channel state..."
+                    Logger.logTrace "tryCommunicate: Checking channel state..."
                     let channel = (box service) :?> IClientChannel
-                    printfn $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'."
+                    Logger.logTrace $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'."
 
                     match trySerialize wcfSerializationFormat a with
                     | Ok b ->
-                        printfn $"tryCommunicate: Calling service at %A{DateTime.Now}..."
+                        Logger.logTrace $"tryCommunicate: Calling service at %A{DateTime.Now}..."
                         let d = c service b
                         channel.Close()
                         factoryCloser()
@@ -113,11 +114,11 @@ module Client =
                         |> Result.mapError f
                         |> Result.bind id
                     | Error e ->
-                        printfn $"tryCommunicate: At %A{DateTime.Now} got serialization error: '%A{e}'."
+                        Logger.logError $"tryCommunicate: At %A{DateTime.Now} got serialization error: '%A{e}'."
                         toWcfSerializationError f e
                 with
                 | e ->
-                    printfn $"tryCommunicate: At %A{DateTime.Now} got inner exception:' %A{e}'."
+                    Logger.logError $"tryCommunicate: At %A{DateTime.Now} got inner exception:' %A{e}'."
                     try
                         let channel = (box service) :?> IClientChannel
                         channel.Abort()
@@ -127,9 +128,9 @@ module Client =
 
                     toWcfError f e // We want the outer "real" error.
             | Error e ->
-                printfn $"tryCommunicate: At %A{DateTime.Now} got outer error: '%A{e}'."
+                Logger.logError $"tryCommunicate: At %A{DateTime.Now} got outer error: '%A{e}'."
                 e |> f |> Error
         with
         | e ->
-            printfn $"tryCommunicate: At %A{DateTime.Now} got outer exception: '%A{e}'."
+            Logger.logError $"tryCommunicate: At %A{DateTime.Now} got outer exception: '%A{e}'."
             toWcfError f e

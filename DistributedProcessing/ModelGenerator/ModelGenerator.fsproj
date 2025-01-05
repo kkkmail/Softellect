@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <AssemblyName>Softellect.DistributedProcessing.ModelGenerator</AssemblyName>
         <Platforms>x64</Platforms>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>8.0.400.3</Version>
-        <PackageVersion>8.0.400.3</PackageVersion>
+        <Version>9.0.100.4</Version>
+        <PackageVersion>9.0.100.4</PackageVersion>
         <Description>Softellect Model Generator ...</Description>
         <PackageTags>client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -21,11 +21,13 @@
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
         <PlatformTarget>x64</PlatformTarget>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
         <PlatformTarget>x64</PlatformTarget>
+        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -35,21 +37,21 @@
         <Content Include="..\PartitionerService\appsettings.json" Link="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Compile Include="Primitives.fs"/>
-        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs"/>
+        <Compile Include="Primitives.fs" />
+        <Compile Include="..\Core\DataAccess.fs" Link="DataAccess.fs" />
         <Compile Include="..\Core\Proxy.fs">
             <Link>Proxy.fs</Link>
         </Compile>
-        <Compile Include="Program.fs"/>
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Core\Core.fsproj"/>
-        <ProjectReference Include="..\..\Sys\Sys.fsproj"/>
+        <ProjectReference Include="..\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="8.0.401"/>
+        <PackageReference Update="FSharp.Core" Version="9.0.100" />
     </ItemGroup>
 
 </Project>

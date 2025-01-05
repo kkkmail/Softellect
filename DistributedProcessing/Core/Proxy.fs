@@ -7,8 +7,14 @@ open System.Diagnostics
 open System.Management
 
 open Softellect.Messaging.Primitives
+open Softellect.Messaging.ServiceInfo
+open Softellect.Messaging.Client
 open Softellect.Messaging.Errors
+open Softellect.Messaging.DataAccess
+open Softellect.Sys.Errors
+open Softellect.Sys.Logging
 open Softellect.Sys.Rop
+open Softellect.Sys.Crypto
 open Softellect.Sys.TimerEvents
 
 open Softellect.Wcf.Common
@@ -27,6 +33,7 @@ open Softellect.Sys.AppSettings
 open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.Primitives.Common
+open Softellect.DistributedProcessing.Messages
 
 // ==========================================
 // Blank #if template blocks
@@ -46,10 +53,13 @@ open Softellect.DistributedProcessing.Primitives.Common
 #if SOLVER_RUNNER
 #endif
 
+#if WORKERNODE_ADM
+#endif
+
 #if WORKER_NODE
 #endif
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 #endif
 
 // ==========================================
@@ -88,6 +98,10 @@ module ModelGenerator =
 module SolverRunner =
 #endif
 
+#if WORKERNODE_ADM
+module WorkerNodeAdm =
+#endif
+
 #if WORKER_NODE
 module WorkerNodeService =
 #endif
@@ -95,7 +109,7 @@ module WorkerNodeService =
 // ==========================================
 // To make a compiler happy.
 
-#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKER_NODE
+#if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
     let private dummy = 0
 #endif
 
@@ -110,7 +124,7 @@ module WorkerNodeService =
             loadModelBinaryData : RunQueueId -> DistributedProcessingResult<ModelBinaryData>
             loadWorkerNodeInfo : WorkerNodeId -> DistributedProcessingResult<WorkerNodeInfo>
             tryLoadFirstRunQueue : unit -> DistributedProcessingResult<RunQueue option>
-            tryGetAvailableWorkerNode : unit -> DistributedProcessingResult<WorkerNodeId option>
+            tryGetAvailableWorkerNode : SolverId -> DistributedProcessingResult<WorkerNodeId option>
             upsertRunQueue : RunQueue -> DistributedProcessingUnitResult
             tryLoadRunQueue : RunQueueId -> DistributedProcessingResult<RunQueue option>
             upsertWorkerNodeInfo : WorkerNodeInfo -> DistributedProcessingUnitResult
@@ -135,11 +149,9 @@ module WorkerNodeService =
     ///     https://stackoverflow.com/questions/504208/how-to-read-command-line-arguments-of-another-process-in-c
     ///     https://docs.microsoft.com/en-us/dotnet/core/porting/windows-compat-pack
     ///     https://stackoverflow.com/questions/33635852/how-do-i-convert-a-weakly-typed-icollection-into-an-f-list
-    let checkRunning no (RunQueueId q) : CheckRunningResult =
+    let checkRunning (r : CheckRunningRequest) : CheckRunningResult =
+        Logger.logTrace $"r: %A{r}"
         try
-            let v = $"{q}".ToLower()
-            let pid = Process.GetCurrentProcess().Id
-
             let wmiQuery = $"select Handle, CommandLine from Win32_Process where Caption = '{SolverRunnerName}'"
             let searcher = new ManagementObjectSearcher(wmiQuery)
             let retObjectCollection = searcher.Get()
@@ -152,101 +164,236 @@ module WorkerNodeService =
                 |> List.map (fun e -> e.["Handle"], e.["CommandLine"])
                 |> List.map (fun (a, b) -> int $"{a}", $"{b}")
 
-            let run() =
+            match r with
+            | AnyRunning f ->
+                Logger.logTrace $"f: %A{f}, processes: %A{processes}."
+                let v = $"{f.value}".ToLower()
+
                 let p =
                     processes
-                    |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid)
-                    |> List.tryFind snd
+                    |> List.map (fun (_, e) -> e.ToLower())
+                    |> List.filter (fun e -> e.StartsWith v)
 
-                match p with
-                | None -> CanRun
-                | Some (i, _) -> i |> ProcessId |> AlreadyRunning
+                match p.Length with
+                | 0 -> CanRun
+                | _ -> TooManyRunning p.Length
+            | RunQueueRunning (no, q) ->
+                let v = $"{q.value}".ToLower()
+                let pid = ProcessId.getCurrentProcessId()
+                Logger.logTrace $"q: %A{q}, no: %A{no}, processes: %A{processes}."
 
-            match no with
-            | Some n ->
-                match processes.Length <= n with
-                | true -> run()
-                | false -> TooManyRunning processes.Length
-            | None -> run()
+                let run() =
+                    let p =
+                        processes
+                        |> List.map (fun (i, e) -> i, e.ToLower().Contains(v) && i <> pid.value)
+                        |> List.tryFind snd
+
+                    match p with
+                    | None -> CanRun
+                    | Some (i, _) -> i |> ProcessId |> AlreadyRunning
+
+                match no with
+                | Some n ->
+                    match processes.Length <= n with
+                    | true -> run()
+                    | false -> TooManyRunning processes.Length
+                | None -> run()
         with
         | e -> e |> GetProcessesByNameExn
+
+
+    let getFailedProgressData e =
+        {
+            progressInfo =
+                {
+                    progress = 0.0m
+                    callCount = 0L
+                    processId = None
+                    evolutionTime = EvolutionTime.defaultValue
+                    relativeInvariant = RelativeInvariant.defaultValue
+                    errorMessageOpt = Some (ErrorMessage $"%A{e}")
+                }
+            progressDetailed = None
+        }
 
 #endif
 
 #if WORKER_NODE
 
+    type FailedSolverProxy =
+        {
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
+            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
+            deleteRunQueue : RunQueueId -> DistributedProcessingUnitResult
+        }
+
+
+    let private getFailedProgress q s =
+        {
+            runQueueId = q
+            updatedRunQueueStatus = Some FailedRunQueue
+            progressData = getFailedProgressData s
+        }
+
+
+    let private getFailedSolverMessageInfo partitionerId q s =
+        let p = getFailedProgress q s
+
+        {
+            partitionerRecipient = partitionerId
+            deliveryType = GuaranteedDelivery
+            messageData = UpdateProgressPrtMsg (p.toProgressUpdateInfo())
+        }
+
+
+    let private onFailedSolver (proxy : FailedSolverProxy) (q : RunQueueId) e=
+        Logger.logTrace $"onFailedSolver: %A{q}, error: '%A{e}'."
+
+        let failRunQueue s =
+            Logger.logTrace $"Sending a message about failed to start: %A{q}."
+
+            let r =
+                (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
+                |> proxy.createMessage
+                |> proxy.saveMessage
+
+            Logger.logTrace $"Message sent with result: %A{r}."
+
+            match r with
+            | Ok() ->
+                Logger.logTrace $"Deleting failed: %A{r}."
+                proxy.deleteRunQueue q
+            | Error e1 ->
+                Logger.logError $"Failed to delete %A{q} with: '%A{e1}', outer error: '%A{e}'."
+                (e1 |> FailRunQueueMessagingErr |> OnFailedSolverErr) + e |> Error
+
+        match proxy.tryUpdateFailedSolver q e with
+        | Ok r ->
+            match r with
+            | CanRetry ->
+                Logger.logTrace $"onFailedSolver: can retry for %A{q}."
+                Ok()
+            | ExceededRetryCount v ->
+                let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
+                Logger.logWarn m
+                failRunQueue m
+        | Error e1 ->
+            let m = $"Error: {(e1 + e)}."
+            Logger.logError m
+            failRunQueue m
+
+#endif
+
+#if WORKER_NODE
+
+    type TryRunSolverProcessProxy =
+        {
+            tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
+            failedSolverProxy : FailedSolverProxy
+        }
+
+
+    let private tryGetSolverFullName folderName =
+        let fileName = FileName SolverRunnerName
+        fileName, fileName.tryGetFullFileName(Some folderName)
+
+
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
-    let tryRunSolverProcess tryGetSolverLocation o n (q : RunQueueId) =
-        printfn $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
+    let tryRunSolverProcess o (p : TryRunSolverProcessProxy) n (q : RunQueueId) =
+        Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
 
-        let fileName = FileName SolverRunnerName
-        let elevate f = f |> TryRunSolverProcessErr |> Error
+        let elevate f = f |> TryRunSolverProcessErr
+        let toError e = e |> elevate |> Error
 
-        match tryGetSolverLocation q with
+        let onFailedSolverStart result =
+            Logger.logTrace $"onFailedSolverStart: %A{q}, result: '%A{result}'."
+
+            match result with
+            | Ok r -> Ok r
+            | Error e ->
+                onFailedSolver p.failedSolverProxy q e |> Logger.logIfError |> ignore
+                Error e
+
+        match p.tryGetSolverLocation q with
         | Ok (Some folderName) ->
-            printfn $"tryRunSolverProcess: folderName = '{folderName}'."
-            match fileName.tryGetFullFileName(Some folderName) with
-            | Ok e ->
+            Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
+            match tryGetSolverFullName folderName with
+            | fileName, Ok e ->
                 let run() =
-                    let (exeName, args) =
+                    let ea =
                         match o with
-                        | None -> e.value, $"q {q.value}"
-                        | Some (FolderName f) ->
-                            let outputFile = Path.Combine(f, $"-s__{q.value}.txt")
-                            let a = $"/c {e.value} q {q.value} > {outputFile} 2>&1 3>&1 4>&1 5>&1 6>&1"
-                            ("cmd.exe", a)
+                        | None -> (e.value, $"q {q.value}") |> Ok
+                        | Some f ->
+                            let outputFile = (FileName $"-s__{q.value}.txt").combine f
+                            match f.tryEnsureFolderExists() with
+                            | Ok() ->
+                                let a = $"/c {e.value} q {q.value} > {outputFile.value} 2>&1 3>&1 4>&1 5>&1 6>&1"
+                                ("cmd.exe", a) |> Ok
+                            | Error e -> (q, f, e) |> FailedToCreateOutputFolderErr |> toError
 
-                    printfn $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                    match ea with
+                    | Ok (exeName, args) ->
+                        Logger.logTrace $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
 
-                    try
-                        let procStartInfo =
-                            ProcessStartInfo(
-                                RedirectStandardOutput = false,
-                                RedirectStandardError = false,
-                                UseShellExecute = true,
-                                FileName = exeName,
-                                Arguments = args
-                            )
+                        try
+                            // Uncomment temporarily when testing failed solver start.
+                            // Thread.Sleep(20_000)
+                            // failwith $"tryRunSolverProcess: testing failed run: %A{q}."
 
-                        procStartInfo.WorkingDirectory <- folderName.value
-                        //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
-                        procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
-                        let p = new Process(StartInfo = procStartInfo)
-                        let started = p.Start()
+                            let procStartInfo =
+                                ProcessStartInfo(
+                                    RedirectStandardOutput = false,
+                                    RedirectStandardError = false,
+                                    UseShellExecute = true,
+                                    FileName = exeName,
+                                    Arguments = args
+                                )
 
-                        if started
-                        then
-                            p.PriorityClass <- ProcessPriorityClass.Idle
-                            let processId = p.Id |> ProcessId
-                            printfn $"Started: {p.ProcessName} with pid: {processId}."
-                            Ok processId
-                        else
-                            printfn $"Failed to start process: {fileName}."
-                            q |> FailedToRunSolverProcessErr |> elevate
-                    with
-                    | ex ->
-                        printfn $"Failed to start process: {fileName} with exception: {ex}."
-                        (q, ex) |> FailedToRunSolverProcessWithExErr |> elevate
+                            procStartInfo.WorkingDirectory <- folderName.value
+                            //procStartInfo.WindowStyle <- ProcessWindowStyle.Hidden
+                            procStartInfo.WindowStyle <- ProcessWindowStyle.Normal
+                            let p = new Process(StartInfo = procStartInfo)
+                            let started = p.Start()
+
+                            if started
+                            then
+                                p.PriorityClass <- ProcessPriorityClass.Idle
+                                let processId = p.Id |> ProcessId
+                                Logger.logTrace $"Started: {p.ProcessName} with pid: {processId}."
+                                Ok processId
+                            else
+                                Logger.logError $"Failed to start process: {fileName}."
+                                q |> FailedToRunSolverProcessErr |> toError
+                        with
+                        | ex ->
+                            Logger.logError $"Failed to start process: {fileName} with exception: {ex}."
+                            (q, ex) |> FailedToRunSolverProcessExn |> toError
+                    | Error e -> Error e
 
                 // Decrease max value by one to account for the solver to be started.
-                match checkRunning (Some (n - 1)) q with
-                | CanRun -> run()
+                match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
+                | CanRun ->
+                    let r = run()
+                    Logger.logTrace $"About to call onFailedSolverStart '%A{r}'."
+                    onFailedSolverStart r
                 | e ->
-                    printfn $"Can't run run queue with id %A{q}: %A{e}."
-                    q |> CannotRunSolverProcessErr |> elevate
-            | Error e ->
-                printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
-                q |> FailedToLoadSolverNameErr |> elevate
-        | Ok None -> q |> CannotLoadSolverNameErr |> elevate
+                    Logger.logWarn $"Can't run %A{q}: %A{e}."
+                    q |> CannotRunSolverProcessErr |> toError
+            | _, Error e ->
+                Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
+                q |> FailedToLoadSolverNameErr |> toError |> onFailedSolverStart
+        | Ok None -> q |> CannotLoadSolverNameErr |> toError |> onFailedSolverStart
         | Error e ->
-            printfn $"tryRunSolverProcess: %A{q}, error: '{e}'."
-            q |> FailedToLoadSolverNameErr |> elevate
+            Logger.logError $"tryRunSolverProcess: %A{q}, error: '{e}'."
+            q |> FailedToLoadSolverNameErr |> toError |> onFailedSolverStart
 
 
     let getSolverLocation (i : WorkerNodeLocalInto) (solverName : SolverName) =
         i.solverLocation.combine solverName.folderName
-        //FolderName @"C:\GitHub\Softellect\Samples\DistrProc\WorkerNodeService\bin\x64\Debug\net8.0"
+        //FolderName @"C:\GitHub\Softellect\Samples\DistrProc\WorkerNodeService\bin\x64\Release\net9.0"
 
 
     let private tryGetSolverLocation (i : WorkerNodeLocalInto) q =
@@ -256,30 +403,99 @@ module WorkerNodeService =
         | Error e -> Error e
 
 
+    let private tryDecryptSolver (w : WorkerNodeInfo) (EncryptedSolver e) (p : PartitionerId) : DistributedProcessingResult<Solver> =
+        match tryLoadWorkerNodePrivateKey (), tryLoadPartitionerPublicKey () with
+        | Ok (Some w1), Ok (Some p1) ->
+            match tryDecryptAndVerify w.solverEncryptionType e w1 p1 with
+            | Ok data ->
+                match tryDeserialize<Solver> solverSerializationFormat data with
+                | Ok solver -> Ok solver
+                | Error e -> e |> TryDecryptSolverSerializationErr |> TryDecryptSolverErr |> Error
+            | Error e -> e |> TryDecryptSolverSysErr |> TryDecryptSolverErr |> Error
+        | _ -> p |> TryDecryptSolverCriticalErr |> TryDecryptSolverErr |> Error
+
+
+    let private checkSolverRunning (i : WorkerNodeLocalInto) (solverName : SolverName) =
+        let solverLocation = getSolverLocation i solverName
+
+        match tryGetSolverFullName solverLocation with
+        | _, Ok f -> checkRunning (AnyRunning f)
+        | _, Error e -> InvalidOperationException $"%A{e}" :> exn |> GetProcessesByNameExn
+
+
+    let private copyAppSettings solverFolder =
+        let toError e = e |> CopyAppSettingsErr |> Error
+        try
+            match appSettingsFile.tryGetFullFileName(), (appSettingsFile.combine solverFolder).tryGetFullFileName() with
+            | Ok i, Ok o ->
+                File.Copy(i.value, o.value, true)
+                Ok()
+            | Ok _, Error e2 -> e2 |> CopyAppSettingsOutputFileErr |> toError
+            | Error e1, Ok _ -> e1 |> CopyAppSettingsInputFileErr |> toError
+            | Error e1, Error e2 -> (e1, e2) |> CopyAppSettingsFileErr |> toError
+        with
+        | e -> e |> CopyAppSettingsExn |> toError
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
             requestCancellation : RunQueueId -> CancellationType -> DistributedProcessingUnitResult
             notifyOfResults : RunQueueId -> ResultNotificationType -> DistributedProcessingUnitResult
-            loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
-            tryRunSolverProcess : int -> RunQueueId -> DistributedProcessingResult<ProcessId>
+            // loadAllActiveRunQueueId : unit -> DistributedProcessingResult<list<RunQueueId>>
+            loadAllNotStartedRunQueueId : float<minute> -> DistributedProcessingResult<list<RunQueueId>>
+            tryGetSolverLocation : RunQueueId -> DistributedProcessingResult<FolderName option>
+            tryRunSolverProcess : TryRunSolverProcessProxy -> int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
+            tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
+            copyAppSettings : FolderName -> DistributedProcessingUnitResult
+            checkSolverRunning : SolverName -> CheckRunningResult
             setSolverDeployed : SolverId -> DistributedProcessingUnitResult
+            createMessage : MessageInfo<DistributedProcessingMessageData> -> Message<DistributedProcessingMessageData>
+            saveMessage : Message<DistributedProcessingMessageData> -> MessagingUnitResult
             loadAllNotDeployedSolverId : unit -> DistributedProcessingResult<list<SolverId>>
+            tryLoadSolver : SolverId -> DistributedProcessingResult<Solver>
+            tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
+            getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
+            deleteRunQueue : RunQueueId -> DistributedProcessingUnitResult
         }
 
-        static member create (i : WorkerNodeLocalInto) : WorkerNodeProxy =
+        member p.tryRunSolverProcessProxy =
+            {
+                tryGetSolverLocation = p.tryGetSolverLocation
+                failedSolverProxy =
+                    {
+                        tryUpdateFailedSolver = p.tryUpdateFailedSolver
+                        createMessage = p.createMessage
+                        saveMessage = p.saveMessage
+                        getFailedSolverMessageInfo = p.getFailedSolverMessageInfo
+                        deleteRunQueue = p.deleteRunQueue
+                    }
+            }
+
+        static member create (i : WorkerNodeServiceInfo) : WorkerNodeProxy =
             {
                 saveModelData = saveModelData
                 requestCancellation = tryRequestCancelRunQueue
                 notifyOfResults = fun q r -> tryNotifyRunQueue q (Some r)
-                loadAllActiveRunQueueId = loadAllActiveRunQueueId
-                tryRunSolverProcess = tryRunSolverProcess (tryGetSolverLocation i) (Some i.solverOutputLocation)
+                // loadAllActiveRunQueueId = loadAllActiveRunQueueId
+                loadAllNotStartedRunQueueId = loadAllNotStartedRunQueueId
+                tryGetSolverLocation = tryGetSolverLocation i.workerNodeLocalInto
+                tryRunSolverProcess = tryRunSolverProcess (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
+                tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
                 unpackSolver = unpackSolver
+                copyAppSettings = copyAppSettings
+                checkSolverRunning = checkSolverRunning i.workerNodeLocalInto
                 setSolverDeployed = setSolverDeployed
+                createMessage = createMessage messagingDataVersion i.workerNodeInfo.workerNodeId.messagingClientId
+                saveMessage = saveMessage<DistributedProcessingMessageData> messagingDataVersion
                 loadAllNotDeployedSolverId = loadAllNotDeployedSolverId
+                tryLoadSolver = tryLoadSolver
+                tryUpdateFailedSolver = tryUpdateFailedSolver
+                getFailedSolverMessageInfo = getFailedSolverMessageInfo i.workerNodeInfo.partitionerId
+                deleteRunQueue = deleteRunQueue
             }
 
 
@@ -289,6 +505,30 @@ module WorkerNodeService =
             workerNodeProxy : WorkerNodeProxy
             messagingClientData : MessagingClientData<DistributedProcessingMessageData>
         }
+
+
+    let notifyOfSolverDeployment (ctx : WorkerNodeRunnerContext) s r =
+        let elevate e = e |> NotifyOfSolverDeploymentMessagingErr |> NotifyOfSolverDeploymentErr
+        let toError e = e |> elevate |> Error
+
+        let r1 =
+            {
+                recipientInfo =
+                    {
+                        recipient = ctx.workerNodeServiceInfo.workerNodeInfo.partitionerId.messagingClientId
+                        deliveryType = GuaranteedDelivery
+                    }
+
+                messageData = (ctx.workerNodeServiceInfo.workerNodeInfo.workerNodeId, s, r) |> SolverDeploymentResultMsg |> PartitionerMsg |> UserMsg
+            }
+            |> ctx.workerNodeProxy.createMessage
+            |> ctx.workerNodeProxy.saveMessage
+
+        match r, r1 with
+        | Ok (), Ok () -> Ok()
+        | Error e, Ok () -> Error e
+        | Ok (), Error e1 -> toError e1
+        | Error e, Error e1 -> e + (elevate e1) |> Error
 
 #endif
 

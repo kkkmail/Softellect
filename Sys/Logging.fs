@@ -1,126 +1,183 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Diagnostics
+open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
+open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
+open log4net
+// open Softellect.Sys.Primitives
 
-/// TODO kk:20240824 - Needs reworking as it is clumsy and subsequently it is not used at all.
 module Logging =
 
-    /// An encapsulation of a logger name.
-    type LoggerName =
-        | LoggerName of string
-
-        member this.value = let (LoggerName v) = this in v
+    let private projectNameProperty = "ProjectName"
+    let private log4netConfig = "log4net.config"
+    let private log4netDefaultLogName = "log4net-default"
 
 
-    //type LogData<'E> =
-    //    | SimpleLogData of string
-    //    | ErrLogData of 'E
+    type ProjectName =
+        | ProjectName of string
+
+        member this.value = let (ProjectName v) = this in v
+        static member defaultValue = ProjectName "Default"
+
+
+    let configureProjectName (ProjectName projectName) =
+        let globalContext = GlobalContext.Properties
+        globalContext[projectNameProperty] <- projectName
+
+
+    let private tryConfigureProjectName po =
+        match po with
+        | Some p -> configureProjectName p
+        | None -> ()
+
+
+    /// Configure a default subfolder for logs.
+    let private dummy = configureProjectName ProjectName.defaultValue
 
 
     type LogLevel =
-        | CritLog
-        | ErrLog
-        | WarnLog
-        | InfoLog
+        | TraceLog
         | DebugLog
+        | InfoLog
+        | WarnLog
+        | ErrorLog
+        | CritLog
+
+        /// The right padded with spaces fixed length name to be used in standard logging.
+        member l.logName =
+            match l with
+            | TraceLog -> "TRACE"
+            | DebugLog -> "DEBUG"
+            | InfoLog ->  "INFO "
+            | WarnLog ->  "WARN "
+            | ErrorLog -> "ERROR"
+            | CritLog ->  "CRIT "
+
+        /// A human-friendly value to be used in appsettings.json.
+        member l.value =
+            match l with
+            | TraceLog -> "Trace"
+            | DebugLog -> "Debug"
+            | InfoLog ->  "Information"
+            | WarnLog ->  "Warning"
+            | ErrorLog -> "Error"
+            | CritLog ->  "Critical"
+
+        /// A Microsoft.Extensions.Logging.LogLevel value.
+        member l.logLevel =
+            match l with
+            | TraceLog -> LogLevel.Trace
+            | DebugLog -> LogLevel.Debug
+            | InfoLog ->  LogLevel.Information
+            | WarnLog ->  LogLevel.Warning
+            | ErrorLog -> LogLevel.Error
+            | CritLog ->  LogLevel.Critical
+
+        static member tryDeserialize (s : string) =
+            match s.Trim() with
+            | "Trace" -> TraceLog |> Some
+            | "Debug" -> DebugLog |> Some
+            | "Information" -> InfoLog |> Some
+            | "Warning" -> WarnLog |> Some
+            | "Error" -> ErrorLog |> Some
+            | "Critical" -> CritLog |> Some
+            | _ -> None
+
+        static member defaultValue = DebugLog
 
 
-    //type LogMessage<'E> =
-    //    {
-    //        logLevel : LogLevel
-    //        logData : LogData<'E>
-    //    }
+    type Logger private () =
+        static let stopwatch = Stopwatch.StartNew()
 
+        /// Default log implementation.
+        static let mutable logImpl: LogLevel -> obj -> string -> unit =
+            fun level message callerName ->
+                let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
+                printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
 
-    //type Logger<'E> =
-    //    {
-    //        logCrit : LogData<'E> -> unit
-    //        logError : LogData<'E> -> unit
-    //        logWarn : LogData<'E> -> unit
-    //        logInfo : LogData<'E> -> unit
-    //        logDebug : LogData<'E> -> unit
-    //    }
+        /// Minimum log level for filtering messages.
+        static let mutable minLogLevel = DebugLog
 
-    //    member this.logCritString s = s |> SimpleLogData |> this.logCrit
-    //    member this.logErrorString s = s |> SimpleLogData |> this.logError
-    //    member this.logWarnString s = s |> SimpleLogData |> this.logWarn
-    //    member this.logInfoString s = s |> SimpleLogData |> this.logInfo
-    //    member this.logDebugString s = s |> SimpleLogData |> this.logDebug
+        /// Logging enabled/disabled flag.
+        static let mutable isLoggingEnabled = true
 
-    //    member this.logCritData e = e |> ErrLogData |> this.logCrit
-    //    member this.logErrorData e = e |> ErrLogData |> this.logError
-    //    member this.logWarnData e = e |> ErrLogData |> this.logWarn
-    //    member this.logInfoData e = e |> ErrLogData |> this.logInfo
-    //    member this.logDebugData e = e |> ErrLogData |> this.logDebug
+        /// Configure the logger implementation.
+        static member configureLogger impl = logImpl <- impl
 
-    //    member this.logIfError v =
-    //        match v with
-    //        | Ok _ -> ()
-    //        | Error e -> this.logErrorData e
+        /// Enable logging.
+        static member enableLogging () = isLoggingEnabled <- true
 
-    //        v
+        /// Disable logging.
+        static member disableLogging () = isLoggingEnabled <- false
 
-    //    static member defaultValue : Logger<'E> =
-    //        {
-    //            logCrit = printfn "CRIT: %A, %A" DateTime.Now
-    //            logError = printfn "ERROR: %A, %A" DateTime.Now
-    //            logWarn = printfn "WARN: %A, %A" DateTime.Now
-    //            logInfo = printfn "INFO: %A, %A" DateTime.Now
-    //            logDebug = printfn "DEBUG: %A, %A" DateTime.Now
-    //        }
+        /// Adjust the minimum log level (verbosity).
+        static member setMinLogLevel level = minLogLevel <- level
 
-    //    static member releaseValue : Logger<'E> =
-    //        {
-    //            logCrit = printfn "CRIT: %A, %A" DateTime.Now
-    //            logError = printfn "ERROR: %A, %A" DateTime.Now
-    //            logWarn = printfn "WARN: %A, %A" DateTime.Now
-    //            logInfo = printfn "INFO: %A, %A" DateTime.Now
-    //            logDebug = fun _ -> ()
-    //        }
+        /// Private log function with verbosity and enable/disable checks.
+        static member private log (level: LogLevel) (message: obj) (callerName: string) =
+            if isLoggingEnabled && level >= minLogLevel then logImpl level message callerName
 
-    type Logger =
-        {
-            logCrit : string -> unit
-            logError : string -> unit
-            logWarn : string -> unit
-            logInfo : string -> unit
-            logDebug : string -> unit
-        }
+        static member logTrace (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log TraceLog message (defaultArg callerName "")
 
-        member this.logIfError v =
-            match v with
+        static member logDebug (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log DebugLog message (defaultArg callerName "")
+
+        static member logInfo (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log InfoLog message (defaultArg callerName "")
+
+        static member logWarn (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log WarnLog message (defaultArg callerName "")
+
+        static member logError (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log ErrorLog message (defaultArg callerName "")
+
+        static member logIfError (result, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            match result with
             | Ok _ -> ()
-            | Error e -> this.logError $"%A{e}"
+            | Error e -> Logger.log ErrorLog $"%A{e}" (defaultArg callerName "")
 
-            v
+            result
 
-        static member defaultValue =
-            {
-                logCrit = printfn "CRIT: %A, %A" DateTime.Now
-                logError = printfn "ERROR: %A, %A" DateTime.Now
-                logWarn = printfn "WARN: %A, %A" DateTime.Now
-                logInfo = printfn "INFO: %A, %A" DateTime.Now
-                logDebug = printfn "DEBUG: %A, %A" DateTime.Now
-            }
+        static member logCrit (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            Logger.log CritLog message (defaultArg callerName "")
 
-        static member releaseValue =
-            {
-                logCrit = printfn "CRIT: %A, %A" DateTime.Now
-                logError = printfn "ERROR: %A, %A" DateTime.Now
-                logWarn = printfn "WARN: %A, %A" DateTime.Now
-                logInfo = printfn "INFO: %A, %A" DateTime.Now
-                logDebug = fun _ -> ()
-            }
+        static member logCritIfError (result, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            match result with
+            | Ok _ -> ()
+            | Error e -> Logger.log CritLog $"%A{e}" (defaultArg callerName "")
+
+            result
 
 
-        static member getCallerName([<Optional; DefaultParameterValue(false)>] ?addTimeStamp: bool, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?memberName: string) =
-            let memberName = defaultArg memberName ""
-            let a = defaultArg addTimeStamp false
+    let configureLogging po (logging: ILoggingBuilder) =
+        tryConfigureProjectName po
+        logging.ClearProviders() |> ignore
+        logging.AddConsole() |> ignore
+        logging.AddDebug() |> ignore
+        logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
-            if a then $"{memberName}__{DateTime.Now:yyyyMMdd_HHmm}"
-            else $"{memberName}"
 
+    let configureServiceLogging po (logging: ILoggingBuilder) =
+        tryConfigureProjectName po
+        logging.ClearProviders() |> ignore
+        logging.AddLog4Net(log4netConfig) |> ignore
+        logging.SetMinimumLevel(LogLevel.Trace) |> ignore
 
-    type GetLogger = LoggerName -> Logger
+        let log4NetLogger = LogManager.GetLogger(log4netDefaultLogName)
+
+        Logger.configureLogger (fun level message callerName ->
+            let m = $"{(callerName.PadRight(30))} # {message}"
+
+            match level with
+            | TraceLog -> log4NetLogger.Trace(m, null)
+            | DebugLog -> log4NetLogger.Debug(m)
+            | InfoLog -> log4NetLogger.Info(m)
+            | WarnLog -> log4NetLogger.Warn(m)
+            | ErrorLog -> log4NetLogger.Error(m)
+            | CritLog -> log4NetLogger.Fatal(m)
+            )
