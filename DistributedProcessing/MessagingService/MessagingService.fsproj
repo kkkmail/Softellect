@@ -8,8 +8,8 @@
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>9.0.100.4</Version>
-        <PackageVersion>9.0.100.4</PackageVersion>
+        <Version>9.0.100.5</Version>
+        <PackageVersion>9.0.100.5</PackageVersion>
         <Description>Distributed processing messaging service...</Description>
         <PackageTags>client;server;framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
