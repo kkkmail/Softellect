@@ -3,17 +3,17 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <Platforms>x64</Platforms>
-        <AssemblyName>Softellect.Analytics</AssemblyName>
+        <AssemblyName>Softellect.Math</AssemblyName>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <Authors>Konstantin Konstantinov</Authors>
         <Company>Softellect Systems, Inc.</Company>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Version>9.0.100.5</Version>
         <PackageVersion>9.0.100.5</PackageVersion>
-        <Description>Softellect Analytics...</Description>
+        <Description>Softellect Math Library provides primitive mathematical types and functionality needed by other Softellect packages.</Description>
         <PackageTags>framework</PackageTags>
         <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Analytics</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Math</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     </PropertyGroup>
@@ -32,36 +32,25 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="ml32i4.dll" Pack="true">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Pack>true</Pack>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </None>
-        <None Include="ml64i4.dll" Pack="true">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Pack>true</Pack>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </None>
         <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <Compile Include="Primitives.fs" />
-        <Compile Include="AppSettings.fs" />
-        <Compile Include="Wolfram.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Plotly.NET" Version="5.1.0" />
-        <PackageReference Include="Plotly.NET.ImageExport" Version="6.1.0" />
-        <PackageReference Include="Wolfram.NETLink" Version="1.7.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Sys\Sys.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Update="FSharp.Core" Version="9.0.201" />
+        <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Sys\Sys.fsproj" />
     </ItemGroup>
 
 </Project>

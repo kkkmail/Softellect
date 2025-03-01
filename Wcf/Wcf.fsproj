@@ -52,12 +52,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CoreWCF.Http" Version="1.6.0" />
-        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0" />
-        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+        <PackageReference Include="CoreWCF.Http" Version="1.7.0" />
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.7.0" />
+        <PackageReference Include="CoreWCF.Primitives" Version="1.7.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.2" />
+        <PackageReference Update="FSharp.Core" Version="9.0.201" />
     </ItemGroup>
 
 </Project>

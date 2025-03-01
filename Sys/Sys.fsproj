@@ -63,28 +63,28 @@
     <ItemGroup>
         <PackageReference Include="Argu" Version="6.2.5" />
         <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
-        <PackageReference Include="CoreWCF.Http" Version="1.6.0" />
-        <PackageReference Include="CoreWCF.NetTcp" Version="1.6.0" />
-        <PackageReference Include="CoreWCF.Primitives" Version="1.6.0" />
+        <PackageReference Include="CoreWCF.Http" Version="1.7.0" />
+        <PackageReference Include="CoreWCF.NetTcp" Version="1.7.0" />
+        <PackageReference Include="CoreWCF.Primitives" Version="1.7.0" />
         <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
         <PackageReference Include="FsPickler" Version="5.3.2" />
         <PackageReference Include="FsPickler.Json" Version="5.3.2" />
-        <PackageReference Include="log4net" Version="3.0.3" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+        <PackageReference Include="log4net" Version="3.0.4" />
+        <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
         <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.2" />
         <PackageReference Include="System.ServiceModel.Http" Version="8.1.1" />
         <PackageReference Include="System.ServiceModel.NetTcp" Version="8.1.1" />
         <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.1" />
-        <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
-        <PackageReference Include="SQLProvider" Version="1.4.2" />
+        <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.2" />
+        <PackageReference Update="FSharp.Core" Version="9.0.201" />
+        <PackageReference Include="SQLProvider" Version="1.4.9" />
         <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
         <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
         <PackageReference Include="System.Data.Common" Version="4.3.0" />
         <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-        <PackageReference Include="FSharp.Data" Version="6.4.0" />
+        <PackageReference Include="FSharp.Data" Version="6.4.1" />
     </ItemGroup>
 
 </Project>

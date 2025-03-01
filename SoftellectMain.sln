@@ -85,6 +85,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WorkerNodeAdm", "Apps\Distr
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WorkerNodeService", "Apps\DistrProc\WorkerNodeService\WorkerNodeService.fsproj", "{2515893C-D09D-432A-ADA8-B341558D1258}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Math", "Math\Math.fsproj", "{440AF9D1-CAAD-4EAD-B66F-98F9AA8EE859}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -219,6 +221,10 @@ Global
 		{2515893C-D09D-432A-ADA8-B341558D1258}.Debug|x64.Build.0 = Debug|x64
 		{2515893C-D09D-432A-ADA8-B341558D1258}.Release|x64.ActiveCfg = Release|x64
 		{2515893C-D09D-432A-ADA8-B341558D1258}.Release|x64.Build.0 = Release|x64
+		{440AF9D1-CAAD-4EAD-B66F-98F9AA8EE859}.Debug|x64.ActiveCfg = Debug|x64
+		{440AF9D1-CAAD-4EAD-B66F-98F9AA8EE859}.Debug|x64.Build.0 = Debug|x64
+		{440AF9D1-CAAD-4EAD-B66F-98F9AA8EE859}.Release|x64.ActiveCfg = Release|x64
+		{440AF9D1-CAAD-4EAD-B66F-98F9AA8EE859}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
