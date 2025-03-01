@@ -42,6 +42,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <Compile Include="Primitives.fs" />
+        <Compile Include="FredholmKernel.fs" />
     </ItemGroup>
 
     <ItemGroup>
