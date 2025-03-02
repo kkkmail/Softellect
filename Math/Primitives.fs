@@ -431,6 +431,29 @@ module Primitives =
         }
 
 
+    type InseparableSparseArray2D<'T> =
+        {
+            xyValues : SparseValue2D<'T>[]
+            xyMap : Map<int * int, 'T>
+        }
+
+        member inline a.tryFind i j = a.xyMap.TryFind(i, j)
+
+
+    type SeparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)> =
+        {
+            xValues : SparseValue<'T>[]
+            yValues : SparseValue<'T>[]
+            xMap : Map<int, 'T>
+            yMap : Map<int, 'T>
+        }
+
+        member inline a.tryFind i j =
+            match a.xMap.TryFind i, a.yMap.TryFind j with
+            | Some x, Some y -> x * y |> Some
+            | _ -> None
+
+
     /// SparseArray2D with an internal lookup map for performance
     /// See: https://github.com/dotnet/fsharp/issues/3302 for (*) operator.
     [<RequireQualifiedAccess>]
@@ -439,92 +462,517 @@ module Primitives =
                          and ^T: (static member ( - ) : ^T * ^T -> ^T)
                          and ^T: (static member Zero : ^T)
                          and ^T: equality> =
-        | SparseArray2D of SparseValue2D<'T>[] * Map<int * int, 'T>
+        | InseparableSparseArray2D of InseparableSparseArray2D<'T>
+        | SeparableSparseArray2D of SeparableSparseArray2D<'T>
 
-        /// Access the raw array of sparse values
-        member inline r.value = let (SparseArray2D(v, _)) = r in v
+        // /// Access the raw array of sparse values
+        // member inline r.value = let (SparseArray2D(v, _)) = r in v
+
+        /// Generate the complete array of sparse values
+        member inline r.value() =
+            match r with
+            | InseparableSparseArray2D a -> a.xyValues
+            | SeparableSparseArray2D s ->
+                [|
+                    for x in s.xValues do
+                        for y in s.yValues do
+                            yield {
+                                i = x.i
+                                j = y.i
+                                value2D = x.value1D * y.value1D
+                            }
+                |]
 
         /// Access the internal lookup map
-        member inline r.lookupMap = let (SparseArray2D(_, m)) = r in m
+        member inline r.tryFind i j =
+            match r with
+            | InseparableSparseArray2D a -> a.tryFind i j
+            | SeparableSparseArray2D a -> a.tryFind i j
 
         static member inline private createLookupMap (values: SparseValue2D<'T>[]) =
             values
             |> Array.map (fun v -> (v.i, v.j), v.value2D)
             |> Map.ofArray
 
+        static member inline private createLookupMap (values: SparseValue<'T>[]) =
+            values
+            |> Array.map (fun v -> (v.i), v.value1D)
+            |> Map.ofArray
+
         /// Create a SparseArray2D from an array of SparseValue2D
-        static member inline create (values: SparseValue2D<'T>[]) : SparseArray2D<'T> = SparseArray2D(values, SparseArray2D.createLookupMap values)
+        static member inline create (values: SparseValue2D<'T>[]) : SparseArray2D<'T> =
+            { xyValues = values; xyMap = SparseArray2D.createLookupMap values } |> InseparableSparseArray2D
+
+        /// Create a separable SparseArray2D from two arrays of SparseValue
+        static member inline create (xValues: SparseValue<'T>[], yValues: SparseValue<'T>[]) : SparseArray2D<'T> =
+            {
+                xValues = xValues
+                yValues = yValues
+                xMap = SparseArray2D.createLookupMap xValues
+                yMap = SparseArray2D.createLookupMap yValues
+            } |> SeparableSparseArray2D
+
+
+
+
+
+
+        /// Element-wise addition of two SparseArray2D instances
+        static member inline (+) (a: SparseArray2D<'T>, b: SparseArray2D<'T>): SparseArray2D<'T> =
+            match a, b with
+            | SeparableSparseArray2D sa, SeparableSparseArray2D sb ->
+                // For separable + separable
+                // Addition of separable arrays always produces an inseparable result
+                let allIndices =
+                    seq {
+                        for x in sa.xValues do
+                            for y in sa.yValues do
+                                yield (x.i, y.i)
+                        for x in sb.xValues do
+                            for y in sb.yValues do
+                                yield (x.i, y.i)
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let sum = av + bv
+                            let zero = Unchecked.defaultof<'T>
+                            if sum = zero then None
+                            else Some { i = i; j = j; value2D = sum }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv -> Some { i = i; j = j; value2D = bv }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | SeparableSparseArray2D sa, InseparableSparseArray2D ib ->
+                // For separable + inseparable
+                let allIndices =
+                    seq {
+                        for x in sa.xValues do
+                            for y in sa.yValues do
+                                yield (x.i, y.i)
+                        yield! ib.xyValues |> Array.map (fun v -> (v.i, v.j))
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let sum = av + bv
+                            let zero = Unchecked.defaultof<'T>
+                            if sum = zero then None
+                            else Some { i = i; j = j; value2D = sum }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv -> Some { i = i; j = j; value2D = bv }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, SeparableSparseArray2D sb ->
+                // For inseparable + separable
+                let allIndices =
+                    seq {
+                        yield! ia.xyValues |> Array.map (fun v -> (v.i, v.j))
+                        for x in sb.xValues do
+                            for y in sb.yValues do
+                                yield (x.i, y.i)
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let sum = av + bv
+                            let zero = Unchecked.defaultof<'T>
+                            if sum = zero then None
+                            else Some { i = i; j = j; value2D = sum }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv -> Some { i = i; j = j; value2D = bv }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, InseparableSparseArray2D ib ->
+                // For inseparable + inseparable
+                let allIndices =
+                    Set.union
+                        (ia.xyValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+                        (ib.xyValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = ia.tryFind i j
+                        let bVal = ib.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let sum = av + bv
+                            let zero = Unchecked.defaultof<'T>
+                            if sum = zero then None
+                            else Some { i = i; j = j; value2D = sum }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv -> Some { i = i; j = j; value2D = bv }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+        /// Element-wise subtraction of two SparseArray2D instances
+        static member inline (-) (a: SparseArray2D<'T>, b: SparseArray2D<'T>): SparseArray2D<'T> =
+            match a, b with
+            | SeparableSparseArray2D sa, SeparableSparseArray2D sb ->
+                // For separable - separable
+                let allIndices =
+                    seq {
+                        for x in sa.xValues do
+                            for y in sa.yValues do
+                                yield (x.i, y.i)
+                        for x in sb.xValues do
+                            for y in sb.yValues do
+                                yield (x.i, y.i)
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let diff = av - bv
+                            let zero = Unchecked.defaultof<'T>
+                            if diff = zero then None
+                            else Some { i = i; j = j; value2D = diff }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv ->
+                            // Negate bv for subtraction
+                            let negB = Unchecked.defaultof<'T> - bv
+                            Some { i = i; j = j; value2D = negB }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | SeparableSparseArray2D sa, InseparableSparseArray2D ib ->
+                // For separable - inseparable
+                let allIndices =
+                    seq {
+                        for x in sa.xValues do
+                            for y in sa.yValues do
+                                yield (x.i, y.i)
+                        yield! ib.xyValues |> Array.map (fun v -> (v.i, v.j))
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let diff = av - bv
+                            let zero = Unchecked.defaultof<'T>
+                            if diff = zero then None
+                            else Some { i = i; j = j; value2D = diff }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv ->
+                            // Negate bv for subtraction
+                            let negB = Unchecked.defaultof<'T> - bv
+                            Some { i = i; j = j; value2D = negB }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, SeparableSparseArray2D sb ->
+                // For inseparable - separable
+                let allIndices =
+                    seq {
+                        yield! ia.xyValues |> Array.map (fun v -> (v.i, v.j))
+                        for x in sb.xValues do
+                            for y in sb.yValues do
+                                yield (x.i, y.i)
+                    } |> Set.ofSeq
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = a.tryFind i j
+                        let bVal = b.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let diff = av - bv
+                            let zero = Unchecked.defaultof<'T>
+                            if diff = zero then None
+                            else Some { i = i; j = j; value2D = diff }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv ->
+                            // Negate bv for subtraction
+                            let negB = Unchecked.defaultof<'T> - bv
+                            Some { i = i; j = j; value2D = negB }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, InseparableSparseArray2D ib ->
+                // For inseparable - inseparable
+                let allIndices =
+                    Set.union
+                        (ia.xyValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+                        (ib.xyValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+
+                let resultValues =
+                    allIndices
+                    |> Set.toArray
+                    |> Array.choose (fun (i, j) ->
+                        let aVal = ia.tryFind i j
+                        let bVal = ib.tryFind i j
+
+                        match aVal, bVal with
+                        | Some av, Some bv ->
+                            let diff = av - bv
+                            let zero = Unchecked.defaultof<'T>
+                            if diff = zero then None
+                            else Some { i = i; j = j; value2D = diff }
+                        | Some av, None -> Some { i = i; j = j; value2D = av }
+                        | None, Some bv ->
+                            // Negate bv for subtraction
+                            let negB = Unchecked.defaultof<'T> - bv
+                            Some { i = i; j = j; value2D = negB }
+                        | None, None -> None
+                    )
+
+                SparseArray2D.create resultValues
 
         /// Element-wise multiplication of two SparseArray2D instances
-        static member inline (*) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
-            let aValues = a.value
-            let bMap = b.lookupMap
+        static member inline (*) (a: SparseArray2D<'T>, b: SparseArray2D<'T>): SparseArray2D<'T> =
+            match a, b with
+            | SeparableSparseArray2D sa, SeparableSparseArray2D sb ->
+                // For separable * separable, the result is separable
+                // We multiply the respective x and y components
+                let resultXValues =
+                    [|
+                        for xA in sa.xValues do
+                            for xB in sb.xValues do
+                                if xA.i = xB.i then
+                                    let product = xA.value1D * xB.value1D
+                                    let zero = Unchecked.defaultof<'T>
+                                    if product <> zero then
+                                        yield { i = xA.i; value1D = product }
+                    |]
 
-            // Perform the element-wise multiplication
-            let resultValues =
-                aValues
-                |> Array.choose (fun aVal ->
-                    // Try to find corresponding element in b
-                    match bMap.TryFind (aVal.i, aVal.j) with
-                    | Some bVal ->
-                        // Multiply the values
-                        let product = aVal.value2D * bVal
-                        // Only include non-zero results
-                        let zero = Unchecked.defaultof<'T>
-                        if product = zero then None
-                        else Some { i = aVal.i; j = aVal.j; value2D = product }
-                    | None -> None // No corresponding element in b, result is zero
-                )
+                let resultYValues =
+                    [|
+                        for yA in sa.yValues do
+                            for yB in sb.yValues do
+                                if yA.i = yB.i then
+                                    let product = yA.value1D * yB.value1D
+                                    let zero = Unchecked.defaultof<'T>
+                                    if product <> zero then
+                                        yield { i = yA.i; value1D = product }
+                    |]
 
-            // Create a new SparseArray2D with the result values
-            SparseArray2D.create resultValues
+                SparseArray2D.create (resultXValues, resultYValues)
+
+            | SeparableSparseArray2D sa, InseparableSparseArray2D ib ->
+                // For separable * inseparable
+                let resultValues =
+                    ib.xyValues
+                    |> Array.choose (fun bVal ->
+                        match sa.xMap.TryFind bVal.i, sa.yMap.TryFind bVal.j with
+                        | Some xv, Some yv ->
+                            let saValue = xv * yv
+                            let product = saValue * bVal.value2D
+                            let zero = Unchecked.defaultof<'T>
+                            if product = zero then None
+                            else Some { i = bVal.i; j = bVal.j; value2D = product }
+                        | _ -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, SeparableSparseArray2D sb ->
+                // For inseparable * separable
+                let resultValues =
+                    ia.xyValues
+                    |> Array.choose (fun aVal ->
+                        match sb.xMap.TryFind aVal.i, sb.yMap.TryFind aVal.j with
+                        | Some xv, Some yv ->
+                            let sbValue = xv * yv
+                            let product = aVal.value2D * sbValue
+                            let zero = Unchecked.defaultof<'T>
+                            if product = zero then None
+                            else Some { i = aVal.i; j = aVal.j; value2D = product }
+                        | _ -> None
+                    )
+
+                SparseArray2D.create resultValues
+
+            | InseparableSparseArray2D ia, InseparableSparseArray2D ib ->
+                // For inseparable * inseparable
+                let resultValues =
+                    ia.xyValues
+                    |> Array.choose (fun aVal ->
+                        match ib.tryFind aVal.i aVal.j with
+                        | Some bVal ->
+                            let product = aVal.value2D * bVal
+                            let zero = Unchecked.defaultof<'T>
+                            if product = zero then None
+                            else Some { i = aVal.i; j = aVal.j; value2D = product }
+                        | None -> None
+                    )
+
+                SparseArray2D.create resultValues
 
 
-    // /// See: https://github.com/dotnet/fsharp/issues/3302 for (*) operator.
-    // [<RequireQualifiedAccess>]
-    // type SparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member Zero : ^T)
-    //                      and ^T: equality> =
-    //     | SparseArray2D of SparseValue2D<'T>[]
-    //
-    //     member inline r.value = let (SparseArray2D v) = r in v
-    //
-    //     /// Element-wise multiplication of two SparseArray2D instances
-    //     static member inline (*) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
-    //         let aValues = a.value
-    //         let bValues = b.value
-    //
-    //         // Create a map for faster lookup in the second array
-    //         let bMap =
-    //             bValues
-    //             |> Array.map (fun v -> (v.i, v.j), v.value2D)
-    //             |> Map.ofArray
-    //
-    //         // Perform the element-wise multiplication
-    //         let result =
-    //             aValues
-    //             |> Array.choose (fun aVal ->
-    //                 // Try to find corresponding element in b
-    //                 match bMap.TryFind(aVal.i, aVal.j) with
-    //                 | Some bVal ->
-    //                     // Multiply the values
-    //                     let product = aVal.value2D * bVal
-    //                     // Only include non-zero results
-    //                     let zero = LanguagePrimitives.GenericZero<'T>
-    //                     if product = zero then None
-    //                     else Some { i = aVal.i; j = aVal.j; value2D = product }
-    //                 | None -> None // No corresponding element in b, result is zero
-    //             )
-    //
-    //         SparseArray2D result
+
+
+
+
+
+
+        // /// Element-wise addition of two SparseArray2D instances
+        // static member inline (+) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
+        //     let aValues = a.value
+        //     let aMap = a.lookupMap
+        //     let bValues = b.value
+        //     let bMap = b.lookupMap
+        //
+        //     // Get all unique indices from both arrays
+        //     let allIndices =
+        //         Set.union
+        //             (aValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+        //             (bValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+        //
+        //     // Create result array
+        //     let resultValues =
+        //         allIndices
+        //         |> Set.toArray
+        //         |> Array.choose (fun (i, j) ->
+        //             let aVal = aMap.TryFind((i, j))
+        //             let bVal = bMap.TryFind((i, j))
+        //
+        //             match aVal, bVal with
+        //             | Some a, Some b ->
+        //                 let sum = a + b
+        //                 let zero = Unchecked.defaultof<'T>
+        //                 if sum = zero then None
+        //                 else Some { i = i; j = j; value2D = sum }
+        //             | Some a, None -> Some { i = i; j = j; value2D = a }
+        //             | None, Some b -> Some { i = i; j = j; value2D = b }
+        //             | None, None -> None // Should never happen given our allIndices set
+        //         )
+        //
+        //     // Create a new SparseArray2D with the result
+        //     let resultMap =
+        //         resultValues
+        //         |> Array.map (fun v -> (v.i, v.j), v.value2D)
+        //         |> Map.ofArray
+        //
+        //     SparseArray2D(resultValues, resultMap)
+        //
+        // /// Element-wise subtraction of two SparseArray2D instances
+        // static member inline (-) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
+        //     let aValues = a.value
+        //     let aMap = a.lookupMap
+        //     let bValues = b.value
+        //     let bMap = b.lookupMap
+        //
+        //     // Get all unique indices from both arrays
+        //     let allIndices =
+        //         Set.union
+        //             (aValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+        //             (bValues |> Array.map (fun v -> (v.i, v.j)) |> Set.ofArray)
+        //
+        //     // Create result array
+        //     let resultValues =
+        //         allIndices
+        //         |> Set.toArray
+        //         |> Array.choose (fun (i, j) ->
+        //             let aVal = aMap.TryFind((i, j))
+        //             let bVal = bMap.TryFind((i, j))
+        //
+        //             match aVal, bVal with
+        //             | Some a, Some b ->
+        //                 let diff = a - b
+        //                 let zero = Unchecked.defaultof<'T>
+        //                 if diff = zero then None
+        //                 else Some { i = i; j = j; value2D = diff }
+        //             | Some a, None -> Some { i = i; j = j; value2D = a }
+        //             | None, Some b ->
+        //                 // We need to negate b here since we're computing a - b
+        //                 let negB = Unchecked.defaultof<'T> - b  // This assumes Zero - b gives -b
+        //                 Some { i = i; j = j; value2D = negB }
+        //             | None, None -> None // Should never happen given our allIndices set
+        //         )
+        //
+        //     // Create a new SparseArray2D with the result
+        //     let resultMap =
+        //         resultValues
+        //         |> Array.map (fun v -> (v.i, v.j), v.value2D)
+        //         |> Map.ofArray
+        //
+        //     SparseArray2D(resultValues, resultMap)
+        //
+        // /// Element-wise multiplication of two SparseArray2D instances
+        // static member inline (*) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
+        //     let aValues = a.value
+        //     let bMap = b.lookupMap
+        //
+        //     // Perform the element-wise multiplication
+        //     let resultValues =
+        //         aValues
+        //         |> Array.choose (fun aVal ->
+        //             // Try to find corresponding element in b
+        //             match bMap.TryFind (aVal.i, aVal.j) with
+        //             | Some bVal ->
+        //                 // Multiply the values
+        //                 let product = aVal.value2D * bVal
+        //                 // Only include non-zero results
+        //                 let zero = Unchecked.defaultof<'T>
+        //                 if product = zero then None
+        //                 else Some { i = aVal.i; j = aVal.j; value2D = product }
+        //             | None -> None // No corresponding element in b, result is zero
+        //         )
+        //
+        //     // Create a new SparseArray2D with the result values
+        //     SparseArray2D.create resultValues
 
         /// Multiplies a 2D sparse array by a scalar value.
         /// Returns a 2D sparse array.
         static member inline (*) (a : SparseArray2D<'T>, b : 'T) : SparseArray2D<'T> =
             let v =
-                a.value
+                a.value()
                 |> Array.map (fun e -> { e with value2D = e.value2D * b })
                 |> SparseArray2D.create
 
@@ -534,7 +982,7 @@ module Primitives =
         /// Returns a 2D sparse array.
         static member inline (*) (a : 'T, b : SparseArray2D<'T>) : SparseArray2D<'T> =
             let v =
-                b.value
+                b.value()
                 |> Array.map (fun e -> { e with value2D = a * e.value2D })
                 |> SparseArray2D.create
 
@@ -544,23 +992,25 @@ module Primitives =
         /// This is NOT a matrix multiplication.
         /// Returns a 2D sparse array.
         static member inline (*) (a : SparseArray2D<'T>, b : LinearMatrix<'T>) : SparseArray2D<'T> =
-            let v =
-                a.value
-                |> Array.map (fun e -> { e with value2D = e.value2D * (b.getValue e.i e.j) })
-                |> SparseArray2D.create
-
-            v
+            // let v =
+            //     a.value
+            //     |> Array.map (fun e -> { e with value2D = e.value2D * (b.getValue e.i e.j) })
+            //     |> SparseArray2D.create
+            //
+            // v
+            failwith ""
 
         /// Multiplies a 2D sparse array by a 2D array (Matrix) element by element.
         /// This is NOT a matrix multiplication.
         /// Returns a 2D sparse array.
         static member inline (*) (a : SparseArray2D<'T>, b : Matrix<'T>) : SparseArray2D<'T> =
-            let v =
-                a.value
-                |> Array.map (fun e -> { e with value2D = e.value2D * b.value[e.i][e.j] })
-                |> SparseArray2D.create
-
-            v
+            // let v =
+            //     a.value
+            //     |> Array.map (fun e -> { e with value2D = e.value2D * b.value[e.i][e.j] })
+            //     |> SparseArray2D.create
+            //
+            // v
+            failwith ""
 
         static member inline createAbove z v =
             v
@@ -604,7 +1054,7 @@ module Primitives =
                 value4D = v.value2D
             }
 
-        static member inline createArray i j (x : SparseArray2D<'T>) : SparseValue4D<'T>[] = x.value |> Array.map (SparseValue4D.create i j)
+        static member inline createArray i j (x : SparseArray2D<'T>) : SparseValue4D<'T>[] = x.value() |> Array.map (SparseValue4D.create i j)
 
 
     type SparseValueArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)

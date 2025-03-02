@@ -122,7 +122,7 @@ module FredholmKernel =
             let len1 = d.xDomain.points.value.Length - 1
             let len2 = d.yDomain.points.value.Length - 1
             let integralValue = d.integralValue len1 len2
-            let sum = a.value |> Array.map integralValue |> Array.sum
+            let sum = a.value() |> Array.map integralValue |> Array.sum
             let retVal = sum |> d.normalize
             retVal
 
@@ -132,7 +132,7 @@ module FredholmKernel =
             let len1 = d.xDomain.points.value.Length - 1
             let len2 = d.yDomain.points.value.Length - 1
             let integralValue = d.integralValue len1 len2
-            let sum = a.value |> Array.map (fun e -> (integralValue e) * (bValue e.i e.j) ) |> Array.sum
+            let sum = a.value() |> Array.map (fun e -> (integralValue e) * (bValue e.i e.j) ) |> Array.sum
             let retVal = sum |> d.normalize
             retVal
 
@@ -150,7 +150,7 @@ module FredholmKernel =
                     let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
                     retVal
 
-            let sum = a.value |> Array.map g |> Array.sum
+            let sum = a.value() |> Array.map g |> Array.sum
             sum
 
         /// Performs a Poisson "evolution" for a given "point".
@@ -168,7 +168,7 @@ module FredholmKernel =
                     let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
                     retVal
 
-            let sum = a.value |> Array.map g |> Array.sum
+            let sum = a.value() |> Array.map g |> Array.sum
             sum
 
         /// Calculates an integral value for a given 2D matrix.
@@ -758,15 +758,15 @@ module FredholmKernel =
 
         static member create (e : EvolutionType) (data : MutationProbabilityParams2D) =
             let domain2D = data.domain2D()
-            let eeMu = domain2D.xDomain.points.value
-            let infMu = domain2D.yDomain.points.value
+            let xMu = domain2D.xDomain.points.value
+            let yMu = domain2D.yDomain.points.value
 
             // These are the values where integration by (x, y) should yield 1 for each (x1, y1).
             // So [][] is by (x1, y1) and the underlying SparseArray2D is by (x, y).
-            let x1y1_xy = eeMu |> Array.mapi (fun i _ -> infMu |> Array.mapi (fun j _ -> MutationProbability2D.create e data i j))
+            let x1y1_xy = xMu |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> MutationProbability2D.create e data i j))
 
             let xy_x1y1_Map =
-                [| for i in 0..(eeMu.Length - 1) -> [| for j in 0..(infMu.Length - 1) -> SparseValue4D.createArray i j (x1y1_xy[i][j]) |] |]
+                [| for i in 0..(xMu.Length - 1) -> [| for j in 0..(yMu.Length - 1) -> SparseValue4D.createArray i j (x1y1_xy[i][j]) |] |]
                 |> Array.concat
                 |> Array.concat
                 |> Array.groupBy (fun e -> e.i1, e.j1)
@@ -774,8 +774,8 @@ module FredholmKernel =
                 |> Map.ofArray
 
             let xy_x1y1 =
-                eeMu
-                |> Array.mapi (fun i _ -> infMu |> Array.mapi (fun j _ -> xy_x1y1_Map[(i, j)]))
+                xMu
+                |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> xy_x1y1_Map[(i, j)]))
 
             {
                 x1y1_xy = SparseArray4D x1y1_xy
