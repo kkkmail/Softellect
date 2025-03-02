@@ -1,7 +1,6 @@
 ﻿namespace Softellect.Math
 
 open System
-open System.Threading.Tasks
 open Softellect.Math.Primitives
 //open Primitives.WolframPrimitives
 //open Primitives.GeneralData
@@ -25,38 +24,7 @@ module FredholmKernel =
             maxValue : double
         }
 
-
-    /// Describes a function domain suitable for integral approximation.
-    /// Equidistant grid is used to reduce the number of multiplications.
-    type Domain =
-        {
-            points : Vector<double>
-            step : double
-            range : double
-        }
-
-        member private d.integralValue xSize (v : SparseValue<double>) =
-            match v.i = 0, v.i = xSize with
-            | true, false -> 0.5 * v.value1D
-            | false, true -> 0.5 * v.value1D
-            | _ -> v.value1D
-
-        member d.noOfIntervals = d.points.value.Length - 1
-
-        member d.integrateValues (v : SparseArray<double>) =
-            let len = d.noOfIntervals
-            let sum = v.value |> Array.map (fun e -> d.integralValue len e) |> Array.sum
-            sum * d.step
-
-        /// Number of points is (noOfIntervals + 1).
-        static member create noOfIntervals (r : DomainRange) =
-            let points = [| for i in 0..noOfIntervals -> r.minValue + (r.maxValue - r.minValue) * (double i) / (double noOfIntervals) |]
-
-            {
-                points = Vector points
-                step = (r.maxValue - r.minValue) / (double noOfIntervals)
-                range = points[noOfIntervals] - points[0]
-            }
+        member d.range = d.maxValue - d.minValue
 
 
     /// Number of intervals in the domain.
@@ -67,17 +35,51 @@ module FredholmKernel =
         static member defaultValue = DomainIntervals 100
 
 
+    /// Describes a function domain suitable for integral approximation.
+    /// Equidistant grid is used to reduce the number of multiplications.
+    type Domain =
+        {
+            points : Vector<double>
+            step : double
+            domainRange : DomainRange
+        }
+
+        member private d.integralValue xSize (v : SparseValue<double>) =
+            match v.i = 0, v.i = xSize with
+            | true, false -> 0.5 * v.value1D
+            | false, true -> 0.5 * v.value1D
+            | _ -> v.value1D
+
+        member d.noOfIntervals = d.points.value.Length - 1 |> DomainIntervals
+
+        member d.integrateValues (v : SparseArray<double>) =
+            let len = d.noOfIntervals.value
+            let sum = v.value |> Array.map (fun e -> d.integralValue len e) |> Array.sum
+            sum * d.step
+
+        /// Number of points is (noOfIntervals + 1).
+        static member create (n : DomainIntervals) (r : DomainRange) =
+            let noOfIntervals = n.value
+            let range = r.range
+            let rn = range / (double noOfIntervals)
+            let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
+
+            {
+                points = Vector points
+                step = range / (double noOfIntervals)
+                domainRange = r
+            }
+
+
     type DomainParams =
         {
             domainIntervals : DomainIntervals
             domainRange : DomainRange
         }
 
-        member dd.domain() = Domain.create dd.domainIntervals.value dd.domainRange
+        member dd.domain() = Domain.create dd.domainIntervals dd.domainRange
 
-    /// Data that describes a rectangle in ee * inf space.
-    /// ee space is naturally limited to [-1, 1] unless we use a conformal-like transformation to extend it to [-Infinity, Infinity].
-    /// inf (information) space is naturally limited at the lower bound (0). The upper bound can be rescaled to any number or even taken to Infinity.
+    /// Data that describes a rectangle in x * y space.
     type Domain2D =
         {
             xDomain : Domain
@@ -86,6 +88,8 @@ module FredholmKernel =
 
         member private d.normalize v = v * d.xDomain.step * d.yDomain.step
 
+        /// Calculate a value to be used in integral approximation.
+        /// Corners carry 0.25 multiplier, edges - 0.5 and the rest - 1.0 (no multiplier).
         member private _.integralValue xSize ySize (v : SparseValue2D<double>) =
             match v.i = 0, v.j = 0, v.i = xSize, v.j = ySize with
             | true, true, false, false -> 0.25 * v.value2D
@@ -100,6 +104,7 @@ module FredholmKernel =
 
             | _ -> v.value2D
 
+        /// Calculates an integral value for a given 2D matrix.
         member private d.integrateValues (a : double[][])=
             let len1 = a.Length - 1
             let len2 = a[0].Length - 1
@@ -112,6 +117,7 @@ module FredholmKernel =
             let retVal = (4.0 * sum - 2.0 * (edgeSum1 + edgeSum2 + edgeSum3 + edgeSum4) + cornerSum) / 4.0 |> d.normalize
             retVal
 
+        /// Calculates an integral value for a given 2D sparse array.
         member d.integrateValues (a : SparseArray2D<double>) =
             let len1 = d.xDomain.points.value.Length - 1
             let len2 = d.yDomain.points.value.Length - 1
@@ -120,6 +126,7 @@ module FredholmKernel =
             let retVal = sum |> d.normalize
             retVal
 
+        /// Calculates an integral value for a multiplication of a given 2D sparse array and linear matrix.
         member private d.integrateValues (a : SparseArray2D<double>, b : LinearMatrix<double>) =
             let bValue = b.getValue
             let len1 = d.xDomain.points.value.Length - 1
@@ -129,7 +136,10 @@ module FredholmKernel =
             let retVal = sum |> d.normalize
             retVal
 
-        /// Calculates how many protocells are created for a given "point".
+        /// Performs a Poisson "evolution" for a given "point".
+        /// This is essentially a tau-leaping algorithm.
+        /// The multiplier controls the step of the evolution.
+        /// The values are considered non-negative and so all negative values are treated as zero.
         member private d.evolve(p : PoissonSingleSampler, multiplier : double, a : SparseArray2D<double>, b : Matrix<int64>) =
             let g (e : SparseValue2D<double>) =
                 let n = b.value[e.i][e.j]
@@ -143,7 +153,9 @@ module FredholmKernel =
             let sum = a.value |> Array.map g |> Array.sum
             sum
 
-        /// Calculates how many protocells are created for a given "point".
+        /// Performs a Poisson "evolution" for a given "point".
+        /// The values are considered non-negative and so all negative values are treated as zero.
+        /// It is the same as above but for a linear matrix.
         member private d.evolve(p : PoissonSingleSampler, a : SparseArray2D<double>, b : LinearMatrix<int64>) =
             let bValue = b.getValue
 
@@ -159,8 +171,10 @@ module FredholmKernel =
             let sum = a.value |> Array.map g |> Array.sum
             sum
 
+        /// Calculates an integral value for a given 2D matrix.
         member d.integrateValues (a : Matrix<double>) = d.integrateValues a.value
 
+        /// Calculates an integral value for a given linear matrix.
         member d.integrateValues (a : LinearMatrix<double>) =
             let len1 = a.d1 - 1
             let len2 = a.d2 - 1
@@ -195,7 +209,7 @@ module FredholmKernel =
         member d.integrateValues (a : SparseArray4D<double>, b : LinearMatrix<double>) =
             a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b))) |> Matrix
 
-        /// Calculates how many protocells are created.
+        // /// Calculates how many protocells are created.
         // member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : Matrix<int64>) =
         //     let evolveFunc i v = v |> Array.map (fun e -> d.evolve (p.getSampler i, multiplier, e, b))
         //
@@ -208,6 +222,10 @@ module FredholmKernel =
         //     else
         //         a.value |> Array.mapi evolveFunc |> Matrix
 
+        /// Performs a Poisson "evolution" for a given state matrix.
+        /// This is essentially a tau-leaping algorithm.
+        /// The multiplier controls the step of the evolution.
+        /// The values are considered non-negative and so all negative values are treated as zero.
         member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : Matrix<int64>) =
             let mapi = if useParallel then Array.Parallel.mapi else Array.mapi
             a.value |> mapi (fun i v -> v |> Array.map (fun e -> d.evolve (p.getSampler i, multiplier, e, b))) |> Matrix
@@ -216,6 +234,7 @@ module FredholmKernel =
         // member d.evolve (p : PoissonSampler, a : SparseArray4D<double>, b : LinearMatrix<int64>) =
         //     a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.evolve (p, e, b))) |> Matrix
 
+        /// Calculates an integral matrix value for a given 4D sparse array.
         member d.integrateValues (a : SparseArray4D<double>) =
             a.value |> Array.map (fun v -> v |> Array.map d.integrateValues) |> Matrix
 
@@ -440,7 +459,7 @@ module FredholmKernel =
 
     /// We want (2 / 3) of the domain range to scale to 1.0.
     let twoThirdInfScale (d : Domain2D) =
-        let one = (2.0 / 3.0) * d.yDomain.range
+        let one = (2.0 / 3.0) * d.yDomain.domainRange.range
         let scale = 1.0 / one
         scale
 
@@ -680,9 +699,10 @@ module FredholmKernel =
             match e with
             | DifferentialEvolution ->
                 let domain = data.domainParams.domain()
+                let range = domain.domainRange.range
                 let mean = domain.points.value[i]
                 let ef = data.epsFuncValue.epsFunc domain
-                let epsFunc x = (ef.invoke domain x) * domain.range / 2.0
+                let epsFunc x = (ef.invoke domain x) * range / 2.0
                 let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2)
                 let values = domain.points.value |> Array.map f |> SparseArray<double>.create data.zeroThreshold
                 let norm = domain.integrateValues values
@@ -802,7 +822,7 @@ module FredholmKernel =
                     }
             }
 
-        member kp.domain2D() = Domain2D.create kp.domainIntervals.value kp.xRange kp.yRange
+        member kp.domain2D() = Domain2D.create kp.domainIntervals kp.xRange kp.yRange
 
     //     static member defaultValue =
     //         {
@@ -865,7 +885,7 @@ module FredholmKernel =
             v
 
         static member create (e : EvolutionType) (p : KernelParams) =
-            let domain2D = Domain2D.create p.domainIntervals.value p.xRange p.yRange
+            let domain2D = Domain2D.create p.domainIntervals p.xRange p.yRange
 
             let mp2 =
                 {
