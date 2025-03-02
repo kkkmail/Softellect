@@ -431,12 +431,94 @@ module Primitives =
         }
 
 
+    /// SparseArray2D with an internal lookup map for performance
     /// See: https://github.com/dotnet/fsharp/issues/3302 for (*) operator.
     [<RequireQualifiedAccess>]
-    type SparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
-        | SparseArray2D of SparseValue2D<'T>[]
+    type SparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
+        | SparseArray2D of SparseValue2D<'T>[] * Map<int * int, 'T>
 
-        member inline r.value = let (SparseArray2D v) = r in v
+        /// Access the raw array of sparse values
+        member inline r.value = let (SparseArray2D(v, _)) = r in v
+
+        /// Access the internal lookup map
+        member inline r.lookupMap = let (SparseArray2D(_, m)) = r in m
+
+        static member inline private createLookupMap (values: SparseValue2D<'T>[]) =
+            values
+            |> Array.map (fun v -> (v.i, v.j), v.value2D)
+            |> Map.ofArray
+
+        /// Create a SparseArray2D from an array of SparseValue2D
+        static member inline create (values: SparseValue2D<'T>[]) : SparseArray2D<'T> = SparseArray2D(values, SparseArray2D.createLookupMap values)
+
+        /// Element-wise multiplication of two SparseArray2D instances
+        static member inline (*) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
+            let aValues = a.value
+            let bMap = b.lookupMap
+
+            // Perform the element-wise multiplication
+            let resultValues =
+                aValues
+                |> Array.choose (fun aVal ->
+                    // Try to find corresponding element in b
+                    match bMap.TryFind (aVal.i, aVal.j) with
+                    | Some bVal ->
+                        // Multiply the values
+                        let product = aVal.value2D * bVal
+                        // Only include non-zero results
+                        let zero = Unchecked.defaultof<'T>
+                        if product = zero then None
+                        else Some { i = aVal.i; j = aVal.j; value2D = product }
+                    | None -> None // No corresponding element in b, result is zero
+                )
+
+            // Create a new SparseArray2D with the result values
+            SparseArray2D.create resultValues
+
+
+    // /// See: https://github.com/dotnet/fsharp/issues/3302 for (*) operator.
+    // [<RequireQualifiedAccess>]
+    // type SparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    //                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
+    //                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
+    //                      and ^T: (static member Zero : ^T)
+    //                      and ^T: equality> =
+    //     | SparseArray2D of SparseValue2D<'T>[]
+    //
+    //     member inline r.value = let (SparseArray2D v) = r in v
+    //
+    //     /// Element-wise multiplication of two SparseArray2D instances
+    //     static member inline (*) (a : SparseArray2D<'T>, b : SparseArray2D<'T>) : SparseArray2D<'T> =
+    //         let aValues = a.value
+    //         let bValues = b.value
+    //
+    //         // Create a map for faster lookup in the second array
+    //         let bMap =
+    //             bValues
+    //             |> Array.map (fun v -> (v.i, v.j), v.value2D)
+    //             |> Map.ofArray
+    //
+    //         // Perform the element-wise multiplication
+    //         let result =
+    //             aValues
+    //             |> Array.choose (fun aVal ->
+    //                 // Try to find corresponding element in b
+    //                 match bMap.TryFind(aVal.i, aVal.j) with
+    //                 | Some bVal ->
+    //                     // Multiply the values
+    //                     let product = aVal.value2D * bVal
+    //                     // Only include non-zero results
+    //                     let zero = LanguagePrimitives.GenericZero<'T>
+    //                     if product = zero then None
+    //                     else Some { i = aVal.i; j = aVal.j; value2D = product }
+    //                 | None -> None // No corresponding element in b, result is zero
+    //             )
+    //
+    //         SparseArray2D result
 
         /// Multiplies a 2D sparse array by a scalar value.
         /// Returns a 2D sparse array.
@@ -444,7 +526,7 @@ module Primitives =
             let v =
                 a.value
                 |> Array.map (fun e -> { e with value2D = e.value2D * b })
-                |> SparseArray2D
+                |> SparseArray2D.create
 
             v
 
@@ -454,7 +536,7 @@ module Primitives =
             let v =
                 b.value
                 |> Array.map (fun e -> { e with value2D = a * e.value2D })
-                |> SparseArray2D
+                |> SparseArray2D.create
 
             v
 
@@ -465,7 +547,7 @@ module Primitives =
             let v =
                 a.value
                 |> Array.map (fun e -> { e with value2D = e.value2D * (b.getValue e.i e.j) })
-                |> SparseArray2D
+                |> SparseArray2D.create
 
             v
 
@@ -476,20 +558,24 @@ module Primitives =
             let v =
                 a.value
                 |> Array.map (fun e -> { e with value2D = e.value2D * b.value[e.i][e.j] })
-                |> SparseArray2D
+                |> SparseArray2D.create
 
             v
 
-        static member inline create z v =
+        static member inline createAbove z v =
             v
             |> Array.mapi (fun i e -> e |> Array.mapi (fun j v -> if v >= z then Some { i = i; j = j; value2D = v } else None))
             |> Array.concat
             |> Array.choose id
-            |> SparseArray2D
+            |> SparseArray2D.create
 
 
     /// Representation of non-zero value in a sparse 4D array.
-    type SparseValue4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseValue4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             i : int
             j : int
@@ -518,10 +604,14 @@ module Primitives =
                 value4D = v.value2D
             }
 
-        static member inline createArray i j (x : SparseArray2D<'T>) = x.value |> Array.map (SparseValue4D.create i j)
+        static member inline createArray i j (x : SparseArray2D<'T>) : SparseValue4D<'T>[] = x.value |> Array.map (SparseValue4D.create i j)
 
 
-    type SparseValueArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseValueArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         | SparseValueArray4D of SparseValue4D<'T>[]
 
         member inline r.value = let (SparseValueArray4D v) = r in v
@@ -529,7 +619,11 @@ module Primitives =
 
     /// A 4D representation of 4D sparse tensor where the first two indexes are full ([][] is used)
     /// and the last two are in a SparseArray2D.
-    type SparseArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         | SparseArray4D of SparseArray2D<'T>[][]
 
         member inline r.value = let (SparseArray4D v) = r in v
@@ -581,6 +675,26 @@ module Primitives =
             value
 
 
+    type DynamicSparseArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
+        | DynamicSparseArray4D of (int -> int -> SparseArray2D<'T>)
+
+        member inline r.invoke = let (DynamicSparseArray4D v) = r in v
+
+        static member inline (*) (a : DynamicSparseArray4D<'T>, b : SparseArray2D<'T>) : DynamicSparseArray4D<'T> =
+            let originalFunc = a.invoke
+
+            // Create a new function that multiplies the result of the original function by b
+            let newFunc i j : SparseArray2D<'T> =
+                let sparseArray2D = originalFunc i j
+                sparseArray2D * b
+
+            DynamicSparseArray4D newFunc
+
+
     /// Representation of non-zero value in a sparse 2D array.
     type SparseValue3D<'T> =
         {
@@ -592,14 +706,22 @@ module Primitives =
 
 
     [<RequireQualifiedAccess>]
-    type SparseArray3D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseArray3D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         | SparseArray3D of SparseValue3D<'T>[]
 
         member inline r.value = let (SparseArray3D v) = r in v
 
 
     /// Representation of non-zero value in a sparse 6D array.
-    type SparseValue6D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseValue6D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             i : int
             j : int
@@ -613,13 +735,21 @@ module Primitives =
 
     /// A 6D representation of 6D sparse tensor where the first three indexes are full ([][][] is used)
     /// and the last two are in a SparseArray3D.
-    type SparseArray6D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
+    type SparseArray6D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         | SparseArray6D of SparseArray3D<'T>[][][]
 
         member inline r.value = let (SparseArray6D v) = r in v
 
 
     /// Performs a Cartesian multiplication of two 1D sparse arrays to obtain a 2D sparse array.
-    let inline cartesianMultiply<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> (a : SparseArray<'T>) (b : SparseArray<'T>) : SparseArray2D<'T> =
+    let inline cartesianMultiply<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> (a : SparseArray<'T>) (b : SparseArray<'T>) : SparseArray2D<'T> =
         let bValue = b.value
-        a.value |> Array.map (fun e -> bValue |> Array.map (fun f -> { i = e.i; j = f.i; value2D = e.value1D * f.value1D })) |> Array.concat |> SparseArray2D<'T>.SparseArray2D
+        a.value |> Array.map (fun e -> bValue |> Array.map (fun f -> { i = e.i; j = f.i; value2D = e.value1D * f.value1D })) |> Array.concat |> SparseArray2D.create

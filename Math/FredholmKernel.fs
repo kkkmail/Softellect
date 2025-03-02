@@ -770,7 +770,7 @@ module FredholmKernel =
                 |> Array.concat
                 |> Array.concat
                 |> Array.groupBy (fun e -> e.i1, e.j1)
-                |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D<double>.SparseArray2D)
+                |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D.create)
                 |> Map.ofArray
 
             let xy_x1y1 =
