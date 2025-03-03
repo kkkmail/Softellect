@@ -248,7 +248,7 @@ type SparseArray2DOperatorTests() =
         // Assert
         // Check the result is still separable
         match result with
-        | SparseArray2D.SeparableSparseArray2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
+        | SparseArray2D.SeparableSparseArr2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
         | _ -> false.Should().BeTrue("Result should not be inseparable") |> ignore
 
         // Verify some values
@@ -274,7 +274,7 @@ type SparseArray2DOperatorTests() =
         // Assert
         // Check the result is inseparable
         match result with
-        | SparseArray2D.InseparableSparseArray2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+        | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
 
         // Verify some values
@@ -305,11 +305,11 @@ type SparseArray2DOperatorTests() =
         // Assert
         // Check both results are inseparable
         match result1 with
-        | SparseArray2D.InseparableSparseArray2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+        | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
 
         match result2 with
-        | SparseArray2D.InseparableSparseArray2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+        | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
 
         // Verify some values in result1 (separable * inseparable)
@@ -346,12 +346,12 @@ type SparseArray2DOperatorTests() =
         // Assert
         // Check both results are inseparable
         match result1 with
-        | SparseArray2D.InseparableSparseArray2D _ -> true.Should().BeTrue("Result should be inseparable")
+        | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable")
         | _ -> false.Should().BeTrue("Result should not be separable")
         |> ignore
 
         match result2 with
-        | SparseArray2D.InseparableSparseArray2D _ -> true.Should().BeTrue("Result should be inseparable")
+        | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable")
         | _ -> false.Should().BeTrue("Result should not be separable")
         |> ignore
 
@@ -449,7 +449,7 @@ type SparseArray2DOperatorTests() =
         // Assert
         // Check that result is separable
         match result with
-        | SparseArray2D.SeparableSparseArray2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
+        | SparseArray2D.SeparableSparseArr2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
         | _ -> false.Should().BeTrue("Result should not be inseparable") |> ignore
 
         // Check that only values with matching indices exist in the result

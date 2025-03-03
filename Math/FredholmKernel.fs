@@ -207,7 +207,8 @@ module FredholmKernel =
         //     sum
 
         member d.integrateValues (a : SparseArray4D<double>, b : LinearMatrix<double>) =
-            a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b))) |> Matrix
+            // a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b))) |> Matrix
+            failwith ""
 
         // /// Calculates how many protocells are created.
         // member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : Matrix<int64>) =
@@ -227,8 +228,21 @@ module FredholmKernel =
         /// The multiplier controls the step of the evolution.
         /// The values are considered non-negative and so all negative values are treated as zero.
         member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : Matrix<int64>) =
-            let mapi = if useParallel then Array.Parallel.mapi else Array.mapi
-            a.value |> mapi (fun i v -> v |> Array.map (fun e -> d.evolve (p.getSampler i, multiplier, e, b))) |> Matrix
+            match a with
+            | StaticSparseArr4D s ->
+                let mapi = if useParallel then Array.Parallel.mapi else Array.mapi
+                s.value |> mapi (fun i v -> v |> Array.map (fun e -> d.evolve (p.getSampler i, multiplier, e, b))) |> Matrix
+            | DynamicSparseArr4D d ->
+                failwith ""
+
+        member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : SparseArray2D<int64>) =
+            match a with
+            | StaticSparseArr4D s ->
+                // let mapi = if useParallel then Array.Parallel.mapi else Array.mapi
+                // s.value |> mapi (fun i v -> v |> Array.map (fun e -> d.evolve (p.getSampler i, multiplier, e, b))) |> Matrix
+                failwith ""
+            | DynamicSparseArr4D d ->
+                failwith ""
 
         // /// Calculates how many protocells are created.
         // member d.evolve (p : PoissonSampler, a : SparseArray4D<double>, b : LinearMatrix<int64>) =
@@ -236,7 +250,8 @@ module FredholmKernel =
 
         /// Calculates an integral matrix value for a given 4D sparse array.
         member d.integrateValues (a : SparseArray4D<double>) =
-            a.value |> Array.map (fun v -> v |> Array.map d.integrateValues) |> Matrix
+            // a.value |> Array.map (fun v -> v |> Array.map d.integrateValues) |> Matrix
+            failwith ""
 
         member d.norm (a : LinearMatrix<double>) = d.integrateValues a
 
@@ -722,6 +737,7 @@ module FredholmKernel =
         {
             xMutationProbabilityParams : MutationProbabilityParams
             yMutationProbabilityParams : MutationProbabilityParams
+            sparseArrayType : SparseArrayType
         }
 
         member d.domain2D() =
@@ -740,7 +756,12 @@ module FredholmKernel =
         static member create (e : EvolutionType) (data : MutationProbabilityParams2D) (i : int) (j : int) =
             let p1 = MutationProbability.create e data.xMutationProbabilityParams i
             let p2 = MutationProbability.create e data.yMutationProbabilityParams j
-            let p = cartesianMultiply p1.value p2.value // |> MutationProbability2D
+
+            let p =
+                match data.sparseArrayType with
+                | StaticSparseArrayType -> cartesianMultiply p1.value p2.value
+                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.value, p2.value.value)
+                // |> MutationProbability2D
             p
 
 
@@ -761,26 +782,45 @@ module FredholmKernel =
             let xMu = domain2D.xDomain.points.value
             let yMu = domain2D.yDomain.points.value
 
-            // These are the values where integration by (x, y) should yield 1 for each (x1, y1).
-            // So [][] is by (x1, y1) and the underlying SparseArray2D is by (x, y).
-            let x1y1_xy = xMu |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> MutationProbability2D.create e data i j))
+            let p =
+                match data.sparseArrayType with
+                | StaticSparseArrayType ->
+                    // These are the values where integration by (x, y) should yield 1 for each (x1, y1).
+                    // So [][] is by (x1, y1) and the underlying SparseArray2D is by (x, y).
+                    let x1y1_xy = xMu |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> MutationProbability2D.create e data i j))
 
-            let xy_x1y1_Map =
-                [| for i in 0..(xMu.Length - 1) -> [| for j in 0..(yMu.Length - 1) -> SparseValue4D.createArray i j (x1y1_xy[i][j]) |] |]
-                |> Array.concat
-                |> Array.concat
-                |> Array.groupBy (fun e -> e.i1, e.j1)
-                |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D.create)
-                |> Map.ofArray
+                    let xy_x1y1_Map =
+                        [| for i in 0..(xMu.Length - 1) -> [| for j in 0..(yMu.Length - 1) -> SparseValue4D.createArray i j (x1y1_xy[i][j]) |] |]
+                        |> Array.concat
+                        |> Array.concat
+                        |> Array.groupBy (fun e -> e.i1, e.j1)
+                        |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D.create)
+                        |> Map.ofArray
 
-            let xy_x1y1 =
-                xMu
-                |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> xy_x1y1_Map[(i, j)]))
+                    let xy_x1y1 =
+                        xMu
+                        |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> xy_x1y1_Map[(i, j)]))
 
-            {
-                x1y1_xy = SparseArray4D x1y1_xy
-                xy_x1y1 = SparseArray4D xy_x1y1
-            }
+                    {
+                        x1y1_xy = x1y1_xy |> StaticSparseArray4D |> StaticSparseArr4D
+                        xy_x1y1 = xy_x1y1 |> StaticSparseArray4D |> StaticSparseArr4D
+                    }
+                | DynamicSparseArrayType ->
+                    let g (v1 : SparseArray<double>[]) (v2 : SparseArray<double>[]) =
+                        let x1y1_xy = fun i1 j1 -> SparseArray2D.create (v1[i1].value, v2[j1].value)
+                        let xy_x1y1 = fun i j -> failwith ""
+
+                        {
+                            x1y1_xy = x1y1_xy |> DynamicSparseArray4D |> DynamicSparseArr4D
+                            xy_x1y1 = xy_x1y1 |> DynamicSparseArray4D |> DynamicSparseArr4D
+                        }
+
+                    let p1 = xMu |> Array.mapi (fun i _ -> (MutationProbability.create e data.xMutationProbabilityParams i).value)
+                    let p2 = yMu |> Array.mapi (fun j _ -> (MutationProbability.create e data.yMutationProbabilityParams j).value)
+                    let r = g p1 p2
+                    r
+
+            p
 
 
     type KernelParams =
@@ -820,6 +860,7 @@ module FredholmKernel =
                         zeroThreshold = ZeroThreshold.defaultValue
                         epsFuncValue = kp.yEpsFuncValue
                     }
+                sparseArrayType = failwith ""
             }
 
         member kp.domain2D() = Domain2D.create kp.domainIntervals kp.xRange kp.yRange
@@ -902,6 +943,7 @@ module FredholmKernel =
                             zeroThreshold = p.zeroThreshold
                             epsFuncValue = p.yEpsFuncValue
                         }
+                    sparseArrayType = failwith ""
                 }
 
             let mp4 = MutationProbability4D.create e mp2
