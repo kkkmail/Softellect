@@ -521,15 +521,23 @@ type SparseArray2DOperatorTests() =
     // Define tolerance for float comparison.
     let tolerance = 1e-8
 
+
     // let epsX = Eps0 0.03
     // let epsY = Eps0 0.05
     // let xDomainIntervals = DomainIntervals 100
     // let yDomainIntervals = DomainIntervals 100
 
-    let epsX = Eps0 0.0048
-    let epsY = Eps0 0.0052
-    let xDomainIntervals = DomainIntervals 1000
-    let yDomainIntervals = DomainIntervals 1000
+
+    let epsX = Eps0 0.01
+    let epsY = Eps0 0.015
+    let xDomainIntervals = DomainIntervals 200
+    let yDomainIntervals = DomainIntervals 200
+
+
+    // let epsX = Eps0 0.0048
+    // let epsY = Eps0 0.0052
+    // let xDomainIntervals = DomainIntervals 1000
+    // let yDomainIntervals = DomainIntervals 1000
 
 
     let data1 =
@@ -586,6 +594,7 @@ type SparseArray2DOperatorTests() =
         sparseValueArray.Should().NotBeNull($"Conversion of result1.x1y1_xy should succeed") |> ignore
 
 
+    /// Took 20 minutes for 1000 / 0.005
     [<Fact>]
     let ``Convert result2 x1y1_xy to SparseValueArray`` () =
         let sparseValueArray = result2.Value.x1y1_xy.toSparseValueArray()
