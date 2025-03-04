@@ -1,5 +1,6 @@
 namespace Softellect.Tests.MathTests
 
+open System.Diagnostics
 open FluentAssertions.Execution
 open Softellect.Math.FredholmKernel
 open Xunit
@@ -518,11 +519,17 @@ type SparseArray2DOperatorTests() =
 
 
     // Define tolerance for float comparison.
-    let tolerance = 1e-7
+    let tolerance = 1e-8
 
+    // let epsX = Eps0 0.03
+    // let epsY = Eps0 0.05
+    // let xDomainIntervals = DomainIntervals 100
+    // let yDomainIntervals = DomainIntervals 100
 
-    let xDomainIntervals = DomainIntervals 5
-    let yDomainIntervals = DomainIntervals 5
+    let epsX = Eps0 0.0048
+    let epsY = Eps0 0.0052
+    let xDomainIntervals = DomainIntervals 1000
+    let yDomainIntervals = DomainIntervals 1000
 
 
     let data1 =
@@ -535,7 +542,7 @@ type SparseArray2DOperatorTests() =
                             domainRange = { minValue = -1.0; maxValue = 1.0  }
                         }
                     zeroThreshold = ZeroThreshold.defaultValue
-                    epsFuncValue = 0.1 |> Eps0 |> ScalarEps
+                    epsFuncValue = ScalarEps epsX
                 }
             yMutationProbabilityParams =
                 {
@@ -545,7 +552,7 @@ type SparseArray2DOperatorTests() =
                             domainRange = { minValue = 0.0; maxValue = 5.0  }
                         }
                     zeroThreshold = ZeroThreshold.defaultValue
-                    epsFuncValue = 0.15 |> Eps0 |> ScalarEps
+                    epsFuncValue = ScalarEps epsY
                 }
             sparseArrayType = StaticSparseArrayType
         }
@@ -553,21 +560,114 @@ type SparseArray2DOperatorTests() =
 
     let data2 = { data1 with sparseArrayType = DynamicSparseArrayType }
 
-    let result1 = MutationProbability4D.create DiscreteEvolution data1
-    let result2 = MutationProbability4D.create DiscreteEvolution data2
+    let result1 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data1)
+    let result2 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data2)
 
 
     /// Compare the x1y1_xy fields.
     [<Fact>]
     let ``MutationProbability4D implementations should match x1y1_xy`` () =
-        let sparseValues1 = result1.x1y1_xy.toSparseValueArray().value
-        let sparseValues2 = result2.x1y1_xy.toSparseValueArray().value
+        let sparseValues1 = result1.Value.x1y1_xy.toSparseValueArray().value
+        let sparseValues2 = result2.Value.x1y1_xy.toSparseValueArray().value
         compareSparseArrays tolerance sparseValues1 sparseValues2 "x1y1_xy"
 
 
     /// Compare the xy_x1y1 fields.
     [<Fact>]
     let ``MutationProbability4D implementations should match xy_x1y1`` () =
-        let sparseValues3 = result1.xy_x1y1.toSparseValueArray().value
-        let sparseValues4 = result2.xy_x1y1.toSparseValueArray().value
+        let sparseValues3 = result1.Value.xy_x1y1.toSparseValueArray().value
+        let sparseValues4 = result2.Value.xy_x1y1.toSparseValueArray().value
         compareSparseArrays tolerance sparseValues3 sparseValues4 "xy_x1y1"
+
+
+    [<Fact>]
+    let ``Convert result1 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.x1y1_xy should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result2 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.x1y1_xy should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result1 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.xy_x1y1 should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result2 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.xy_x1y1 should succeed") |> ignore
+
+
+    // Performance tests:
+    // Compare conversion times for each field using a constant allowedFactor.
+    // If result2's conversion takes more than allowedFactor times longer than result1's, the test fails.
+
+    [<Fact>]
+    let ``x1y1_xy conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.x1y1_xy.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.x1y1_xy.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"x1y1_xy conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    [<Fact>]
+    let ``xy_x1y1 conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.xy_x1y1.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.xy_x1y1.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"xy_x1y1 conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    // Helper functions to check the discriminated union cases.
+    let isStatic (s: SparseArray4D<double>) =
+        match s with
+        | StaticSparseArr4D _ -> true
+        | DynamicSparseArr4D _ -> false
+
+
+    let isDynamic (s: SparseArray4D<double>) =
+        match s with
+        | DynamicSparseArr4D _ -> true
+        | StaticSparseArr4D _ -> false
+
+
+    [<Fact>]
+    let ``result1 sparse arrays should be StaticSparseArr4D`` () =
+        (result1.Value.x1y1_xy |> isStatic).Should().BeTrue($"result1.x1y1_xy should be StaticSparseArr4D") |> ignore
+        (result1.Value.xy_x1y1 |> isStatic).Should().BeTrue($"result1.xy_x1y1 should be StaticSparseArr4D") |> ignore
+
+
+    [<Fact>]
+    let ``result2 sparse arrays should be DynamicSparseArr4D`` () =
+        (result2.Value.x1y1_xy |> isDynamic).Should().BeTrue($"result2.x1y1_xy should be DynamicSparseArr4D") |> ignore
+        (result2.Value.xy_x1y1 |> isDynamic).Should().BeTrue($"result2.xy_x1y1 should be DynamicSparseArr4D") |> ignore
