@@ -1,5 +1,7 @@
 namespace Softellect.Tests.MathTests
 
+open FluentAssertions.Execution
+open Softellect.Math.FredholmKernel
 open Xunit
 open FluentAssertions
 open Softellect.Math.Primitives
@@ -464,6 +466,7 @@ type SparseArray2DOperatorTests() =
         (result.tryFind 5 1).Should().BeNull() |> ignore
         (result.tryFind 6 7).Should().BeNull() |> ignore
 
+
     [<Fact>]
     let ``Empty sparse arrays should be handled correctly`` () =
         // Arrange
@@ -496,3 +499,75 @@ type SparseArray2DOperatorTests() =
 
         // Multiplication with empty should be empty
         multiplicationResult.value().Length.Should().Be(0) |> ignore
+
+
+    // Helper function to compare two sparse value arrays.
+    let compareSparseArrays (tolerance: double) (arr1: SparseValue4D<double>[]) (arr2: SparseValue4D<double>[]) (label: string) =
+        arr1.Length.Should().Be(arr2.Length, $"Both implementations should have the same number of elements in {label}") |> ignore
+
+        use _ = new AssertionScope()
+
+        for i in 0 .. arr1.Length - 1 do
+            let sv1 = arr1.[i]
+            let sv2 = arr2.[i]
+            sv1.i.Should().Be(sv2.i, $"Index 'i' at position {i} in {label} should match") |> ignore
+            sv1.j.Should().Be(sv2.j, $"Index 'j' at position {i} in {label} should match") |> ignore
+            sv1.i1.Should().Be(sv2.i1, $"Index 'i1' at position {i} in {label} should match") |> ignore
+            sv1.j1.Should().Be(sv2.j1, $"Index 'j1' at position {i} in {label} should match") |> ignore
+            sv1.value4D.Should().BeApproximately(sv2.value4D, tolerance, $"Value at position {i} in {label} should be approximately equal") |> ignore
+
+
+    // Define tolerance for float comparison.
+    let tolerance = 1e-6
+
+
+    let xDomainIntervals = DomainIntervals 5
+    let yDomainIntervals = DomainIntervals 5
+
+
+    let data1 =
+        {
+            xMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = xDomainIntervals
+                            domainRange = { minValue = -1.0; maxValue = 1.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = 0.1 |> Eps0 |> ScalarEps
+                }
+            yMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = yDomainIntervals
+                            domainRange = { minValue = 0.0; maxValue = 5.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = 0.15 |> Eps0 |> ScalarEps
+                }
+            sparseArrayType = StaticSparseArrayType
+        }
+
+
+    let data2 = { data1 with sparseArrayType = DynamicSparseArrayType }
+
+    let result1 = MutationProbability4D.create DiscreteEvolution data1
+    let result2 = MutationProbability4D.create DiscreteEvolution data2
+
+
+    /// Compare the x1y1_xy fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match x1y1_xy`` () =
+        let sparseValues1 = result1.x1y1_xy.toSparseValueArray().value
+        let sparseValues2 = result2.x1y1_xy.toSparseValueArray().value
+        compareSparseArrays tolerance sparseValues1 sparseValues2 "x1y1_xy"
+
+
+    /// Compare the xy_x1y1 fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match xy_x1y1`` () =
+        let sparseValues3 = result1.xy_x1y1.toSparseValueArray().value
+        let sparseValues4 = result2.xy_x1y1.toSparseValueArray().value
+        compareSparseArrays tolerance sparseValues3 sparseValues4 "xy_x1y1"

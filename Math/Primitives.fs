@@ -988,14 +988,29 @@ module Primitives =
             v
 
 
+    type DynamicSparseArrayData4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
+        {
+            getData2D : int -> int -> SparseArray2D<'T>
+            xLength : int
+            yLength : int
+        }
+
+
     type DynamicSparseArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                          and ^T: (static member ( + ) : ^T * ^T -> ^T)
                          and ^T: (static member ( - ) : ^T * ^T -> ^T)
                          and ^T: (static member Zero : ^T)
                          and ^T: equality> =
-        | DynamicSparseArray4D of (int -> int -> SparseArray2D<'T>)
+        | DynamicSparseArray4D of DynamicSparseArrayData4D<'T>
 
-        member inline r.invoke = let (DynamicSparseArray4D v) = r in v
+        member inline private r.value = let (DynamicSparseArray4D v) = r in v
+        member inline r.invoke = let (DynamicSparseArray4D v) = r in v.getData2D
+        member inline r.xLength = let (DynamicSparseArray4D v) = r in v.xLength
+        member inline r.yLength = let (DynamicSparseArray4D v) = r in v.yLength
 
         static member inline (*) (a : DynamicSparseArray4D<'T>, b : SparseArray2D<'T>) : DynamicSparseArray4D<'T> =
             let originalFunc = a.invoke
@@ -1005,7 +1020,8 @@ module Primitives =
                 let sparseArray2D = originalFunc i j
                 sparseArray2D * b
 
-            DynamicSparseArray4D newFunc
+            { a.value with getData2D = newFunc } |> DynamicSparseArray4D
+
 
     type SparseArrayType =
         | StaticSparseArrayType
@@ -1052,19 +1068,34 @@ module Primitives =
             | DynamicSparseArr4D d ->
                 failwith ""
 
+        /// This is mostly for tests.
         member inline a.toSparseValueArray() : SparseValueArray4D<'T> =
-            // let n1 = a.value.Length
-            // let n2 = a.value[0].Length
-            //
-            // let value =
-            //     [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createArray i j (a.value[i][j]) |] |]
-            //     |> Array.concat
-            //     |> Array.concat
-            //     |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
-            //     |> SparseValueArray4D
-            //
-            // value
-            failwith ""
+            match a with
+            | StaticSparseArr4D s ->
+                let n1 = s.value.Length
+                let n2 = s.value[0].Length
+
+                let value =
+                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createArray i j (s.value[i][j]) |] |]
+                    |> Array.concat
+                    |> Array.concat
+                    |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
+                    |> SparseValueArray4D
+
+                value
+
+            | DynamicSparseArr4D d ->
+                let n1 = d.xLength
+                let n2 = d.yLength
+
+                let value =
+                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createArray i j (d.invoke i j) |] |]
+                    |> Array.concat
+                    |> Array.concat
+                    |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
+                    |> SparseValueArray4D
+
+                value
 
 
     /// Representation of non-zero value in a sparse 3D array.

@@ -700,38 +700,80 @@ module FredholmKernel =
             epsFuncValue : EpsFuncValue
         }
 
+    type MutationProbabilityData =
+        {
+            mutationProbability : SparseArray<double>
+            norm : double
+        }
+
 
     /// Creates a normalized mutation probability.
     /// The normalization is performed using integral estimate over the domain.
     type MutationProbability =
-        | MutationProbability of SparseArray<double>
+        | MutationProbability of MutationProbabilityData
 
         member r.value = let (MutationProbability v) = r in v
 
         /// m is a real (unscaled) value but e is scaled to the half of the range.
         /// i is an index in the domain.
         static member create (e : EvolutionType) (data : MutationProbabilityParams) (i : int) =
+            let domain = data.domainParams.domain()
+            let ef = data.epsFuncValue.epsFunc domain
+
             match e with
             | DifferentialEvolution ->
-                let domain = data.domainParams.domain()
                 let range = domain.domainRange.range
                 let mean = domain.points.value[i]
-                let ef = data.epsFuncValue.epsFunc domain
                 let epsFunc x = (ef.invoke domain x) * range / 2.0
                 let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2)
                 let values = domain.points.value |> Array.map f |> SparseArray<double>.create data.zeroThreshold
                 let norm = domain.integrateValues values
-                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray.SparseArray |> MutationProbability
-                p
+                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray.SparseArray
+
+                {
+                    mutationProbability = p
+                    norm = norm
+                }
             | DiscreteEvolution ->
-                let domain = data.domainParams.domain()
-                let ef = data.epsFuncValue.epsFunc domain
                 let epsFunc (i1 : int) = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
                 let f (i1 : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
                 let values = domain.points.value |> Array.mapi (fun i1 _ -> f i1) |> SparseArray<double>.create data.zeroThreshold
                 let norm = values.total()
-                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray.SparseArray |> MutationProbability
+                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray.SparseArray
+
+                {
+                    mutationProbability = p
+                    norm = norm
+                }
+            |> MutationProbability
+
+
+    type MutationReversedProbability =
+        | MutationReversedProbability of SparseArray<double>
+
+        member r.value = let (MutationReversedProbability v) = r in v
+
+        static member createReversed (e : EvolutionType) (data : MutationProbabilityParams) (norm : int -> double) (i1 : int) =
+            let domain = data.domainParams.domain()
+            let ef = data.epsFuncValue.epsFunc domain
+
+            match e with
+            | DifferentialEvolution ->
+                let range = domain.domainRange.range
+                let mean = domain.points.value[i1]
+                let epsFunc x = (ef.invoke domain x) * range / 2.0
+                let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2) // epsFunc x ??? - This is different from below.
+                let values = domain.points.value |> Array.map f |> SparseArray<double>.create data.zeroThreshold
+                let p = values.value |> Array.mapi (fun i v -> { v with value1D = v.value1D / norm(i) }) |> SparseArray.SparseArray
                 p
+            | DiscreteEvolution ->
+                let epsFunc (i : int) = (ef.invoke domain domain.points.value[i]) * ( double domain.points.value.Length) / 2.0
+                let f (i : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2) // epsFunc i or epsFunc i1 ???
+                let values = domain.points.value |> Array.mapi (fun i _ -> f i) |> SparseArray<double>.create data.zeroThreshold
+                let p = values.value |> Array.mapi (fun i v -> { v with value1D = v.value1D / norm(i) }) |> SparseArray.SparseArray
+                p
+            |> MutationReversedProbability
+
 
     type MutationProbabilityParams2D =
         {
@@ -759,8 +801,8 @@ module FredholmKernel =
 
             let p =
                 match data.sparseArrayType with
-                | StaticSparseArrayType -> cartesianMultiply p1.value p2.value
-                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.value, p2.value.value)
+                | StaticSparseArrayType -> cartesianMultiply p1.value.mutationProbability p2.value.mutationProbability
+                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.mutationProbability.value, p2.value.mutationProbability.value)
                 // |> MutationProbability2D
             p
 
@@ -777,7 +819,7 @@ module FredholmKernel =
             xy_x1y1 : SparseArray4D<double>
         }
 
-        static member create (e : EvolutionType) (data : MutationProbabilityParams2D) =
+        static member create (e : EvolutionType) (data : MutationProbabilityParams2D) : MutationProbability4D =
             let domain2D = data.domain2D()
             let xMu = domain2D.xDomain.points.value
             let yMu = domain2D.yDomain.points.value
@@ -806,19 +848,37 @@ module FredholmKernel =
                         xy_x1y1 = xy_x1y1 |> StaticSparseArray4D |> StaticSparseArr4D
                     }
                 | DynamicSparseArrayType ->
-                    let g (v1 : SparseArray<double>[]) (v2 : SparseArray<double>[]) =
-                        let x1y1_xy = fun i1 j1 -> SparseArray2D.create (v1[i1].value, v2[j1].value)
-                        let xy_x1y1 = fun i j -> failwith ""
+                    let xMp = xMu |> Array.mapi (fun i _ -> (MutationProbability.create e data.xMutationProbabilityParams i))
+                    let yMp = xMu |> Array.mapi (fun j _ -> (MutationProbability.create e data.yMutationProbabilityParams j))
 
-                        {
-                            x1y1_xy = x1y1_xy |> DynamicSparseArray4D |> DynamicSparseArr4D
-                            xy_x1y1 = xy_x1y1 |> DynamicSparseArray4D |> DynamicSparseArr4D
-                        }
+                    let xNorm i = xMp[i].value.norm
+                    let yNorm j = yMp[j].value.norm
 
-                    let p1 = xMu |> Array.mapi (fun i _ -> (MutationProbability.create e data.xMutationProbabilityParams i).value)
-                    let p2 = yMu |> Array.mapi (fun j _ -> (MutationProbability.create e data.yMutationProbabilityParams j).value)
-                    let r = g p1 p2
-                    r
+                    let p1 = xMu |> Array.mapi (fun i _ -> xMp[i].value.mutationProbability)
+                    let p2 = yMu |> Array.mapi (fun j _ -> yMp[j].value.mutationProbability)
+
+                    let p1Reversed = xMu |> Array.mapi (fun i1 _ -> (MutationReversedProbability.createReversed e data.xMutationProbabilityParams xNorm i1).value)
+                    let p2Reversed = yMu |> Array.mapi (fun j1 _ -> (MutationReversedProbability.createReversed e data.yMutationProbabilityParams yNorm j1).value)
+
+                    let x1y1_xy = fun i1 j1 -> SparseArray2D.create (p1[i1].value, p2[j1].value)
+                    let xy_x1y1 = fun i j -> SparseArray2D.create (p1Reversed[i].value, p2Reversed[j].value)
+
+                    {
+                        x1y1_xy =
+                            {
+                                getData2D = x1y1_xy
+                                xLength = xMp.Length
+                                yLength = yMp.Length
+                            }
+                            |> DynamicSparseArray4D |> DynamicSparseArr4D
+                        xy_x1y1 =
+                            {
+                                getData2D = xy_x1y1
+                                xLength = xMp.Length
+                                yLength = yMp.Length
+                            }
+                            |> DynamicSparseArray4D |> DynamicSparseArr4D
+                    }
 
             p
 
