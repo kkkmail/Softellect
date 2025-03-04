@@ -700,17 +700,11 @@ module FredholmKernel =
             epsFuncValue : EpsFuncValue
         }
 
-    type MutationProbabilityData =
-        {
-            mutationProbability : SparseArray<double>
-            norm : double
-        }
-
 
     /// Creates a normalized mutation probability.
     /// The normalization is performed using integral estimate over the domain.
     type MutationProbability =
-        | MutationProbability of MutationProbabilityData
+        | MutationProbability of SparseArray<double>
 
         member r.value = let (MutationProbability v) = r in v
 
@@ -729,51 +723,15 @@ module FredholmKernel =
                 let values = domain.points.value |> Array.map f |> SparseArray<double>.createAbove data.zeroThreshold
                 let norm = domain.integrateValues values
                 let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
-
-                {
-                    mutationProbability = p
-                    norm = norm
-                }
+                p
             | DiscreteEvolution ->
                 let epsFunc (i1 : int) = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
                 let f (i1 : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
                 let values = domain.points.value |> Array.mapi (fun i1 _ -> f i1) |> SparseArray<double>.createAbove data.zeroThreshold
                 let norm = values.total()
                 let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
-
-                {
-                    mutationProbability = p
-                    norm = norm
-                }
+                p
             |> MutationProbability
-
-
-    type MutationReversedProbability =
-        | MutationReversedProbability of SparseArray<double>
-
-        member r.value = let (MutationReversedProbability v) = r in v
-
-        static member createReversed (e : EvolutionType) (data : MutationProbabilityParams) (norm : int -> double) (i1 : int) =
-            let domain = data.domainParams.domain()
-            let ef = data.epsFuncValue.epsFunc domain
-
-            match e with
-            | DifferentialEvolution ->
-                let range = domain.domainRange.range
-                let mean = domain.points.value[i1]
-                let epsFunc x = (ef.invoke domain x) * range / 2.0
-                let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2) // epsFunc x ??? - This is different from below.
-                let values = domain.points.value |> Array.map f |> SparseArray<double>.createAbove data.zeroThreshold
-                let p = values.value |> Array.mapi (fun i v -> { v with value1D = v.value1D / norm(i) }) |> SparseArray<double>.create
-                p
-            | DiscreteEvolution ->
-                let epsFunc (i : int) = (ef.invoke domain domain.points.value[i]) * ( double domain.points.value.Length) / 2.0
-                let f (i : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2) // epsFunc i or epsFunc i1 ???
-                let values = domain.points.value |> Array.mapi (fun i _ -> f i) |> SparseArray<double>.createAbove data.zeroThreshold
-                // let p = values.value |> Array.mapi (fun i v -> { v with value1D = v.value1D / norm(i) }) |> SparseArray<double>.create
-                let p = values.value |> Array.mapi (fun i v -> { v with value1D = v.value1D }) |> SparseArray<double>.create
-                p
-            |> MutationReversedProbability
 
 
     type MutationProbabilityParams2D =
@@ -802,8 +760,8 @@ module FredholmKernel =
 
             let p =
                 match data.sparseArrayType with
-                | StaticSparseArrayType -> cartesianMultiply p1.value.mutationProbability p2.value.mutationProbability
-                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.mutationProbability.value, p2.value.mutationProbability.value)
+                | StaticSparseArrayType -> cartesianMultiply p1.value p2.value
+                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.value, p2.value.value)
                 |> MutationProbability2D
             p
 
@@ -849,11 +807,9 @@ module FredholmKernel =
                         xy_x1y1 = xy_x1y1 |> StaticSparseArray4D |> StaticSparseArr4D
                     }
                 | DynamicSparseArrayType ->
-                    let xMp = xMu |> Array.mapi (fun i _ -> (MutationProbability.create e data.xMutationProbabilityParams i).value.mutationProbability)
-                    let yMp = xMu |> Array.mapi (fun j _ -> (MutationProbability.create e data.yMutationProbabilityParams j).value.mutationProbability)
+                    let xMp = xMu |> Array.mapi (fun i _ -> (MutationProbability.create e data.xMutationProbabilityParams i).value)
+                    let yMp = xMu |> Array.mapi (fun j _ -> (MutationProbability.create e data.yMutationProbabilityParams j).value)
 
-                    // let p1 = xMu |> Array.mapi (fun i _ -> xMp[i].value.mutationProbability)
-                    // let p2 = yMu |> Array.mapi (fun j _ -> yMp[j].value.mutationProbability)
                     let p1 = xMu |> Array.mapi (fun i _ -> xMp[i].value)
                     let p2 = yMu |> Array.mapi (fun j _ -> yMp[j].value)
 
@@ -878,19 +834,6 @@ module FredholmKernel =
                     let y_y1 = yMu |> Array.mapi (fun i _ -> y_y1_Map[i])
 
                     let xy_x1y1 = fun i j -> SparseArray2D.create (x_x1[i].value, y_y1[j].value)
-
-                    // let xNorm i = xMp[i].value.norm
-                    // let yNorm j = yMp[j].value.norm
-                    //
-                    // let p1Reversed = xMu |> Array.mapi (fun i1 _ -> (MutationReversedProbability.createReversed e data.xMutationProbabilityParams xNorm i1).value)
-                    // let p2Reversed = yMu |> Array.mapi (fun j1 _ -> (MutationReversedProbability.createReversed e data.yMutationProbabilityParams yNorm j1).value)
-                    //
-                    // let p1r = xMu |> Array.mapi (fun i1 _ -> 0)
-                    // let p2r = yMu |> Array.mapi (fun j1 _ -> 0)
-                    //
-                    //
-                    // // let xy_x1y1 = fun i j -> SparseArray2D.create (p1Reversed[i].value, p2Reversed[j].value)
-                    // let xy_x1y1 = fun i j -> SparseArray2D.create (p1r[i], p2r[j])
 
                     {
                         x1y1_xy =
