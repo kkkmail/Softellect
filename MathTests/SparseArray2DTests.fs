@@ -162,7 +162,7 @@ type SparseArray2DOperatorTests() =
         TestHelpers.assertEqualSparseAndMatrix multiplicationResult matrixMulResult
 
     [<Fact>]
-    let ``Empty sparse arrays should be handled correctly`` () =
+    let ``Empty sparse arrays should be handled correctly`` () : unit =
         // Arrange
         let emptyData = array2D [
             [0L; 0L; 0L]
@@ -195,10 +195,10 @@ type SparseArray2DOperatorTests() =
         TestHelpers.assertEqualSparseAndMatrix subtractionResult matrixSubResult
         TestHelpers.assertEqualSparseAndMatrix multiplicationResult matrixMulResult
 
-        additionResult.Should().BeEquivalentTo(normalSparse) |> ignore
+        additionResult.value().Should().BeEquivalentTo(normalSparse.value()) |> ignore
 
         // Multiplication with empty should be empty
-        multiplicationResult.value().Should().BeEmpty()
+        multiplicationResult.value().Should().BeEmpty() |> ignore
 
 
     // =========================================================
@@ -468,7 +468,7 @@ type SparseArray2DOperatorTests() =
 
 
     [<Fact>]
-    let ``Empty sparse arrays should be handled correctly`` () =
+    let ``Empty sparse arrays should be handled correctly 2`` () =
         // Arrange
         let emptyData = array2D [
             [0L; 0L; 0L]
