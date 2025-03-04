@@ -518,7 +518,7 @@ type SparseArray2DOperatorTests() =
 
 
     // Define tolerance for float comparison.
-    let tolerance = 1e-6
+    let tolerance = 1e-7
 
 
     let xDomainIntervals = DomainIntervals 5

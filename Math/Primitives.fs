@@ -401,7 +401,11 @@ module Primitives =
 
 
     /// Representation of non-zero value in a sparse array.
-    type SparseValue<'T> =
+    type SparseValue<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             i : int
             value1D : 'T
@@ -409,29 +413,80 @@ module Primitives =
 
 
     [<RequireQualifiedAccess>]
-    type SparseArray<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T) and ^T: (static member Zero : ^T)> =
-        | SparseArray of SparseValue<'T>[]
+    type SparseArray<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
+        {
+            xValues : SparseValue<'T>[]
+            xMap : Lazy<Map<int, 'T>>
+        }
 
-        member inline r.value = let (SparseArray v) = r in v
+        member inline r.value = r.xValues
         member inline r.total() = r.value |> Array.map (fun e -> e.value1D) |> Array.sum
 
-        static member inline create (ZeroThreshold z) v =
-            v
-            |> Array.mapi (fun i e -> if e >= z then Some { i = i; value1D = e } else None)
-            |> Array.choose id
-            |> SparseArray
+        static member inline private createLookupMap (values: SparseValue<'T>[]) =
+            values
+            |> Array.map (fun v -> v.i, v.value1D)
+            |> Map.ofArray
+
+        member inline a.tryFind i = a.xMap.Value.TryFind i
+
+        static member inline create x =
+            {
+                xValues = x
+                xMap = new Lazy<Map<int, double>>(fun () -> SparseArray.createLookupMap x)
+            }
+
+        static member inline createAbove (ZeroThreshold z) v =
+            let x =
+                v
+                |> Array.mapi (fun i e -> if e >= z then Some { i = i; value1D = e } else None)
+                |> Array.choose id
+
+            {
+                xValues = x
+                xMap = new Lazy<Map<int, double>>(fun () -> SparseArray.createLookupMap x)
+            }
 
 
     /// Representation of non-zero value in a sparse 2D array.
-    type SparseValue2D<'T> =
+    type SparseValue2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             i : int
             j : int
             value2D : 'T
         }
 
+        /// Uses (i) as the first index.
+        static member inline create i  (v : SparseValue<'T>) =
+            {
+                i = i
+                j = v.i
+                value2D = v.value1D
+            }
 
-    type InseparableSparseArray2D<'T> =
+        /// Uses (i) as the second index.
+        static member inline createTransposed i (v : SparseValue<'T>) =
+            {
+                i = v.i
+                j = i
+                value2D = v.value1D
+            }
+
+        static member inline createArray i (x : SparseArray<'T>) = x.value |> Array.map (SparseValue2D.create i)
+
+
+    type InseparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             xyValues : SparseValue2D<'T>[]
             xyMap : Lazy<Map<int * int, 'T>>
@@ -451,7 +506,11 @@ module Primitives =
             }
 
 
-    type SeparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)> =
+    type SeparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( + ) : ^T * ^T -> ^T)
+                         and ^T: (static member ( - ) : ^T * ^T -> ^T)
+                         and ^T: (static member Zero : ^T)
+                         and ^T: equality> =
         {
             xValues : SparseValue<'T>[]
             yValues : SparseValue<'T>[]
