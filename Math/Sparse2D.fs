@@ -708,10 +708,19 @@ module Sparse2D =
             SeparableSparseArray2D<'U>.create xValues yValues |> SeparableSparseArr2D
 
 
+    /// Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
+    let inline private toSparseArray2D (dict : System.Collections.Generic.Dictionary<int * int, 'T>) =
+        let resultArray =
+            dict
+            |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
+            |> Seq.toArray
+
+        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
+
+
     let inline sumSparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
         let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
 
-        // Iterate over each SparseArray2D in the sequence.
         for values in arrays do
             for v in values.getValues() do
                 let key = (v.i, v.j)
@@ -719,20 +728,13 @@ module Sparse2D =
                 if dict.ContainsKey(key) then dict.[key] <- dict.[key] + v.value2D
                 else dict.Add(key, v.value2D)
 
-        // Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
-        let resultArray =
-            dict
-            |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
-            |> Seq.toArray
-
         // A sum is generally inseparable.
-        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
+        toSparseArray2D dict
 
 
     let inline multiplySparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
         let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
 
-        // Iterate over each SparseArray2D in the sequence.
         for values in arrays do
             for v in values.getValues() do
                 let key = (v.i, v.j)
@@ -740,11 +742,5 @@ module Sparse2D =
                 if dict.ContainsKey(key) then dict.[key] <- dict.[key] * v.value2D
                 else dict.Add(key, v.value2D)
 
-        // Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
-        let resultArray =
-            dict
-            |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
-            |> Seq.toArray
-
         // TODO kk:20250305 - A multiplication is inseparable if any of the arrays is inseparable.
-        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
+        toSparseArray2D dict
