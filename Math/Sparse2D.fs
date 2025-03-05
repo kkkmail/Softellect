@@ -37,6 +37,9 @@ module Sparse2D =
         static member inline createArray i (x : SparseArray<'T>) = x.value |> Array.map (SparseValue2D.create i)
 
 
+    // =================================================================================================================
+
+
     // type InseparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
     //                  and ^T: (static member ( + ) : ^T * ^T -> ^T)
     //                  and ^T: (static member ( - ) : ^T * ^T -> ^T)
@@ -539,71 +542,209 @@ module Sparse2D =
     //         |> SparseArray2D.create
 
 
-    /// A static representation of 2D sparse array.
-    type StaticSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    // =================================================================================================================
+
+
+    // /// A static representation of 2D sparse array.
+    // type StaticSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( + ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( - ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member Zero : ^T)
+    //                  and ^T: equality
+    //                  and ^T: comparison> =
+    //     | StaticSparseArray2D of SparseValue2D<'T>[]
+    //
+    //     member inline r.value = let (StaticSparseArray2D v) = r in v
+    //
+    //     /// Multiplies a 2D static sparse array by a scalar value.
+    //     /// Returns a 2D static sparse array.
+    //     static member inline (*) (a : StaticSparseArray2D<'U>, b : 'U) : StaticSparseArray2D<'U> =
+    //         let v =
+    //             a.value
+    //             |> Array.map (fun e -> e * b)
+    //             |> StaticSparseArray2D
+    //
+    //         v
+    //
+    //
+    // /// A dynamic representation of 2D sparse array.
+    // type DynamicSparseArrayData2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( + ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( - ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member Zero : ^T)
+    //                  and ^T: equality
+    //                  and ^T: comparison> =
+    //     {
+    //         getData : int -> SparseArray<'T>
+    //         xLength : int
+    //     }
+    //
+    //
+    // type DynamicSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( + ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member ( - ) : ^T * ^T -> ^T)
+    //                  and ^T: (static member Zero : ^T)
+    //                  and ^T: equality
+    //                  and ^T: comparison> =
+    //     | DynamicSparseArray2D of DynamicSparseArrayData2D<'T>
+    //
+    //     member inline private r.value = let (DynamicSparseArray2D v) = r in v
+    //     member inline r.invoke = let (DynamicSparseArray2D v) = r in v.getData
+    //     member inline r.xLength = let (DynamicSparseArray2D v) = r in v.xLength
+    //
+    //     // static member inline (*) (a : DynamicSparseArray2D<'T>, b : SparseArray<'T>) : DynamicSparseArray2D<'T> =
+    //     //     let originalFunc = a.invoke
+    //     //
+    //     //     // Create a new function that multiplies the result of the original function by b
+    //     //     let newFunc i : SparseArray<'T> =
+    //     //         let sparseArray = originalFunc i
+    //     //         sparseArray * b
+    //     //
+    //     //     { a.value with getData = newFunc } |> DynamicSparseArray2D
+    //
+    //     static member inline (*) (a : DynamicSparseArray2D<'U>, b : 'U) : DynamicSparseArray2D<'U> =
+    //         let originalFunc = a.invoke
+    //
+    //         // Create a new function that multiplies the result of the original function by b
+    //         let newFunc i : SparseArray<'U> =
+    //             let sparseArray = originalFunc i
+    //             sparseArray * b
+    //
+    //         { a.value with getData = newFunc } |> DynamicSparseArray2D
+    //
+    //     static member inline (*) (a : 'U, b : DynamicSparseArray2D<'U>) : DynamicSparseArray2D<'U> = b * a
+
+
+    // =================================================================================================================
+
+
+    type InseparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
                      and ^T: (static member Zero : ^T)
                      and ^T: equality
                      and ^T: comparison> =
-        | StaticSparseArray2D of SparseValue2D<'T>[]
+        | InseparableSparseArray2D of SparseValue2D<'T>[]
 
-        member inline r.value = let (StaticSparseArray2D v) = r in v
+        member inline r.value = let (InseparableSparseArray2D v) = r in v
 
-        /// Multiplies a 2D static sparse array by a scalar value.
-        /// Returns a 2D static sparse array.
-        static member inline (*) (a : StaticSparseArray2D<'U>, b : 'U) : StaticSparseArray2D<'U> =
-            let v =
-                a.value
-                |> Array.map (fun e -> e * b)
-                |> StaticSparseArray2D
-
-            v
+        // static member inline createLookupMap (values: SparseValue2D<'T>[]) =
+        //     values
+        //     |> Array.map (fun v -> (v.i, v.j), v.value2D)
+        //     |> Map.ofArray
+        //
+        // static member inline create (v : SparseValue2D<'U>[]) : InseparableSparseArray2D<'U> = InseparableSparseArray2D v
 
 
-    /// A dynamic representation of 2D sparse array.
-    type DynamicSparseArrayData2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+    type SeparableSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
                      and ^T: (static member Zero : ^T)
                      and ^T: equality
                      and ^T: comparison> =
         {
-            getData : int -> SparseArray<'T>
-            xLength : int
+            xValues : SparseValue<'T>[]
+            yValues : SparseValue<'T>[]
+            // xMap : Lazy<Map<int, 'T>>
+            // yMap : Lazy<Map<int, 'T>>
         }
 
+        // static member inline createLookupMap (values: SparseValue<'T>[]) =
+        //     values
+        //     |> Array.map (fun v -> v.i, v.value1D)
+        //     |> Map.ofArray
+        //
+        // member inline a.tryFind i j =
+        //     match a.xMap.Value.TryFind i, a.yMap.Value.TryFind j with
+        //     | Some x, Some y -> x * y |> Some
+        //     | _ -> None
 
-    type DynamicSparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
+        static member inline create xValues yValues =
+            {
+                xValues = xValues
+                yValues = yValues
+                // xMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap xValues)
+                // yMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap yValues)
+            }
+
+
+    /// See: https://github.com/dotnet/fsharp/issues/3302 for (*) operator.
+    type SparseArray2D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
                      and ^T: (static member Zero : ^T)
                      and ^T: equality
                      and ^T: comparison> =
-        | DynamicSparseArray2D of DynamicSparseArrayData2D<'T>
+        | InseparableSparseArr2D of InseparableSparseArray2D<'T>
+        | SeparableSparseArr2D of SeparableSparseArray2D<'T>
 
-        member inline private r.value = let (DynamicSparseArray2D v) = r in v
-        member inline r.invoke = let (DynamicSparseArray2D v) = r in v.getData
-        member inline r.xLength = let (DynamicSparseArray2D v) = r in v.xLength
+        /// Generate the complete array of sparse values.
+        member inline r.getValues() =
+            match r with
+            | InseparableSparseArr2D a -> a.value |> Seq.ofArray
+            | SeparableSparseArr2D s ->
+                seq {
+                    for x in s.xValues do
+                        for y in s.yValues do
+                            yield {
+                                i = x.i
+                                j = y.i
+                                value2D = x.value1D * y.value1D
+                            }
+                }
 
-        // static member inline (*) (a : DynamicSparseArray2D<'T>, b : SparseArray<'T>) : DynamicSparseArray2D<'T> =
-        //     let originalFunc = a.invoke
-        //
-        //     // Create a new function that multiplies the result of the original function by b
-        //     let newFunc i : SparseArray<'T> =
-        //         let sparseArray = originalFunc i
-        //         sparseArray * b
-        //
-        //     { a.value with getData = newFunc } |> DynamicSparseArray2D
+        // /// Access the internal lookup map
+        // member inline r.tryFind i j =
+        //     match r with
+        //     | InseparableSparseArr2D a -> a.tryFind i j
+        //     | SeparableSparseArr2D a -> a.tryFind i j
 
-        static member inline (*) (a : DynamicSparseArray2D<'U>, b : 'U) : DynamicSparseArray2D<'U> =
-            let originalFunc = a.invoke
+        /// Create a SparseArray2D from an array of SparseValue2D
+        static member inline create (values: SparseValue2D<'U>[]) : SparseArray2D<'U> =
+            InseparableSparseArray2D values |> InseparableSparseArr2D
 
-            // Create a new function that multiplies the result of the original function by b
-            let newFunc i : SparseArray<'U> =
-                let sparseArray = originalFunc i
-                sparseArray * b
+        /// Create a separable SparseArray2D from two arrays of SparseValue
+        static member inline create (xValues: SparseValue<'U>[], yValues: SparseValue<'U>[]) : SparseArray2D<'U> =
+            SeparableSparseArray2D<'U>.create xValues yValues |> SeparableSparseArr2D
 
-            { a.value with getData = newFunc } |> DynamicSparseArray2D
 
-        static member inline (*) (a : 'U, b : DynamicSparseArray2D<'U>) : DynamicSparseArray2D<'U> = b * a
+    let inline sumSparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
+        let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
+
+        // Iterate over each SparseArray2D in the sequence.
+        for values in arrays do
+            for v in values.getValues() do
+                let key = (v.i, v.j)
+
+                if dict.ContainsKey(key) then dict.[key] <- dict.[key] + v.value2D
+                else dict.Add(key, v.value2D)
+
+        // Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
+        let resultArray =
+            dict
+            |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
+            |> Seq.toArray
+
+        // A sum is generally inseparable.
+        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
+
+
+    let inline multiplySparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
+        let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
+
+        // Iterate over each SparseArray2D in the sequence.
+        for values in arrays do
+            for v in values.getValues() do
+                let key = (v.i, v.j)
+
+                if dict.ContainsKey(key) then dict.[key] <- dict.[key] * v.value2D
+                else dict.Add(key, v.value2D)
+
+        // Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
+        let resultArray =
+            dict
+            |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
+            |> Seq.toArray
+
+        // TODO kk:20250305 - A multiplication is inseparable if any of the arrays is inseparable.
+        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
