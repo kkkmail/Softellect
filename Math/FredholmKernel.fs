@@ -122,7 +122,7 @@ module FredholmKernel =
             let len1 = d.xDomain.points.value.Length - 1
             let len2 = d.yDomain.points.value.Length - 1
             let integralValue = d.integralValue len1 len2
-            let sum = a.value() |> Array.map integralValue |> Array.sum
+            let sum = a.getValues() |> Seq.map integralValue |> Seq.sum
             let retVal = sum |> d.normalize
             retVal
 
@@ -132,7 +132,7 @@ module FredholmKernel =
             let len1 = d.xDomain.points.value.Length - 1
             let len2 = d.yDomain.points.value.Length - 1
             let integralValue = d.integralValue len1 len2
-            let sum = a.value() |> Array.map (fun e -> (integralValue e) * (bValue e.i e.j) ) |> Array.sum
+            let sum = a.getValues() |> Seq.map (fun e -> (integralValue e) * (bValue e.i e.j) ) |> Seq.sum
             let retVal = sum |> d.normalize
             retVal
 
@@ -150,7 +150,7 @@ module FredholmKernel =
                     let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
                     retVal
 
-            let sum = a.value() |> Array.map g |> Array.sum
+            let sum = a.getValues() |> Seq.map g |> Seq.sum
             sum
 
         /// Performs a Poisson "evolution" for a given "point".
@@ -168,7 +168,7 @@ module FredholmKernel =
                     let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
                     retVal
 
-            let sum = a.value() |> Array.map g |> Array.sum
+            let sum = a.getValues() |> Seq.map g |> Seq.sum
             sum
 
         /// Calculates an integral value for a given 2D matrix.
@@ -249,9 +249,16 @@ module FredholmKernel =
         //     a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.evolve (p, e, b))) |> Matrix
 
         /// Calculates an integral matrix value for a given 4D sparse array.
-        member d.integrateValues (a : SparseArray4D<double>) =
+        member d.integrateValues (a : SparseArray4D<double>) : SparseArray2D<double> =
+            match a with
+            | StaticSparseArr4D s ->
+                let x = s.value |> Array.map (fun v -> v |> Array.map d.integrateValues) // |> Matrix
+
+                failwith ""
+            | DynamicSparseArr4D d ->
+                d.invoke
+                failwith "todo"
             // a.value |> Array.map (fun v -> v |> Array.map d.integrateValues) |> Matrix
-            failwith ""
 
         member d.norm (a : LinearMatrix<double>) = d.integrateValues a
 

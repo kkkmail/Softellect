@@ -551,11 +551,11 @@ module Primitives =
         // member inline r.value = let (SparseArray2D(v, _)) = r in v
 
         /// Generate the complete array of sparse values
-        member inline r.value() =
+        member inline r.getValues() =
             match r with
-            | InseparableSparseArr2D a -> a.xyValues
+            | InseparableSparseArr2D a -> a.xyValues |> Seq.ofArray
             | SeparableSparseArr2D s ->
-                [|
+                seq {
                     for x in s.xValues do
                         for y in s.yValues do
                             yield {
@@ -563,7 +563,7 @@ module Primitives =
                                 j = y.i
                                 value2D = x.value1D * y.value1D
                             }
-                |]
+                }
 
         /// Access the internal lookup map
         member inline r.tryFind i j =
@@ -929,22 +929,24 @@ module Primitives =
         /// Multiplies a 2D sparse array by a scalar value.
         /// Returns a 2D sparse array.
         static member inline (*) (a : SparseArray2D<'U>, b : 'U) : SparseArray2D<'U> =
-            let v =
-                a.value()
-                |> Array.map (fun e -> { e with value2D = e.value2D * b })
-                |> SparseArray2D.create
+            match a with
+            | InseparableSparseArr2D ia ->
+                let v =
+                    ia.xyValues
+                    |> Array.map (fun e -> { e with value2D = e.value2D * b })
+                    |> InseparableSparseArray2D.create
 
-            v
+                InseparableSparseArr2D v
+            | SeparableSparseArr2D sa ->
+                let xValues =
+                    sa.xValues
+                    |> Array.map (fun e -> { e with value1D = e.value1D * b })
+
+                SeparableSparseArray2D.create xValues sa.yValues |> SeparableSparseArr2D
 
         /// Multiplies a 2D sparse array by a scalar value.
         /// Returns a 2D sparse array.
-        static member inline (*) (a : 'U, b : SparseArray2D<'U>) : SparseArray2D<'U> =
-            let v =
-                b.value()
-                |> Array.map (fun e -> { e with value2D = a * e.value2D })
-                |> SparseArray2D.create
-
-            v
+        static member inline (*) (a : 'U, b : SparseArray2D<'U>) : SparseArray2D<'U> = b * a
 
         /// Multiplies a 2D sparse array by a 2D array (LinearMatrix) element by element.
         /// This is NOT a matrix multiplication.
@@ -1012,7 +1014,8 @@ module Primitives =
                 value4D = v.value2D
             }
 
-        static member inline createArray i j (x : SparseArray2D<'T>) : SparseValue4D<'T>[] = x.value() |> Array.map (SparseValue4D.create i j)
+        static member inline createSeq i j (x : SparseArray2D<'T>) =
+            x.getValues() |> Seq.map (SparseValue4D.create i j)
 
 
     type SparseValueArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
@@ -1025,7 +1028,7 @@ module Primitives =
         member inline r.value = let (SparseValueArray4D v) = r in v
 
 
-    /// A 4D representation of 4D sparse tensor where the first two indexes are full ([][] is used)
+    /// A static 4D representation of 4D sparse tensor where the first two indexes are full ([][] is used)
     /// and the last two are in a SparseArray2D.
     type StaticSparseArray4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                          and ^T: (static member ( + ) : ^T * ^T -> ^T)
@@ -1047,6 +1050,9 @@ module Primitives =
             v
 
 
+    /// A dynamic 4D representation of 4D sparse tensor where the first two indexes are full
+    /// and the last two are in a SparseArray2D.
+    /// This is suitable for large sparse tensors where instantiation of [][] is not feasible.
     type DynamicSparseArrayData4D<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                          and ^T: (static member ( + ) : ^T * ^T -> ^T)
                          and ^T: (static member ( - ) : ^T * ^T -> ^T)
@@ -1135,9 +1141,10 @@ module Primitives =
                 let n2 = s.value[0].Length
 
                 let value =
-                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createArray i j (s.value[i][j]) |] |]
+                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (s.value[i][j]) |] |]
                     |> Array.concat
-                    |> Array.concat
+                    |> Seq.concat
+                    |> Seq.toArray
                     |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
                     |> SparseValueArray4D
 
@@ -1148,9 +1155,10 @@ module Primitives =
                 let n2 = d.yLength
 
                 let value =
-                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createArray i j (d.invoke i j) |] |]
+                    [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (d.invoke i j) |] |]
                     |> Array.concat
-                    |> Array.concat
+                    |> Seq.concat
+                    |> Seq.toArray
                     |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
                     |> SparseValueArray4D
 
