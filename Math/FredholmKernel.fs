@@ -1,12 +1,15 @@
 ﻿namespace Softellect.Math
 
 open System
-open Softellect.Math.Primitives
 //open Primitives.WolframPrimitives
 //open Primitives.GeneralData
 open Softellect.Sys.Primitives
 // open Softellect.Analytics.Wolfram
 open Softellect.Sys.Core
+open Softellect.Math.Primitives
+open Softellect.Math.Sparse1D
+open Softellect.Math.Sparse2D
+open Softellect.Math.Sparse4D
 
 module FredholmKernel =
 
@@ -703,7 +706,7 @@ module FredholmKernel =
     type MutationProbabilityParams =
         {
             domainParams : DomainParams
-            zeroThreshold : ZeroThreshold
+            zeroThreshold : ZeroThreshold<double>
             epsFuncValue : EpsFuncValue
         }
 
@@ -768,7 +771,7 @@ module FredholmKernel =
             let p =
                 match data.sparseArrayType with
                 | StaticSparseArrayType -> cartesianMultiply p1.value p2.value
-                | DynamicSparseArrayType -> SparseArray2D.create (p1.value.value, p2.value.value)
+                | DynamicSparseArrayType -> SparseArray2D<double>.create (p1.value.value, p2.value.value)
                 |> MutationProbability2D
             p
 
@@ -798,11 +801,12 @@ module FredholmKernel =
                     let x1y1_xy = xMu |> Array.mapi (fun i _ -> yMu |> Array.mapi (fun j _ -> (MutationProbability2D.create e data i j).value))
 
                     let xy_x1y1_Map =
-                        [| for i in 0..(xMu.Length - 1) -> [| for j in 0..(yMu.Length - 1) -> SparseValue4D.createArray i j ((x1y1_xy[i][j])) |] |]
+                        [| for i in 0..(xMu.Length - 1) -> [| for j in 0..(yMu.Length - 1) -> SparseValue4D.createSeq i j ((x1y1_xy[i][j])) |] |]
                         |> Array.concat
-                        |> Array.concat
+                        |> Seq.concat
+                        |> Seq.toArray
                         |> Array.groupBy (fun e -> e.i1, e.j1)
-                        |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D.create)
+                        |> Array.map (fun (a, b) -> a, b |> Array.map (fun e -> { i = e.i; j = e.j; value2D = e.value4D }) |> Array.sortBy (fun e -> e.i, e.j) |> SparseArray2D<double>.create)
                         |> Map.ofArray
 
                     let xy_x1y1 =
@@ -820,7 +824,7 @@ module FredholmKernel =
                     let p1 = xMu |> Array.mapi (fun i _ -> xMp[i].value)
                     let p2 = yMu |> Array.mapi (fun j _ -> yMp[j].value)
 
-                    let x1y1_xy = fun i1 j1 -> SparseArray2D.create (p1[i1], p2[j1])
+                    let x1y1_xy = fun i1 j1 -> SparseArray2D<double>.create (p1[i1], p2[j1])
 
                     let x_x1_Map =
                         [| for i in 0..(xMu.Length - 1) -> SparseValue2D.createArray i (xMp[i]) |]
@@ -840,7 +844,7 @@ module FredholmKernel =
 
                     let y_y1 = yMu |> Array.mapi (fun i _ -> y_y1_Map[i])
 
-                    let xy_x1y1 = fun i j -> SparseArray2D.create (x_x1[i].value, y_y1[j].value)
+                    let xy_x1y1 = fun i j -> SparseArray2D<double>.create (x_x1[i].value, y_y1[j].value)
 
                     {
                         x1y1_xy =
@@ -867,7 +871,7 @@ module FredholmKernel =
             domainIntervals : DomainIntervals
             xRange : DomainRange
             yRange : DomainRange
-            zeroThreshold : ZeroThreshold
+            zeroThreshold : ZeroThreshold<double>
             xEpsFuncValue : EpsFuncValue
             yEpsFuncValue : EpsFuncValue
             kaFuncValue : KaFuncValue
@@ -890,13 +894,13 @@ module FredholmKernel =
                 xMutationProbabilityParams =
                     {
                         domainParams = kp.xDomainParams
-                        zeroThreshold = ZeroThreshold.defaultValue
+                        zeroThreshold = zeroThresholdDefaultValue
                         epsFuncValue = kp.xEpsFuncValue
                     }
                 yMutationProbabilityParams =
                     {
                         domainParams = kp.yDomainParams
-                        zeroThreshold = ZeroThreshold.defaultValue
+                        zeroThreshold = zeroThresholdDefaultValue
                         epsFuncValue = kp.yEpsFuncValue
                     }
                 sparseArrayType = failwith ""

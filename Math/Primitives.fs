@@ -399,7 +399,9 @@ module Primitives =
         | ZeroThreshold of 'T
 
         member inline r.value = let (ZeroThreshold v) = r in v
-        static member inline defaultValue = ZeroThreshold 1.0e-05
+
+
+    let zeroThresholdDefaultValue = ZeroThreshold 1.0e-05
 
 
     type SparseArrayType =

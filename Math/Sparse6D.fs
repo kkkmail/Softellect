@@ -36,13 +36,3 @@ module Sparse6D =
     //     | SparseArray6D of SparseArray3D<'T>[][][]
     //
     //     member inline r.value = let (SparseArray6D v) = r in v
-    //
-    //
-    // /// Performs a Cartesian multiplication of two 1D sparse arrays to obtain a 2D sparse array.
-    // let inline cartesianMultiply<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
-    //                      and ^T: (static member Zero : ^T)
-    //                      and ^T: equality> (a : SparseArray<'T>) (b : SparseArray<'T>) : SparseArray2D<'T> =
-    //     let bValue = b.value
-    //     a.value |> Array.map (fun e -> bValue |> Array.map (fun f -> { i = e.i; j = f.i; value2D = e.value1D * f.value1D })) |> Array.concat |> SparseArray2D.create
