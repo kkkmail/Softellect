@@ -2,10 +2,14 @@ namespace Softellect.Tests.MathTests
 
 open System.Diagnostics
 open FluentAssertions.Execution
-// open Softellect.Math.FredholmKernel
+open Softellect.Math.FredholmKernel
 open Xunit
 open FluentAssertions
 open Softellect.Math.Primitives
+open Softellect.Math
+open Softellect.Math.Sparse1D
+open Softellect.Math.Sparse2D
+open Softellect.Math.Sparse4D
 
 /// Helper functions for testing
 module TestHelpers =
@@ -19,69 +23,71 @@ module TestHelpers =
                 result[i, j] <- matrix.value[i][j]
         result
 
-//     /// Convert a SparseArray2D<'T> to a 2D array for comparison
-//     let sparseToArray2D (sparse: SparseArray2D<int64>) (rows: int) (cols: int) : int64[,] =
-//         let result = Array2D.zeroCreate rows cols
-//         for value in sparse.value() do
-//             if value.i < rows && value.j < cols then
-//                 result[value.i, value.j] <- value.value2D
-//         result
-//
-//     /// Create a SparseArray2D from a 2D array
-//     let createSparseFrom2DArray (array: int64[,]) : SparseArray2D<int64> =
-//         let rows = array.GetLength(0)
-//         let cols = array.GetLength(1)
-//         let sparseValues =
-//             [|
-//                 for i in 0..rows-1 do
-//                     for j in 0..cols-1 do
-//                         let value = array[i, j]
-//                         if value <> 0L then
-//                             yield { i = i; j = j; value2D = value }
-//             |]
-//         SparseArray2D.create sparseValues
-//
-//     /// Create a Matrix from a 2D array
-//     let createMatrixFrom2DArray (array: int64[,]) : Matrix<int64> =
-//         let rows = array.GetLength(0)
-//         let cols = array.GetLength(1)
-//         let matrixArray =
-//             [|
-//                 for i in 0..rows-1 do
-//                     [|
-//                         for j in 0..cols-1 do
-//                             array[i, j]
-//                     |]
-//             |]
-//         Matrix matrixArray
-//
-//     /// Assert that a SparseArray2D and a Matrix have the same values
-//     let assertEqualSparseAndMatrix (sparse: SparseArray2D<int64>) (matrix: Matrix<int64>) =
-//         let rows = matrix.value.Length
-//         let cols = if rows > 0 then matrix.value[0].Length else 0
-//         let sparseArray = sparseToArray2D sparse rows cols
-//         let matrixArray = matrixToArray2D matrix
-//
-//         for i in 0..rows-1 do
-//             for j in 0..cols-1 do
-//                 sparseArray[i, j].Should().Be(matrixArray[i, j], $"at position [{i}, {j}]") |> ignore
-//
-//
-// /// Tests for SparseArray2D operators
-// type SparseArray2DOperatorTests() =
-//
-//     // Test data
-//     let testData1 = array2D [
-//         [1L; 0L; 3L; 0L]
-//         [0L; 5L; 0L; 0L]
-//         [7L; 0L; 9L; 0L]
-//     ]
-//
-//     let testData2 = array2D [
-//         [2L; 0L; 0L; 4L]
-//         [0L; 6L; 0L; 0L]
-//         [0L; 0L; 8L; 10L]
-//     ]
+    /// Convert a SparseArray2D<'T> to a 2D array for comparison
+    let sparseToArray2D (sparse: SparseArray2D<int64>) (rows: int) (cols: int) : int64[,] =
+        let result = Array2D.zeroCreate rows cols
+        for value in sparse.getValues() do
+            if value.i < rows && value.j < cols then
+                result[value.i, value.j] <- value.value2D
+        result
+
+    /// Create a SparseArray2D from a 2D array
+    let createSparseFrom2DArray (array: int64[,]) : SparseArray2D<int64> =
+        let rows = array.GetLength(0)
+        let cols = array.GetLength(1)
+        let sparseValues =
+            [|
+                for i in 0..rows-1 do
+                    for j in 0..cols-1 do
+                        let value = array[i, j]
+                        if value <> 0L then
+                            yield { i = i; j = j; value2D = value }
+            |]
+        SparseArray2D.create sparseValues
+
+    /// Create a Matrix from a 2D array
+    let createMatrixFrom2DArray (array: int64[,]) : Matrix<int64> =
+        let rows = array.GetLength(0)
+        let cols = array.GetLength(1)
+        let matrixArray =
+            [|
+                for i in 0..rows-1 do
+                    [|
+                        for j in 0..cols-1 do
+                            array[i, j]
+                    |]
+            |]
+        Matrix matrixArray
+
+    /// Assert that a SparseArray2D and a Matrix have the same values
+    let assertEqualSparseAndMatrix (sparse: SparseArray2D<int64>) (matrix: Matrix<int64>) =
+        let rows = matrix.value.Length
+        let cols = if rows > 0 then matrix.value[0].Length else 0
+        let sparseArray = sparseToArray2D sparse rows cols
+        let matrixArray = matrixToArray2D matrix
+
+        for i in 0..rows-1 do
+            for j in 0..cols-1 do
+                sparseArray[i, j].Should().Be(matrixArray[i, j], $"at position [{i}, {j}]") |> ignore
+
+
+/// Tests for SparseArray2D operators
+type SparseArray2DOperatorTests() =
+
+    // Test data
+    let testData1 = array2D [
+        [1L; 0L; 3L; 0L]
+        [0L; 5L; 0L; 0L]
+        [7L; 0L; 9L; 0L]
+    ]
+
+    let testData2 = array2D [
+        [2L; 0L; 0L; 4L]
+        [0L; 6L; 0L; 0L]
+        [0L; 0L; 8L; 10L]
+    ]
+
+// // ===================
 //
 //     [<Fact>]
 //     let ``Addition operator should combine values from both arrays`` () =
@@ -200,9 +206,11 @@ module TestHelpers =
 //
 //         // Multiplication with empty should be empty
 //         multiplicationResult.value().Should().BeEmpty() |> ignore
-//
-//
-//     // =========================================================
+
+
+    // =========================================================
+
+// // =========================================================
 //
 //     // Additional tests for the SparseArray2D type with separable functionality
 //     // Add these to your existing SparseArray2DOperatorTests class
@@ -500,183 +508,186 @@ module TestHelpers =
 //
 //         // Multiplication with empty should be empty
 //         multiplicationResult.value().Length.Should().Be(0) |> ignore
-//
-//
-//     // Helper function to compare two sparse value arrays.
-//     let compareSparseArrays (tolerance: double) (arr1: SparseValue4D<double>[]) (arr2: SparseValue4D<double>[]) (label: string) =
-//         arr1.Length.Should().Be(arr2.Length, $"Both implementations should have the same number of elements in {label}") |> ignore
-//
-//         use _ = new AssertionScope()
-//
-//         for i in 0 .. arr1.Length - 1 do
-//             let sv1 = arr1.[i]
-//             let sv2 = arr2.[i]
-//             sv1.i.Should().Be(sv2.i, $"Index 'i' at position {i} in {label} should match") |> ignore
-//             sv1.j.Should().Be(sv2.j, $"Index 'j' at position {i} in {label} should match") |> ignore
-//             sv1.i1.Should().Be(sv2.i1, $"Index 'i1' at position {i} in {label} should match") |> ignore
-//             sv1.j1.Should().Be(sv2.j1, $"Index 'j1' at position {i} in {label} should match") |> ignore
-//             sv1.value4D.Should().BeApproximately(sv2.value4D, tolerance, $"Value at position {i} in {label} should be approximately equal") |> ignore
-//
-//
-//     // Define tolerance for float comparison.
-//     let tolerance = 1e-8
-//
-//
-//     // let epsX = Eps0 0.03
-//     // let epsY = Eps0 0.05
-//     // let xDomainIntervals = DomainIntervals 100
-//     // let yDomainIntervals = DomainIntervals 100
-//
-//
-//     let epsX = Eps0 0.01
-//     let epsY = Eps0 0.015
-//     let xDomainIntervals = DomainIntervals 200
-//     let yDomainIntervals = DomainIntervals 200
-//
-//
-//     // let epsX = Eps0 0.0048
-//     // let epsY = Eps0 0.0052
-//     // let xDomainIntervals = DomainIntervals 1000
-//     // let yDomainIntervals = DomainIntervals 1000
-//
-//
-//     let data1 =
-//         {
-//             xMutationProbabilityParams =
-//                 {
-//                     domainParams =
-//                         {
-//                             domainIntervals = xDomainIntervals
-//                             domainRange = { minValue = -1.0; maxValue = 1.0  }
-//                         }
-//                     zeroThreshold = ZeroThreshold.defaultValue
-//                     epsFuncValue = ScalarEps epsX
-//                 }
-//             yMutationProbabilityParams =
-//                 {
-//                     domainParams =
-//                         {
-//                             domainIntervals = yDomainIntervals
-//                             domainRange = { minValue = 0.0; maxValue = 5.0  }
-//                         }
-//                     zeroThreshold = ZeroThreshold.defaultValue
-//                     epsFuncValue = ScalarEps epsY
-//                 }
-//             sparseArrayType = StaticSparseArrayType
-//         }
-//
-//
-//     let data2 = { data1 with sparseArrayType = DynamicSparseArrayType }
-//
-//     let result1 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data1)
-//     let result2 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data2)
-//
-//
-//     /// Compare the x1y1_xy fields.
-//     [<Fact>]
-//     let ``MutationProbability4D implementations should match x1y1_xy`` () =
-//         let sparseValues1 = result1.Value.x1y1_xy.toSparseValueArray().value
-//         let sparseValues2 = result2.Value.x1y1_xy.toSparseValueArray().value
-//         compareSparseArrays tolerance sparseValues1 sparseValues2 "x1y1_xy"
-//
-//
-//     /// Compare the xy_x1y1 fields.
-//     [<Fact>]
-//     let ``MutationProbability4D implementations should match xy_x1y1`` () =
-//         let sparseValues3 = result1.Value.xy_x1y1.toSparseValueArray().value
-//         let sparseValues4 = result2.Value.xy_x1y1.toSparseValueArray().value
-//         compareSparseArrays tolerance sparseValues3 sparseValues4 "xy_x1y1"
-//
-//
-//     [<Fact>]
-//     let ``Convert result1 x1y1_xy to SparseValueArray`` () =
-//         let sparseValueArray = result1.Value.x1y1_xy.toSparseValueArray()
-//         sparseValueArray.Should().NotBeNull($"Conversion of result1.x1y1_xy should succeed") |> ignore
-//
-//
-//     /// Took 20 minutes for 1000 / 0.005
-//     [<Fact>]
-//     let ``Convert result2 x1y1_xy to SparseValueArray`` () =
-//         let sparseValueArray = result2.Value.x1y1_xy.toSparseValueArray()
-//         sparseValueArray.Should().NotBeNull($"Conversion of result2.x1y1_xy should succeed") |> ignore
-//
-//
-//     [<Fact>]
-//     let ``Convert result1 xy_x1y1 to SparseValueArray`` () =
-//         let sparseValueArray = result1.Value.xy_x1y1.toSparseValueArray()
-//         sparseValueArray.Should().NotBeNull($"Conversion of result1.xy_x1y1 should succeed") |> ignore
-//
-//
-//     [<Fact>]
-//     let ``Convert result2 xy_x1y1 to SparseValueArray`` () =
-//         let sparseValueArray = result2.Value.xy_x1y1.toSparseValueArray()
-//         sparseValueArray.Should().NotBeNull($"Conversion of result2.xy_x1y1 should succeed") |> ignore
-//
-//
-//     // Performance tests:
-//     // Compare conversion times for each field using a constant allowedFactor.
-//     // If result2's conversion takes more than allowedFactor times longer than result1's, the test fails.
-//
-//     [<Fact>]
-//     let ``x1y1_xy conversion performance should be acceptable`` () =
-//         let allowedFactor = 1.5
-//
-//         // Measure conversion time for result1
-//         let sw1 = Stopwatch.StartNew()
-//         let _ = result1.Value.x1y1_xy.toSparseValueArray()
-//         sw1.Stop()
-//         let time1 = sw1.Elapsed.TotalMilliseconds
-//
-//         // Measure conversion time for result2
-//         let sw2 = Stopwatch.StartNew()
-//         let _ = result2.Value.x1y1_xy.toSparseValueArray()
-//         sw2.Stop()
-//         let time2 = sw2.Elapsed.TotalMilliseconds
-//
-//         time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
-//             $"x1y1_xy conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
-//
-//
-//     [<Fact>]
-//     let ``xy_x1y1 conversion performance should be acceptable`` () =
-//         let allowedFactor = 1.5
-//
-//         // Measure conversion time for result1
-//         let sw1 = Stopwatch.StartNew()
-//         let _ = result1.Value.xy_x1y1.toSparseValueArray()
-//         sw1.Stop()
-//         let time1 = sw1.Elapsed.TotalMilliseconds
-//
-//         // Measure conversion time for result2
-//         let sw2 = Stopwatch.StartNew()
-//         let _ = result2.Value.xy_x1y1.toSparseValueArray()
-//         sw2.Stop()
-//         let time2 = sw2.Elapsed.TotalMilliseconds
-//
-//         time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
-//             $"xy_x1y1 conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
-//
-//
-//     // Helper functions to check the discriminated union cases.
-//     let isStatic (s: SparseArray4D<double>) =
-//         match s with
-//         | StaticSparseArr4D _ -> true
-//         | DynamicSparseArr4D _ -> false
-//
-//
-//     let isDynamic (s: SparseArray4D<double>) =
-//         match s with
-//         | DynamicSparseArr4D _ -> true
-//         | StaticSparseArr4D _ -> false
-//
-//
-//     [<Fact>]
-//     let ``result1 sparse arrays should be StaticSparseArr4D`` () =
-//         (result1.Value.x1y1_xy |> isStatic).Should().BeTrue($"result1.x1y1_xy should be StaticSparseArr4D") |> ignore
-//         (result1.Value.xy_x1y1 |> isStatic).Should().BeTrue($"result1.xy_x1y1 should be StaticSparseArr4D") |> ignore
-//
-//
-//     [<Fact>]
-//     let ``result2 sparse arrays should be DynamicSparseArr4D`` () =
-//         (result2.Value.x1y1_xy |> isDynamic).Should().BeTrue($"result2.x1y1_xy should be DynamicSparseArr4D") |> ignore
-//         (result2.Value.xy_x1y1 |> isDynamic).Should().BeTrue($"result2.xy_x1y1 should be DynamicSparseArr4D") |> ignore
+
+
+    // Helper function to compare two sparse value arrays.
+    let compareSparseArrays (tolerance: double) (arr1: SparseValue4D<double>[]) (arr2: SparseValue4D<double>[]) (label: string) =
+        arr1.Length.Should().Be(arr2.Length, $"Both implementations should have the same number of elements in {label}") |> ignore
+
+        use _ = new AssertionScope()
+
+        for i in 0 .. arr1.Length - 1 do
+            let sv1 = arr1.[i]
+            let sv2 = arr2.[i]
+            sv1.i.Should().Be(sv2.i, $"Index 'i' at position {i} in {label} should match") |> ignore
+            sv1.j.Should().Be(sv2.j, $"Index 'j' at position {i} in {label} should match") |> ignore
+            sv1.i1.Should().Be(sv2.i1, $"Index 'i1' at position {i} in {label} should match") |> ignore
+            sv1.j1.Should().Be(sv2.j1, $"Index 'j1' at position {i} in {label} should match") |> ignore
+            sv1.value4D.Should().BeApproximately(sv2.value4D, tolerance, $"Value at position {i} in {label} should be approximately equal") |> ignore
+
+
+    // Define tolerance for float comparison.
+    let tolerance = 1e-8
+
+
+    // // Run time for "Convert result *" tests is about 6.5 - 6.9 seconds for result1 and 4.3 - 4.6 seconds for result2.
+    // let epsX = Eps0 0.03
+    // let epsY = Eps0 0.05
+    // let xDomainIntervals = DomainIntervals 100
+    // let yDomainIntervals = DomainIntervals 100
+
+
+    // // Run time for "Convert result *" tests is about 13.3 - 14.6 seconds for result1 and 8.3 - 9.2 seconds for result2.
+    // let epsX = Eps0 0.01
+    // let epsY = Eps0 0.015
+    // let xDomainIntervals = DomainIntervals 200
+    // let yDomainIntervals = DomainIntervals 200
+
+
+    // Run time for "Convert result *" tests is about ___ - ___ seconds for result1 and ___ - ___ seconds for result2.
+    let epsX = Eps0 0.0048
+    let epsY = Eps0 0.0052
+    let xDomainIntervals = DomainIntervals 1000
+    let yDomainIntervals = DomainIntervals 1000
+
+
+    let data1 =
+        {
+            xMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = xDomainIntervals
+                            domainRange = { minValue = -1.0; maxValue = 1.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = ScalarEps epsX
+                }
+            yMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = yDomainIntervals
+                            domainRange = { minValue = 0.0; maxValue = 5.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = ScalarEps epsY
+                }
+            sparseArrayType = StaticSparseArrayType
+        }
+
+
+    let data2 = { data1 with sparseArrayType = DynamicSparseArrayType }
+
+    let result1 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data1)
+    let result2 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data2)
+
+
+    /// Compare the x1y1_xy fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match x1y1_xy`` () =
+        let sparseValues1 = result1.Value.x1y1_xy.toSparseValueArray()
+        let sparseValues2 = result2.Value.x1y1_xy.toSparseValueArray()
+        compareSparseArrays tolerance sparseValues1 sparseValues2 "x1y1_xy"
+
+
+    /// Compare the xy_x1y1 fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match xy_x1y1`` () =
+        let sparseValues3 = result1.Value.xy_x1y1.toSparseValueArray()
+        let sparseValues4 = result2.Value.xy_x1y1.toSparseValueArray()
+        compareSparseArrays tolerance sparseValues3 sparseValues4 "xy_x1y1"
+
+
+    [<Fact>]
+    let ``Convert result1 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.x1y1_xy should succeed") |> ignore
+
+
+    /// Took 20 minutes for 1000 / 0.005
+    [<Fact>]
+    let ``Convert result2 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.x1y1_xy should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result1 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.xy_x1y1 should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result2 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.xy_x1y1 should succeed") |> ignore
+
+
+    // Performance tests:
+    // Compare conversion times for each field using a constant allowedFactor.
+    // If result2's conversion takes more than allowedFactor times longer than result1's, the test fails.
+
+    [<Fact>]
+    let ``x1y1_xy conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.x1y1_xy.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.x1y1_xy.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"x1y1_xy conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    [<Fact>]
+    let ``xy_x1y1 conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.xy_x1y1.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.xy_x1y1.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"xy_x1y1 conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    // Helper functions to check the discriminated union cases.
+    let isStatic (s: SparseArray4D<double>) =
+        match s with
+        | StaticSparseArr4D _ -> true
+        | DynamicSparseArr4D _ -> false
+
+
+    let isDynamic (s: SparseArray4D<double>) =
+        match s with
+        | DynamicSparseArr4D _ -> true
+        | StaticSparseArr4D _ -> false
+
+
+    [<Fact>]
+    let ``result1 sparse arrays should be StaticSparseArr4D`` () =
+        (result1.Value.x1y1_xy |> isStatic).Should().BeTrue($"result1.x1y1_xy should be StaticSparseArr4D") |> ignore
+        (result1.Value.xy_x1y1 |> isStatic).Should().BeTrue($"result1.xy_x1y1 should be StaticSparseArr4D") |> ignore
+
+
+    [<Fact>]
+    let ``result2 sparse arrays should be DynamicSparseArr4D`` () =
+        (result2.Value.x1y1_xy |> isDynamic).Should().BeTrue($"result2.x1y1_xy should be DynamicSparseArr4D") |> ignore
+        (result2.Value.xy_x1y1 |> isDynamic).Should().BeTrue($"result2.xy_x1y1 should be DynamicSparseArr4D") |> ignore

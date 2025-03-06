@@ -401,9 +401,10 @@ module Primitives =
         member inline r.value = let (ZeroThreshold v) = r in v
 
 
-    let zeroThresholdDefaultValue = ZeroThreshold 1.0e-05
-
-
     type SparseArrayType =
         | StaticSparseArrayType
         | DynamicSparseArrayType
+
+
+module ZeroThreshold =
+    let defaultValue = Primitives.ZeroThreshold 1.0e-05

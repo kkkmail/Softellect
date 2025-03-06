@@ -700,12 +700,12 @@ module Sparse2D =
         //     | SeparableSparseArr2D a -> a.tryFind i j
 
         /// Create a SparseArray2D from an array of SparseValue2D
-        static member inline create (values: SparseValue2D<'U>[]) : SparseArray2D<'U> =
+        static member inline create (values: SparseValue2D<'T>[]) : SparseArray2D<'T> =
             InseparableSparseArray2D values |> InseparableSparseArr2D
 
         /// Create a separable SparseArray2D from two arrays of SparseValue
-        static member inline create (xValues: SparseValue<'U>[], yValues: SparseValue<'U>[]) : SparseArray2D<'U> =
-            SeparableSparseArray2D<'U>.create xValues yValues |> SeparableSparseArr2D
+        static member inline create (xValues: SparseValue<'T>[], yValues: SparseValue<'T>[]) : SparseArray2D<'T> =
+            SeparableSparseArray2D<'T>.create xValues yValues |> SeparableSparseArr2D
 
 
     /// Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>

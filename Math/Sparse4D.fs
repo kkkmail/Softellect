@@ -162,35 +162,18 @@ module Sparse4D =
     //         | DynamicSparseArr4D d ->
     //             failwith ""
     //
-    //     /// This is mostly for tests.
-    //     member inline a.toSparseValueArray() : SparseValueArray4D<'T> =
-    //         match a with
-    //         | StaticSparseArr4D s ->
-    //             let n1 = s.value.Length
-    //             let n2 = s.value[0].Length
-    //
-    //             let value =
-    //                 [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (s.value[i][j]) |] |]
-    //                 |> Array.concat
-    //                 |> Seq.concat
-    //                 |> Seq.toArray
-    //                 |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
-    //                 |> SparseValueArray4D
-    //
-    //             value
-    //
-    //         | DynamicSparseArr4D d ->
-    //             let n1 = d.xLength
-    //             let n2 = d.yLength
-    //
-    //             let value =
-    //                 [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (d.invoke i j) |] |]
-    //                 |> Array.concat
-    //                 |> Seq.concat
-    //                 |> Seq.toArray
-    //                 |> Array.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
-    //                 |> SparseValueArray4D
-    //
-    //             value
-    //
-    //
+        /// This is mostly for tests.
+        member inline a.toSparseValueArray() =
+            match a with
+            | StaticSparseArr4D s ->
+                let n1 = s.value.Length
+                let n2 = s.value[0].Length
+                [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (s.value[i][j]) |] |]
+            | DynamicSparseArr4D d ->
+                let n1 = d.xLength
+                let n2 = d.yLength
+                [| for i in 0..(n1 - 1) -> [| for j in 0..(n2 - 1) -> SparseValue4D.createSeq i j (d.invoke i j) |] |]
+            |> Array.concat
+            |> Seq.concat
+            |> Seq.sortBy (fun e -> e.i, e.j, e.i1, e.j1)
+            |> Seq.toArray

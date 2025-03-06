@@ -894,13 +894,13 @@ module FredholmKernel =
                 xMutationProbabilityParams =
                     {
                         domainParams = kp.xDomainParams
-                        zeroThreshold = zeroThresholdDefaultValue
+                        zeroThreshold = ZeroThreshold.defaultValue
                         epsFuncValue = kp.xEpsFuncValue
                     }
                 yMutationProbabilityParams =
                     {
                         domainParams = kp.yDomainParams
-                        zeroThreshold = zeroThresholdDefaultValue
+                        zeroThreshold = ZeroThreshold.defaultValue
                         epsFuncValue = kp.yEpsFuncValue
                     }
                 sparseArrayType = failwith ""
