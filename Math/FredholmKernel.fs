@@ -93,7 +93,10 @@ module FredholmKernel =
 
         /// Calculate a value to be used in integral approximation.
         /// Corners carry 0.25 multiplier, edges - 0.5 and the rest - 1.0 (no multiplier).
-        member private _.integralValue xSize ySize (v : SparseValue2D<double>) =
+        member private d.integralValue  (v : SparseValue2D<double>) =
+            let xSize = d.xDomain.points.value.Length - 1
+            let ySize = d.yDomain.points.value.Length - 1
+
             match v.i = 0, v.j = 0, v.i = xSize, v.j = ySize with
             | true, true, false, false -> 0.25 * v.value2D
             | true, false, false, true -> 0.25 * v.value2D
@@ -122,21 +125,19 @@ module FredholmKernel =
 
         /// Calculates an integral value for a given 2D sparse array.
         member d.integrateValues (a : SparseArray2D<double>) =
-            let len1 = d.xDomain.points.value.Length - 1
-            let len2 = d.yDomain.points.value.Length - 1
-            let integralValue = d.integralValue len1 len2
-            let sum = a.getValues() |> Seq.map integralValue |> Seq.sum
-            let retVal = sum |> d.normalize
+            let retVal = a.getValues() |> Seq.map d.integralValue |> Seq.sum |> d.normalize
             retVal
 
         /// Calculates an integral value for a multiplication of a given 2D sparse array and linear matrix.
         member private d.integrateValues (a : SparseArray2D<double>, b : LinearMatrix<double>) =
             let bValue = b.getValue
-            let len1 = d.xDomain.points.value.Length - 1
-            let len2 = d.yDomain.points.value.Length - 1
-            let integralValue = d.integralValue len1 len2
-            let sum = a.getValues() |> Seq.map (fun e -> (integralValue e) * (bValue e.i e.j) ) |> Seq.sum
-            let retVal = sum |> d.normalize
+            let retVal = a.getValues() |> Seq.map (fun e -> (d.integralValue e) * (bValue e.i e.j)) |> Seq.sum |> d.normalize
+            retVal
+
+        /// Calculates an integral value for a multiplication of a given 2D sparse array and 2d sparse array.
+        member private d.integrateValues (a : SparseArray2D<double>, b : SparseArray2D<double>) =
+            let ab = multiplySparseArrays [ a; b ]
+            let retVal = ab.getValues() |> Seq.map d.integralValue |> Seq.sum |> d.normalize
             retVal
 
         /// Performs a Poisson "evolution" for a given "point".
@@ -209,9 +210,18 @@ module FredholmKernel =
         //     let sum = a.d1Range |> Array.map (fun i -> a.d2Range |> Array.map (fun j -> a.getValue i j) |> Array.sum) |> Array.sum |> d.normalize
         //     sum
 
-        member d.integrateValues (a : SparseArray4D<double>, b : LinearMatrix<double>) =
+        member d.integrateValues (a : SparseArray4D<double>, b : LinearMatrix<double>) : Matrix<double> =
             // a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b))) |> Matrix
             failwith ""
+
+        member d.integrateValues (a : SparseArray4D<double>, b : LinearMatrix<double>) =
+            match a with
+            | StaticSparseArr4D s ->
+                let x = s.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b)))
+                failwith ""
+            | DynamicSparseArr4D d ->
+                failwith ""
+            // a.value |> Array.map (fun v -> v |> Array.map (fun e -> d.integrateValues (e, b))) |> Matrix
 
         // /// Calculates how many protocells are created.
         // member d.evolve (useParallel: bool, p : PoissonSampler, multiplier : double, a : SparseArray4D<double>, b : Matrix<int64>) =
@@ -259,7 +269,6 @@ module FredholmKernel =
 
                 failwith ""
             | DynamicSparseArr4D d ->
-                d.invoke
                 failwith "todo"
             // a.value |> Array.map (fun v -> v |> Array.map d.integrateValues) |> Matrix
 
@@ -958,7 +967,7 @@ module FredholmKernel =
             domain2D : Domain2D
         }
 
-        member k.integrateValues (u : LinearMatrix<double>) =
+        member k.integrateValues (u : LinearMatrix<double>) : Matrix<double> =
             let v = k.domain2D.integrateValues (k.kernel.value, u)
             v
 
