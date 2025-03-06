@@ -537,18 +537,25 @@ type SparseArray2DOperatorTests() =
     // let yDomainIntervals = DomainIntervals 100
 
 
-    // // Run time for "Convert result *" tests is about 13.3 - 14.6 seconds for result1 and 8.3 - 9.2 seconds for result2.
-    // let epsX = Eps0 0.01
-    // let epsY = Eps0 0.015
-    // let xDomainIntervals = DomainIntervals 200
-    // let yDomainIntervals = DomainIntervals 200
+    // Run time for "Convert result *" tests is about 13.3 - 14.6 seconds for result1 and 8.3 - 9.2 seconds for result2.
+    let epsX = Eps0 0.01
+    let epsY = Eps0 0.015
+    let xDomainIntervals = DomainIntervals 200
+    let yDomainIntervals = DomainIntervals 200
 
 
-    // Run time for "Convert result *" tests is about ___ - ___ seconds for result1 and ___ - ___ seconds for result2.
-    let epsX = Eps0 0.0048
-    let epsY = Eps0 0.0052
-    let xDomainIntervals = DomainIntervals 1000
-    let yDomainIntervals = DomainIntervals 1000
+    // // Run time for "Convert result *" tests is about ___ - ___ seconds for result1 and 20.6 minutes for result2.
+    // let epsX = Eps0 0.0048
+    // let epsY = Eps0 0.0052
+    // let xDomainIntervals = DomainIntervals 1000
+    // let yDomainIntervals = DomainIntervals 1000
+
+
+    // // Run time for "Convert result *" tests is about 1.8 minutes for result1 and 58-60 seconds for result2.
+    // let epsX = Eps0 0.0048
+    // let epsY = Eps0 0.0052
+    // let xDomainIntervals = DomainIntervals 500
+    // let yDomainIntervals = DomainIntervals 500
 
 
     let data1 =
