@@ -1,5 +1,6 @@
 namespace Softellect.Math
 
+open System.Collections.Generic
 open FSharp.Collections
 open Softellect.Math.Sparse1D
 
@@ -695,6 +696,8 @@ module Sparse2D =
 
         member inline r.total() = r.getValues() |> Seq.map _.value2D |> Seq.sum
 
+        member inline r.tryFind (i, j) = failwith ""
+
         // /// Access the internal lookup map
         // member inline r.tryFind i j =
         //     match r with
@@ -711,7 +714,7 @@ module Sparse2D =
 
 
     /// Extract the key/value pairs from the dictionary into an array of SparseValue2D<'T>
-    let inline private toSparseArray2D (dict : System.Collections.Generic.Dictionary<int * int, 'T>) =
+    let inline private toSparseArray2D (dict : Dictionary<int * int, 'T>) =
         let resultArray =
             dict
             |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
@@ -721,7 +724,7 @@ module Sparse2D =
 
 
     let inline sumSparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
-        let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
+        let dict = Dictionary<int * int, 'T>()
 
         for values in arrays do
             for v in values.getValues() do
@@ -735,17 +738,36 @@ module Sparse2D =
 
 
     let inline multiplySparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
-        let dict = System.Collections.Generic.Dictionary<int * int, 'T>()
+        let result = Dictionary<int * int, 'T>()
 
-        for values in arrays do
-            for v in values.getValues() do
-                let key = (v.i, v.j)
+        // let x =
+        //     match arrays with
+        //     | h :: t -> failwith ""
 
-                if dict.ContainsKey(key) then dict.[key] <- dict.[key] * v.value2D
-                else dict.Add(key, v.value2D)
+        if not (Seq.isEmpty arrays) then
+            let arraysArray = Seq.toArray arrays
 
-        // TODO kk:20250305 - A multiplication is inseparable if any of the arrays is inseparable.
-        toSparseArray2D dict
+            // Initialize from the first array
+            for v in arraysArray.[0].getValues() do
+                result.Add((v.i, v.j), v.value2D)
+
+            let keysToRemove = HashSet<int * int>()
+
+            // Filter and multiply using tryFind for subsequent arrays
+            for i in 1 .. arraysArray.Length - 1 do
+                let currentArray = arraysArray.[i]
+                keysToRemove.Clear()
+
+                // Process each key from our current result
+                for key in result.Keys do
+                    match currentArray.tryFind key with
+                    | Some value -> result.[key] <- result.[key] * value
+                    | None -> keysToRemove.Add key |> ignore
+
+            for key in keysToRemove do
+                result.Remove(key) |> ignore
+
+        toSparseArray2D result
 
 
     /// Performs a Cartesian multiplication of two 1D sparse arrays to obtain a 2D sparse array.
