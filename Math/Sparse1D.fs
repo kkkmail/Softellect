@@ -32,7 +32,7 @@ module Sparse1D =
         }
 
         member inline r.value = r.xValues
-        member inline r.total() = r.value |> Array.map (fun e -> e.value1D) |> Array.sum
+        member inline r.total() = r.value |> Array.map _.value1D |> Array.sum
 
         static member inline private createLookupMap (values: SparseValue<'T>[]) =
             values
@@ -65,3 +65,19 @@ module Sparse1D =
 
         static member inline (*) (a : SparseArray<'U>, b : SparseArray<'U>) : SparseArray<'U> =
             failwith ""
+
+
+    type Domain
+        with
+
+        member d.integralValue (v : SparseValue<double>) =
+            let xSize = d.noOfIntervals.value
+
+            match v.i = 0, v.i = xSize with
+            | true, false -> 0.5 * v.value1D
+            | false, true -> 0.5 * v.value1D
+            | _ -> v.value1D
+
+        member d.integrateValues (v : SparseArray<double>) =
+            let retVal = v.value |> Array.map d.integralValue |> Array.sum |> d.normalize
+            retVal

@@ -678,7 +678,7 @@ module Sparse2D =
         | InseparableSparseArr2D of InseparableSparseArray2D<'T>
         | SeparableSparseArr2D of SeparableSparseArray2D<'T>
 
-        /// Generate the complete array of sparse values.
+        /// Generate the complete array of sparse values as a seq.
         member inline r.getValues() =
             match r with
             | InseparableSparseArr2D a -> a.value |> Seq.ofArray
@@ -692,6 +692,8 @@ module Sparse2D =
                                 value2D = x.value1D * y.value1D
                             }
                 }
+
+        member inline r.total() = r.getValues() |> Seq.map _.value2D |> Seq.sum
 
         // /// Access the internal lookup map
         // member inline r.tryFind i j =

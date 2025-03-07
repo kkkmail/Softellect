@@ -21,81 +21,14 @@ module FredholmKernel =
     //     static member defaultValue = InfMaxValue 25.0
 
 
-    type DomainRange =
-        {
-            minValue : double
-            maxValue : double
-        }
-
-        member d.range = d.maxValue - d.minValue
-
-
-    /// Number of intervals in the domain.
-    type DomainIntervals =
-        | DomainIntervals of int
-
-        member r.value = let (DomainIntervals v) = r in v
-        static member defaultValue = DomainIntervals 100
-
-
-    /// Describes a function domain suitable for integral approximation.
-    /// Equidistant grid is used to reduce the number of multiplications.
-    type Domain =
-        {
-            points : Vector<double>
-            step : double
-            domainRange : DomainRange
-        }
-
-        member private d.integralValue xSize (v : SparseValue<double>) =
-            match v.i = 0, v.i = xSize with
-            | true, false -> 0.5 * v.value1D
-            | false, true -> 0.5 * v.value1D
-            | _ -> v.value1D
-
-        member d.noOfIntervals = d.points.value.Length - 1 |> DomainIntervals
-
-        member d.integrateValues (v : SparseArray<double>) =
-            let len = d.noOfIntervals.value
-            let sum = v.value |> Array.map (fun e -> d.integralValue len e) |> Array.sum
-            sum * d.step
-
-        /// Number of points is (noOfIntervals + 1).
-        static member create (n : DomainIntervals) (r : DomainRange) =
-            let noOfIntervals = n.value
-            let range = r.range
-            let rn = range / (double noOfIntervals)
-            let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
-
-            {
-                points = Vector points
-                step = range / (double noOfIntervals)
-                domainRange = r
-            }
-
-
-    type DomainParams =
-        {
-            domainIntervals : DomainIntervals
-            domainRange : DomainRange
-        }
-
-        member dd.domain() = Domain.create dd.domainIntervals dd.domainRange
-
-    /// Data that describes a rectangle in x * y space.
-    type Domain2D =
-        {
-            xDomain : Domain
-            yDomain : Domain
-        }
-
-        member private d.normalize v = v * d.xDomain.step * d.yDomain.step
+    type Domain2D
+        with
 
         /// Calculate a value to be used in integral approximation.
         /// Corners carry 0.25 multiplier, edges - 0.5 and the rest - 1.0 (no multiplier).
         member private d.integralValue  (v : SparseValue2D<double>) =
-            let xSize = d.xDomain.points.value.Length - 1
-            let ySize = d.yDomain.points.value.Length - 1
+            let xSize = d.xDomain.noOfIntervals.value
+            let ySize = d.yDomain.noOfIntervals.value
 
             match v.i = 0, v.j = 0, v.i = xSize, v.j = ySize with
             | true, true, false, false -> 0.25 * v.value2D
@@ -344,91 +277,6 @@ module FredholmKernel =
         //     match toModelStringArray Domain2D.defaultRanges d.ranges with
         //     | Some b -> $"{a}_{b}"
         //     | None -> a
-
-
-    let factorial n = [ 1..n ] |> List.fold (*) 1
-
-
-    /// Uses: x1 = xScale * (x - x0) in Taylor expansion.
-    type TaylorApproximation =
-        {
-            x0 : double
-            xScale : double
-            coefficients : double[]
-        }
-
-        member ta.calculate x =
-            let x1 = ta.xScale * (x - ta.x0)
-
-            let retVal =
-                ta.coefficients
-                |> Array.mapi (fun i e -> (pown x1 i) * e / (factorial i |> double))
-                |> Array.sum
-
-            retVal
-
-        member ta.comparisonFactors = [| ta.x0; ta.xScale |]
-
-
-    /// Uses: x1 = xScale * (x - x0) and y1 = yScale * (y - y0) in Taylor expansion.
-    ///
-    /// Each sub-array should contain the coefficients for all terms of a particular total order.
-    /// For example, if the highest order is 2, coefficients should be initialized as
-    /// [| [|a00|]; [|a10; a01|]; [|a20; a11; a02|] |],
-    /// where a20 is the coefficient of x^2, a11 of x * y, etc.
-    /// Note that the binomial coefficient is not included in the coefficients.
-    type TaylorApproximation2D =
-        {
-            x0 : double
-            y0 : double
-            xScale : double
-            yScale : double
-            coefficients : double[][]
-        }
-
-        member ta.calculate (x, y) =
-            let x1 = ta.xScale * (x - ta.x0)
-            let y1 = ta.yScale * (y - ta.y0)
-
-            let retVal =
-                ta.coefficients
-                |> Array.mapi (fun i row ->
-                    row
-                    |> Array.mapi (fun j e ->
-                        let binomial = factorial(i) / (factorial(j) * factorial(i - j)) |> double
-                        (pown x1 j) * (pown y1 (i - j)) *  binomial * e / (factorial i |> double)))
-                |> Array.concat
-                |> Array.sum
-
-            retVal
-
-        member ta.comparisonFactors = [| ta.x0; ta.xScale; ta.y0; ta.yScale |]
-
-
-    /// Separate Taylor approximations for x and y spaces.
-    type SeparateTaylorApproximation2D =
-        {
-            xTaylorApproximation : TaylorApproximation
-            yTaylorApproximation : TaylorApproximation
-        }
-
-
-    type ScaledSeparateTaylorApproximation2D =
-        {
-            scale : double
-            separateTaylorApproximation2D : SeparateTaylorApproximation2D
-        }
-
-        member ta.comparisonFactors = Array.concat [| ta.separateTaylorApproximation2D.xTaylorApproximation.comparisonFactors;  ta.separateTaylorApproximation2D.yTaylorApproximation.comparisonFactors |]
-
-
-    type ScaledEeInfTaylorApproximation2D =
-        {
-            scale : double
-            taylorApproximation2D : TaylorApproximation2D
-        }
-
-        member ta.comparisonFactors = ta.taylorApproximation2D.comparisonFactors
 
 
     /// TODO kk:20231017 - Only scalar eps is supported for now.
