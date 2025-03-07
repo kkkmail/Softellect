@@ -723,7 +723,7 @@ module Sparse2D =
         resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
 
 
-    let inline sumSparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
+    let inline sumSparseArrays (arrays: list<SparseArray2D<'T>>) : SparseArray2D<'T> =
         let dict = Dictionary<int * int, 'T>()
 
         for values in arrays do
@@ -737,35 +737,25 @@ module Sparse2D =
         toSparseArray2D dict
 
 
-    let inline multiplySparseArrays (arrays: seq<SparseArray2D<'T>>) : SparseArray2D<'T> =
+    let inline multiplySparseArrays (arrays: list<SparseArray2D<'T>>) : SparseArray2D<'T> =
         let result = Dictionary<int * int, 'T>()
+        let keysToRemove = HashSet<int * int>()
 
-        // let x =
-        //     match arrays with
-        //     | h :: t -> failwith ""
+        let g (a : SparseArray2D<'T>) =
+            keysToRemove.Clear()
 
-        if not (Seq.isEmpty arrays) then
-            let arraysArray = Seq.toArray arrays
+            for key in result.Keys do
+                match a.tryFind key with
+                | Some value -> result.[key] <- result.[key] * value
+                | None -> keysToRemove.Add key |> ignore
 
-            // Initialize from the first array
-            for v in arraysArray.[0].getValues() do
-                result.Add((v.i, v.j), v.value2D)
+            for key in keysToRemove do result.Remove(key) |> ignore
 
-            let keysToRemove = HashSet<int * int>()
-
-            // Filter and multiply using tryFind for subsequent arrays
-            for i in 1 .. arraysArray.Length - 1 do
-                let currentArray = arraysArray.[i]
-                keysToRemove.Clear()
-
-                // Process each key from our current result
-                for key in result.Keys do
-                    match currentArray.tryFind key with
-                    | Some value -> result.[key] <- result.[key] * value
-                    | None -> keysToRemove.Add key |> ignore
-
-            for key in keysToRemove do
-                result.Remove(key) |> ignore
+        match arrays with
+        | [] -> ()
+        | h :: t ->
+            for v in h.getValues() do result.Add((v.i, v.j), v.value2D)
+            t |> List.map g |> ignore
 
         toSparseArray2D result
 
