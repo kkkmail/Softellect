@@ -7,7 +7,6 @@ open Xunit
 open FluentAssertions
 open Softellect.Math.Primitives
 open Softellect.Math
-open Softellect.Math.Sparse1D
 open Softellect.Math.Sparse2D
 open Softellect.Math.Sparse4D
 
@@ -22,6 +21,11 @@ module TestHelpers =
             for j in 0..cols-1 do
                 result[i, j] <- matrix.value[i][j]
         result
+
+    let convertArray2DToJagged (arr: 'T[,]) =
+        [| for i in 0 .. Array2D.length1 arr - 1 ->
+             [| for j in 0 .. Array2D.length2 arr - 1 -> arr[i, j] |] |]
+
 
     /// Convert a SparseArray2D<'T> to a 2D array for comparison
     let sparseToArray2D (sparse: SparseArray2D<int64>) (rows: int) (cols: int) : int64[,] =
@@ -70,6 +74,24 @@ module TestHelpers =
             for j in 0..cols-1 do
                 sparseArray[i, j].Should().Be(matrixArray[i, j], $"at position [{i}, {j}]") |> ignore
 
+    // Helper function to create a sparse array from a list of (i, j, value) tuples
+    let createSparseArray (elements: list<int * int * 'T>) =
+        let values =
+            elements
+            |> List.map (fun (i, j, v) -> { i = i; j = j; value2D = v })
+            |> Array.ofList
+            |> InseparableSparseArray2D.create
+
+        values |> InseparableSparseArr2D
+
+    // Helper function to create a matrix from a list of (i, j, value) tuples
+    let createMatrix (rows: int) (cols: int) (elements: list<int * int * 'T>) =
+        let matrix = Array2D.zeroCreate rows cols
+        for i, j, v in elements do matrix[i, j] <- v
+        matrix |> convertArray2DToJagged |> Matrix
+
+
+open TestHelpers
 
 /// Tests for SparseArray2D operators
 type SparseArray2DOperatorTests() =
@@ -517,8 +539,8 @@ type SparseArray2DOperatorTests() =
         use _ = new AssertionScope()
 
         for i in 0 .. arr1.Length - 1 do
-            let sv1 = arr1.[i]
-            let sv2 = arr2.[i]
+            let sv1 = arr1[i]
+            let sv2 = arr2[i]
             sv1.i.Should().Be(sv2.i, $"Index 'i' at position {i} in {label} should match") |> ignore
             sv1.j.Should().Be(sv2.j, $"Index 'j' at position {i} in {label} should match") |> ignore
             sv1.i1.Should().Be(sv2.i1, $"Index 'i1' at position {i} in {label} should match") |> ignore
@@ -698,3 +720,121 @@ type SparseArray2DOperatorTests() =
     let ``result2 sparse arrays should be DynamicSparseArr4D`` () =
         (result2.Value.x1y1_xy |> isDynamic).Should().BeTrue($"result2.x1y1_xy should be DynamicSparseArr4D") |> ignore
         (result2.Value.xy_x1y1 |> isDynamic).Should().BeTrue($"result2.xy_x1y1 should be DynamicSparseArr4D") |> ignore
+
+
+    [<Fact>]
+    let ``Sum of sparse arrays should match sum of matrices`` () =
+        // Create test data with different shapes
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let sparseArray2 = createSparseArray [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (2, 0, 8L); (2, 2, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 3 [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let matrix2 = createMatrix 3 3 [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let matrix3 = createMatrix 3 3 [(0, 0, 3L); (2, 0, 8L); (2, 2, 5L)]
+
+        // Calculate sums
+        let sparseSum = sumSparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixSum = matrix1 + matrix2 + matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseSum matrixSum
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays should match multiplication of matrices`` () =
+        // Create test data with different shapes
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let sparseArray2 = createSparseArray [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (0, 1, 2L); (2, 2, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 3 [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let matrix2 = createMatrix 3 3 [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let matrix3 = createMatrix 3 3 [(0, 0, 3L); (0, 1, 2L); (2, 2, 5L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseProduct matrixProduct
+
+    [<Fact>]
+    let ``Sum of sparse arrays with no overlapping elements should work correctly`` () =
+        // Create test data with different shapes and no overlapping elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L)]
+        let sparseArray2 = createSparseArray [(1, 0, 7L); (1, 1, 12L)]
+        let sparseArray3 = createSparseArray [(2, 0, 3L); (2, 1, 8L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 2 [(0, 0, 5L); (0, 1, 10L)]
+        let matrix2 = createMatrix 3 2 [(1, 0, 7L); (1, 1, 12L)]
+        let matrix3 = createMatrix 3 2 [(2, 0, 3L); (2, 1, 8L)]
+
+        // Calculate sums
+        let sparseSum = sumSparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixSum = matrix1 + matrix2 + matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseSum matrixSum
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays with no common elements should result in empty array`` () =
+        // Create test data with different shapes and no common elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L)]
+        let sparseArray2 = createSparseArray [(1, 0, 7L); (1, 1, 12L)]
+        let sparseArray3 = createSparseArray [(2, 0, 3L); (2, 1, 8L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 2 [(0, 0, 5L); (0, 1, 10L)]
+        let matrix2 = createMatrix 3 2 [(1, 0, 7L); (1, 1, 12L)]
+        let matrix3 = createMatrix 3 2 [(2, 0, 3L); (2, 1, 8L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // The result should be an empty sparse array (or a matrix with all zeros)
+        sparseProduct.getValues().Should().BeEmpty() |> ignore
+
+        // Check that matrix is all zeros too
+        for i in 0 .. matrixProduct.value.Length - 1 do
+            for j in 0 .. matrixProduct.value[0].Length - 1 do
+                (matrixProduct.value[i][j]).Should().Be(0L, because = $"All elements in the product should be zero") |> ignore
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays with partially overlapping elements`` () =
+        // Create test data with different shapes and some overlapping elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (1, 1, 10L); (2, 2, 15L)]
+        let sparseArray2 = createSparseArray [(0, 0, 7L); (1, 1, 12L); (3, 3, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (2, 2, 8L); (4, 4, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 5 5 [(0, 0, 5L); (1, 1, 10L); (2, 2, 15L)]
+        let matrix2 = createMatrix 5 5 [(0, 0, 7L); (1, 1, 12L); (3, 3, 20L)]
+        let matrix3 = createMatrix 5 5 [(0, 0, 3L); (2, 2, 8L); (4, 4, 5L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseProduct matrixProduct
+
+        // Additional specific checks
+        // Only (0,0) should have non-zero values in the result
+        let sparseValues = sparseProduct.getValues() |> Seq.toList
+        sparseValues.Length.Should().Be(1, because = "Only one position should have non-zero values") |> ignore
+
+        // Check that these values are at (0,0)
+        let positionSet = sparseValues
+                        |> List.map (fun v -> (v.i, v.j))
+                        |> Set.ofList
+
+        positionSet.Should().Equal(Set.ofList [(0, 0)]) |> ignore
+
+        // Check the values themselves
+        let value00 = sparseValues |> List.find (fun v -> v.i = 0 && v.j = 0)
+
+        value00.value2D.Should().Be(5L * 7L * 3L, because = "Value at (0,0) should be 5*7*3=105") |> ignore

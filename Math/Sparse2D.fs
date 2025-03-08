@@ -485,8 +485,6 @@ module Sparse2D =
     //             SparseArray2D.create resultValues
     //
     //
-    //
-    //
     //     // ================================================================
     //
     //     /// Multiplies a 2D sparse array by a scalar value.
@@ -625,15 +623,32 @@ module Sparse2D =
                      and ^T: (static member Zero : ^T)
                      and ^T: equality
                      and ^T: comparison> =
-        | InseparableSparseArray2D of SparseValue2D<'T>[]
+        {
+            xyValues : SparseValue2D<'T>[]
+            xyMap : Lazy<Map<int * int, 'T>>
+        }
 
-        member inline r.value = let (InseparableSparseArray2D v) = r in v
+        static member inline private createLookupMap (values: SparseValue2D<'T>[]) =
+            values
+            |> Array.map (fun v -> (v.i, v.j), v.value2D)
+            |> Map.ofArray
+
+        static member inline create v =
+            {
+                xyValues = v
+                xyMap = new Lazy<Map<int * int, 'T>>(fun () -> InseparableSparseArray2D.createLookupMap v)
+            }
+
+        member inline a.tryFind (i, j) = a.xyMap.Value.TryFind(i, j)
+        member inline r.value = r.xyValues
+
+        // member inline r.value = let (InseparableSparseArray2D v) = r in v
 
         // static member inline createLookupMap (values: SparseValue2D<'T>[]) =
         //     values
         //     |> Array.map (fun v -> (v.i, v.j), v.value2D)
         //     |> Map.ofArray
-        //
+
         // static member inline create (v : SparseValue2D<'U>[]) : InseparableSparseArray2D<'U> = InseparableSparseArray2D v
 
 
@@ -646,26 +661,26 @@ module Sparse2D =
         {
             xValues : SparseValue<'T>[]
             yValues : SparseValue<'T>[]
-            // xMap : Lazy<Map<int, 'T>>
-            // yMap : Lazy<Map<int, 'T>>
+            xMap : Lazy<Map<int, 'T>>
+            yMap : Lazy<Map<int, 'T>>
         }
 
-        // static member inline createLookupMap (values: SparseValue<'T>[]) =
-        //     values
-        //     |> Array.map (fun v -> v.i, v.value1D)
-        //     |> Map.ofArray
-        //
-        // member inline a.tryFind i j =
-        //     match a.xMap.Value.TryFind i, a.yMap.Value.TryFind j with
-        //     | Some x, Some y -> x * y |> Some
-        //     | _ -> None
+        static member inline createLookupMap (values: SparseValue<'T>[]) =
+            values
+            |> Array.map (fun v -> v.i, v.value1D)
+            |> Map.ofArray
+
+        member inline a.tryFind (i, j) =
+            match a.xMap.Value.TryFind i, a.yMap.Value.TryFind j with
+            | Some x, Some y -> x * y |> Some
+            | _ -> None
 
         static member inline create xValues yValues =
             {
                 xValues = xValues
                 yValues = yValues
-                // xMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap xValues)
-                // yMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap yValues)
+                xMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap xValues)
+                yMap = new Lazy<Map<int, 'T>>(fun () -> SeparableSparseArray2D.createLookupMap yValues)
             }
 
 
@@ -696,17 +711,15 @@ module Sparse2D =
 
         member inline r.total() = r.getValues() |> Seq.map _.value2D |> Seq.sum
 
-        member inline r.tryFind (i, j) = failwith ""
-
-        // /// Access the internal lookup map
-        // member inline r.tryFind i j =
-        //     match r with
-        //     | InseparableSparseArr2D a -> a.tryFind i j
-        //     | SeparableSparseArr2D a -> a.tryFind i j
+        /// Access the internal lookup map
+        member inline r.tryFind (i, j) =
+            match r with
+            | InseparableSparseArr2D a -> a.tryFind (i, j)
+            | SeparableSparseArr2D a -> a.tryFind (i, j)
 
         /// Create a SparseArray2D from an array of SparseValue2D
         static member inline create (values: SparseValue2D<'T>[]) : SparseArray2D<'T> =
-            InseparableSparseArray2D values |> InseparableSparseArr2D
+            InseparableSparseArray2D.create values |> InseparableSparseArr2D
 
         /// Create a separable SparseArray2D from two arrays of SparseValue
         static member inline create (xValues: SparseValue<'T>[], yValues: SparseValue<'T>[]) : SparseArray2D<'T> =
@@ -720,7 +733,7 @@ module Sparse2D =
             |> Seq.map (fun kvp -> { i = fst kvp.Key; j = snd kvp.Key; value2D = kvp.Value })
             |> Seq.toArray
 
-        resultArray |> InseparableSparseArray2D |> InseparableSparseArr2D
+        resultArray |> InseparableSparseArray2D.create |> InseparableSparseArr2D
 
 
     let inline sumSparseArrays (arrays: list<SparseArray2D<'T>>) : SparseArray2D<'T> =
