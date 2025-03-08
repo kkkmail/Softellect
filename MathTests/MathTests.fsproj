@@ -25,6 +25,7 @@
 
     <ItemGroup>
         <Compile Include="SparseArray2DTests.fs" />
+        <Compile Include="SparseTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

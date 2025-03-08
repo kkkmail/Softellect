@@ -19,7 +19,6 @@ module Sparse1D =
         }
 
 
-    // [<RequireQualifiedAccess>]
     type SparseArray<'T when ^T: (static member ( * ) : ^T * ^T -> ^T)
                      and ^T: (static member ( + ) : ^T * ^T -> ^T)
                      and ^T: (static member ( - ) : ^T * ^T -> ^T)
@@ -52,7 +51,6 @@ module Sparse1D =
                 v
                 |> Array.mapi (fun i e -> if e >= z.value then Some { i = i; value1D = e } else None)
                 |> Array.choose id
-
             {
                 xValues = x
                 xMap = new Lazy<Map<int, 'T>>(fun () -> SparseArray.createLookupMap x)

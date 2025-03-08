@@ -1,11 +1,6 @@
 ﻿namespace Softellect.Math
 
 open System
-//open Primitives.WolframPrimitives
-//open Primitives.GeneralData
-open Softellect.Sys.Primitives
-// open Softellect.Analytics.Wolfram
-open Softellect.Sys.Core
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse1D
 open Softellect.Math.Sparse2D
@@ -13,12 +8,12 @@ open Softellect.Math.Sparse4D
 
 module FredholmKernel =
 
-    // /// Max value of the range in inf space.
-    // type InfMaxValue =
-    //     | InfMaxValue of double
-    //
-    //     member r.value = let (InfMaxValue v) = r in v
-    //     static member defaultValue = InfMaxValue 25.0
+    let private evolveValue (p : PoissonSingleSampler) multiplier e n =
+        if n <= 0L then 0L
+        else
+            let lambda = (double n) * e.value2D * multiplier
+            let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
+            retVal
 
 
     type Domain2D
@@ -78,15 +73,7 @@ module FredholmKernel =
         /// The multiplier controls the step of the evolution.
         /// The values are considered non-negative and so all negative values are treated as zero.
         member private d.evolve(p : PoissonSingleSampler, multiplier : double, a : SparseArray2D<double>, b : Matrix<int64>) =
-            let g (e : SparseValue2D<double>) =
-                let n = b.value[e.i][e.j]
-
-                if n <= 0L then 0L
-                else
-                    let lambda = (double n) * e.value2D * multiplier
-                    let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
-                    retVal
-
+            let g (e : SparseValue2D<double>) = b.value[e.i][e.j] |> evolveValue p multiplier e
             let sum = a.getValues() |> Seq.map g |> Seq.sum
             sum
 
@@ -95,16 +82,16 @@ module FredholmKernel =
         /// It is the same as above but for a linear matrix.
         member private d.evolve(p : PoissonSingleSampler, a : SparseArray2D<double>, b : LinearMatrix<int64>) =
             let bValue = b.getValue
+            let g (e : SparseValue2D<double>) =  bValue e.i e.j |> evolveValue p 1.0 e
+            let sum = a.getValues() |> Seq.map g |> Seq.sum
+            sum
 
-            let g (e : SparseValue2D<double>) =
-                let n = bValue e.i e.j
-
-                if n <= 0L then 0L
-                else
-                    let lambda = (double n) * e.value2D
-                    let retVal = if lambda > 0.0 then p.nextPoisson lambda else 0L
-                    retVal
-
+        /// Performs a Poisson "evolution" for a given "point".
+        /// This is essentially a tau-leaping algorithm.
+        /// The multiplier controls the step of the evolution.
+        /// The values are considered non-negative and so all negative values are treated as zero.
+        member private d.evolve(p : PoissonSingleSampler, multiplier : double, a : SparseArray2D<double>, b : SparseArray2D<int64>) =
+            let g (e : SparseValue2D<double>) = b.tryFind (e.i, e.j) |> Option.map (evolveValue p multiplier e) |> Option.defaultValue 0L
             let sum = a.getValues() |> Seq.map g |> Seq.sum
             sum
 

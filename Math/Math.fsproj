@@ -42,6 +42,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <Compile Include="Primitives.fs" />
+        <Compile Include="Sparse.fs" />
         <Compile Include="Sparse1D.fs" />
         <Compile Include="Sparse2D.fs" />
         <Compile Include="Sparse3D.fs" />
