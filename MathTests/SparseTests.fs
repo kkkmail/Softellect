@@ -18,83 +18,81 @@ module SparseTestHelpers =
         |> Array.map (fun (idx, value) -> { x = idx; value = value })
         |> SparseArray.create
 
-    /// Create a simple sparse matrix with integer indices and values
-    let createIntSparseMatrix() : SparseMatrix<int, int> =
-        // Create a backing store for our test matrix
-        let rows = [|
-            (1, [|(2, 3); (3, 4)|])
-            (2, [|(1, 5); (3, 6)|])
-            (3, [|(1, 7); (2, 8)|])
-        |]
+    /// Create a sparse matrix from a list of triples (x, y, value)
+    let inline createMatrixFromTriples<'I, 'T
+            when ^I: equality
+            and ^I: comparison
+            and ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison>
+            (triples: ('I * 'I * 'T)[])
+            (createSparseArray: ('I * 'T)[] -> SparseArray<'I, 'T>) : SparseMatrix<'I, 'T> =
 
-        let columns = [|
-            (1, [|(2, 5); (3, 7)|])
-            (2, [|(1, 3); (3, 8)|])
-            (3, [|(1, 4); (2, 6)|])
-        |]
-
-        let rowArrays =
-            rows
-            |> Array.map (fun (rowIdx, values) ->
-                (rowIdx, createIntSparseArray values))
+        // Group by x to create x_y function
+        let byX =
+            triples
+            |> Array.groupBy (fun (x, _, _) -> x)
+            |> Array.map (fun (x, group) ->
+                let values = group |> Array.map (fun (_, y, v) -> (y, v))
+                (x, createSparseArray values))
             |> Map.ofArray
 
-        let colArrays =
-            columns
-            |> Array.map (fun (colIdx, values) ->
-                (colIdx, createIntSparseArray values))
+        // Group by y to create y_x function
+        let byY =
+            triples
+            |> Array.groupBy (fun (_, y, _) -> y)
+            |> Array.map (fun (y, group) ->
+                let values = group |> Array.map (fun (x, _, v) -> (x, v))
+                (y, createSparseArray values))
             |> Map.ofArray
 
         {
             x_y = fun x ->
-                match rowArrays.TryFind x with
+                match byX.TryFind x with
                 | Some arr -> arr
-                | None -> createIntSparseArray [||]
+                | None -> createSparseArray [||]
 
             y_x = fun y ->
-                match colArrays.TryFind y with
+                match byY.TryFind y with
                 | Some arr -> arr
-                | None -> createIntSparseArray [||]
+                | None -> createSparseArray [||]
         }
+
+    /// Create a simple sparse matrix with integer indices and values
+    let createIntSparseMatrix() : SparseMatrix<int, int> =
+        // Matrix data as triples (x, y, value)
+        let triples = [|
+            // Row 1 (x=1)
+            (1, 2, 3)   // x=1, y=2, value=3
+            (1, 3, 4)   // x=1, y=3, value=4
+
+            // Row 2 (x=2)
+            (2, 1, 3)   // x=2, y=1, value=3
+            (2, 3, 8)   // x=2, y=3, value=8
+
+            // Row 3 (x=3)
+            (3, 1, 4)   // x=3, y=1, value=4
+            (3, 2, 6)   // x=3, y=2, value=6
+        |]
+
+        createMatrixFromTriples triples createIntSparseArray
 
     /// Create a sparse matrix with string indices and float values
     let createStringSparseMatrix() : SparseMatrix<string, float> =
-        // Create a backing store for our test matrix
-        let rows = [|
-            ("A", [|("X", 1.5); ("Y", 2.5)|])
-            ("B", [|("X", 3.5); ("Z", 4.5)|])
-            ("C", [|("Y", 5.5); ("Z", 6.5)|])
+        // Matrix data as triples (x, y, value)
+        let triples = [|
+            ("A", "X", 1.5)
+            ("A", "Y", 2.5)
+            ("B", "X", 3.5)
+            ("B", "Z", 4.5)
+            ("C", "Y", 5.5)
+            ("C", "Z", 6.5)
         |]
 
-        let columns = [|
-            ("X", [|("A", 1.5); ("B", 3.5)|])
-            ("Y", [|("A", 2.5); ("C", 5.5)|])
-            ("Z", [|("B", 4.5); ("C", 6.5)|])
-        |]
-
-        let rowArrays =
-            rows
-            |> Array.map (fun (rowIdx, values) ->
-                (rowIdx, createStringSparseArray values))
-            |> Map.ofArray
-
-        let colArrays =
-            columns
-            |> Array.map (fun (colIdx, values) ->
-                (colIdx, createStringSparseArray values))
-            |> Map.ofArray
-
-        {
-            x_y = fun x ->
-                match rowArrays.TryFind x with
-                | Some arr -> arr
-                | None -> createStringSparseArray [||]
-
-            y_x = fun y ->
-                match colArrays.TryFind y with
-                | Some arr -> arr
-                | None -> createStringSparseArray [||]
-        }
+        createMatrixFromTriples triples createStringSparseArray
 
 open SparseTestHelpers
 
@@ -112,18 +110,16 @@ type SparseMatrixMultiplicationTests() =
         let result = matrix * array
 
         // Assert
-        // Expected calculations:
-        // For y=1 in array (val=2):
-        //   From matrix, y_x(1) gives us: (2->3), (3->4)
-        //   So we get: 3*2=6 at x=2, 4*2=8 at x=3
-        // For y=2 in array (val=3):
-        //   From matrix, y_x(2) gives us: (1->5), (3->6)
-        //   So we get: 5*3=15 at x=1, 6*3=18 at x=3
-        // For y=3 in array (val=4):
-        //   From matrix, y_x(3) gives us: (1->7), (2->8)
-        //   So we get: 7*4=28 at x=1, 8*4=32 at x=2
-        // Final result: x=1:(15+28)=43, x=2:(6+32)=38, x=3:(8+18)=26
-        let expectedValues = [|(1, 43); (2, 38); (3, 26)|]
+        // For the matrix with entries:
+        // (1,2,3), (1,3,4), (2,1,3), (2,3,8), (3,1,4), (3,2,6)
+        // and array with entries:
+        // (1,2), (2,3), (3,4)
+        // Result:
+        // For array y=1, val=2: matrix y_x(1) gives (2->3),(3->4), so: 3*2=6 at x=2, 4*2=8 at x=3
+        // For array y=2, val=3: matrix y_x(2) gives (1->3), so: 3*3=9 at x=1
+        // For array y=3, val=4: matrix y_x(3) gives (1->4),(2->8), so: 4*4=16 at x=1, 8*4=32 at x=2
+        // Final: x=1:(9+16)=25, x=2:(6+32)=38, x=3:(4+18)=26
+        let expectedValues = [|(1, 25); (2, 38); (3, 26)|]
         let expected = createIntSparseArray expectedValues
 
         // Convert to sequences for comparison
@@ -143,18 +139,16 @@ type SparseMatrixMultiplicationTests() =
         let result = array * matrix
 
         // Assert
-        // Expected calculations:
-        // For x=1 in array (val=2):
-        //   From matrix, x_y(1) gives us: (2->5), (3->7)
-        //   So we get: 2*5=10 at y=2, 2*7=14 at y=3
-        // For x=2 in array (val=3):
-        //   From matrix, x_y(2) gives us: (1->3), (3->8)
-        //   So we get: 3*3=9 at y=1, 3*8=24 at y=3
-        // For x=3 in array (val=4):
-        //   From matrix, x_y(3) gives us: (1->4), (2->6)
-        //   So we get: 4*4=16 at y=1, 4*6=24 at y=2
-        // Final result: y=1:(9+16)=25, y=2:(10+24)=34, y=3:(14+24)=38
-        let expectedValues = [|(1, 25); (2, 34); (3, 38)|]
+        // For the matrix with entries:
+        // (1,2,3), (1,3,4), (2,1,3), (2,3,8), (3,1,4), (3,2,6)
+        // and array with entries:
+        // (1,2), (2,3), (3,4)
+        // Result:
+        // For array x=1, val=2: matrix x_y(1) gives (2->3),(3->4), so: 2*3=6 at y=2, 2*4=8 at y=3
+        // For array x=2, val=3: matrix x_y(2) gives (1->3),(3->8), so: 3*3=9 at y=1, 3*8=24 at y=3
+        // For array x=3, val=4: matrix x_y(3) gives (1->4),(2->6), so: 4*4=16 at y=1, 4*6=24 at y=2
+        // Final: y=1:(9+16)=25, y=2:(6+24)=30, y=3:(8+24)=32
+        let expectedValues = [|(1, 25); (2, 30); (3, 32)|]
         let expected = createIntSparseArray expectedValues
 
         // Convert to sequences for comparison
@@ -183,18 +177,18 @@ type SparseMatrixMultiplicationTests() =
         let expected = createStringSparseArray expectedValues
 
         // Convert to sequences for comparison
-        let resultValues = result.getValues() |> Seq.map (fun v -> (v.x, v.value)) |> Seq.toArray
-        let expectedValues = expected.getValues() |> Seq.map (fun v -> (v.x, v.value)) |> Seq.toArray
+        let resultSeq = result.getValues() |> Seq.map (fun v -> (v.x, v.value)) |> Seq.sortBy fst |> Seq.toArray
+        let expectedSeq = expected.getValues() |> Seq.map (fun v -> (v.x, v.value)) |> Seq.sortBy fst |> Seq.toArray
 
         // Assert with tolerance for floating point comparison
-        resultValues.Length.Should().Be(expectedValues.Length) |> ignore
+        resultSeq.Length.Should().Be(expectedSeq.Length)
 
-        for i in 0..(resultValues.Length - 1) do
-            let (resultKey, resultValue) = resultValues.[i]
-            let (expectedKey, expectedValue) = expectedValues.[i]
+        for i in 0..(resultSeq.Length - 1) do
+            let (resultKey, resultValue) = resultSeq.[i]
+            let (expectedKey, expectedValue) = expectedSeq.[i]
 
-            resultKey.Should().Be(expectedKey) |> ignore
-            resultValue.Should().BeApproximately(expectedValue, 0.0001) |> ignore
+            resultKey.Should().Be(expectedKey)
+            resultValue.Should().BeApproximately(expectedValue, 0.0001)
 
     [<Fact>]
     let ``Empty array multiplication returns empty array``() =
@@ -207,7 +201,7 @@ type SparseMatrixMultiplicationTests() =
 
         // Assert
         let resultValues = result.getValues() |> Seq.toArray
-        resultValues.Should().BeEmpty() |> ignore
+        resultValues.Should().BeEmpty()
 
     [<Fact>]
     let ``Multiplication with array containing non-existent indices in matrix``() =
@@ -220,4 +214,4 @@ type SparseMatrixMultiplicationTests() =
 
         // Assert
         let resultValues = result.getValues() |> Seq.toArray
-        resultValues.Should().BeEmpty() |> ignore
+        resultValues.Should().BeEmpty()
