@@ -24,10 +24,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="SparseArray2DTests.fs" />
         <Compile Include="SparseTests.fs" />
         <Compile Include="MultidimensionalTests.fs" />
-        <Compile Include="MultidimensionalTests4D.fs" />
+        <Compile Include="MultidimensionalSparseTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

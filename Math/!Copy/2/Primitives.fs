@@ -458,22 +458,21 @@ module Primitives =
         member dd.domain() = Domain.create dd.domainIntervals dd.domainRange
 
 
-    /// A multi-dimensional domain in cartesian coordinates.
-    type MultiDimensionalDomain =
-        | MultiDimensionalDomain of Domain[]
+    type MultiDomain =
+        | MultiDomain of Domain[]
 
-        member m.value = let (MultiDimensionalDomain v) = m in v
-        static member create (d : DomainParams[]) = d |> Array.map _.domain() |> MultiDimensionalDomain
+        member m.value = let (MultiDomain v) = m in v
+        static member create (d : DomainParams[]) = d |> Array.map _.domain() |> MultiDomain
 
 
-    // /// Data that describes a rectangle in x * y space.
-    // type Domain2D =
-    //     {
-    //         xDomain : Domain
-    //         yDomain : Domain
-    //     }
-    //
-    //     member d.normalize v = v * d.xDomain.step * d.yDomain.step
+    /// Data that describes a rectangle in x * y space.
+    type Domain2D =
+        {
+            xDomain : Domain
+            yDomain : Domain
+        }
+
+        member d.normalize v = v * d.xDomain.step * d.yDomain.step
 
 
     let factorial n = [ 1..n ] |> List.fold (*) 1
@@ -500,100 +499,65 @@ module Primitives =
         member ta.comparisonFactors = [| ta.x0; ta.xScale |]
 
 
-    // /// Uses: x1 = xScale * (x - x0) and y1 = yScale * (y - y0) in Taylor expansion.
-    // ///
-    // /// Each sub-array should contain the coefficients for all terms of a particular total order.
-    // /// For example, if the highest order is 2, coefficients should be initialized as
-    // /// [| [|a00|]; [|a10; a01|]; [|a20; a11; a02|] |],
-    // /// where a20 is the coefficient of x^2, a11 of x * y, etc.
-    // /// Note that the binomial coefficient is not included in the coefficients.
-    // type TaylorApproximation2D =
-    //     {
-    //         x0 : double
-    //         y0 : double
-    //         xScale : double
-    //         yScale : double
-    //         coefficients : double[][]
-    //     }
-    //
-    //     member ta.calculate (x, y) =
-    //         let x1 = ta.xScale * (x - ta.x0)
-    //         let y1 = ta.yScale * (y - ta.y0)
-    //
-    //         let retVal =
-    //             ta.coefficients
-    //             |> Array.mapi (fun i row ->
-    //                 row
-    //                 |> Array.mapi (fun j e ->
-    //                     let binomial = factorial(i) / (factorial(j) * factorial(i - j)) |> double
-    //                     (pown x1 j) * (pown y1 (i - j)) *  binomial * e / (factorial i |> double)))
-    //             |> Array.concat
-    //             |> Array.sum
-    //
-    //         retVal
-    //
-    //     member ta.comparisonFactors = [| ta.x0; ta.xScale; ta.y0; ta.yScale |]
-    //
-    //
-    // /// Separate Taylor approximations for x and y spaces.
-    // type SeparateTaylorApproximation2D =
-    //     {
-    //         xTaylorApproximation : TaylorApproximation
-    //         yTaylorApproximation : TaylorApproximation
-    //     }
-    //
-    //
-    // type ScaledSeparateTaylorApproximation2D =
-    //     {
-    //         scale : double
-    //         separateTaylorApproximation2D : SeparateTaylorApproximation2D
-    //     }
-    //
-    //     member ta.comparisonFactors = Array.concat [| ta.separateTaylorApproximation2D.xTaylorApproximation.comparisonFactors;  ta.separateTaylorApproximation2D.yTaylorApproximation.comparisonFactors |]
-    //
-    //
-    // type ScaledEeInfTaylorApproximation2D =
-    //     {
-    //         scale : double
-    //         taylorApproximation2D : TaylorApproximation2D
-    //     }
-    //
-    //     member ta.comparisonFactors = ta.taylorApproximation2D.comparisonFactors
-
-
-    /// TODO kk:20231017 - Only scalar eps is supported for now.
-    /// Type to describe a function used to calculate eps in mutation probability calculations.
-    type EpsFunc =
-        | EpsFunc of (Domain -> double -> double)
-
-        member r.invoke = let (EpsFunc v) = r in v
-
-
-    type Eps0 =
-        | Eps0 of double
-
-        member r.value = let (Eps0 v) = r in v
-        static member defaultValue = Eps0 0.01
-        static member defaultNarrowValue = Eps0 0.005
-        static member defaultWideValue = Eps0 0.02
-        // member e.modelString = toModelString Eps0.defaultValue.value e.value |> bindPrefix "e"
-
-
-    type EpsFuncValue =
-        | ScalarEps of Eps0
-
-        member ef.epsFunc (_ : Domain) : EpsFunc =
-            match ef with
-            | ScalarEps e -> EpsFunc (fun _ _ -> e.value)
-
-
-    type ProbabilityParams =
+    /// Uses: x1 = xScale * (x - x0) and y1 = yScale * (y - y0) in Taylor expansion.
+    ///
+    /// Each sub-array should contain the coefficients for all terms of a particular total order.
+    /// For example, if the highest order is 2, coefficients should be initialized as
+    /// [| [|a00|]; [|a10; a01|]; [|a20; a11; a02|] |],
+    /// where a20 is the coefficient of x^2, a11 of x * y, etc.
+    /// Note that the binomial coefficient is not included in the coefficients.
+    type TaylorApproximation2D =
         {
-            domainParams : DomainParams
-            zeroThreshold : ZeroThreshold<double>
-            maxIndexDiff : int option
-            epsFuncValue : EpsFuncValue
+            x0 : double
+            y0 : double
+            xScale : double
+            yScale : double
+            coefficients : double[][]
         }
+
+        member ta.calculate (x, y) =
+            let x1 = ta.xScale * (x - ta.x0)
+            let y1 = ta.yScale * (y - ta.y0)
+
+            let retVal =
+                ta.coefficients
+                |> Array.mapi (fun i row ->
+                    row
+                    |> Array.mapi (fun j e ->
+                        let binomial = factorial(i) / (factorial(j) * factorial(i - j)) |> double
+                        (pown x1 j) * (pown y1 (i - j)) *  binomial * e / (factorial i |> double)))
+                |> Array.concat
+                |> Array.sum
+
+            retVal
+
+        member ta.comparisonFactors = [| ta.x0; ta.xScale; ta.y0; ta.yScale |]
+
+
+    /// Separate Taylor approximations for x and y spaces.
+    type SeparateTaylorApproximation2D =
+        {
+            xTaylorApproximation : TaylorApproximation
+            yTaylorApproximation : TaylorApproximation
+        }
+
+
+    type ScaledSeparateTaylorApproximation2D =
+        {
+            scale : double
+            separateTaylorApproximation2D : SeparateTaylorApproximation2D
+        }
+
+        member ta.comparisonFactors = Array.concat [| ta.separateTaylorApproximation2D.xTaylorApproximation.comparisonFactors;  ta.separateTaylorApproximation2D.yTaylorApproximation.comparisonFactors |]
+
+
+    type ScaledEeInfTaylorApproximation2D =
+        {
+            scale : double
+            taylorApproximation2D : TaylorApproximation2D
+        }
+
+        member ta.comparisonFactors = ta.taylorApproximation2D.comparisonFactors
 
 
 module ZeroThreshold =

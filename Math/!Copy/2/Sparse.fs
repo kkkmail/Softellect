@@ -53,11 +53,15 @@ module Sparse =
                 map = new Lazy<Map<'I, 'T>>(fun () -> SparseArray.createLookupMap v)
             }
 
-        static member inline createAbove (z : ZeroThreshold<'T>) (v : 'T[]) =
-            v
-            |> Array.mapi (fun i e -> if e >= z.value then Some { x = i; value = e } else None)
-            |> Array.choose id
-            |> SparseArray.create
+        // static member inline createAbove (z : ZeroThreshold<'T>) (v : 'T[]) =
+        //     let x =
+        //         v
+        //         |> Array.mapi (fun i e -> if e >= z.value then Some { i = i; value1D = e } else None)
+        //         |> Array.choose id
+        //     {
+        //         xValues = x
+        //         xMap = new Lazy<Map<int, 'T>>(fun () -> SparseArray.createLookupMap x)
+        //     }
 
         static member inline (*) (a : SparseArray<'I, 'U>, b : 'U) : SparseArray<'I, 'U> =
             a.values |> Array.map (fun e -> e * b) |> SparseArray.create
@@ -115,14 +119,11 @@ module Sparse =
         toSparseArray result
 
 
-    /// A sparse matrix representation.
+    /// A Sparse matrix representation.
     /// A sparse matrix is coded as two functions that return a sparse array for a given x or y.
     /// This is done because the matrices that we are after are insanely huge, and we absolutely cannot store them in memory.
     /// The  largest that we've run a matrix * vector multiplication test was about 3,906,250,000 x 3,906,250,000
     /// for the total of about 1.5E+19 elements in size.
-    ///
-    /// The caller is responsible for providing the correct functions that return the correct sparse arrays.
-    /// One is not enough as recalculating the other is very time-consuming and likely impossible for very large matrices.
     type SparseMatrix<'I, 'T
             when ^I: equality
             and ^I: comparison
@@ -201,44 +202,3 @@ module Sparse =
             |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
             |> Seq.toArray
             |> SparseArray.create
-
-
-    /// A one-dimensional sparse probability distribution.
-    type SparseProbability =
-        | SparseProbability of SparseArray<int, double>
-
-        member r.value = let (SparseProbability v) = r in v
-
-        /// TODO kk:20250309 - If integration over multidimensional space is used then the edges and corners acquire
-        ///     different coefficients. This is not used here because integration is not performed and we use
-        ///     this probability for Poisson evolution. Revisit if this changes.
-        ///
-        /// Creates a normalized 1D probability. Parameter i is an index in the domain.
-        static member create (data : ProbabilityParams) (i : int) =
-            let domain = data.domainParams.domain()
-            let ef = data.epsFuncValue.epsFunc domain
-            let epsFunc i1 = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
-
-            let f i1 =
-                let v = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
-                if v >= data.zeroThreshold.value then Some { x = i1; value = v } else None
-
-            let g i1 =
-                match data.maxIndexDiff with
-                | Some v -> if abs(i1 - i) > v then None else f i1
-                | None -> f i1
-
-            let values =
-                domain.points.value
-                |> Array.mapi (fun i1 _ -> g i1)
-                |> Array.choose id
-                |> SparseArray<int, double>.create
-
-            let norm = values.total()
-            let p = values.values |> Array.map (fun v -> { v with value = v.value / norm }) |> SparseArray<int, double>.create
-            SparseProbability p
-
-
-    /// A separable multidimensional sparse probability distribution.
-    type MultiDimensionalSparseProbability =
-        | MultiDimensionalSparseProbability of SparseProbability[]

@@ -266,6 +266,14 @@ module FredholmKernel =
         //     | None -> a
 
 
+    /// TODO kk:20231017 - Only scalar eps is supported for now.
+    /// Type to describe a function used to calculate eps in mutation probability calculations.
+    type EpsFunc =
+        | EpsFunc of (Domain -> double -> double)
+
+        member r.invoke = let (EpsFunc v) = r in v
+
+
     /// k0 multiplier in kA.
     type K0 =
         | K0 of double
@@ -290,6 +298,27 @@ module FredholmKernel =
 
         member r.invoke = let (GammaFunc v) = r in v
 
+
+    type Eps0 =
+        | Eps0 of double
+
+        member r.value = let (Eps0 v) = r in v
+        static member defaultValue = Eps0 0.01
+        static member defaultNarrowValue = Eps0 0.005
+        static member defaultWideValue = Eps0 0.02
+        // member e.modelString = toModelString Eps0.defaultValue.value e.value |> bindPrefix "e"
+
+
+    type EpsFuncValue =
+        | ScalarEps of Eps0
+
+        member ef.epsFunc (_ : Domain) : EpsFunc =
+            match ef with
+            | ScalarEps e -> EpsFunc (fun _ _ -> e.value)
+
+        // member ef.modelString =
+        //     match ef with
+        //     | ScalarEps e -> e.modelString |> Option.defaultValue EmptyString
 
     let separableFunc (v : SeparateTaylorApproximation2D) a b =
         let xVal = v.xTaylorApproximation.calculate a
@@ -518,37 +547,45 @@ module FredholmKernel =
         //         e.Replace("-", "") // We don't care about the sign as the only negative coefficient is asymmetry factor (due to historical reasons).
 
 
-    // /// Creates a normalized mutation probability.
-    // /// The normalization is performed using integral estimate over the domain.
-    // type MutationProbability =
-    //     | MutationProbability of SparseArray<double>
-    //
-    //     member r.value = let (MutationProbability v) = r in v
-    //
-    //     /// m is a real (unscaled) value but e is scaled to the half of the range.
-    //     /// i is an index in the domain.
-    //     static member create (e : EvolutionType) (data : MutationProbabilityParams) (i : int) =
-    //         let domain = data.domainParams.domain()
-    //         let ef = data.epsFuncValue.epsFunc domain
-    //
-    //         match e with
-    //         | DifferentialEvolution ->
-    //             let range = domain.domainRange.range
-    //             let mean = domain.points.value[i]
-    //             let epsFunc x = (ef.invoke domain x) * range / 2.0
-    //             let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2)
-    //             let values = domain.points.value |> Array.map f |> SparseArray<double>.createAbove data.zeroThreshold
-    //             let norm = domain.integrateValues values
-    //             let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
-    //             p
-    //         | DiscreteEvolution ->
-    //             let epsFunc (i1 : int) = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
-    //             let f (i1 : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
-    //             let values = domain.points.value |> Array.mapi (fun i1 _ -> f i1) |> SparseArray<double>.createAbove data.zeroThreshold
-    //             let norm = values.total()
-    //             let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
-    //             p
-    //         |> MutationProbability
+    type MutationProbabilityParams =
+        {
+            domainParams : DomainParams
+            zeroThreshold : ZeroThreshold<double>
+            epsFuncValue : EpsFuncValue
+        }
+
+
+    /// Creates a normalized mutation probability.
+    /// The normalization is performed using integral estimate over the domain.
+    type MutationProbability =
+        | MutationProbability of SparseArray<double>
+
+        member r.value = let (MutationProbability v) = r in v
+
+        /// m is a real (unscaled) value but e is scaled to the half of the range.
+        /// i is an index in the domain.
+        static member create (e : EvolutionType) (data : MutationProbabilityParams) (i : int) =
+            let domain = data.domainParams.domain()
+            let ef = data.epsFuncValue.epsFunc domain
+
+            match e with
+            | DifferentialEvolution ->
+                let range = domain.domainRange.range
+                let mean = domain.points.value[i]
+                let epsFunc x = (ef.invoke domain x) * range / 2.0
+                let f x : double = exp (- pown ((x - mean) / (epsFunc x)) 2)
+                let values = domain.points.value |> Array.map f |> SparseArray<double>.createAbove data.zeroThreshold
+                let norm = domain.integrateValues values
+                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
+                p
+            | DiscreteEvolution ->
+                let epsFunc (i1 : int) = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
+                let f (i1 : int) : double = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
+                let values = domain.points.value |> Array.mapi (fun i1 _ -> f i1) |> SparseArray<double>.createAbove data.zeroThreshold
+                let norm = values.total()
+                let p = values.value |> Array.map (fun v -> { v with value1D = v.value1D / norm }) |> SparseArray<double>.create
+                p
+            |> MutationProbability
 
 
     type MutationProbabilityParams2D =

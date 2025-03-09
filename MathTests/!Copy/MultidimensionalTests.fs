@@ -460,8 +460,8 @@ module MultidimensionalTests =
     [<Trait("Category", "Performance")>]
     type PerformanceTests(output: Xunit.Abstractions.ITestOutputHelper) =
 
-        let d = 500 // d points per dimension for 2D and 3D tests.
-        let d4 = 100 // d points per dimension (d^4 total points)
+        let d = 900 // d points per dimension for 2D and 3D tests.
+        let d4 = 175 // d points per dimension (d^4 total points)
 
         [<Fact>]
         let ``2D Tridiagonal Matrix Performance Test``() =
