@@ -2,6 +2,8 @@
 
 open System
 open System.Diagnostics
+open FluentAssertions
+open FluentAssertions.Execution
 open Xunit
 open Xunit.Abstractions
 open Softellect.Math.Primitives
@@ -26,6 +28,47 @@ module MultidimensionalRecordTests =
         /// Calculate the total size of a hypercube with dimension d and k dimensions
         let totalSize (d: int) (k: int) =
             pown (int64 d) k
+
+        /// Calculate the exact number of non-zero elements in a k-dimensional tridiagonal matrix
+        let calculateTridiagonalNonZeros (d: int) (k: int) : int64 =
+            // Special case: if k = 1, it's just a standard tridiagonal matrix
+            if k = 1 then
+                // d diagonal elements + 2(d-1) off-diagonal elements
+                (int64 d) + 2L * (int64 (d - 1))
+            else
+                let d64 = int64 d
+                let k64 = int64 k
+
+                // For a k-dimensional tridiagonal matrix, each point has:
+                // - 1 diagonal element (self-connection)
+                // - Up to 2k off-diagonal elements (±1 in each dimension)
+
+                // The challenge is that boundary points have fewer connections
+
+                // We can count the actual matrix elements by considering:
+                // 1. Each point contributes one diagonal element: d^k
+                // 2. Each interior connection contributes one element
+                //    (not two, because we're counting matrix elements, not edges)
+
+                // Total number of points in the grid
+                let numPoints = pown d64 k
+
+                // The number of actual connections in the matrix:
+                // - Diagonal connections: d^k
+                // - Off-diagonal connections:
+                //   Each dimension contributes (d-1)*d^(k-1) connections
+                //   These are one-way connections, so each is counted once
+
+                let diagonalElements = numPoints
+
+                // Calculate off-diagonal elements from the matrix structure
+                let offDiagonalElements =
+                    let oneWayConnectionsPerDim = (d64 - 1L) * pown d64 (k-1)
+                    2L * k64 * oneWayConnectionsPerDim
+
+                // Total elements
+                diagonalElements + offDiagonalElements
+
 
         // 2D Matrix and Vector Functions
 
@@ -624,6 +667,7 @@ module MultidimensionalRecordTests =
 
             SparseArray.create (values.ToArray())
 
+    open Helpers
 
     /// Run a common performance test template for any dimension
     let runGenericPerformanceTest<'TPoint when 'TPoint : equality and 'TPoint : comparison>
@@ -651,7 +695,7 @@ module MultidimensionalRecordTests =
         let vectorCreationTime = stopwatch.ElapsedMilliseconds
 
         // Count non-zero elements
-        let matrixSize = Helpers.totalSize d k
+        let matrixSize = totalSize d k
         let vectorNonZeros = vector.getValues() |> Seq.length
 
         // Perform multiplication
@@ -686,28 +730,134 @@ module MultidimensionalRecordTests =
 
         [<Fact>]
         let ``2D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point2D> output.WriteLine 1000 2 Helpers.create2DTridiagonalMatrix Helpers.create2DHypersphereVector
+            runGenericPerformanceTest<Point2D> output.WriteLine 1000 2 create2DTridiagonalMatrix create2DHypersphereVector
 
         [<Fact>]
         let ``3D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point3D> output.WriteLine 500 3 Helpers.create3DTridiagonalMatrix Helpers.create3DHypersphereVector
+            runGenericPerformanceTest<Point3D> output.WriteLine 500 3 create3DTridiagonalMatrix create3DHypersphereVector
 
         [<Fact>]
         let ``4D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point4D> output.WriteLine 100 4 Helpers.create4DTridiagonalMatrix Helpers.create4DHypersphereVector
+            runGenericPerformanceTest<Point4D> output.WriteLine 100 4 create4DTridiagonalMatrix create4DHypersphereVector
 
         [<Fact>]
         let ``5D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point5D> output.WriteLine 50 5 Helpers.create5DTridiagonalMatrix Helpers.create5DHypersphereVector
+            runGenericPerformanceTest<Point5D> output.WriteLine 50 5 create5DTridiagonalMatrix create5DHypersphereVector
 
         [<Fact>]
         let ``6D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point6D> output.WriteLine 25 6 Helpers.create6DTridiagonalMatrix Helpers.create6DHypersphereVector
+            runGenericPerformanceTest<Point6D> output.WriteLine 25 6 create6DTridiagonalMatrix create6DHypersphereVector
 
         [<Fact>]
         let ``7D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point7D> output.WriteLine 20 7 Helpers.create7DTridiagonalMatrix Helpers.create7DHypersphereVector
+            runGenericPerformanceTest<Point7D> output.WriteLine 20 7 create7DTridiagonalMatrix create7DHypersphereVector
 
         [<Fact>]
         let ``8D Tridiagonal Matrix Performance Test``() =
-            runGenericPerformanceTest<Point8D> output.WriteLine 15 8 Helpers.create8DTridiagonalMatrix Helpers.create8DHypersphereVector
+            runGenericPerformanceTest<Point8D> output.WriteLine 15 8 create8DTridiagonalMatrix create8DHypersphereVector
+
+        [<Fact>]
+        let ``Calculate Non-Zeros for 1D Tridiagonal Matrix``() =
+            // 1D case - d=5, k=1
+            let d = 5
+            let k = 1
+            let expectedCount = 13L // 5 diagonal + 8 off-diagonal elements (standard tridiagonal)
+
+            // Calculate using formula
+            let calculatedCount = calculateTridiagonalNonZeros d k
+            calculatedCount.Should().Be(expectedCount, $"formula should calculate correct number of non-zeros for d = {d}, k = {k}") |> ignore
+
+        [<Fact>]
+        let ``Calculate Non-Zeros for 2D Tridiagonal Matrix``() =
+            // Small case - d=3, k=2
+            let d = 3
+            let k = 2
+            let expectedCount = 33L // 9 diagonal + 24 off-diagonal elements
+
+            // Calculate using formula
+            let calculatedCount = calculateTridiagonalNonZeros d k
+            calculatedCount.Should().Be(expectedCount, $"formula should calculate correct number of non-zeros for d = {d}, k = {k}") |> ignore
+
+            // Create actual matrix and count non-zeros
+            let matrix = create2DTridiagonalMatrix d 0.5
+
+            // Count actual non-zeros
+            let mutable actualCount = 0L
+            for i in 0..(d-1) do
+                for j in 0..(d-1) do
+                    let point = { x0 = i; x1 = j }
+                    let connections = matrix.x_y(point).getValues() |> Seq.length
+                    actualCount <- actualCount + int64 connections
+
+            actualCount.Should().Be(expectedCount, $"actual matrix should have expected non-zeros for d = {d}, k = {k}") |> ignore
+
+        [<Fact>]
+        let ``Calculate Non-Zeros for 3D Tridiagonal Matrix``() =
+            // Small case - d=3, k=3
+            let d = 3
+            let k = 3
+            let expectedCount = 135L // 27 diagonal + 108 off-diagonal elements
+
+            // Calculate using formula
+            let calculatedCount = calculateTridiagonalNonZeros d k
+            calculatedCount.Should().Be(expectedCount, $"formula should calculate correct number of non-zeros for d = {d}, k = {k}") |> ignore
+
+            // Create actual matrix and count non-zeros
+            let matrix = create3DTridiagonalMatrix d 0.5
+
+            // Count actual non-zeros
+            let mutable actualCount = 0L
+            for i in 0..(d-1) do
+                for j in 0..(d-1) do
+                    for m in 0..(d-1) do
+                        let point = { x0 = i; x1 = j; x2 = m }
+                        let connections = matrix.x_y(point).getValues() |> Seq.length
+                        actualCount <- actualCount + int64 connections
+
+            actualCount.Should().Be(expectedCount, $"actual matrix should have expected non-zeros for d = {d}, k = {k}") |> ignore
+
+        [<Fact>]
+        let ``Calculate Non-Zeros for 4D Tridiagonal Matrix``() =
+            // Small case - d=3, k=4
+            let d = 3
+            let k = 4
+            let expectedCount = 513L // 81 diagonal + 432 off-diagonal elements
+
+            // Calculate using formula
+            let calculatedCount = calculateTridiagonalNonZeros d k
+            calculatedCount.Should().Be(expectedCount, $"formula should calculate correct number of non-zeros for d = {d}, k = {k}") |> ignore
+
+            // Create actual matrix and count non-zeros
+            let matrix = create4DTridiagonalMatrix d 0.5
+
+            // Count actual non-zeros
+            let mutable actualCount = 0L
+            for i in 0..(d-1) do
+                for j in 0..(d-1) do
+                    for m in 0..(d-1) do
+                        for n in 0..(d-1) do
+                            let point = { x0 = i; x1 = j; x2 = m; x3 = n }
+                            let connections = matrix.x_y(point).getValues() |> Seq.length
+                            actualCount <- actualCount + int64 connections
+
+            actualCount.Should().Be(expectedCount, $"actual matrix should have expected non-zeros for d = {d}, k = {k}") |> ignore
+
+        [<Fact>]
+        let ``Calculate Non-Zeros for Various Matrix Sizes``() =
+            // Test various combinations
+            let testCases = [
+                // d, k, expected
+                (2, 1, 4L)    // 2 diagonal + 2 off-diagonal (1D)
+                (5, 1, 13L)   // 5 diagonal + 8 off-diagonal (1D)
+                (2, 2, 12L)   // 4 diagonal + 8 off-diagonal
+                (4, 2, 64L)   // 16 diagonal + 48 off-diagonal
+                (5, 2, 105L)   // 25 diagonal + 80 off-diagonal
+                (2, 3, 32L)   // 8 diagonal + 24 off-diagonal
+                (4, 3, 352L)  // 64 diagonal + 388 off-diagonal
+            ]
+
+            use _ = new AssertionScope()
+
+            for (d, k, expected) in testCases do
+                let calculatedCount = calculateTridiagonalNonZeros d k
+                calculatedCount.Should().Be(expected, $"formula should calculate correct non-zeros for d = {d}, k = {k}") |> ignore

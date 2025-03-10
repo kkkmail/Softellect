@@ -288,6 +288,7 @@ module MultidimensionalSparseTests =
         //
         //     SparseArray.create (values.ToArray())
 
+    open Helpers
 
     /// Performance tests for sparse matrix operations with varying dimensions
     [<Trait("Category", "Performance")>]
@@ -303,17 +304,17 @@ module MultidimensionalSparseTests =
 
             // Create the matrix (just defines the functions, doesn't instantiate all values)
             let stopwatch = Stopwatch.StartNew()
-            let matrix = Helpers.createTridiagonalMatrix d k a
+            let matrix = createTridiagonalMatrix d k a
             let creationTime = stopwatch.ElapsedMilliseconds
 
             // Create the vector
             output.WriteLine("Creating hypersphere vector...")
             stopwatch.Restart()
-            let vector = Helpers.createHypersphereVector d k radius epsilon
+            let vector = createHypersphereVector d k radius epsilon
             let vectorCreationTime = stopwatch.ElapsedMilliseconds
 
             // Count a sample of non-zero elements (not the full matrix)
-            let matrixSize = Helpers.totalSize d k
+            let matrixSize = totalSize d k
 
             // Dynamic sampling based on dimension
             let sampleSize =
@@ -355,7 +356,7 @@ module MultidimensionalSparseTests =
             // Perform multiplication
             output.WriteLine("Starting matrix-vector multiplication...")
             stopwatch.Restart()
-            Helpers.resetMatrixTimingCounters()
+            resetMatrixTimingCounters()
             let result = matrix * vector
             let multiplicationTime = stopwatch.ElapsedMilliseconds
 
@@ -383,8 +384,8 @@ module MultidimensionalSparseTests =
             output.WriteLine($"  Total test time: {creationTime + vectorCreationTime + samplingTime + multiplicationTime} ms")
             output.WriteLine($"  Approximate memory usage: {memoryMB} MB")
 
-            let xyTotalTimeMs = float (Helpers.xyTotalTime * 1000L) / (float Stopwatch.Frequency)
-            output.WriteLine($"  Matrix x_y/y_x calls: {Helpers.xyCallCount} calls taking {xyTotalTimeMs} ms total ({((float xyTotalTimeMs) / (float Helpers.xyCallCount)):F6} ms avg)")
+            let xyTotalTimeMs = float (xyTotalTime * 1000L) / (float Stopwatch.Frequency)
+            output.WriteLine($"  Matrix x_y/y_x calls: {xyCallCount} calls taking {xyTotalTimeMs} ms total ({((float xyTotalTimeMs) / (float xyCallCount)):F6} ms avg)")
 
             // Return the results for potential further analysis
             (multiplicationTime, memoryMB)
