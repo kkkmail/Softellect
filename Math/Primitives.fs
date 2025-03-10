@@ -596,5 +596,32 @@ module Primitives =
         }
 
 
+    /// 2D point representation
+    type Point2D = { x0: int; x1: int }
+
+
+    /// 3D point representation
+    type Point3D = { x0: int; x1: int; x2: int }
+
+
+    /// 4D point representation
+    type Point4D = { x0: int; x1: int; x2: int; x3: int }
+
+
+    /// 5D point representation
+    type Point5D = { x0: int; x1: int; x2: int; x3: int; x4: int }
+
+
+    /// 6D point representation
+    type Point6D = { x0: int; x1: int; x2: int; x3: int; x4: int; x5: int }
+
+
+    /// 7D point representation
+    type Point7D = { x0: int; x1: int; x2: int; x3: int; x4: int; x5: int; x6: int }
+
+
+    /// 8D point representation
+    type Point8D = { x0: int; x1: int; x2: int; x3: int; x4: int; x5: int; x6: int; x7: int }
+
 module ZeroThreshold =
     let defaultValue = Primitives.ZeroThreshold 1.0e-05

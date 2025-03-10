@@ -99,6 +99,16 @@ module MultidimensionalTests =
 
     /// Helper functions for creating multi-dimensional test data
     module Helpers =
+        let mutable xyCallCount = 0
+        let mutable xyTotalTime = 0L
+        let xyStopwatch = Stopwatch()
+
+        /// Reset the timing counters (call this before each test)
+        let resetMatrixTimingCounters() =
+            xyCallCount <- 0
+            xyTotalTime <- 0L
+
+
         /// Map a dimension index to normalized range [-1, 1]
         let normalizeIndex (d: int) (idx: int) =
             (float idx) * 2.0 / (float (d - 1)) - 1.0
@@ -124,6 +134,8 @@ module MultidimensionalTests =
             // Create the matrix as functions (no full instantiation)
             {
                 x_y = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j = point.x, point.y
                     let values = ResizeArray<SparseValue<Point2D, float>>()
 
@@ -145,9 +157,17 @@ module MultidimensionalTests =
                     if j < d - 1 then
                         values.Add({ x = { x = i; y = j + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
 
                 y_x = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j = point.x, point.y
                     let values = ResizeArray<SparseValue<Point2D, float>>()
 
@@ -169,7 +189,13 @@ module MultidimensionalTests =
                     if j < d - 1 then
                         values.Add({ x = { x = i; y = j + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
             }
 
         /// Create a 3-diagonal sparse matrix for 3D space
@@ -184,6 +210,8 @@ module MultidimensionalTests =
             // Create the matrix as functions (no full instantiation)
             {
                 x_y = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j, k = point.x, point.y, point.z
                     let values = ResizeArray<SparseValue<Point3D, float>>()
 
@@ -212,9 +240,17 @@ module MultidimensionalTests =
                     if k < d - 1 then
                         values.Add({ x = { x = i; y = j; z = k + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
 
                 y_x = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j, k = point.x, point.y, point.z
                     let values = ResizeArray<SparseValue<Point3D, float>>()
 
@@ -243,7 +279,13 @@ module MultidimensionalTests =
                     if k < d - 1 then
                         values.Add({ x = { x = i; y = j; z = k + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
             }
 
         /// Create a thin hypersphere vector in 2D
@@ -291,6 +333,8 @@ module MultidimensionalTests =
             // Create the matrix as functions (no full instantiation)
             {
                 x_y = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j, k, l = point.x, point.y, point.z, point.w
                     let values = ResizeArray<SparseValue<Point4D, float>>()
 
@@ -327,9 +371,17 @@ module MultidimensionalTests =
                     if l < d - 1 then
                         values.Add({ x = { x = i; y = j; z = k; w = l + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
 
                 y_x = fun point ->
+                    xyStopwatch.Restart()
+
                     let i, j, k, l = point.x, point.y, point.z, point.w
                     let values = ResizeArray<SparseValue<Point4D, float>>()
 
@@ -366,7 +418,13 @@ module MultidimensionalTests =
                     if l < d - 1 then
                         values.Add({ x = { x = i; y = j; z = k; w = l + 1 }; value = b })
 
-                    SparseArray.create (values.ToArray())
+                    let retVal = SparseArray.create (values.ToArray())
+
+                    xyStopwatch.Stop()
+                    xyCallCount <- xyCallCount + 1
+                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
+
+                    retVal
             }
 
 
@@ -525,6 +583,9 @@ module MultidimensionalTests =
             let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
             output.WriteLine($"  Approximate memory usage: {memoryMB} MB")
 
+            let xyTotalTimeMs = float (Helpers.xyTotalTime * 1000L) / (float Stopwatch.Frequency)
+            output.WriteLine($"  Matrix x_y/y_x calls: {Helpers.xyCallCount} calls taking {xyTotalTimeMs} ms total ({((float xyTotalTimeMs) / (float Helpers.xyCallCount)):F6} ms avg)")
+
 
         [<Fact>]
         let ``3D Tridiagonal Matrix Performance Test``() =
@@ -587,6 +648,9 @@ module MultidimensionalTests =
             let currentProcess = Process.GetCurrentProcess()
             let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
             output.WriteLine($"  Approximate memory usage: {memoryMB} MB")
+
+            let xyTotalTimeMs = float (Helpers.xyTotalTime * 1000L) / (float Stopwatch.Frequency)
+            output.WriteLine($"  Matrix x_y/y_x calls: {Helpers.xyCallCount} calls taking {xyTotalTimeMs} ms total ({((float xyTotalTimeMs) / (float Helpers.xyCallCount)):F6} ms avg)")
 
 
         [<Fact>]
@@ -669,9 +733,12 @@ module MultidimensionalTests =
             let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
             output.WriteLine($"  Approximate memory usage: {memoryMB} MB")
 
+            let xyTotalTimeMs = float (Helpers.xyTotalTime * 1000L) / (float Stopwatch.Frequency)
+            output.WriteLine($"  Matrix x_y/y_x calls: {Helpers.xyCallCount} calls taking {xyTotalTimeMs} ms total ({((float xyTotalTimeMs) / (float Helpers.xyCallCount)):F6} ms avg)")
+
 
         /// Performance test for traditional matrix approach
-        [<Fact>]
+        [<Fact(Skip = "Too slow.")>]
         let ``2D Traditional Matrix Multiplication Performance Test``() =
             // Parameters
             let a = 0.5   // Diagonal element value

@@ -141,3 +141,17 @@ module CoreTests =
         match tryDecryptAndVerify RSA encryptedData recipientPrivateKey senderPublicKey with
         | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
         | Error e -> failwith $"Error: %A{e}"
+
+    [<Fact>]
+    let ``Array comparison should be by value not by reference`` () =
+        // Arrange
+        let a1 = [|1; 2; 3|]
+        let a2 = [|1; 2; 3|]  // Different instance, same values
+
+        // Act - the arrays should be different references but equal values
+        let sameReference = Object.ReferenceEquals(a1, a2)
+        let equalValues = (a1 = a2)
+
+        // Assert
+        sameReference.Should().BeFalse("arrays should be different instances") |> ignore
+        equalValues.Should().BeTrue("arrays with same values should be equal") |> ignore
