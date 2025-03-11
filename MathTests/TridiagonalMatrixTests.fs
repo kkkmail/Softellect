@@ -394,7 +394,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
     [<Fact>]
     member _.``y_x probabilities should respect boundary conditions in 5D matrix``() =
         // Arrange
-        let d = 2 // Use a small 2x2x2x2x2 grid to test boundary conditions
+        let d = 3 // Use a 3x3x3x3x3 grid to test boundary conditions
         let a = 0.4 // Use a probability of 0.4 for staying
         let matrix = createTridiagonalMatrix5D d a
 
@@ -422,6 +422,8 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Verify each test case
         for (point, expectedLength) in testCases do
             let values = matrix.y_x point
+            // Print the actual length for debugging
+            output.WriteLine $"Point %A{point}: Expected {expectedLength}, Got {values.values.Length}"
             values.values.Length.Should().Be(expectedLength) |> ignore
 
             // Sum should be 1.0
