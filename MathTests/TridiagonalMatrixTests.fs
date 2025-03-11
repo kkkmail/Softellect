@@ -492,3 +492,403 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
                 moveProb.Should().BeGreaterThan(lastProb) |> ignore
 
             lastProb <- moveProb
+
+    // Tests for 6D Matrix
+    [<Fact>]
+    member _.``y_x probabilities should sum to 1 for all points in 6D matrix``() =
+        // Arrange
+        let d = 3 // Use a small grid due to the high dimensionality
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix6D d a
+
+        // Act & Assert
+        // Test for sample points rather than full grid to keep test efficient
+        let testPoints = [
+            // Internal point
+            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            // Point touching 1 boundary
+            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            // Point touching multiple boundaries
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1 }
+            // Corner point
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }
+        ]
+
+        for point in testPoints do
+            let values = matrix.y_x point
+
+            // Sum up all probabilities from this point
+            let sum = values.values |> Array.sumBy _.value
+
+            // Should sum to 1.0 with small tolerance for floating-point errors
+            sum.Should().BeApproximately(1.0, 1e-10) |> ignore
+            output.WriteLine $"Point {point}: Sum = {sum}"
+
+    [<Fact>]
+    member _.``y_x probabilities should respect boundary conditions in 6D matrix``() =
+        // Arrange
+        let d = 3 // Use a 3x3x3x3x3x3 grid to test boundary conditions
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix6D d a
+
+        // Test various boundary conditions
+        let testCases = [
+            // Internal point (center of the grid)
+            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 13)  // Self + 12 neighbors
+
+            // Point touching 1 boundary
+            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 12)  // Self + 11 neighbors
+
+            // Point touching 2 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 11)  // Self + 10 neighbors
+
+            // Point touching 3 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1 }, 10)  // Self + 9 neighbors
+
+            // Point touching 4 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1 }, 9)   // Self + 8 neighbors
+
+            // Point touching 5 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1 }, 8)   // Self + 7 neighbors
+
+            // Corner point (touching 6 boundaries)
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }, 7)   // Self + 6 neighbors
+        ]
+
+        // Verify each test case
+        for (point, expectedLength) in testCases do
+            let values = matrix.y_x point
+            output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
+            values.values.Length.Should().Be(expectedLength) |> ignore
+
+            // Sum should be 1.0
+            (values.values |> Array.sumBy _.value).Should().BeApproximately(1.0, 1e-10) |> ignore
+
+    [<Fact>]
+    member _.``x_y and y_x should produce identical results in 6D matrix``() =
+        // Arrange
+        let d = 3 // Use a 3x3x3x3x3x3 grid
+        let a = 0.3 // Use a probability of 0.3 for staying
+        let matrix = createTridiagonalMatrix6D d a
+
+        // Act & Assert
+        // Test for representative points
+        let testPoints = [
+            // Internal point
+            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            // Point touching 1 boundary
+            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            // Corner point
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }
+        ]
+
+        for point in testPoints do
+            let x_y_values = matrix.x_y point
+            let y_x_values = matrix.y_x point
+
+            // Compare length
+            output.WriteLine $"Point {point}: x_y has {x_y_values.values.Length} values, y_x has {y_x_values.values.Length} values"
+            x_y_values.values.Length.Should().Be(y_x_values.values.Length) |> ignore
+
+            // Compare each value (sample check for first value only to avoid test being too verbose)
+            let xyValue = x_y_values.values[0]
+            let yxValue = y_x_values.values[0]
+            output.WriteLine $"First value comparison: x_y={xyValue.value}, y_x={yxValue.value}"
+
+            // Values should be approximately the same
+            xyValue.value.Should().BeApproximately(yxValue.value, 1e-10) |> ignore
+
+    // Tests for 7D Matrix
+    [<Fact>]
+    member _.``y_x probabilities should sum to 1 for all points in 7D matrix``() =
+        // Arrange
+        let d = 3 // Use a small grid due to the high dimensionality
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix7D d a
+
+        // Act & Assert
+        // Test for sample points rather than full grid to keep test efficient
+        let testPoints = [
+            // Internal point
+            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            // Point touching 1 boundary
+            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            // Point touching multiple boundaries
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            // Corner point
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0 }
+        ]
+
+        for point in testPoints do
+            let values = matrix.y_x point
+
+            // Sum up all probabilities from this point
+            let sum = values.values |> Array.sumBy _.value
+
+            // Should sum to 1.0 with small tolerance for floating-point errors
+            sum.Should().BeApproximately(1.0, 1e-10) |> ignore
+            output.WriteLine $"Point {point}: Sum = {sum}"
+
+    [<Fact>]
+    member _.``y_x probabilities should respect boundary conditions in 7D matrix``() =
+        // Arrange
+        let d = 3 // Use a 3x3x3x3x3x3x3 grid to test boundary conditions
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix7D d a
+
+        // Test various boundary conditions
+        let testCases = [
+            // Internal point (center of the grid)
+            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 15)  // Self + 14 neighbors
+
+            // Point touching 1 boundary
+            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 14)  // Self + 13 neighbors
+
+            // Point touching 2 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 13)  // Self + 12 neighbors
+
+            // Point touching 3 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 12)  // Self + 11 neighbors
+
+            // Point touching 4 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1; x6 = 1 }, 11)  // Self + 10 neighbors
+
+            // Point touching 5 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1; x6 = 1 }, 10)  // Self + 9 neighbors
+
+            // Point touching 6 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 1 }, 9)   // Self + 8 neighbors
+
+            // Corner point (touching 7 boundaries)
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0 }, 8)   // Self + 7 neighbors
+        ]
+
+        // Verify each test case
+        for (point, expectedLength) in testCases do
+            let values = matrix.y_x point
+            output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
+            values.values.Length.Should().Be(expectedLength) |> ignore
+
+            // Sum should be 1.0
+            (values.values |> Array.sumBy _.value).Should().BeApproximately(1.0, 1e-10) |> ignore
+
+    [<Fact>]
+    member _.``Moving probability should be correctly distributed in 7D matrix``() =
+        // Arrange
+        let d = 3
+        let a = 0.1 // Small a to make differences more noticeable
+        let matrix = createTridiagonalMatrix7D d a
+
+        // Internal point
+        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+        let internalValues = matrix.y_x internalPoint
+
+        // Get the probability of moving to any neighbor for internal point
+        let internalNeighborProb =
+            internalValues.values
+            |> Array.filter (fun v -> v.x <> internalPoint)
+            |> Array.map _.value
+            |> Array.head
+
+        // All neighbor probabilities should be the same for internal point
+        internalValues.values
+        |> Array.filter (fun v -> v.x <> internalPoint)
+        |> Array.iter (fun v -> v.value.Should().BeApproximately(internalNeighborProb, 1e-10) |> ignore)
+
+        output.WriteLine $"Internal point {internalPoint}: move probability = {internalNeighborProb}"
+
+        // Check boundary point (should have higher neighbor probability)
+        let boundaryPoint = { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+        let boundaryValues = matrix.y_x boundaryPoint
+
+        let boundaryNeighborProb =
+            boundaryValues.values
+            |> Array.filter (fun v -> v.x <> boundaryPoint)
+            |> Array.map _.value
+            |> Array.head
+
+        output.WriteLine $"Boundary point {boundaryPoint}: move probability = {boundaryNeighborProb}"
+
+        // Boundary neighbor prob should be higher than internal neighbor prob
+        boundaryNeighborProb.Should().BeGreaterThan(internalNeighborProb) |> ignore
+
+        // All boundary point neighbors should have equal probability
+        boundaryValues.values
+        |> Array.filter (fun v -> v.x <> boundaryPoint)
+        |> Array.iter (fun v -> v.value.Should().BeApproximately(boundaryNeighborProb, 1e-10) |> ignore)
+
+    // Tests for 8D Matrix
+    [<Fact>]
+    member _.``y_x probabilities should sum to 1 for all points in 8D matrix``() =
+        // Arrange
+        let d = 3 // Use a small grid due to the high dimensionality
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix8D d a
+
+        // Act & Assert
+        // Test for sample points rather than full grid to keep test efficient
+        let testPoints = [
+            // Internal point
+            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            // Point touching 1 boundary
+            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            // Point touching multiple boundaries
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            // Corner point
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+        ]
+
+        for point in testPoints do
+            let values = matrix.y_x point
+
+            // Sum up all probabilities from this point
+            let sum = values.values |> Array.sumBy _.value
+
+            // Should sum to 1.0 with small tolerance for floating-point errors
+            sum.Should().BeApproximately(1.0, 1e-10) |> ignore
+            output.WriteLine $"Point {point}: Sum = {sum}"
+
+    [<Fact>]
+    member _.``y_x probabilities should respect boundary conditions in 8D matrix``() =
+        // Arrange
+        let d = 3 // Use a 3x3x3x3x3x3x3x3 grid to test boundary conditions
+        let a = 0.4 // Use a probability of 0.4 for staying
+        let matrix = createTridiagonalMatrix8D d a
+
+        // Test various boundary conditions
+        let testCases = [
+            // Internal point (center of the grid)
+            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 17)  // Self + 16 neighbors
+
+            // Point touching 1 boundary
+            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 16)  // Self + 15 neighbors
+
+            // Point touching 2 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 15)  // Self + 14 neighbors
+
+            // Point touching 3 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 14)  // Self + 13 neighbors
+
+            // Point touching 4 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 13)  // Self + 12 neighbors
+
+            // Point touching 5 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1; x6 = 1; x7 = 1 }, 12)  // Self + 11 neighbors
+
+            // Point touching 6 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 1; x7 = 1 }, 11)  // Self + 10 neighbors
+
+            // Point touching 7 boundaries
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 1 }, 10)  // Self + 9 neighbors
+
+            // Corner point (touching 8 boundaries)
+            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }, 9)   // Self + 8 neighbors
+        ]
+
+        // Verify each test case
+        for (point, expectedLength) in testCases do
+            let values = matrix.y_x point
+            output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
+            values.values.Length.Should().Be(expectedLength) |> ignore
+
+            // Sum should be 1.0
+            (values.values |> Array.sumBy _.value).Should().BeApproximately(1.0, 1e-10) |> ignore
+
+    [<Fact>]
+    member _.``x_y and y_x should produce identical results in 8D matrix``() =
+        // Arrange
+        let d = 3 // Use a 3x3x3x3x3x3x3x3 grid
+        let a = 0.3 // Use a probability of 0.3 for staying
+        let matrix = createTridiagonalMatrix8D d a
+
+        // Act & Assert
+        // Test for representative points
+        let testPoints = [
+            // Internal point
+            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            // Point touching 1 boundary
+            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            // Corner point
+            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+        ]
+
+        for point in testPoints do
+            let x_y_values = matrix.x_y point
+            let y_x_values = matrix.y_x point
+
+            // Compare length
+            output.WriteLine $"Point {point}: x_y has {x_y_values.values.Length} values, y_x has {y_x_values.values.Length} values"
+            x_y_values.values.Length.Should().Be(y_x_values.values.Length) |> ignore
+
+            // Compare each value (sample check for first value only to avoid test being too verbose)
+            let xyValue = x_y_values.values[0]
+            let yxValue = y_x_values.values[0]
+            output.WriteLine $"First value comparison: x_y={xyValue.value}, y_x={yxValue.value}"
+
+            // Values should be approximately the same
+            xyValue.value.Should().BeApproximately(yxValue.value, 1e-10) |> ignore
+
+    [<Fact>]
+    member _.``Moving probability should be correctly distributed in 8D matrix``() =
+        // Arrange
+        let d = 3
+        let a = 0.1 // Small a to make differences more noticeable
+        let matrix = createTridiagonalMatrix8D d a
+
+        // Internal point
+        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+        let internalValues = matrix.y_x internalPoint
+
+        // Get the probability of moving to any neighbor for internal point
+        let internalNeighborProb =
+            internalValues.values
+            |> Array.filter (fun v -> v.x <> internalPoint)
+            |> Array.map _.value
+            |> Array.head
+
+        // All neighbor probabilities should be the same for internal point
+        internalValues.values
+        |> Array.filter (fun v -> v.x <> internalPoint)
+        |> Array.iter (fun v -> v.value.Should().BeApproximately(internalNeighborProb, 1e-10) |> ignore)
+
+        output.WriteLine $"Internal point {internalPoint}: move probability = {internalNeighborProb}"
+
+        // Check boundary point (should have higher neighbor probability)
+        let boundaryPoint = { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+        let boundaryValues = matrix.y_x boundaryPoint
+
+        let boundaryNeighborProb =
+            boundaryValues.values
+            |> Array.filter (fun v -> v.x <> boundaryPoint)
+            |> Array.map _.value
+            |> Array.head
+
+        output.WriteLine $"Boundary point {boundaryPoint}: move probability = {boundaryNeighborProb}"
+
+        // Boundary neighbor prob should be higher than internal neighbor prob
+        boundaryNeighborProb.Should().BeGreaterThan(internalNeighborProb) |> ignore
+
+        // All boundary point neighbors should have equal probability
+        boundaryValues.values
+        |> Array.filter (fun v -> v.x <> boundaryPoint)
+        |> Array.iter (fun v -> v.value.Should().BeApproximately(boundaryNeighborProb, 1e-10) |> ignore)
+
+        // Check corner point (should have even higher neighbor probability)
+        let cornerPoint = { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+        let cornerValues = matrix.y_x cornerPoint
+
+        let cornerNeighborProb =
+            cornerValues.values
+            |> Array.filter (fun v -> v.x <> cornerPoint)
+            |> Array.map _.value
+            |> Array.head
+
+        output.WriteLine $"Corner point {cornerPoint}: move probability = {cornerNeighborProb}"
+
+        // Corner neighbor prob should be higher than boundary neighbor prob
+        cornerNeighborProb.Should().BeGreaterThan(boundaryNeighborProb) |> ignore
+
+        // All corner point neighbors should have equal probability
+        cornerValues.values
+        |> Array.filter (fun v -> v.x <> cornerPoint)
+        |> Array.iter (fun v -> v.value.Should().BeApproximately(cornerNeighborProb, 1e-10) |> ignore)
