@@ -7,6 +7,19 @@ open Softellect.Math.Primitives
 
 module Sparse =
 
+    type EvolutionParameter<'I, 'T> =
+        {
+            // Function that takes a position and returns a Poisson sampler function (lambda -> count)
+            getPoissonSampler : 'I -> double -> 'T
+            // Function that takes a position and returns a scaling factor
+            getScalingFactor : 'I -> double
+            // Function to convert from 'T to double
+            toDouble : 'T -> double
+            // Function to convert from double to 'T
+            fromDouble : double -> 'T
+        }
+
+
     /// Representation of non-zero value in an abstract sparse array.
     type SparseValue<'I, 'T
             when ^I: equality
@@ -85,7 +98,7 @@ module Sparse =
             for v in values.getValues() do
                 let key = v.x
 
-                if dict.ContainsKey(key) then dict.[key] <- dict.[key] + v.value
+                if dict.ContainsKey(key) then dict[key] <- dict[key] + v.value
                 else dict.Add(key, v.value)
 
         // A sum is generally inseparable.
@@ -101,7 +114,7 @@ module Sparse =
 
             for key in result.Keys do
                 match a.tryFind key with
-                | Some value -> result.[key] <- result.[key] * value
+                | Some value -> result[key] <- result[key] * value
                 | None -> keysToRemove.Add key |> ignore
 
             for key in keysToRemove do result.Remove(key) |> ignore
@@ -160,7 +173,7 @@ module Sparse =
 
                     // Add to result
                     if result.ContainsKey(x) then
-                        result.[x] <- result.[x] + product
+                        result[x] <- result[x] + product
                     else
                         result.Add(x, product)
 
@@ -192,9 +205,71 @@ module Sparse =
 
                     // Add to result
                     if result.ContainsKey(y) then
-                        result.[y] <- result.[y] + product
+                        result[y] <- result[y] + product
                     else
                         result.Add(y, product)
+
+            // Convert the result dictionary to a SparseArray
+            result
+            |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
+            |> Seq.toArray
+            |> SparseArray.create
+
+
+    type SparseArray<'I, 'T
+            when ^I: equality
+            and ^I: comparison
+            and ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison>
+        with
+
+        /// Evolve a sparse array using random walk probabilities
+        /// p: evolution parameter containing Poisson sampler and scaling factor functions
+        /// array: the sparse array to evolve
+        member inline array.evolve (p : EvolutionParameter<'I, 'T>) (m : SparseMatrix<'I, double>) : SparseArray<'I, 'T> =
+            let result = Dictionary<'I, 'T>()
+
+            // For each point y in the sparse array (source location)
+            for sparseValue in array.getValues() do
+                let y = sparseValue.x
+                let y_value = sparseValue.value
+
+                // Skip if there are no elements at this location
+                if y_value > LanguagePrimitives.GenericZero<'T> then
+                    // Get the Poisson sampler and scaling factor for this position
+                    let poissonSampler = p.getPoissonSampler y
+                    let scalingFactor = p.getScalingFactor y
+
+                    // Get all transition probabilities from this position y to other positions
+                    let x_values = m.y_x y
+
+                    // For each possible destination x
+                    for x_sparse_value in x_values.getValues() do
+                        let x = x_sparse_value.x
+                        let transition_prob = x_sparse_value.value
+
+                        // Calculate lambda for the Poisson distribution based on:
+                        // - Number of elements at source (y_value)
+                        // - Transition probability (transition_prob)
+                        // - Scaling factor for this position
+                        let valueAsDouble = p.toDouble y_value
+                        let lambda = transition_prob * scalingFactor
+                        let lambda_scaled = valueAsDouble * lambda
+
+                        // Sample from Poisson distribution to get number of elements moving from y to x
+                        let moving_elements = poissonSampler lambda_scaled
+
+                        // Only add to result if we have elements moving
+                        if moving_elements > LanguagePrimitives.GenericZero<'T> then
+                            // Add to result
+                            if result.ContainsKey(x) then
+                                result[x] <- result[x] + moving_elements
+                            else
+                                result.Add(x, moving_elements)
 
             // Convert the result dictionary to a SparseArray
             result

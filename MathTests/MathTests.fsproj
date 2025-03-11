@@ -30,6 +30,7 @@
         <Compile Include="MultidimensionalRecordTests.fs" />
         <Compile Include="MatrixComparisonTests.fs" />
         <Compile Include="TridiagonalMatrixTests.fs" />
+        <Compile Include="PoissonEvolutionTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

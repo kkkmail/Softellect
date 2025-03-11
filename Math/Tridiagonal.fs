@@ -3,6 +3,8 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 
+/// Generated module for tridiagonal sparse matrices.
+/// See: https://claude.ai/chat/75221a0e-895f-4d27-b5d5-6d8ce80974bd
 module Tridiagonal =
 
     /// Create a 2D tridiagonal sparse matrix with optimized performance for random walk probabilities
