@@ -29,6 +29,7 @@
         <Compile Include="MultidimensionalSparseTests.fs" />
         <Compile Include="MultidimensionalRecordTests.fs" />
         <Compile Include="MatrixComparisonTests.fs" />
+        <Compile Include="TridiagonalMatrix3DTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
