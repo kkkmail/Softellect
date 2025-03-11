@@ -4,8 +4,9 @@ open Xunit
 open FluentAssertions
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
+open Softellect.Math.Tridiagonal
 
-type TridiagonalMatrix3DTests() =
+type TridiagonalMatrixTests() =
     [<Fact>]
     member _.``y_x probabilities should sum to 1 for all points in 3D matrix``() =
         // Arrange

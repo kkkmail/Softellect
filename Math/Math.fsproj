@@ -43,6 +43,7 @@
         </None>
         <Compile Include="Primitives.fs" />
         <Compile Include="Sparse.fs" />
+        <Compile Include="Tridiagonal.fs" />
     </ItemGroup>
 
     <ItemGroup>
