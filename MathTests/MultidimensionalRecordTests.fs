@@ -8,10 +8,20 @@ open Xunit
 open Xunit.Abstractions
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
+open Softellect.Math.Tridiagonal
 
 module MultidimensionalRecordTests =
     /// Helper functions for creating multi-dimensional test data
     module Helpers =
+        let create2DTridiagonalMatrix = createTridiagonalMatrix2D
+        let create3DTridiagonalMatrix = createTridiagonalMatrix3D
+        let create4DTridiagonalMatrix = createTridiagonalMatrix4D
+        let create5DTridiagonalMatrix = createTridiagonalMatrix5D
+        let create6DTridiagonalMatrix = createTridiagonalMatrix6D
+        let create7DTridiagonalMatrix = createTridiagonalMatrix7D
+        let create8DTridiagonalMatrix = createTridiagonalMatrix8D
+
+
         /// Map a dimension index to normalized range [-1, 1]
         let normalizeIndex (d: int) (idx: int) =
             (float idx) * 2.0 / (float (d - 1)) - 1.0
@@ -72,39 +82,39 @@ module MultidimensionalRecordTests =
 
         // 2D Matrix and Vector Functions
 
-        /// Create a 2D tridiagonal sparse matrix
-        let create2DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point2D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point2D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 2D tridiagonal sparse matrix
+        // let create2DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point2D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point2D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 2D hypersphere vector
         let create2DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point2D, float> =
@@ -123,46 +133,46 @@ module MultidimensionalRecordTests =
 
         // 3D Matrix and Vector Functions
 
-        /// Create a 3D tridiagonal sparse matrix
-        let create3DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point3D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point3D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1; x2 = point.x2 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1; x2 = point.x2 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1; x2 = point.x2 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1; x2 = point.x2 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 - 1 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 3D tridiagonal sparse matrix
+        // let create3DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point3D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point3D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1; x2 = point.x2 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1; x2 = point.x2 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1; x2 = point.x2 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1; x2 = point.x2 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 - 1 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 3D hypersphere vector
         let create3DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point3D, float> =
@@ -183,53 +193,53 @@ module MultidimensionalRecordTests =
 
         // 4D Matrix and Vector Functions
 
-        /// Create a 4D tridiagonal sparse matrix
-        let create4DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point4D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point4D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1; x2 = point.x2; x3 = point.x3 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1; x2 = point.x2; x3 = point.x3 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1; x2 = point.x2; x3 = point.x3 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1; x2 = point.x2; x3 = point.x3 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 - 1; x3 = point.x3 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 + 1; x3 = point.x3 }; value = b })
-
-                // Off-diagonal in x3 direction
-                if point.x3 > 0 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2; x3 = point.x3 - 1 }; value = b })
-
-                if point.x3 < d - 1 then
-                    values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2; x3 = point.x3 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 4D tridiagonal sparse matrix
+        // let create4DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point4D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point4D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { x0 = point.x0 - 1; x1 = point.x1; x2 = point.x2; x3 = point.x3 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0 + 1; x1 = point.x1; x2 = point.x2; x3 = point.x3 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 - 1; x2 = point.x2; x3 = point.x3 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1 + 1; x2 = point.x2; x3 = point.x3 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 - 1; x3 = point.x3 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2 + 1; x3 = point.x3 }; value = b })
+        //
+        //         // Off-diagonal in x3 direction
+        //         if point.x3 > 0 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2; x3 = point.x3 - 1 }; value = b })
+        //
+        //         if point.x3 < d - 1 then
+        //             values.Add({ x = { x0 = point.x0; x1 = point.x1; x2 = point.x2; x3 = point.x3 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 4D hypersphere vector
         let create4DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point4D, float> =
@@ -258,60 +268,60 @@ module MultidimensionalRecordTests =
 
         // 5D Matrix and Vector Functions
 
-        /// Create a 5D tridiagonal sparse matrix
-        let create5DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point5D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point5D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
-
-                // Off-diagonal in x3 direction
-                if point.x3 > 0 then
-                    values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
-
-                if point.x3 < d - 1 then
-                    values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
-
-                // Off-diagonal in x4 direction
-                if point.x4 > 0 then
-                    values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
-
-                if point.x4 < d - 1 then
-                    values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 5D tridiagonal sparse matrix
+        // let create5DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point5D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point5D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x3 direction
+        //         if point.x3 > 0 then
+        //             values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
+        //
+        //         if point.x3 < d - 1 then
+        //             values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x4 direction
+        //         if point.x4 > 0 then
+        //             values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
+        //
+        //         if point.x4 < d - 1 then
+        //             values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 5D hypersphere vector
         let create5DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point5D, float> =
@@ -342,67 +352,67 @@ module MultidimensionalRecordTests =
 
         // 6D Matrix and Vector Functions
 
-        /// Create a 6D tridiagonal sparse matrix
-        let create6DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point6D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point6D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
-
-                // Off-diagonal in x3 direction
-                if point.x3 > 0 then
-                    values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
-
-                if point.x3 < d - 1 then
-                    values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
-
-                // Off-diagonal in x4 direction
-                if point.x4 > 0 then
-                    values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
-
-                if point.x4 < d - 1 then
-                    values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
-
-                // Off-diagonal in x5 direction
-                if point.x5 > 0 then
-                    values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
-
-                if point.x5 < d - 1 then
-                    values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 6D tridiagonal sparse matrix
+        // let create6DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point6D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point6D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x3 direction
+        //         if point.x3 > 0 then
+        //             values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
+        //
+        //         if point.x3 < d - 1 then
+        //             values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x4 direction
+        //         if point.x4 > 0 then
+        //             values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
+        //
+        //         if point.x4 < d - 1 then
+        //             values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x5 direction
+        //         if point.x5 > 0 then
+        //             values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
+        //
+        //         if point.x5 < d - 1 then
+        //             values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 6D hypersphere vector
         let create6DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point6D, float> =
@@ -435,74 +445,74 @@ module MultidimensionalRecordTests =
 
         // 7D Matrix and Vector Functions
 
-        /// Create a 7D tridiagonal sparse matrix
-        let create7DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point7D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point7D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
-
-                // Off-diagonal in x3 direction
-                if point.x3 > 0 then
-                    values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
-
-                if point.x3 < d - 1 then
-                    values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
-
-                // Off-diagonal in x4 direction
-                if point.x4 > 0 then
-                    values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
-
-                if point.x4 < d - 1 then
-                    values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
-
-                // Off-diagonal in x5 direction
-                if point.x5 > 0 then
-                    values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
-
-                if point.x5 < d - 1 then
-                    values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
-
-                // Off-diagonal in x6 direction
-                if point.x6 > 0 then
-                    values.Add({ x = { point with x6 = point.x6 - 1 }; value = b })
-
-                if point.x6 < d - 1 then
-                    values.Add({ x = { point with x6 = point.x6 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 7D tridiagonal sparse matrix
+        // let create7DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point7D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point7D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x3 direction
+        //         if point.x3 > 0 then
+        //             values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
+        //
+        //         if point.x3 < d - 1 then
+        //             values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x4 direction
+        //         if point.x4 > 0 then
+        //             values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
+        //
+        //         if point.x4 < d - 1 then
+        //             values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x5 direction
+        //         if point.x5 > 0 then
+        //             values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
+        //
+        //         if point.x5 < d - 1 then
+        //             values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x6 direction
+        //         if point.x6 > 0 then
+        //             values.Add({ x = { point with x6 = point.x6 - 1 }; value = b })
+        //
+        //         if point.x6 < d - 1 then
+        //             values.Add({ x = { point with x6 = point.x6 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 7D hypersphere vector
         let create7DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point7D, float> =
@@ -548,81 +558,81 @@ module MultidimensionalRecordTests =
 
         // 8D Matrix and Vector Functions
 
-        /// Create a 8D tridiagonal sparse matrix
-        let create8DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point8D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith $"Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            let x_y point =
-                let values = ResizeArray<SparseValue<Point8D, float>>()
-
-                // Diagonal element (self-connection)
-                values.Add({ x = point; value = a })
-
-                // Off-diagonal in x0 direction
-                if point.x0 > 0 then
-                    values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
-
-                if point.x0 < d - 1 then
-                    values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
-
-                // Off-diagonal in x1 direction
-                if point.x1 > 0 then
-                    values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
-
-                if point.x1 < d - 1 then
-                    values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
-
-                // Off-diagonal in x2 direction
-                if point.x2 > 0 then
-                    values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
-
-                if point.x2 < d - 1 then
-                    values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
-
-                // Off-diagonal in x3 direction
-                if point.x3 > 0 then
-                    values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
-
-                if point.x3 < d - 1 then
-                    values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
-
-                // Off-diagonal in x4 direction
-                if point.x4 > 0 then
-                    values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
-
-                if point.x4 < d - 1 then
-                    values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
-
-                // Off-diagonal in x5 direction
-                if point.x5 > 0 then
-                    values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
-
-                if point.x5 < d - 1 then
-                    values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
-
-                // Off-diagonal in x6 direction
-                if point.x6 > 0 then
-                    values.Add({ x = { point with x6 = point.x6 - 1 }; value = b })
-
-                if point.x6 < d - 1 then
-                    values.Add({ x = { point with x6 = point.x6 + 1 }; value = b })
-
-                // Off-diagonal in x7 direction
-                if point.x7 > 0 then
-                    values.Add({ x = { point with x7 = point.x7 - 1 }; value = b })
-
-                if point.x7 < d - 1 then
-                    values.Add({ x = { point with x7 = point.x7 + 1 }; value = b })
-
-                SparseArray.create (values.ToArray())
-
-            { x_y = x_y; y_x = x_y }
+        // /// Create a 8D tridiagonal sparse matrix
+        // let create8DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point8D, float> =
+        //     // Parameter validation
+        //     if a <= 0.0 || a >= 1.0 then
+        //         failwith $"Parameter a must be in range (0, 1)"
+        //
+        //     // Calculate b based on the constraint a + 2b = 1
+        //     let b = (1.0 - a) / 2.0
+        //
+        //     // Create the matrix as functions (no full instantiation)
+        //     let x_y point =
+        //         let values = ResizeArray<SparseValue<Point8D, float>>()
+        //
+        //         // Diagonal element (self-connection)
+        //         values.Add({ x = point; value = a })
+        //
+        //         // Off-diagonal in x0 direction
+        //         if point.x0 > 0 then
+        //             values.Add({ x = { point with x0 = point.x0 - 1 }; value = b })
+        //
+        //         if point.x0 < d - 1 then
+        //             values.Add({ x = { point with x0 = point.x0 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x1 direction
+        //         if point.x1 > 0 then
+        //             values.Add({ x = { point with x1 = point.x1 - 1 }; value = b })
+        //
+        //         if point.x1 < d - 1 then
+        //             values.Add({ x = { point with x1 = point.x1 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x2 direction
+        //         if point.x2 > 0 then
+        //             values.Add({ x = { point with x2 = point.x2 - 1 }; value = b })
+        //
+        //         if point.x2 < d - 1 then
+        //             values.Add({ x = { point with x2 = point.x2 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x3 direction
+        //         if point.x3 > 0 then
+        //             values.Add({ x = { point with x3 = point.x3 - 1 }; value = b })
+        //
+        //         if point.x3 < d - 1 then
+        //             values.Add({ x = { point with x3 = point.x3 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x4 direction
+        //         if point.x4 > 0 then
+        //             values.Add({ x = { point with x4 = point.x4 - 1 }; value = b })
+        //
+        //         if point.x4 < d - 1 then
+        //             values.Add({ x = { point with x4 = point.x4 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x5 direction
+        //         if point.x5 > 0 then
+        //             values.Add({ x = { point with x5 = point.x5 - 1 }; value = b })
+        //
+        //         if point.x5 < d - 1 then
+        //             values.Add({ x = { point with x5 = point.x5 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x6 direction
+        //         if point.x6 > 0 then
+        //             values.Add({ x = { point with x6 = point.x6 - 1 }; value = b })
+        //
+        //         if point.x6 < d - 1 then
+        //             values.Add({ x = { point with x6 = point.x6 + 1 }; value = b })
+        //
+        //         // Off-diagonal in x7 direction
+        //         if point.x7 > 0 then
+        //             values.Add({ x = { point with x7 = point.x7 - 1 }; value = b })
+        //
+        //         if point.x7 < d - 1 then
+        //             values.Add({ x = { point with x7 = point.x7 + 1 }; value = b })
+        //
+        //         SparseArray.create (values.ToArray())
+        //
+        //     { x_y = x_y; y_x = x_y }
 
         /// Create a 8D hypersphere vector
         let create8DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point8D, float> =
