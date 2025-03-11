@@ -35,6 +35,8 @@ module Sparse =
             value : 'T
         }
 
+        member inline r.convert converter = { x = r.x; value = converter r.value }
+
 
     type SparseArray<'I, 'T
             when ^I: equality
@@ -72,13 +74,24 @@ module Sparse =
             |> Array.choose id
             |> SparseArray.create
 
+        member inline r.convert converter =
+            r.values |> Array.map (fun v -> v.convert converter) |> SparseArray.create
+
+        member inline r.moment converter projector n =
+            let xn =
+                r.values
+                |> Array.map (fun v -> (v.convert converter) * (pown (projector v.x) n))
+                |> Array.sum
+
+            xn
+
         static member inline (*) (a : SparseArray<'I, 'U>, b : 'U) : SparseArray<'I, 'U> =
             a.values |> Array.map (fun e -> e * b) |> SparseArray.create
 
         static member inline (*) (a : 'U, b : SparseArray<'I, 'U>) = b * a
 
-        static member inline (*) (a : SparseArray<'I, 'T>, b : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
-            failwith ""
+        // static member inline (*) (a : SparseArray<'I, 'T>, b : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
+        //     failwith ""
 
 
     /// Extract the key/value pairs from the dictionary into an SparseArray.
@@ -278,42 +291,42 @@ module Sparse =
             |> SparseArray.create
 
 
-    /// A one-dimensional sparse probability distribution.
-    type SparseProbability =
-        | SparseProbability of SparseArray<int, double>
-
-        member r.value = let (SparseProbability v) = r in v
-
-        /// TODO kk:20250309 - If integration over multidimensional space is used then the edges and corners acquire
-        ///     different coefficients. This is not used here because integration is not performed and we use
-        ///     this probability for Poisson evolution. Revisit if this changes.
-        ///
-        /// Creates a normalized 1D probability. Parameter i is an index in the domain.
-        static member create (data : ProbabilityParams) (i : int) =
-            let domain = data.domainParams.domain()
-            let ef = data.epsFuncValue.epsFunc domain
-            let epsFunc i1 = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
-
-            let f i1 =
-                let v = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
-                if v >= data.zeroThreshold.value then Some { x = i1; value = v } else None
-
-            let g i1 =
-                match data.maxIndexDiff with
-                | Some v -> if abs(i1 - i) > v then None else f i1
-                | None -> f i1
-
-            let values =
-                domain.points.value
-                |> Array.mapi (fun i1 _ -> g i1)
-                |> Array.choose id
-                |> SparseArray<int, double>.create
-
-            let norm = values.total()
-            let p = values.values |> Array.map (fun v -> { v with value = v.value / norm }) |> SparseArray<int, double>.create
-            SparseProbability p
-
-
-    /// A separable multidimensional sparse probability distribution.
-    type MultiDimensionalSparseProbability =
-        | MultiDimensionalSparseProbability of SparseProbability[]
+    // /// A one-dimensional sparse probability distribution.
+    // type SparseProbability =
+    //     | SparseProbability of SparseArray<int, double>
+    //
+    //     member r.value = let (SparseProbability v) = r in v
+    //
+    //     /// TODO kk:20250309 - If integration over multidimensional space is used then the edges and corners acquire
+    //     ///     different coefficients. This is not used here because integration is not performed and we use
+    //     ///     this probability for Poisson evolution. Revisit if this changes.
+    //     ///
+    //     /// Creates a normalized 1D probability. Parameter i is an index in the domain.
+    //     static member create (data : ProbabilityParams) (i : int) =
+    //         let domain = data.domainParams.domain()
+    //         let ef = data.epsFuncValue.epsFunc domain
+    //         let epsFunc i1 = (ef.invoke domain domain.points.value[i1]) * ( double domain.points.value.Length) / 2.0
+    //
+    //         let f i1 =
+    //             let v = exp (- pown ((double (i1 - i)) / (epsFunc i1)) 2)
+    //             if v >= data.zeroThreshold.value then Some { x = i1; value = v } else None
+    //
+    //         let g i1 =
+    //             match data.maxIndexDiff with
+    //             | Some v -> if abs(i1 - i) > v then None else f i1
+    //             | None -> f i1
+    //
+    //         let values =
+    //             domain.points.value
+    //             |> Array.mapi (fun i1 _ -> g i1)
+    //             |> Array.choose id
+    //             |> SparseArray<int, double>.create
+    //
+    //         let norm = values.total()
+    //         let p = values.values |> Array.map (fun v -> { v with value = v.value / norm }) |> SparseArray<int, double>.create
+    //         SparseProbability p
+    //
+    //
+    // /// A separable multidimensional sparse probability distribution.
+    // type MultiDimensionalSparseProbability =
+    //     | MultiDimensionalSparseProbability of SparseProbability[]
