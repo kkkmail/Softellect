@@ -20,7 +20,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         for x0 in 0 .. d - 1 do
             for x1 in 0 .. d - 1 do
                 for x2 in 0 .. d - 1 do
-                    let point = { x0 = x0; x1 = x1; x2 = x2 }
+                    let point = { i0 = x0; i1 = x1; i2 = x2 }
                     let values = matrix.y_x point
 
                     // Sum up all probabilities from this point
@@ -37,22 +37,22 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix3D d a
 
         // Case 1: Internal point (no boundaries)
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1 }
         let internalValues = matrix.y_x internalPoint
         internalValues.values.Length.Should().Be(7) |> ignore  // Self + 6 neighbors
 
         // Case 2: Point touching 1 boundary
-        let boundary1Point = { x0 = 0; x1 = 1; x2 = 1 }
+        let boundary1Point = { i0 = 0; i1 = 1; i2 = 1 }
         let boundary1Values = matrix.y_x boundary1Point
         boundary1Values.values.Length.Should().Be(6) |> ignore  // Self + 5 neighbors
 
         // Case 3: Point touching 2 boundaries
-        let boundary2Point = { x0 = 0; x1 = 0; x2 = 1 }
+        let boundary2Point = { i0 = 0; i1 = 0; i2 = 1 }
         let boundary2Values = matrix.y_x boundary2Point
         boundary2Values.values.Length.Should().Be(5) |> ignore  // Self + 4 neighbors
 
         // Case 4: Corner point (touching 3 boundaries)
-        let cornerPoint = { x0 = 0; x1 = 0; x2 = 0 }
+        let cornerPoint = { i0 = 0; i1 = 0; i2 = 0 }
         let cornerValues = matrix.y_x cornerPoint
         cornerValues.values.Length.Should().Be(4) |> ignore  // Self + 3 neighbors
 
@@ -72,13 +72,13 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for several representative points
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1 }
             // Point touching 2 boundaries
-            { x0 = 0; x1 = 0; x2 = 1 }
+            { i0 = 0; i1 = 0; i2 = 1 }
             // Corner point (touching 3 boundaries)
-            { x0 = 0; x1 = 0; x2 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0 }
         ]
 
         for point in testPoints do
@@ -107,7 +107,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix3D d a
 
         // Internal point has 6 neighbors, each should get equal probability
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1 }
         let internalValues = matrix.y_x internalPoint
 
         // Get the probability of moving to any neighbor
@@ -124,7 +124,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
 
         // For a point on one boundary, neighbors should also have equal probabilities
         // but higher than for internal points
-        let boundaryPoint = { x0 = 0; x1 = 1; x2 = 1 }
+        let boundaryPoint = { i0 = 0; i1 = 1; i2 = 1 }
         let boundaryValues = matrix.y_x boundaryPoint
 
         let boundaryNeighborProb =
@@ -153,7 +153,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for each point in the grid
         for x0 in 0 .. d - 1 do
             for x1 in 0 .. d - 1 do
-                let point = { x0 = x0; x1 = x1 }
+                let point = { i0 = x0; i1 = x1 }
                 let values = matrix.y_x point
 
                 // Sum up all probabilities from this point
@@ -170,17 +170,17 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix2D d a
 
         // Case 1: Internal point (no boundaries)
-        let internalPoint = { x0 = 1; x1 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1 }
         let internalValues = matrix.y_x internalPoint
         internalValues.values.Length.Should().Be(5) |> ignore  // Self + 4 neighbors
 
         // Case 2: Point touching 1 boundary
-        let boundary1Point = { x0 = 0; x1 = 1 }
+        let boundary1Point = { i0 = 0; i1 = 1 }
         let boundary1Values = matrix.y_x boundary1Point
         boundary1Values.values.Length.Should().Be(4) |> ignore  // Self + 3 neighbors
 
         // Case 3: Corner point (touching 2 boundaries)
-        let cornerPoint = { x0 = 0; x1 = 0 }
+        let cornerPoint = { i0 = 0; i1 = 0 }
         let cornerValues = matrix.y_x cornerPoint
         cornerValues.values.Length.Should().Be(3) |> ignore  // Self + 2 neighbors
 
@@ -200,11 +200,11 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for several representative points
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1 }
+            { i0 = 1; i1 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1 }
+            { i0 = 0; i1 = 1 }
             // Corner point (touching 2 boundaries)
-            { x0 = 0; x1 = 0 }
+            { i0 = 0; i1 = 0 }
         ]
 
         for point in testPoints do
@@ -233,7 +233,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix2D d a
 
         // Internal point has 4 neighbors, each should get equal probability
-        let internalPoint = { x0 = 1; x1 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1 }
         let internalValues = matrix.y_x internalPoint
 
         // Get the probability of moving to any neighbor
@@ -250,7 +250,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
 
         // For a point on one boundary, neighbors should also have equal probabilities
         // but higher than for internal points
-        let boundaryPoint = { x0 = 0; x1 = 1 }
+        let boundaryPoint = { i0 = 0; i1 = 1 }
         let boundaryValues = matrix.y_x boundaryPoint
 
         let boundaryNeighborProb =
@@ -281,7 +281,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
             for x1 in 0 .. d - 1 do
                 for x2 in 0 .. d - 1 do
                     for x3 in 0 .. d - 1 do
-                        let point = { x0 = x0; x1 = x1; x2 = x2; x3 = x3 }
+                        let point = { i0 = x0; i1 = x1; i2 = x2; i3 = x3 }
                         let values = matrix.y_x point
 
                         // Sum up all probabilities from this point
@@ -298,27 +298,27 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix4D d a
 
         // Case 1: Internal point (no boundaries)
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1; i3 = 1 }
         let internalValues = matrix.y_x internalPoint
         internalValues.values.Length.Should().Be(9) |> ignore  // Self + 8 neighbors
 
         // Case 2: Point touching 1 boundary
-        let boundary1Point = { x0 = 0; x1 = 1; x2 = 1; x3 = 1 }
+        let boundary1Point = { i0 = 0; i1 = 1; i2 = 1; i3 = 1 }
         let boundary1Values = matrix.y_x boundary1Point
         boundary1Values.values.Length.Should().Be(8) |> ignore  // Self + 7 neighbors
 
         // Case 3: Point touching 2 boundaries
-        let boundary2Point = { x0 = 0; x1 = 0; x2 = 1; x3 = 1 }
+        let boundary2Point = { i0 = 0; i1 = 0; i2 = 1; i3 = 1 }
         let boundary2Values = matrix.y_x boundary2Point
         boundary2Values.values.Length.Should().Be(7) |> ignore  // Self + 6 neighbors
 
         // Case 4: Point touching 3 boundaries
-        let boundary3Point = { x0 = 0; x1 = 0; x2 = 0; x3 = 1 }
+        let boundary3Point = { i0 = 0; i1 = 0; i2 = 0; i3 = 1 }
         let boundary3Values = matrix.y_x boundary3Point
         boundary3Values.values.Length.Should().Be(6) |> ignore  // Self + 5 neighbors
 
         // Case 5: Corner point (touching 4 boundaries)
-        let cornerPoint = { x0 = 0; x1 = 0; x2 = 0; x3 = 0 }
+        let cornerPoint = { i0 = 0; i1 = 0; i2 = 0; i3 = 0 }
         let cornerValues = matrix.y_x cornerPoint
         cornerValues.values.Length.Should().Be(5) |> ignore  // Self + 4 neighbors
 
@@ -338,15 +338,15 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for several representative points
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1 }
             // Point touching 2 boundaries
-            { x0 = 0; x1 = 0; x2 = 1; x3 = 1 }
+            { i0 = 0; i1 = 0; i2 = 1; i3 = 1 }
             // Point touching 3 boundaries
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 1 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 1 }
             // Corner point (touching 4 boundaries)
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0 }
         ]
 
         for point in testPoints do

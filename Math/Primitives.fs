@@ -597,15 +597,15 @@ module Primitives =
 
 
     /// 2D point representation
-    type Point2D = { x0: int; x1: int }
+    type Point2D = { i0: int; i1: int }
 
 
     /// 3D point representation
-    type Point3D = { x0: int; x1: int; x2: int }
+    type Point3D = { i0: int; i1: int; i2: int }
 
 
     /// 4D point representation
-    type Point4D = { x0: int; x1: int; x2: int; x3: int }
+    type Point4D = { i0: int; i1: int; i2: int; i3: int }
 
 
     /// 5D point representation

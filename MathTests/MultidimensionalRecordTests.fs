@@ -127,7 +127,7 @@ module MultidimensionalRecordTests =
 
                     // Check if point is on the hypersphere (circle in 2D)
                     if isNearHypersphere radius epsilon [|x; y|] then
-                        values.Add({ x = { x0 = i; x1 = j }; value = 1.0 })
+                        values.Add({ x = { i0 = i; i1 = j }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -187,7 +187,7 @@ module MultidimensionalRecordTests =
 
                         // Check if point is on the hypersphere (sphere in 3D)
                         if isNearHypersphere radius epsilon [|x; y; z|] then
-                            values.Add({ x = { x0 = i; x1 = j; x2 = k }; value = 1.0 })
+                            values.Add({ x = { i0 = i; i1 = j; i2 = k }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -262,7 +262,7 @@ module MultidimensionalRecordTests =
 
                             // Check if point is on the hypersphere
                             if isNearHypersphere radius epsilon [|x0; x1; x2; x3|] then
-                                values.Add({ x = { x0 = i; x1 = j; x2 = k; x3 = l }; value = 1.0 })
+                                values.Add({ x = { i0 = i; i1 = j; i2 = k; i3 = l }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -795,7 +795,7 @@ module MultidimensionalRecordTests =
             let mutable actualCount = 0L
             for i in 0..(d-1) do
                 for j in 0..(d-1) do
-                    let point = { x0 = i; x1 = j }
+                    let point = { i0 = i; i1 = j }
                     let connections = matrix.x_y(point).getValues() |> Seq.length
                     actualCount <- actualCount + int64 connections
 
@@ -820,7 +820,7 @@ module MultidimensionalRecordTests =
             for i in 0..(d-1) do
                 for j in 0..(d-1) do
                     for m in 0..(d-1) do
-                        let point = { x0 = i; x1 = j; x2 = m }
+                        let point = { i0 = i; i1 = j; i2 = m }
                         let connections = matrix.x_y(point).getValues() |> Seq.length
                         actualCount <- actualCount + int64 connections
 
@@ -846,7 +846,7 @@ module MultidimensionalRecordTests =
                 for j in 0..(d-1) do
                     for m in 0..(d-1) do
                         for n in 0..(d-1) do
-                            let point = { x0 = i; x1 = j; x2 = m; x3 = n }
+                            let point = { i0 = i; i1 = j; i2 = m; i3 = n }
                             let connections = matrix.x_y(point).getValues() |> Seq.length
                             actualCount <- actualCount + int64 connections
 

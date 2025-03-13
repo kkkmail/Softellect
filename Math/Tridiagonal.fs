@@ -37,8 +37,8 @@ module Tridiagonal =
 
             // Count how many boundaries this point touches
             let boundaryCount =
-                (if point.x0 = 0 || point.x0 = d - 1 then 1 else 0) +
-                (if point.x1 = 0 || point.x1 = d - 1 then 1 else 0)
+                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
+                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0)
 
             // Select appropriate probability values based on boundary count
             let (stay_prob, move_prob) =
@@ -52,12 +52,12 @@ module Tridiagonal =
             values.Add({ x = point; value = stay_prob })
 
             // Off-diagonal in x0 direction
-            if point.x0 > 0 then values.Add({ x = { point with x0 = point.x0 - 1 }; value = move_prob })
-            if point.x0 < d - 1 then values.Add({ x = { point with x0 = point.x0 + 1 }; value = move_prob })
+            if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
+            if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
 
             // Off-diagonal in x1 direction
-            if point.x1 > 0 then values.Add({ x = { point with x1 = point.x1 - 1 }; value = move_prob })
-            if point.x1 < d - 1 then values.Add({ x = { point with x1 = point.x1 + 1 }; value = move_prob })
+            if point.i1 > 0 then values.Add({ x = { point with i1 = point.i1 - 1 }; value = move_prob })
+            if point.i1 < d - 1 then values.Add({ x = { point with i1 = point.i1 + 1 }; value = move_prob })
 
             SparseArray.create (values.ToArray())
 
@@ -100,9 +100,9 @@ module Tridiagonal =
 
             // Count how many boundaries this point touches
             let boundaryCount =
-                (if point.x0 = 0 || point.x0 = d - 1 then 1 else 0) +
-                (if point.x1 = 0 || point.x1 = d - 1 then 1 else 0) +
-                (if point.x2 = 0 || point.x2 = d - 1 then 1 else 0)
+                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
+                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
+                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0)
 
             // Select appropriate probability values based on boundary count
             let (stay_prob, move_prob) =
@@ -117,16 +117,16 @@ module Tridiagonal =
             values.Add({ x = point; value = stay_prob })
 
             // Off-diagonal in x0 direction
-            if point.x0 > 0 then values.Add({ x = { point with x0 = point.x0 - 1 }; value = move_prob })
-            if point.x0 < d - 1 then values.Add({ x = { point with x0 = point.x0 + 1 }; value = move_prob })
+            if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
+            if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
 
             // Off-diagonal in x1 direction
-            if point.x1 > 0 then values.Add({ x = { point with x1 = point.x1 - 1 }; value = move_prob })
-            if point.x1 < d - 1 then values.Add({ x = { point with x1 = point.x1 + 1 }; value = move_prob })
+            if point.i1 > 0 then values.Add({ x = { point with i1 = point.i1 - 1 }; value = move_prob })
+            if point.i1 < d - 1 then values.Add({ x = { point with i1 = point.i1 + 1 }; value = move_prob })
 
             // Off-diagonal in x2 direction
-            if point.x2 > 0 then values.Add({ x = { point with x2 = point.x2 - 1 }; value = move_prob })
-            if point.x2 < d - 1 then values.Add({ x = { point with x2 = point.x2 + 1 }; value = move_prob })
+            if point.i2 > 0 then values.Add({ x = { point with i2 = point.i2 - 1 }; value = move_prob })
+            if point.i2 < d - 1 then values.Add({ x = { point with i2 = point.i2 + 1 }; value = move_prob })
 
             SparseArray.create (values.ToArray())
 
@@ -164,10 +164,10 @@ module Tridiagonal =
 
             // Count how many boundaries this point touches
             let boundaryCount =
-                (if point.x0 = 0 || point.x0 = d - 1 then 1 else 0) +
-                (if point.x1 = 0 || point.x1 = d - 1 then 1 else 0) +
-                (if point.x2 = 0 || point.x2 = d - 1 then 1 else 0) +
-                (if point.x3 = 0 || point.x3 = d - 1 then 1 else 0)
+                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
+                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
+                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
+                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0)
 
             // Select appropriate probability values based on boundary count
             let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
@@ -176,20 +176,20 @@ module Tridiagonal =
             values.Add({ x = point; value = stay_prob })
 
             // Off-diagonal in x0 direction
-            if point.x0 > 0 then values.Add({ x = { point with x0 = point.x0 - 1 }; value = move_prob })
-            if point.x0 < d - 1 then values.Add({ x = { point with x0 = point.x0 + 1 }; value = move_prob })
+            if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
+            if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
 
             // Off-diagonal in x1 direction
-            if point.x1 > 0 then values.Add({ x = { point with x1 = point.x1 - 1 }; value = move_prob })
-            if point.x1 < d - 1 then values.Add({ x = { point with x1 = point.x1 + 1 }; value = move_prob })
+            if point.i1 > 0 then values.Add({ x = { point with i1 = point.i1 - 1 }; value = move_prob })
+            if point.i1 < d - 1 then values.Add({ x = { point with i1 = point.i1 + 1 }; value = move_prob })
 
             // Off-diagonal in x2 direction
-            if point.x2 > 0 then values.Add({ x = { point with x2 = point.x2 - 1 }; value = move_prob })
-            if point.x2 < d - 1 then values.Add({ x = { point with x2 = point.x2 + 1 }; value = move_prob })
+            if point.i2 > 0 then values.Add({ x = { point with i2 = point.i2 - 1 }; value = move_prob })
+            if point.i2 < d - 1 then values.Add({ x = { point with i2 = point.i2 + 1 }; value = move_prob })
 
             // Off-diagonal in x3 direction
-            if point.x3 > 0 then values.Add({ x = { point with x3 = point.x3 - 1 }; value = move_prob })
-            if point.x3 < d - 1 then values.Add({ x = { point with x3 = point.x3 + 1 }; value = move_prob })
+            if point.i3 > 0 then values.Add({ x = { point with i3 = point.i3 - 1 }; value = move_prob })
+            if point.i3 < d - 1 then values.Add({ x = { point with i3 = point.i3 + 1 }; value = move_prob })
 
             SparseArray.create (values.ToArray())
 

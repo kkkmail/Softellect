@@ -18,7 +18,7 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix2D d a
 
         // Create a sparse array with a single point in the middle
-        let centerPoint = { x0 = 2; x1 = 2 }
+        let centerPoint = { i0 = 2; i1 = 2 }
         let initialValue = 100L // Start with 100 elements
         let initialArray = SparseArray.create [| { x = centerPoint; value = initialValue } |]
 
