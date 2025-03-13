@@ -406,74 +406,65 @@ module Primitives =
         | DynamicSparseArrayType
 
 
-    type DomainRange =
-        {
-            minValue : double
-            maxValue : double
-        }
-
-        member d.range = d.maxValue - d.minValue
-
-
-    /// Number of intervals in the domain.
-    type DomainIntervals =
-        | DomainIntervals of int
-
-        member r.value = let (DomainIntervals v) = r in v
-        static member defaultValue = DomainIntervals 100
-
-
-    /// Describes a function domain suitable for integral approximation.
-    /// Equidistant grid is used to reduce the number of multiplications.
-    type Domain =
-        {
-            points : Vector<double>
-            step : double
-            domainRange : DomainRange
-        }
-
-        member d.noOfIntervals = d.points.value.Length - 1 |> DomainIntervals
-        member d.normalize v = v * d.step
-
-        /// Number of points is (noOfIntervals + 1).
-        static member create (n : DomainIntervals) (r : DomainRange) =
-            let noOfIntervals = n.value
-            let range = r.range
-            let rn = range / (double noOfIntervals)
-            let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
-
-            {
-                points = Vector points
-                step = range / (double noOfIntervals)
-                domainRange = r
-            }
-
-
-    type DomainParams =
-        {
-            domainIntervals : DomainIntervals
-            domainRange : DomainRange
-        }
-
-        member dd.domain() = Domain.create dd.domainIntervals dd.domainRange
-
-
-    /// A multi-dimensional domain in cartesian coordinates.
-    type MultiDimensionalDomain =
-        | MultiDimensionalDomain of Domain[]
-
-        member m.value = let (MultiDimensionalDomain v) = m in v
-        static member create (d : DomainParams[]) = d |> Array.map _.domain() |> MultiDimensionalDomain
-
-
-    // /// Data that describes a rectangle in x * y space.
-    // type Domain2D =
+    // type DomainRange =
     //     {
-    //         xDomain : Domain
-    //         yDomain : Domain
+    //         minValue : double
+    //         maxValue : double
     //     }
     //
-    //     member d.normalize v = v * d.xDomain.step * d.yDomain.step
+    //     member d.range = d.maxValue - d.minValue
+    //
+    //
+    // /// Number of intervals in the domain.
+    // type DomainIntervals =
+    //     | DomainIntervals of int
+    //
+    //     member r.value = let (DomainIntervals v) = r in v
+    //     static member defaultValue = DomainIntervals 100
+    //
+    //
+    // /// Describes a function domain suitable for integral approximation.
+    // /// Equidistant grid is used to reduce the number of multiplications.
+    // type Domain =
+    //     {
+    //         points : Vector<double>
+    //         step : double
+    //         domainRange : DomainRange
+    //     }
+    //
+    //     member d.noOfIntervals = d.points.value.Length - 1 |> DomainIntervals
+    //     member d.normalize v = v * d.step
+    //
+    //     /// Number of points is (noOfIntervals + 1).
+    //     static member create (n : DomainIntervals, r : DomainRange) =
+    //         let noOfIntervals = n.value
+    //         let range = r.range
+    //         let rn = range / (double noOfIntervals)
+    //         let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
+    //
+    //         {
+    //             points = Vector points
+    //             step = range / (double noOfIntervals)
+    //             domainRange = r
+    //         }
+    //
+    //
+    // /// A multi-dimensional domain in cartesian coordinates.
+    // type MultiDimensionalDomain =
+    //     | MultiDimensionalDomain of Domain[]
+    //
+    //     member m.value = let (MultiDimensionalDomain v) = m in v
+    //     static member create (d : DomainParams[]) = d |> Array.map _.domain() |> MultiDimensionalDomain
+    //
+    //
+    // // /// Data that describes a rectangle in x * y space.
+    // // type Domain2D =
+    // //     {
+    // //         xDomain : Domain
+    // //         yDomain : Domain
+    // //     }
+    // //
+    // //     member d.normalize v = v * d.xDomain.step * d.yDomain.step
 
 
     let factorial n = [ 1..n ] |> List.fold (*) 1
@@ -561,6 +552,410 @@ module Primitives =
     //     member ta.comparisonFactors = ta.taylorApproximation2D.comparisonFactors
 
 
+    // ==============================================
+
+    type DomainRange =
+        {
+            minValue : double
+            maxValue : double
+        }
+
+        member d.range = d.maxValue - d.minValue
+
+    /// Number of intervals in the domain.
+    type DomainIntervals =
+        | DomainIntervals of int
+
+        member r.value = let (DomainIntervals v) = r in v
+        static member defaultValue = DomainIntervals 100
+
+    /// Describes a function domain suitable for integral approximation.
+    /// Equidistant grid is used to reduce the number of multiplications.
+    type Domain =
+        {
+            points : double[]
+            step : double
+            domainRange : DomainRange
+        }
+
+        member d.noOfIntervals = d.points.Length - 1 |> DomainIntervals
+        member d.normalize v = v * d.step
+
+        /// Number of points is (noOfIntervals + 1).
+        static member create (n : DomainIntervals, r : DomainRange) =
+            let noOfIntervals = n.value
+            let range = r.range
+            let rn = range / (double noOfIntervals)
+            let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
+
+            {
+                points = points
+                step = range / (double noOfIntervals)
+                domainRange = r
+            }
+
+    /// 2D domain representation
+    type Domain2D =
+        {
+            d0 : Domain
+            d1 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+            }
+
+    /// 3D domain representation
+    type Domain3D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+            }
+
+    /// 4D domain representation
+    type Domain4D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+            d3 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+                d3 = Domain.create(n, r)
+            }
+
+    /// 5D domain representation
+    type Domain5D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+            d3 : Domain
+            d4 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+                d3 = Domain.create(n, r)
+                d4 = Domain.create(n, r)
+            }
+
+    /// 6D domain representation
+    type Domain6D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+            d3 : Domain
+            d4 : Domain
+            d5 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+                d3 = Domain.create(n, r)
+                d4 = Domain.create(n, r)
+                d5 = Domain.create(n, r)
+            }
+
+    /// 7D domain representation
+    type Domain7D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+            d3 : Domain
+            d4 : Domain
+            d5 : Domain
+            d6 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+                d3 = Domain.create(n, r)
+                d4 = Domain.create(n, r)
+                d5 = Domain.create(n, r)
+                d6 = Domain.create(n, r)
+            }
+
+    /// 8D domain representation
+    type Domain8D =
+        {
+            d0 : Domain
+            d1 : Domain
+            d2 : Domain
+            d3 : Domain
+            d4 : Domain
+            d5 : Domain
+            d6 : Domain
+            d7 : Domain
+        }
+
+        static member create (n : DomainIntervals, r : DomainRange) =
+            {
+                d0 = Domain.create(n, r)
+                d1 = Domain.create(n, r)
+                d2 = Domain.create(n, r)
+                d3 = Domain.create(n, r)
+                d4 = Domain.create(n, r)
+                d5 = Domain.create(n, r)
+                d6 = Domain.create(n, r)
+                d7 = Domain.create(n, r)
+            }
+
+    /// 1D coordinate representation
+    type Coord1D =
+        {
+            x0 : double
+        }
+
+    /// 2D coordinate representation
+    type Coord2D =
+        {
+            x0 : double
+            x1 : double
+        }
+
+    /// 3D coordinate representation
+    type Coord3D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+        }
+
+    /// 4D coordinate representation
+    type Coord4D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+            x3 : double
+        }
+
+    /// 5D coordinate representation
+    type Coord5D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+            x3 : double
+            x4 : double
+        }
+
+    /// 6D coordinate representation
+    type Coord6D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+            x3 : double
+            x4 : double
+            x5 : double
+        }
+
+    /// 7D coordinate representation
+    type Coord7D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+            x3 : double
+            x4 : double
+            x5 : double
+            x6 : double
+        }
+
+    /// 8D coordinate representation
+    type Coord8D =
+        {
+            x0 : double
+            x1 : double
+            x2 : double
+            x3 : double
+            x4 : double
+            x5 : double
+            x6 : double
+            x7 : double
+        }
+
+    /// 1D point representation
+    type Point1D =
+        {
+            i0 : int
+        }
+
+        member p.toCoord (d : Domain) =
+            {
+                x0 = d.points[p.i0]
+            }
+
+    /// 2D point representation
+    type Point2D =
+        {
+            i0 : int
+            i1 : int
+        }
+
+        member p.toCoord (d : Domain2D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+            }
+
+    /// 3D point representation
+    type Point3D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+        }
+
+        member p.toCoord (d : Domain3D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+            }
+
+    /// 4D point representation
+    type Point4D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+            i3 : int
+        }
+
+        member p.toCoord (d : Domain4D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+                x3 = d.d3.points[p.i3]
+            }
+
+    /// 5D point representation
+    type Point5D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+            i3 : int
+            i4 : int
+        }
+
+        member p.toCoord (d : Domain5D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+                x3 = d.d3.points[p.i3]
+                x4 = d.d4.points[p.i4]
+            }
+
+    /// 6D point representation
+    type Point6D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+            i3 : int
+            i4 : int
+            i5 : int
+        }
+
+        member p.toCoord (d : Domain6D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+                x3 = d.d3.points[p.i3]
+                x4 = d.d4.points[p.i4]
+                x5 = d.d5.points[p.i5]
+            }
+
+    /// 7D point representation
+    type Point7D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+            i3 : int
+            i4 : int
+            i5 : int
+            i6 : int
+        }
+
+        member p.toCoord (d : Domain7D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+                x3 = d.d3.points[p.i3]
+                x4 = d.d4.points[p.i4]
+                x5 = d.d5.points[p.i5]
+                x6 = d.d6.points[p.i6]
+            }
+
+    /// 8D point representation
+    type Point8D =
+        {
+            i0 : int
+            i1 : int
+            i2 : int
+            i3 : int
+            i4 : int
+            i5 : int
+            i6 : int
+            i7 : int
+        }
+
+        member p.toCoord (d : Domain8D) =
+            {
+                x0 = d.d0.points[p.i0]
+                x1 = d.d1.points[p.i1]
+                x2 = d.d2.points[p.i2]
+                x3 = d.d3.points[p.i3]
+                x4 = d.d4.points[p.i4]
+                x5 = d.d5.points[p.i5]
+                x6 = d.d6.points[p.i6]
+                x7 = d.d7.points[p.i7]
+            }
+
+    type DomainParams =
+        {
+            domainIntervals : DomainIntervals
+            domainRange : DomainRange
+        }
+
+        member dd.domain() = Domain.create (dd.domainIntervals, dd.domainRange)
+
+
     /// TODO kk:20231017 - Only scalar eps is supported for now.
     /// Type to describe a function used to calculate eps in mutation probability calculations.
     type EpsFunc =
@@ -594,38 +989,6 @@ module Primitives =
             maxIndexDiff : int option
             epsFuncValue : EpsFuncValue
         }
-
-
-    /// 1D point representation
-    type Point1D = { i0: int }
-
-
-    /// 2D point representation
-    type Point2D = { i0: int; i1: int }
-
-
-    /// 3D point representation
-    type Point3D = { i0: int; i1: int; i2: int }
-
-
-    /// 4D point representation
-    type Point4D = { i0: int; i1: int; i2: int; i3: int }
-
-
-    /// 5D point representation
-    type Point5D = { i0: int; i1: int; i2: int; i3: int; i4: int }
-
-
-    /// 6D point representation
-    type Point6D = { i0: int; i1: int; i2: int; i3: int; i4: int; i5: int }
-
-
-    /// 7D point representation
-    type Point7D = { i0: int; i1: int; i2: int; i3: int; i4: int; i5: int; i6: int }
-
-
-    /// 8D point representation
-    type Point8D = { i0: int; i1: int; i2: int; i3: int; i4: int; i5: int; i6: int; i7: int }
 
 module ZeroThreshold =
     let defaultValue = Primitives.ZeroThreshold 1.0e-05
