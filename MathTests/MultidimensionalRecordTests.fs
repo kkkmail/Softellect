@@ -346,7 +346,7 @@ module MultidimensionalRecordTests =
 
                                 // Check if point is on the hypersphere
                                 if isNearHypersphere radius epsilon [|x0; x1; x2; x3; x4|] then
-                                    values.Add({ x = { x0 = i; x1 = j; x2 = k; x3 = l; x4 = m }; value = 1.0 })
+                                    values.Add({ x = { i0 = i; i1 = j; i2 = k; i3 = l; i4 = m }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -439,7 +439,7 @@ module MultidimensionalRecordTests =
 
                                     // Check if point is on the hypersphere
                                     if isNearHypersphere radius epsilon [|x0; x1; x2; x3; x4; x5|] then
-                                        values.Add({ x = { x0 = i; x1 = j; x2 = k; x3 = l; x4 = m; x5 = n }; value = 1.0 })
+                                        values.Add({ x = { i0 = i; i1 = j; i2 = k; i3 = l; i4 = m; i5 = n }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -539,13 +539,13 @@ module MultidimensionalRecordTests =
                         let point =
                             let coords = List.rev coords
                             {
-                                x0 = List.item 0 coords
-                                x1 = List.item 1 coords
-                                x2 = List.item 2 coords
-                                x3 = List.item 3 coords
-                                x4 = List.item 4 coords
-                                x5 = List.item 5 coords
-                                x6 = List.item 6 coords
+                                i0 = List.item 0 coords
+                                i1 = List.item 1 coords
+                                i2 = List.item 2 coords
+                                i3 = List.item 3 coords
+                                i4 = List.item 4 coords
+                                i5 = List.item 5 coords
+                                i6 = List.item 6 coords
                             }
                         values.Add({ x = point; value = 1.0 })
                 else
@@ -659,14 +659,14 @@ module MultidimensionalRecordTests =
                         let point =
                             let coords = List.rev coords
                             {
-                                x0 = List.item 0 coords
-                                x1 = List.item 1 coords
-                                x2 = List.item 2 coords
-                                x3 = List.item 3 coords
-                                x4 = List.item 4 coords
-                                x5 = List.item 5 coords
-                                x6 = List.item 6 coords
-                                x7 = List.item 7 coords
+                                i0 = List.item 0 coords
+                                i1 = List.item 1 coords
+                                i2 = List.item 2 coords
+                                i3 = List.item 3 coords
+                                i4 = List.item 4 coords
+                                i5 = List.item 5 coords
+                                i6 = List.item 6 coords
+                                i7 = List.item 7 coords
                             }
                         values.Add({ x = point; value = 1.0 })
                 else

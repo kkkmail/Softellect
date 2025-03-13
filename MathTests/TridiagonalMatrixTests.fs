@@ -382,7 +382,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
                 for x2 in 0 .. d - 1 do
                     for x3 in 0 .. d - 1 do
                         for x4 in 0 .. d - 1 do
-                            let point = { x0 = x0; x1 = x1; x2 = x2; x3 = x3; x4 = x4 }
+                            let point = { i0 = x0; i1 = x1; i2 = x2; i3 = x3; i4 = x4 }
                             let values = matrix.y_x point
 
                             // Sum up all probabilities from this point
@@ -401,22 +401,22 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test various boundary conditions
         let testCases = [
             // Internal point (center of the grid)
-            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1 }, 11)  // Self + 10 neighbors
+            ({ i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1 }, 11)  // Self + 10 neighbors
 
             // Point touching 1 boundary
-            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1 }, 10)  // Self + 9 neighbors
+            ({ i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1 }, 10)  // Self + 9 neighbors
 
             // Point touching 2 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1 }, 9)   // Self + 8 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 1; i3 = 1; i4 = 1 }, 9)   // Self + 8 neighbors
 
             // Point touching 3 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1 }, 8)   // Self + 7 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1 }, 8)   // Self + 7 neighbors
 
             // Point touching 4 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1 }, 7)   // Self + 6 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 1 }, 7)   // Self + 6 neighbors
 
             // Corner point (touching 5 boundaries)
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0 }, 6)   // Self + 5 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0 }, 6)   // Self + 5 neighbors
         ]
 
         // Verify each test case
@@ -437,7 +437,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix5D d a
 
         // Internal point
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1 }
         let internalValues = matrix.y_x internalPoint
 
         // Get the probability of moving to any neighbor for internal point
@@ -458,9 +458,9 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
             // Internal point (no boundaries)
             internalPoint
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1 }
             // Point touching 2 boundaries
-            { x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1 }
+            { i0 = 0; i1 = 0; i2 = 1; i3 = 1; i4 = 1 }
         ]
 
         let mutable lastProb = 0.0
@@ -505,13 +505,13 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for sample points rather than full grid to keep test efficient
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }
             // Point touching multiple boundaries
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1 }
             // Corner point
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0 }
         ]
 
         for point in testPoints do
@@ -534,25 +534,25 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test various boundary conditions
         let testCases = [
             // Internal point (center of the grid)
-            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 13)  // Self + 12 neighbors
+            ({ i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }, 13)  // Self + 12 neighbors
 
             // Point touching 1 boundary
-            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 12)  // Self + 11 neighbors
+            ({ i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }, 12)  // Self + 11 neighbors
 
             // Point touching 2 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }, 11)  // Self + 10 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }, 11)  // Self + 10 neighbors
 
             // Point touching 3 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1 }, 10)  // Self + 9 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1 }, 10)  // Self + 9 neighbors
 
             // Point touching 4 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1 }, 9)   // Self + 8 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 1; i5 = 1 }, 9)   // Self + 8 neighbors
 
             // Point touching 5 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1 }, 8)   // Self + 7 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 1 }, 8)   // Self + 7 neighbors
 
             // Corner point (touching 6 boundaries)
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }, 7)   // Self + 6 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0 }, 7)   // Self + 6 neighbors
         ]
 
         // Verify each test case
@@ -575,11 +575,11 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for representative points
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1 }
             // Corner point
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0 }
         ]
 
         for point in testPoints do
@@ -610,13 +610,13 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for sample points rather than full grid to keep test efficient
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }
             // Point touching multiple boundaries
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }
             // Corner point
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0 }
         ]
 
         for point in testPoints do
@@ -639,28 +639,28 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test various boundary conditions
         let testCases = [
             // Internal point (center of the grid)
-            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 15)  // Self + 14 neighbors
+            ({ i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }, 15)  // Self + 14 neighbors
 
             // Point touching 1 boundary
-            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 14)  // Self + 13 neighbors
+            ({ i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }, 14)  // Self + 13 neighbors
 
             // Point touching 2 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 13)  // Self + 12 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }, 13)  // Self + 12 neighbors
 
             // Point touching 3 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }, 12)  // Self + 11 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }, 12)  // Self + 11 neighbors
 
             // Point touching 4 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1; x6 = 1 }, 11)  // Self + 10 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 1; i5 = 1; i6 = 1 }, 11)  // Self + 10 neighbors
 
             // Point touching 5 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1; x6 = 1 }, 10)  // Self + 9 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 1; i6 = 1 }, 10)  // Self + 9 neighbors
 
             // Point touching 6 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 1 }, 9)   // Self + 8 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 1 }, 9)   // Self + 8 neighbors
 
             // Corner point (touching 7 boundaries)
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0 }, 8)   // Self + 7 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0 }, 8)   // Self + 7 neighbors
         ]
 
         // Verify each test case
@@ -680,7 +680,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix7D d a
 
         // Internal point
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }
         let internalValues = matrix.y_x internalPoint
 
         // Get the probability of moving to any neighbor for internal point
@@ -698,7 +698,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         output.WriteLine $"Internal point {internalPoint}: move probability = {internalNeighborProb}"
 
         // Check boundary point (should have higher neighbor probability)
-        let boundaryPoint = { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1 }
+        let boundaryPoint = { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1 }
         let boundaryValues = matrix.y_x boundaryPoint
 
         let boundaryNeighborProb =
@@ -729,13 +729,13 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for sample points rather than full grid to keep test efficient
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
             // Point touching multiple boundaries
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
             // Corner point
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0 }
         ]
 
         for point in testPoints do
@@ -758,31 +758,31 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test various boundary conditions
         let testCases = [
             // Internal point (center of the grid)
-            ({ x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 17)  // Self + 16 neighbors
+            ({ i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }, 17)  // Self + 16 neighbors
 
             // Point touching 1 boundary
-            ({ x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 16)  // Self + 15 neighbors
+            ({ i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }, 16)  // Self + 15 neighbors
 
             // Point touching 2 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 15)  // Self + 14 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }, 15)  // Self + 14 neighbors
 
             // Point touching 3 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 14)  // Self + 13 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }, 14)  // Self + 13 neighbors
 
             // Point touching 4 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }, 13)  // Self + 12 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }, 13)  // Self + 12 neighbors
 
             // Point touching 5 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 1; x6 = 1; x7 = 1 }, 12)  // Self + 11 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 1; i6 = 1; i7 = 1 }, 12)  // Self + 11 neighbors
 
             // Point touching 6 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 1; x7 = 1 }, 11)  // Self + 10 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 1; i7 = 1 }, 11)  // Self + 10 neighbors
 
             // Point touching 7 boundaries
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 1 }, 10)  // Self + 9 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 1 }, 10)  // Self + 9 neighbors
 
             // Corner point (touching 8 boundaries)
-            ({ x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }, 9)   // Self + 8 neighbors
+            ({ i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0 }, 9)   // Self + 8 neighbors
         ]
 
         // Verify each test case
@@ -805,11 +805,11 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         // Test for representative points
         let testPoints = [
             // Internal point
-            { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
             // Point touching 1 boundary
-            { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+            { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
             // Corner point
-            { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+            { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0 }
         ]
 
         for point in testPoints do
@@ -836,7 +836,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         let matrix = createTridiagonalMatrix8D d a
 
         // Internal point
-        let internalPoint = { x0 = 1; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+        let internalPoint = { i0 = 1; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
         let internalValues = matrix.y_x internalPoint
 
         // Get the probability of moving to any neighbor for internal point
@@ -854,7 +854,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         output.WriteLine $"Internal point {internalPoint}: move probability = {internalNeighborProb}"
 
         // Check boundary point (should have higher neighbor probability)
-        let boundaryPoint = { x0 = 0; x1 = 1; x2 = 1; x3 = 1; x4 = 1; x5 = 1; x6 = 1; x7 = 1 }
+        let boundaryPoint = { i0 = 0; i1 = 1; i2 = 1; i3 = 1; i4 = 1; i5 = 1; i6 = 1; i7 = 1 }
         let boundaryValues = matrix.y_x boundaryPoint
 
         let boundaryNeighborProb =
@@ -874,7 +874,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         |> Array.iter (fun v -> v.value.Should().BeApproximately(boundaryNeighborProb, 1e-10) |> ignore)
 
         // Check corner point (should have even higher neighbor probability)
-        let cornerPoint = { x0 = 0; x1 = 0; x2 = 0; x3 = 0; x4 = 0; x5 = 0; x6 = 0; x7 = 0 }
+        let cornerPoint = { i0 = 0; i1 = 0; i2 = 0; i3 = 0; i4 = 0; i5 = 0; i6 = 0; i7 = 0 }
         let cornerValues = matrix.y_x cornerPoint
 
         let cornerNeighborProb =
