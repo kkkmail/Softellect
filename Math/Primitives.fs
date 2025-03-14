@@ -727,11 +727,34 @@ module Primitives =
                 d7 = Domain.create(n, r)
             }
 
+
     /// 1D coordinate representation
     type Coord1D =
         {
             x0 : double
         }
+
+        static member Zero = { x0 = 0.0 }
+        static member One = { x0 = 1.0 }
+
+        static member (+) (a : Coord1D, b : Coord1D) =
+            { x0 = a.x0 + b.x0 }
+
+        static member (-) (a : Coord1D, b : Coord1D) =
+            { x0 = a.x0 - b.x0 }
+
+        static member (*) (a : Coord1D, b : Coord1D) =
+            { x0 = a.x0 * b.x0 }
+
+        static member (/) (a : Coord1D, b : Coord1D) =
+            { x0 = a.x0 / b.x0 }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord1D) =
+            { x0 = d * a.x0 }
+
+        static member (*) (a : Coord1D, d : double) =
+            d * a
 
     /// 2D coordinate representation
     type Coord2D =
@@ -739,6 +762,28 @@ module Primitives =
             x0 : double
             x1 : double
         }
+
+        static member Zero = { x0 = 0.0; x1 = 0.0 }
+        static member One = { x0 = 1.0; x1 = 1.0 }
+
+        static member (+) (a : Coord2D, b : Coord2D) =
+            { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1 }
+
+        static member (-) (a : Coord2D, b : Coord2D) =
+            { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1 }
+
+        static member (*) (a : Coord2D, b : Coord2D) =
+            { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1 }
+
+        static member (/) (a : Coord2D, b : Coord2D) =
+            { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1 }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord2D) =
+            { x0 = d * a.x0; x1 = d * a.x1 }
+
+        static member (*) (a : Coord2D, d : double) =
+            d * a
 
     /// 3D coordinate representation
     type Coord3D =
@@ -748,6 +793,28 @@ module Primitives =
             x2 : double
         }
 
+        static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0 }
+        static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0 }
+
+        static member (+) (a : Coord3D, b : Coord3D) =
+            { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2 }
+
+        static member (-) (a : Coord3D, b : Coord3D) =
+            { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2 }
+
+        static member (*) (a : Coord3D, b : Coord3D) =
+            { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2 }
+
+        static member (/) (a : Coord3D, b : Coord3D) =
+            { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2 }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord3D) =
+            { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2 }
+
+        static member (*) (a : Coord3D, d : double) =
+            d * a
+
     /// 4D coordinate representation
     type Coord4D =
         {
@@ -756,6 +823,28 @@ module Primitives =
             x2 : double
             x3 : double
         }
+
+        static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0 }
+        static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0 }
+
+        static member (+) (a : Coord4D, b : Coord4D) =
+            { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3 }
+
+        static member (-) (a : Coord4D, b : Coord4D) =
+            { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3 }
+
+        static member (*) (a : Coord4D, b : Coord4D) =
+            { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3 }
+
+        static member (/) (a : Coord4D, b : Coord4D) =
+            { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3 }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord4D) =
+            { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3 }
+
+        static member (*) (a : Coord4D, d : double) =
+            d * a
 
     /// 5D coordinate representation
     type Coord5D =
@@ -767,6 +856,43 @@ module Primitives =
             x4 : double
         }
 
+        static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0 }
+        static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0 }
+
+        static member (+) (a : Coord5D, b : Coord5D) =
+            {
+                x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2;
+                x3 = a.x3 + b.x3; x4 = a.x4 + b.x4
+            }
+
+        static member (-) (a : Coord5D, b : Coord5D) =
+            {
+                x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2;
+                x3 = a.x3 - b.x3; x4 = a.x4 - b.x4
+            }
+
+        static member (*) (a : Coord5D, b : Coord5D) =
+            {
+                x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2;
+                x3 = a.x3 * b.x3; x4 = a.x4 * b.x4
+            }
+
+        static member (/) (a : Coord5D, b : Coord5D) =
+            {
+                x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2;
+                x3 = a.x3 / b.x3; x4 = a.x4 / b.x4
+            }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord5D) =
+            {
+                x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2;
+                x3 = d * a.x3; x4 = d * a.x4
+            }
+
+        static member (*) (a : Coord5D, d : double) =
+            d * a
+
     /// 6D coordinate representation
     type Coord6D =
         {
@@ -777,6 +903,46 @@ module Primitives =
             x4 : double
             x5 : double
         }
+
+        static member Zero =
+            { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0; x5 = 0.0 }
+
+        static member One =
+            { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0; x5 = 1.0 }
+
+        static member (+) (a : Coord6D, b : Coord6D) =
+            {
+                x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2;
+                x3 = a.x3 + b.x3; x4 = a.x4 + b.x4; x5 = a.x5 + b.x5
+            }
+
+        static member (-) (a : Coord6D, b : Coord6D) =
+            {
+                x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2;
+                x3 = a.x3 - b.x3; x4 = a.x4 - b.x4; x5 = a.x5 - b.x5
+            }
+
+        static member (*) (a : Coord6D, b : Coord6D) =
+            {
+                x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2;
+                x3 = a.x3 * b.x3; x4 = a.x4 * b.x4; x5 = a.x5 * b.x5
+            }
+
+        static member (/) (a : Coord6D, b : Coord6D) =
+            {
+                x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2;
+                x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5
+            }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord6D) =
+            {
+                x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2;
+                x3 = d * a.x3; x4 = d * a.x4; x5 = d * a.x5
+            }
+
+        static member (*) (a : Coord6D, d : double) =
+            d * a
 
     /// 7D coordinate representation
     type Coord7D =
@@ -790,6 +956,51 @@ module Primitives =
             x6 : double
         }
 
+        static member Zero =
+            { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0; x5 = 0.0; x6 = 0.0 }
+
+        static member One =
+            { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0; x5 = 1.0; x6 = 1.0 }
+
+        static member (+) (a : Coord7D, b : Coord7D) =
+            {
+                x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2;
+                x3 = a.x3 + b.x3; x4 = a.x4 + b.x4; x5 = a.x5 + b.x5;
+                x6 = a.x6 + b.x6
+            }
+
+        static member (-) (a : Coord7D, b : Coord7D) =
+            {
+                x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2;
+                x3 = a.x3 - b.x3; x4 = a.x4 - b.x4; x5 = a.x5 - b.x5;
+                x6 = a.x6 - b.x6
+            }
+
+        static member (*) (a : Coord7D, b : Coord7D) =
+            {
+                x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2;
+                x3 = a.x3 * b.x3; x4 = a.x4 * b.x4; x5 = a.x5 * b.x5;
+                x6 = a.x6 * b.x6
+            }
+
+        static member (/) (a : Coord7D, b : Coord7D) =
+            {
+                x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2;
+                x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5;
+                x6 = a.x6 / b.x6
+            }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord7D) =
+            {
+                x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2;
+                x3 = d * a.x3; x4 = d * a.x4; x5 = d * a.x5;
+                x6 = d * a.x6
+            }
+
+        static member (*) (a : Coord7D, d : double) =
+            d * a
+
     /// 8D coordinate representation
     type Coord8D =
         {
@@ -802,6 +1013,53 @@ module Primitives =
             x6 : double
             x7 : double
         }
+
+        static member Zero =
+            {
+                x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0;
+                x4 = 0.0; x5 = 0.0; x6 = 0.0; x7 = 0.0
+            }
+
+        static member One =
+            {
+                x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0;
+                x4 = 1.0; x5 = 1.0; x6 = 1.0; x7 = 1.0
+            }
+
+        static member (+) (a : Coord8D, b : Coord8D) =
+            {
+                x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3;
+                x4 = a.x4 + b.x4; x5 = a.x5 + b.x5; x6 = a.x6 + b.x6; x7 = a.x7 + b.x7
+            }
+
+        static member (-) (a : Coord8D, b : Coord8D) =
+            {
+                x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3;
+                x4 = a.x4 - b.x4; x5 = a.x5 - b.x5; x6 = a.x6 - b.x6; x7 = a.x7 - b.x7
+            }
+
+        static member (*) (a : Coord8D, b : Coord8D) =
+            {
+                x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3;
+                x4 = a.x4 * b.x4; x5 = a.x5 * b.x5; x6 = a.x6 * b.x6; x7 = a.x7 * b.x7
+            }
+
+        static member (/) (a : Coord8D, b : Coord8D) =
+            {
+                x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3;
+                x4 = a.x4 / b.x4; x5 = a.x5 / b.x5; x6 = a.x6 / b.x6; x7 = a.x7 / b.x7
+            }
+
+        // Scalar multiplication
+        static member (*) (d : double, a : Coord8D) =
+            {
+                x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3;
+                x4 = d * a.x4; x5 = d * a.x5; x6 = d * a.x6; x7 = d * a.x7
+            }
+
+        static member (*) (a : Coord8D, d : double) =
+            d * a
+
 
     /// 1D point representation
     type Point1D =
