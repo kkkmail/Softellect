@@ -727,7 +727,6 @@ module Primitives =
                 d7 = Domain.create(n, r)
             }
 
-
     /// 1D coordinate representation
     type Coord1D =
         {
@@ -758,6 +757,9 @@ module Primitives =
 
         static member (/) (a : Coord1D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0
 
     /// 2D coordinate representation
     type Coord2D =
@@ -790,6 +792,9 @@ module Primitives =
 
         static member (/) (a : Coord2D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1
 
     /// 3D coordinate representation
     type Coord3D =
@@ -824,6 +829,9 @@ module Primitives =
         static member (/) (a : Coord3D, d : double) =
             a * (1.0 / d)
 
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2
+
     /// 4D coordinate representation
     type Coord4D =
         {
@@ -857,6 +865,9 @@ module Primitives =
 
         static member (/) (a : Coord4D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2 + this.x3
 
     /// 5D coordinate representation
     type Coord5D =
@@ -907,6 +918,9 @@ module Primitives =
 
         static member (/) (a : Coord5D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4
 
     /// 6D coordinate representation
     type Coord6D =
@@ -961,6 +975,9 @@ module Primitives =
 
         static member (/) (a : Coord6D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5
 
     /// 7D coordinate representation
     type Coord7D =
@@ -1021,6 +1038,9 @@ module Primitives =
 
         static member (/) (a : Coord7D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6
 
     /// 8D coordinate representation
     type Coord8D =
@@ -1083,6 +1103,9 @@ module Primitives =
 
         static member (/) (a : Coord8D, d : double) =
             a * (1.0 / d)
+
+        // Sum of all coordinates
+        member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6 + this.x7
 
 
     /// 1D point representation
