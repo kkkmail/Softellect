@@ -32,6 +32,7 @@
         <Compile Include="TridiagonalMatrixTests.fs" />
         <Compile Include="PoissonEvolutionTests.fs" />
         <Compile Include="CoordTests.fs" />
+        <Compile Include="MomentTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

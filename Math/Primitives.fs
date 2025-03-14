@@ -756,6 +756,9 @@ module Primitives =
         static member (*) (a : Coord1D, d : double) =
             d * a
 
+        static member (/) (a : Coord1D, d : double) =
+            a * (1.0 / d)
+
     /// 2D coordinate representation
     type Coord2D =
         {
@@ -784,6 +787,9 @@ module Primitives =
 
         static member (*) (a : Coord2D, d : double) =
             d * a
+
+        static member (/) (a : Coord2D, d : double) =
+            a * (1.0 / d)
 
     /// 3D coordinate representation
     type Coord3D =
@@ -815,6 +821,9 @@ module Primitives =
         static member (*) (a : Coord3D, d : double) =
             d * a
 
+        static member (/) (a : Coord3D, d : double) =
+            a * (1.0 / d)
+
     /// 4D coordinate representation
     type Coord4D =
         {
@@ -845,6 +854,9 @@ module Primitives =
 
         static member (*) (a : Coord4D, d : double) =
             d * a
+
+        static member (/) (a : Coord4D, d : double) =
+            a * (1.0 / d)
 
     /// 5D coordinate representation
     type Coord5D =
@@ -892,6 +904,9 @@ module Primitives =
 
         static member (*) (a : Coord5D, d : double) =
             d * a
+
+        static member (/) (a : Coord5D, d : double) =
+            a * (1.0 / d)
 
     /// 6D coordinate representation
     type Coord6D =
@@ -943,6 +958,9 @@ module Primitives =
 
         static member (*) (a : Coord6D, d : double) =
             d * a
+
+        static member (/) (a : Coord6D, d : double) =
+            a * (1.0 / d)
 
     /// 7D coordinate representation
     type Coord7D =
@@ -1000,6 +1018,9 @@ module Primitives =
 
         static member (*) (a : Coord7D, d : double) =
             d * a
+
+        static member (/) (a : Coord7D, d : double) =
+            a * (1.0 / d)
 
     /// 8D coordinate representation
     type Coord8D =
@@ -1059,6 +1080,9 @@ module Primitives =
 
         static member (*) (a : Coord8D, d : double) =
             d * a
+
+        static member (/) (a : Coord8D, d : double) =
+            a * (1.0 / d)
 
 
     /// 1D point representation

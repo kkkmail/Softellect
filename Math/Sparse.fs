@@ -77,13 +77,20 @@ module Sparse =
         member inline r.convert converter =
             r.values |> Array.map (fun v -> v.convert converter) |> SparseArray.create
 
-        member inline r.moment converter projector n =
-            let xn =
-                r.values
-                |> Array.map (fun v -> (v.convert converter) * (pown (projector v.x) n))
-                |> Array.sum
+        member inline r.moment (converter : ^T -> ^V) (projector : ^I -> ^C ) (n : int) : ^C =
+            let c = r.values |> Array.map (fun v -> v.convert converter)
+            let x0 = c |> Array.sumBy _.value
 
-            xn
+            if x0 > LanguagePrimitives.GenericZero<'V>
+            then
+                let xn =
+                    c
+                    |> Array.map (fun v -> v.value * (pown (projector v.x) n))
+                    |> Array.sum
+
+                xn / x0
+            else
+                LanguagePrimitives.GenericZero<'C>
 
         static member inline (*) (a : SparseArray<'I, 'U>, b : 'U) : SparseArray<'I, 'U> =
             a.values |> Array.map (fun e -> e * b) |> SparseArray.create
