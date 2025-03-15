@@ -32,6 +32,7 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         // Create evolution parameter
         let evolutionParam = {
             getPoissonSampler = fun _ -> deterministicPoissonSampler
+            sampler = PoissonSingleSampler deterministicPoissonSampler
             toDouble = fun (n: int64) -> double n
             fromDouble = fun (d: double) -> int64 d
         }
@@ -43,7 +44,7 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
             }
 
         // Act
-        let evolvedArray = initialArray.evolve (evolutionParam, evolutionMatrix)
+        let evolvedArray = initialArray.evolve (evolutionParam, evolutionMatrix, 1.0)
 
         // Assert
         // Get all values in the evolved array
