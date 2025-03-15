@@ -149,10 +149,13 @@ module Sparse =
 
 
     /// A sparse matrix representation.
+    ///
     /// A sparse matrix is coded as two functions that return a sparse array for a given x or y.
-    /// This is done because the matrices that we are after are insanely huge, and we absolutely cannot store them in memory.
-    /// The  largest that we've run a matrix * vector multiplication test was about 3,906,250,000 x 3,906,250,000
-    /// for the total of about 1.5E+19 elements in size.
+    /// This is done that way because the matrices that we are after are insanely huge,
+    /// and they absolutely cannot be stored in memory.
+    ///
+    /// The  largest matrix that we've run a matrix * vector multiplication test
+    /// was about 3,906,250,000 x 3,906,250,000 matrix for the total of about 1.5E+19 elements in size.
     ///
     /// The caller is responsible for providing the correct functions that return the correct sparse arrays.
     /// One is not enough as recalculating the other is very time-consuming and likely impossible for very large matrices.
@@ -169,7 +172,6 @@ module Sparse =
             x_y : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given x.
             y_x : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given y.
         }
-
 
         /// Multiply a SparseMatrix by a SparseArray
         static member inline (*) (matrix : SparseMatrix<'I, 'T>, array : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
