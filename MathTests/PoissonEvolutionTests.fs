@@ -27,16 +27,23 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         let deterministicPoissonSampler (lambda: double) : int64 =
             int64 (Math.Round(lambda))
 
+        let getMultiplier = fun _ -> 1.0 // No scaling
+
         // Create evolution parameter
         let evolutionParam = {
             getPoissonSampler = fun _ -> deterministicPoissonSampler
-            getScalingFactor = fun _ -> 1.0 // No scaling
             toDouble = fun (n: int64) -> double n
             fromDouble = fun (d: double) -> int64 d
         }
 
+        let evolutionMatrix =
+            {
+                multiplier = Multiplier getMultiplier
+                evolutionMatrix = matrix
+            }
+
         // Act
-        let evolvedArray = initialArray.evolve evolutionParam matrix
+        let evolvedArray = initialArray.evolve (evolutionParam, evolutionMatrix)
 
         // Assert
         // Get all values in the evolved array

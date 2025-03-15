@@ -7,6 +7,53 @@ open Softellect.Math.Sparse
 /// See: https://claude.ai/chat/75221a0e-895f-4d27-b5d5-6d8ce80974bd
 module Tridiagonal =
 
+    /// Create a 1D tridiagonal sparse matrix with optimized performance for random walk probabilities
+    let createTridiagonalMatrix1D (d: int) (a: float) : SparseMatrix<Point1D, float> =
+        // Parameter validation
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
+
+        // Dimension for 1D
+        let k = 1
+
+        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
+        let baseB = (1.0 - a) / (2.0 * float k)
+
+        // Precompute probability configurations for all possible boundary cases (k+1 = 2 cases)
+        // Case 0: Internal point (touching 0 boundaries) - original a and b
+        let internal_a = a
+        let internal_b = baseB
+
+        // Case 1: Point touching 1 boundary (1 neighbor instead of 2)
+        let boundary1_a = a * (2.0 * float k - 1.0) / (2.0 * float k - 1.0 + a)
+        let boundary1_b = (1.0 - boundary1_a) / (2.0 * float k - 1.0)
+
+        // y_x function: probabilities of walking from y to x
+        let y_x (point: Point1D) =
+            let values = ResizeArray<SparseValue<Point1D, float>>()
+
+            // Count how many boundaries this point touches
+            let boundaryCount =
+                if point.i0 = 0 || point.i0 = d - 1 then 1 else 0
+
+            // Select appropriate probability values based on boundary count
+            let (stay_prob, move_prob) =
+                match boundaryCount with
+                | 0 -> (internal_a, internal_b)
+                | 1 -> (boundary1_a, boundary1_b)
+                | _ -> failwith "Invalid boundary count"
+
+            // Diagonal element (self-connection)
+            values.Add({ x = point; value = stay_prob })
+
+            // Off-diagonal connections in the single dimension
+            if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
+            if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
+
+            SparseArray.create (values.ToArray())
+
+        // x_y function: essentially transposition of y_x
+        { x_y = y_x; y_x = y_x }
+
     /// Create a 2D tridiagonal sparse matrix with optimized performance for random walk probabilities
     let createTridiagonalMatrix2D (d: int) (a: float) : SparseMatrix<Point2D, float> =
         // Parameter validation

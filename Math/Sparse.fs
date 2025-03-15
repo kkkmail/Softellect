@@ -7,15 +7,15 @@ open Softellect.Math.Primitives
 
 module Sparse =
 
-    type EvolutionParameter<'I, 'T> =
+    type EvolutionContext<'I, 'T> =
         {
-            // Function that takes a position and returns a Poisson sampler function (lambda -> count)
+            /// Function that takes a position and returns a Poisson sampler function (lambda -> count).
             getPoissonSampler : 'I -> double -> 'T
-            // Function that takes a position and returns a scaling factor
-            getScalingFactor : 'I -> double
-            // Function to convert from 'T to double
+
+            /// Function to convert from 'T to double.
             toDouble : 'T -> double
-            // Function to convert from double to 'T
+
+            /// Function to convert from double to 'T.
             fromDouble : double -> 'T
         }
 
@@ -152,7 +152,7 @@ module Sparse =
     ///
     /// A sparse matrix is coded as two functions that return a sparse array for a given x or y.
     /// This is done that way because the matrices that we are after are insanely huge,
-    /// and they absolutely cannot be stored in memory.
+    /// and they absolutely cannot be stored in memory, even in sparse form.
     ///
     /// The  largest matrix that we've run a matrix * vector multiplication test
     /// was about 3,906,250,000 x 3,906,250,000 matrix for the total of about 1.5E+19 elements in size.
@@ -238,6 +238,21 @@ module Sparse =
             |> SparseArray.create
 
 
+    /// A type to describe a multiplier for the Poisson evolution.
+    type Multiplier<'I when ^I: equality and ^I: comparison> =
+        | Multiplier of ('I -> double)
+
+        member r.invoke = let (Multiplier v) = r in v
+
+
+    /// A type to describe Poisson evolution.
+    type EvolutionMatrix<'I when ^I: equality and ^I: comparison> =
+        {
+            multiplier : Multiplier<'I>
+            evolutionMatrix : SparseMatrix<'I, double>
+        }
+
+
     type SparseArray<'I, 'T
             when ^I: equality
             and ^I: comparison
@@ -249,11 +264,14 @@ module Sparse =
             and ^T: comparison>
         with
 
-        /// Evolve a sparse array using random walk probabilities
-        /// p: evolution parameter containing Poisson sampler and scaling factor functions
-        /// array: the sparse array to evolve
-        member inline array.evolve (p : EvolutionParameter<'I, 'T>) (m : SparseMatrix<'I, double>) : SparseArray<'I, 'T> =
+        /// Evolves a sparse array using random walk probabilities.
+        /// p: evolution context.
+        /// m: evolution matrix containing functions of transition probabilities and a scaling factor.
+        /// array: the sparse array to evolve.
+        member inline array.evolve (p : EvolutionContext<'I, 'T>, m : EvolutionMatrix<'I>) : SparseArray<'I, 'T> =
             let result = Dictionary<'I, 'T>()
+            let getMultiplier = m.multiplier.invoke
+            let y_x = m.evolutionMatrix.y_x
 
             // For each point y in the sparse array (source location)
             for sparseValue in array.getValues() do
@@ -264,10 +282,10 @@ module Sparse =
                 if y_value > LanguagePrimitives.GenericZero<'T> then
                     // Get the Poisson sampler and scaling factor for this position
                     let poissonSampler = p.getPoissonSampler y
-                    let scalingFactor = p.getScalingFactor y
+                    let multiplier = getMultiplier y
 
                     // Get all transition probabilities from this position y to other positions
-                    let x_values = m.y_x y
+                    let x_values = y_x y
 
                     // For each possible destination x
                     for x_sparse_value in x_values.getValues() do
@@ -279,7 +297,7 @@ module Sparse =
                         // - Transition probability (transition_prob)
                         // - Scaling factor for this position
                         let valueAsDouble = p.toDouble y_value
-                        let lambda = transition_prob * scalingFactor
+                        let lambda = transition_prob * multiplier
                         let lambda_scaled = valueAsDouble * lambda
 
                         // Sample from Poisson distribution to get number of elements moving from y to x
@@ -296,6 +314,26 @@ module Sparse =
             // Convert the result dictionary to a SparseArray
             result
             |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
+            |> Seq.toArray
+            |> SparseArray.create
+
+        /// Evolve a SparseArray by a given multiplier.
+        /// Only positive values are considered for evolution.
+        member inline array.evolve (p : EvolutionContext<'I, 'T>, m : Multiplier<'I>) : SparseArray<'I, 'T> =
+            let g (v : SparseValue<'I, 'T>) =
+                if v.value > LanguagePrimitives.GenericZero<'T> then
+                    let poissonSampler = p.getPoissonSampler v.x
+                    let valueAsDouble = p.toDouble v.value
+                    let lambda = m.invoke v.x
+                    let lambda_scaled = valueAsDouble * lambda
+                    let moving_elements = poissonSampler lambda_scaled
+
+                    Some { x = v.x; value = moving_elements }
+                else None
+
+            array.getValues()
+            |> Seq.map g
+            |> Seq.choose id
             |> Seq.toArray
             |> SparseArray.create
 
