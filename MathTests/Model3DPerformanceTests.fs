@@ -10,7 +10,7 @@ open FluentAssertions
 open System
 open System.Diagnostics
 
-type ModelPerformanceTests(output: ITestOutputHelper) =
+type Model3DPerformanceTests(output: ITestOutputHelper) =
 
     [<Fact>]
     member _.``Evolution model performance test`` () =
@@ -18,11 +18,11 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
         let stopwatch = Stopwatch.StartNew()
 
         // Set number of epochs
-        let noOfEpochs = NoOfEpochs 100_000
+        let noOfEpochs = NoOfEpochs 100
 
-        // Create a domain with 1000x1000 intervals
+        // Create a domain with 1000 x 1000 x 1000 intervals
         let domainIntervals = DomainIntervals 1000
-        let domain = Domain2D.create(domainIntervals, DomainRange.defaultValue)
+        let domain = Domain3D.create(domainIntervals, DomainRange.defaultValue)
 
         output.WriteLine($"Domain created with {domainIntervals.value}x{domainIntervals.value} intervals")
 
@@ -31,12 +31,12 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
 
         // Create the evolution matrix
         let d = domainIntervals.value // Number of points in domain
-        let evolutionMatrix = createTridiagonalMatrix2D d a
+        let evolutionMatrix = createTridiagonalMatrix3D d a
 
         // Create multiplier for evolution matrix - spherically symmetric function 0.1 * (1.0 + 1.0 * r^2)
         let evolutionMultiplier =
-            Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+            Multiplier.sphericallySymmetric<Coord3D>
+                (fun (p : Point3D) -> p.toCoord domain)
                 (fun rSquared -> 0.1 * (1.0 + 1.0 * rSquared))
 
         // Create the evolution matrix wrapper
@@ -49,8 +49,8 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
         // Create decay function - spherically symmetric function 0.01 * (1.0 + ((3.0/2.0)*r)^8 / 8!)
         let factorial8 = 40320.0 // 8!
         let decay =
-            Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+            Multiplier.sphericallySymmetric<Coord3D>
+                (fun (p : Point3D) -> p.toCoord domain)
                 (fun rSquared ->
                     let r = Math.Sqrt(rSquared)
                     let term = Math.Pow(1.5 * r, 8.0) / factorial8
@@ -80,8 +80,8 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
             }
 
         // Create initial substance data
-        // Center point in domain (500, 500) for 1000x1000 intervals
-        let centerPoint = { i0 = 500; i1 = 500 }
+        // Center point in domain (500, 500, 500) for 1000 x 1000 x 1000 intervals
+        let centerPoint = { i0 = 500; i1 = 500; i2 = 500 }
 
         let protocells = 1000L
 
@@ -113,8 +113,8 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
         let totalProtocells = finalProtocells.total()
 
         let invariant = model.invariant result
-        let mean = finalProtocells.mean double (fun (p : Point2D) -> p.toCoord model.domain)
-        let variance = finalProtocells.variance double (fun (p : Point2D) -> p.toCoord model.domain)
+        let mean = finalProtocells.mean double (fun (p : Point3D) -> p.toCoord model.domain)
+        let variance = finalProtocells.variance double (fun (p : Point3D) -> p.toCoord model.domain)
         let stdDev = variance.sqrt()
 
         output.WriteLine($"Setup time: {setupTime} ms")
@@ -137,7 +137,7 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
 
         // Find max count and its location
         let mutable maxCount = 0L
-        let mutable maxLocation = Unchecked.defaultof<Point2D>
+        let mutable maxLocation = Unchecked.defaultof<Point3D>
 
         finalProtocells.values
         |> Array.iter (fun item ->
