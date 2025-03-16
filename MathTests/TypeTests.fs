@@ -1,4 +1,6 @@
-﻿module TypeTests =
+﻿namespace Softellect.Tests.MathTests
+
+module TypeTests =
 
     type SparseValue<'I, 'T
             when ^I: equality

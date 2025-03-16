@@ -34,8 +34,9 @@
         <Compile Include="CoordTests.fs" />
         <Compile Include="MomentTests.fs" />
         <Compile Include="MeanStdDevTests.fs" />
-        <Compile Include="Program.fs" />
+        <Compile Include="MultiplierTests.fs" />
         <Compile Include="TypeTests.fs" />
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -291,12 +291,23 @@ module Sparse =
                 y_x = fun _ -> SparseArray<'I, 'T>.empty
             }
 
+
     /// A type to describe a multiplier for the Poisson evolution.
-    type Multiplier<'I when ^I: equality and ^I: comparison> =
+    type Multiplier<'I when 'I : equality and 'I : comparison> =
         | Multiplier of ('I -> double)
 
         member r.invoke = let (Multiplier v) = r in v
         static member inline identity : Multiplier<'I> = Multiplier (fun _ -> 1.0)
+
+        /// Creates a spherically symmetric multiplier by projecting the input to coordinates
+        /// and calculating the radius, then applying a function to the radius.
+        static member inline sphericallySymmetric<'C when ^C: (static member ( ** ) : ^C * ^C -> double)>
+            (toCoord : 'I -> 'C) (radiusFunc : double -> double) : Multiplier<'I> =
+                Multiplier (fun i ->
+                    let coord = toCoord i
+                    let rSquared = (^C: (static member ( ** ) : ^C * ^C -> double) (coord, coord))
+                    radiusFunc rSquared
+                )
 
 
     /// A type to describe Poisson evolution.
