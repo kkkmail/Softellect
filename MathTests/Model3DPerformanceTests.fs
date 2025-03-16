@@ -13,12 +13,12 @@ open System.Diagnostics
 type Model3DPerformanceTests(output: ITestOutputHelper) =
 
     [<Fact>]
-    member _.``Evolution model performance test`` () =
+    member _.``Evolution model performance test 3D`` () =
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
 
         // Set number of epochs
-        let noOfEpochs = NoOfEpochs 100
+        let noOfEpochs = NoOfEpochs 100_000
 
         // Create a domain with 1000 x 1000 x 1000 intervals
         let domainIntervals = DomainIntervals 1000

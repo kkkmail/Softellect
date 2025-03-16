@@ -13,7 +13,7 @@ open System.Diagnostics
 type Model2DPerformanceTests(output: ITestOutputHelper) =
 
     [<Fact>]
-    member _.``Evolution model performance test`` () =
+    member _.``Evolution model performance test 2D`` () =
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
 
