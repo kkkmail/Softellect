@@ -561,6 +561,7 @@ module Primitives =
         }
 
         member d.range = d.maxValue - d.minValue
+        static member defaultValue = { minValue = -1.0; maxValue = 1.0 }
 
     /// Number of intervals in the domain.
     type DomainIntervals =
@@ -727,7 +728,7 @@ module Primitives =
                 d7 = Domain.create(n, r)
             }
 
-    /// 1D coordinate representation
+    /// 1D coordinate representation.
     type Coord1D =
         {
             x0 : double
@@ -736,12 +737,15 @@ module Primitives =
         static member Zero = { x0 = 0.0 }
         static member One = { x0 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord1D, b : Coord1D) =
             { x0 = a.x0 + b.x0 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord1D, b : Coord1D) =
             { x0 = a.x0 - b.x0 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord1D, b : Coord1D) =
             { x0 = a.x0 * b.x0 }
 
@@ -749,6 +753,7 @@ module Primitives =
         static member ( ** ) (a : Coord1D, b : Coord1D) =
             a.x0 * b.x0
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord1D, b : Coord1D) =
             { x0 = a.x0 / b.x0 }
 
@@ -756,16 +761,21 @@ module Primitives =
         static member (*) (d : double, a : Coord1D) =
             { x0 = d * a.x0 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord1D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord1D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0
 
-    /// 2D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() = { x0 = sqrt (abs this.x0) }
+
+    /// 2D coordinate representation.
     type Coord2D =
         {
             x0 : double
@@ -775,12 +785,15 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord2D, b : Coord2D) =
             { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord2D, b : Coord2D) =
             { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord2D, b : Coord2D) =
             { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1 }
 
@@ -788,6 +801,7 @@ module Primitives =
         static member ( ** ) (a : Coord2D, b : Coord2D) =
             a.x0 * b.x0 + a.x1 * b.x1
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord2D, b : Coord2D) =
             { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1 }
 
@@ -795,16 +809,21 @@ module Primitives =
         static member (*) (d : double, a : Coord2D) =
             { x0 = d * a.x0; x1 = d * a.x1 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord2D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord2D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1
 
-    /// 3D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1) }
+
+    /// 3D coordinate representation.
     type Coord3D =
         {
             x0 : double
@@ -815,12 +834,15 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord3D, b : Coord3D) =
             { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord3D, b : Coord3D) =
             { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord3D, b : Coord3D) =
             { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2 }
 
@@ -828,6 +850,7 @@ module Primitives =
         static member ( ** ) (a : Coord3D, b : Coord3D) =
             a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord3D, b : Coord3D) =
             { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2 }
 
@@ -835,16 +858,21 @@ module Primitives =
         static member (*) (d : double, a : Coord3D) =
             { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord3D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord3D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1 + this.x2
 
-    /// 4D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2) }
+
+    /// 4D coordinate representation.
     type Coord4D =
         {
             x0 : double
@@ -856,12 +884,15 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord4D, b : Coord4D) =
             { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord4D, b : Coord4D) =
             { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord4D, b : Coord4D) =
             { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3 }
 
@@ -869,6 +900,7 @@ module Primitives =
         static member ( ** ) (a : Coord4D, b : Coord4D) =
             a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord4D, b : Coord4D) =
             { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3 }
 
@@ -876,16 +908,21 @@ module Primitives =
         static member (*) (d : double, a : Coord4D) =
             { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord4D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord4D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3
 
-    /// 5D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3) }
+
+    /// 5D coordinate representation.
     type Coord5D =
         {
             x0 : double
@@ -898,12 +935,15 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord5D, b : Coord5D) =
             { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3; x4 = a.x4 + b.x4 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord5D, b : Coord5D) =
             { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3; x4 = a.x4 - b.x4 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord5D, b : Coord5D) =
             { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3; x4 = a.x4 * b.x4 }
 
@@ -911,6 +951,7 @@ module Primitives =
         static member ( ** ) (a : Coord5D, b : Coord5D) =
             a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord5D, b : Coord5D) =
             { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4 }
 
@@ -918,16 +959,21 @@ module Primitives =
         static member (*) (d : double, a : Coord5D) =
             { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3; x4 = d * a.x4 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord5D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord5D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4
 
-    /// 6D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3); x4 = sqrt (abs this.x4) }
+
+    /// 6D coordinate representation.
     type Coord6D =
         {
             x0 : double
@@ -941,12 +987,15 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0; x5 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0; x5 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord6D, b : Coord6D) =
             { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3; x4 = a.x4 + b.x4; x5 = a.x5 + b.x5 }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord6D, b : Coord6D) =
             { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3; x4 = a.x4 - b.x4; x5 = a.x5 - b.x5 }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord6D, b : Coord6D) =
             { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3; x4 = a.x4 * b.x4; x5 = a.x5 * b.x5 }
 
@@ -954,6 +1003,7 @@ module Primitives =
         static member ( ** ) (a : Coord6D, b : Coord6D) =
             a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord6D, b : Coord6D) =
             { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5 }
 
@@ -961,16 +1011,29 @@ module Primitives =
         static member (*) (d : double, a : Coord6D) =
             { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3; x4 = d * a.x4; x5 = d * a.x5 }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord6D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord6D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5
 
-    /// 7D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() =
+            {
+                x0 = sqrt (abs this.x0)
+                x1 = sqrt (abs this.x1)
+                x2 = sqrt (abs this.x2)
+                x3 = sqrt (abs this.x3)
+                x4 = sqrt (abs this.x4)
+                x5 = sqrt (abs this.x5)
+            }
+
+    /// 7D coordinate representation.
     type Coord7D =
         {
             x0 : double
@@ -985,36 +1048,94 @@ module Primitives =
         static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0; x5 = 0.0; x6 = 0.0 }
         static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0; x5 = 1.0; x6 = 1.0 }
 
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord7D, b : Coord7D) =
-            { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3; x4 = a.x4 + b.x4; x5 = a.x5 + b.x5; x6 = a.x6 + b.x6 }
+            {
+                x0 = a.x0 + b.x0
+                x1 = a.x1 + b.x1
+                x2 = a.x2 + b.x2
+                x3 = a.x3 + b.x3
+                x4 = a.x4 + b.x4
+                x5 = a.x5 + b.x5
+                x6 = a.x6 + b.x6
+            }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord7D, b : Coord7D) =
-            { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3; x4 = a.x4 - b.x4; x5 = a.x5 - b.x5; x6 = a.x6 - b.x6 }
+            {
+                x0 = a.x0 - b.x0
+                x1 = a.x1 - b.x1
+                x2 = a.x2 - b.x2
+                x3 = a.x3 - b.x3
+                x4 = a.x4 - b.x4
+                x5 = a.x5 - b.x5
+                x6 = a.x6 - b.x6
+            }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord7D, b : Coord7D) =
-            { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3; x4 = a.x4 * b.x4; x5 = a.x5 * b.x5; x6 = a.x6 * b.x6 }
+            {
+                x0 = a.x0 * b.x0
+                x1 = a.x1 * b.x1
+                x2 = a.x2 * b.x2
+                x3 = a.x3 * b.x3
+                x4 = a.x4 * b.x4
+                x5 = a.x5 * b.x5
+                x6 = a.x6 * b.x6
+            }
 
         /// Scalar multiplication of two coordinate vectors.
         static member ( ** ) (a : Coord7D, b : Coord7D) =
             a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord7D, b : Coord7D) =
-            { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5; x6 = a.x6 / b.x6 }
+            {
+                x0 = a.x0 / b.x0
+                x1 = a.x1 / b.x1
+                x2 = a.x2 / b.x2
+                x3 = a.x3 / b.x3
+                x4 = a.x4 / b.x4
+                x5 = a.x5 / b.x5
+                x6 = a.x6 / b.x6
+            }
 
         /// Multiplication by a scalar.
         static member (*) (d : double, a : Coord7D) =
-            { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3; x4 = d * a.x4; x5 = d * a.x5; x6 = d * a.x6 }
+            {
+                x0 = d * a.x0
+                x1 = d * a.x1
+                x2 = d * a.x2
+                x3 = d * a.x3
+                x4 = d * a.x4
+                x5 = d * a.x5
+                x6 = d * a.x6
+            }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord7D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord7D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
+        /// Sum of all coordinates.
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6
 
-    /// 8D coordinate representation
+        /// Square root of abs of all coordinates.
+        member this.sqrt() =
+            {
+                x0 = sqrt (abs this.x0)
+                x1 = sqrt (abs this.x1)
+                x2 = sqrt (abs this.x2)
+                x3 = sqrt (abs this.x3)
+                x4 = sqrt (abs this.x4)
+                x5 = sqrt (abs this.x5)
+                x6 = sqrt (abs this.x6)
+            }
+
+    /// 8D coordinate representation.
     type Coord8D =
         {
             x0 : double
@@ -1027,37 +1148,131 @@ module Primitives =
             x7 : double
         }
 
-        static member Zero = { x0 = 0.0; x1 = 0.0; x2 = 0.0; x3 = 0.0; x4 = 0.0; x5 = 0.0; x6 = 0.0; x7 = 0.0 }
-        static member One = { x0 = 1.0; x1 = 1.0; x2 = 1.0; x3 = 1.0; x4 = 1.0; x5 = 1.0; x6 = 1.0; x7 = 1.0 }
+        static member Zero =
+            {
+                x0 = 0.0
+                x1 = 0.0
+                x2 = 0.0
+                x3 = 0.0
+                x4 = 0.0
+                x5 = 0.0
+                x6 = 0.0
+                x7 = 0.0
+            }
 
+        static member One =
+            {
+                x0 = 1.0
+                x1 = 1.0
+                x2 = 1.0
+                x3 = 1.0
+                x4 = 1.0
+                x5 = 1.0
+                x6 = 1.0
+                x7 = 1.0
+            }
+
+        /// Addition of two coordinate vectors.
         static member (+) (a : Coord8D, b : Coord8D) =
-            { x0 = a.x0 + b.x0; x1 = a.x1 + b.x1; x2 = a.x2 + b.x2; x3 = a.x3 + b.x3; x4 = a.x4 + b.x4; x5 = a.x5 + b.x5; x6 = a.x6 + b.x6; x7 = a.x7 + b.x7 }
+            {
+                x0 = a.x0 + b.x0
+                x1 = a.x1 + b.x1
+                x2 = a.x2 + b.x2
+                x3 = a.x3 + b.x3
+                x4 = a.x4 + b.x4
+                x5 = a.x5 + b.x5
+                x6 = a.x6 + b.x6
+                x7 = a.x7 + b.x7
+            }
 
+        /// Subtraction of two coordinate vectors.
         static member (-) (a : Coord8D, b : Coord8D) =
-            { x0 = a.x0 - b.x0; x1 = a.x1 - b.x1; x2 = a.x2 - b.x2; x3 = a.x3 - b.x3; x4 = a.x4 - b.x4; x5 = a.x5 - b.x5; x6 = a.x6 - b.x6; x7 = a.x7 - b.x7 }
+            {
+                x0 = a.x0 - b.x0
+                x1 = a.x1 - b.x1
+                x2 = a.x2 - b.x2
+                x3 = a.x3 - b.x3
+                x4 = a.x4 - b.x4
+                x5 = a.x5 - b.x5
+                x6 = a.x6 - b.x6
+                x7 = a.x7 - b.x7
+            }
 
+        /// Coordinate by coordinate multiplication of two coordinate vectors.
         static member (*) (a : Coord8D, b : Coord8D) =
-            { x0 = a.x0 * b.x0; x1 = a.x1 * b.x1; x2 = a.x2 * b.x2; x3 = a.x3 * b.x3; x4 = a.x4 * b.x4; x5 = a.x5 * b.x5; x6 = a.x6 * b.x6; x7 = a.x7 * b.x7 }
+            {
+                x0 = a.x0 * b.x0
+                x1 = a.x1 * b.x1
+                x2 = a.x2 * b.x2
+                x3 = a.x3 * b.x3
+                x4 = a.x4 * b.x4
+                x5 = a.x5 * b.x5
+                x6 = a.x6 * b.x6
+                x7 = a.x7 * b.x7
+            }
 
         /// Scalar multiplication of two coordinate vectors.
         static member ( ** ) (a : Coord8D, b : Coord8D) =
-            a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6 + a.x7 * b.x7
+            a.x0 * b.x0 +
+            a.x1 * b.x1 +
+            a.x2 * b.x2 +
+            a.x3 * b.x3 +
+            a.x4 * b.x4 +
+            a.x5 * b.x5 +
+            a.x6 * b.x6 +
+            a.x7 * b.x7
 
+        /// Coordinate by coordinate division of two coordinate vectors.
         static member (/) (a : Coord8D, b : Coord8D) =
-            { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5; x6 = a.x6 / b.x6; x7 = a.x7 / b.x7 }
+            {
+                x0 = a.x0 / b.x0
+                x1 = a.x1 / b.x1
+                x2 = a.x2 / b.x2
+                x3 = a.x3 / b.x3
+                x4 = a.x4 / b.x4
+                x5 = a.x5 / b.x5
+                x6 = a.x6 / b.x6
+                x7 = a.x7 / b.x7
+            }
 
         /// Multiplication by a scalar.
         static member (*) (d : double, a : Coord8D) =
-            { x0 = d * a.x0; x1 = d * a.x1; x2 = d * a.x2; x3 = d * a.x3; x4 = d * a.x4; x5 = d * a.x5; x6 = d * a.x6; x7 = d * a.x7 }
+            {
+                x0 = d * a.x0
+                x1 = d * a.x1
+                x2 = d * a.x2
+                x3 = d * a.x3
+                x4 = d * a.x4
+                x5 = d * a.x5
+                x6 = d * a.x6
+                x7 = d * a.x7
+            }
 
+        /// Multiplication by a scalar.
         static member (*) (a : Coord8D, d : double) =
             d * a
 
+        /// Division by a scalar.
         static member (/) (a : Coord8D, d : double) =
             a * (1.0 / d)
 
-        /// Sum of all coordinates
-        member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6 + this.x7
+        /// Sum of all coordinates.
+        member this.total() =
+            this.x0 + this.x1 + this.x2 + this.x3 +
+            this.x4 + this.x5 + this.x6 + this.x7
+
+        /// Square root of abs of all coordinates.
+        member this.sqrt() =
+            {
+                x0 = sqrt (abs this.x0)
+                x1 = sqrt (abs this.x1)
+                x2 = sqrt (abs this.x2)
+                x3 = sqrt (abs this.x3)
+                x4 = sqrt (abs this.x4)
+                x5 = sqrt (abs this.x5)
+                x6 = sqrt (abs this.x6)
+                x7 = sqrt (abs this.x7)
+            }
 
     /// 1D point representation
     type Point1D =

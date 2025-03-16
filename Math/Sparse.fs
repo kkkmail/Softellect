@@ -74,6 +74,8 @@ module Sparse =
                 map = new Lazy<Map<'I, 'T>>(fun () -> SparseArray.createLookupMap values)
             }
 
+        static member inline empty = SparseArray<'I, 'T>.create [||]
+
         static member inline createAbove (z : ZeroThreshold<'T>) (v : 'T[]) =
             v
             |> Array.mapi (fun i e -> if e >= z.value then Some { x = i; value = e } else None)
@@ -91,12 +93,21 @@ module Sparse =
             then
                 let xn =
                     c
-                    |> Array.map (fun v -> v.value * (pown (projector v.x) n))
+                    |> Array.map (fun v -> (pown (projector v.x) n) * v.value)
                     |> Array.sum
 
                 xn / x0
-            else
-                LanguagePrimitives.GenericZero<'C>
+            else LanguagePrimitives.GenericZero<'C>
+
+        member inline r.mean (converter : ^T -> ^V) (projector : ^I -> ^C ) : ^C =
+            let m1 = r.moment converter projector 1
+            m1
+
+        member inline r.variance (converter : ^T -> ^V) (projector : ^I -> ^C ) : ^C =
+            let m1 = r.moment converter projector 1
+            let m2 = r.moment converter projector 2
+            let variance = m2 - (m1 * m1)
+            variance
 
         static member inline (*) (a : SparseArray<'I, 'U>, b : 'U) : SparseArray<'I, 'U> =
             a.values |> Array.map (fun e -> e * b) |> SparseArray.create
@@ -274,12 +285,18 @@ module Sparse =
             |> Seq.toArray
             |> SparseArray.create
 
+        static member inline empty =
+            {
+                x_y = fun _ -> SparseArray<'I, 'T>.empty
+                y_x = fun _ -> SparseArray<'I, 'T>.empty
+            }
 
     /// A type to describe a multiplier for the Poisson evolution.
     type Multiplier<'I when ^I: equality and ^I: comparison> =
         | Multiplier of ('I -> double)
 
         member r.invoke = let (Multiplier v) = r in v
+        static member inline identity : Multiplier<'I> = Multiplier (fun _ -> 1.0)
 
 
     /// A type to describe Poisson evolution.
