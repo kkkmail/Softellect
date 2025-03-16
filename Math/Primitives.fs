@@ -96,18 +96,20 @@ module Primitives =
 
 
     let poissonSample rnd lambda =
-        if lambda <= 2e9 then
-            // Use MathNet.Numerics.Distributions for small lambda
-            try
-                int64 (Poisson.Sample(rnd, lambda))
-            with e ->
-                failwith $"lambda: {lambda}, exception: {e}"
+        if lambda <= 0.0 then 0L
         else
-            // Use Gaussian approximation for large lambda
-            let mu = lambda
-            let sigma = sqrt lambda
-            let sample = Normal.Sample(rnd, mu, sigma)
-            int64 (Math.Round(sample))
+            if lambda <= 2e9 then
+                // Use MathNet.Numerics.Distributions for small lambda
+                try
+                    int64 (Poisson.Sample(rnd, lambda))
+                with e ->
+                    failwith $"lambda: {lambda}, exception: {e}"
+            else
+                // Use Gaussian approximation for large lambda
+                let mu = lambda
+                let sigma = sqrt lambda
+                let sample = Normal.Sample(rnd, mu, sigma)
+                int64 (Math.Round(sample))
 
 
     /// Encapsulation of a Poisson distribution sampler.
