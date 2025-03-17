@@ -38,6 +38,7 @@
         <Compile Include="TypeTests.fs" />
         <Compile Include="Model2DPerformanceTests.fs" />
         <Compile Include="Model3DPerformanceTests.fs" />
+        <Compile Include="ModelPerformanceTests.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 

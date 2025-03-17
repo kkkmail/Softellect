@@ -15,10 +15,10 @@ module Sparse =
             /// TODO kk:20250315 - Remove this.
             sampler: PoissonSingleSampler
 
-            /// Function to convert from 'T to double.
+            /// Function to convert from T to double.
             toDouble : 'T -> double
 
-            /// Function to convert from double to 'T.
+            /// Function to convert from double to T.
             fromDouble : double -> 'T
         }
 
@@ -93,10 +93,10 @@ module Sparse =
             then
                 let xn =
                     c
-                    |> Array.map (fun v -> (pown (projector v.x) n) * v.value)
+                    |> Array.map (fun v -> (pown (projector v.x) n) *. v.value)
                     |> Array.sum
 
-                xn / x0
+                xn /. x0
             else LanguagePrimitives.GenericZero<'C>
 
         member inline r.mean (converter : ^T -> ^V) (projector : ^I -> ^C ) : ^C =

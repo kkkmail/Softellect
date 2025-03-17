@@ -114,43 +114,23 @@ module Models =
     ///     k0 * ka(y) * p(x, y) is an EvolutionMatrix - replication rate of evolving from y to x.
     ///     g0 * g(x) is a Multiplier - decay rate.
     ///     s is a constant recycling rate.
-    // type SimpleEvolutionModel<'I, 'C, 'D
-    //     when 'I: equality
-    //     and 'I: comparison
-    //     and 'I: (member toCoord : 'D -> 'C)
-    //     and 'C: equality
-    //     and 'C: comparison> =
-    //     {
-    //         replication : EvolutionMatrix<'I>
-    //         decay : Multiplier<'I>
-    //         recyclingRate : RecyclingRate
-    //         numberOfMolecules : NumberOfMolecules
-    //         domain : 'D
-    //     }
-    //
-    //     member inline md.mean (x : SubstanceData<'I>) : 'C =
-    //         let converter (v : int64) : double = double v
-    //         let projector (p : 'I) : 'C = p.toCoord md.domain
-    //         let u = x.protocell.value
-    //         let mean = u.mean converter projector
-    //         mean
-
     type SimpleEvolutionModel<'I, 'C, 'D
             when ^I: equality
             and ^I: comparison
             and ^I: (member toCoord : ^D -> ^C)
+
             and ^C: equality
             and ^C: comparison
             and ^C: (static member ( + ) : ^C * ^C -> ^C)
             and ^C: (static member ( - ) : ^C * ^C -> ^C)
-            // and ^C: (static member ( * ) : ^C * ^C -> ^C)
-            // and ^C: (static member ( * ) : ^'C * double -> ^C)
-            // and ^C: (static member ( * ) : double * ^C -> ^C)
-            // and ^C: (static member ( / ) : ^C * double -> ^C)
-
-            // and ^C: (static member op_Multiply : ^C * double -> ^C)
-            // and ^C: (static member op_Division : ^C * double -> ^C)
-
+            and ^C: (static member ( * ) : ^C * ^C -> ^C)
+            and (^C or double): (static member ( .* ) : double * ^C -> ^C)
+            and (^C or double): (static member ( *. ) : ^C * double -> ^C)
+            and ^C: (static member ( / ) : ^C * ^C -> ^C)
+            and (^C or double): (static member ( /. ) : ^C * double -> ^C)
+            and ^C: (static member ( ** ) : ^C * ^C -> double)
+            and ^C: ( member total : unit -> double)
+            and ^C: ( member sqrt : unit -> ^C)
             and ^C: (static member Zero : ^C)
             and ^C: (static member One : ^C)> =
         {
@@ -161,41 +141,11 @@ module Models =
             domain : 'D
         }
 
-        // member inline md.mean (x : SubstanceData<'I>) : 'C =
-        //     x.protocell.value.mean double (fun (p : 'I) -> p.toCoord md.domain)
+        member inline md.mean (x : SubstanceData<'I>) : 'C =
+            x.protocell.value.mean double (fun (p : 'I) -> p.toCoord md.domain)
 
-        //==============================================================
-
-    // type SimpleEvolutionModel<'I, 'C, 'D
-    //         when ^I: equality
-    //         and ^I: comparison
-    //         and ^I: (member toCoord : ^D -> ^C)
-    //         and ^C: equality
-    //         and ^C: comparison
-    //         and ^C: (static member (+) : ^C * ^C -> ^C)
-    //         and ^C: (static member (-) : ^C * ^C -> ^C)
-    //         and ^C: (static member (*) : ^C * double -> ^C)
-    //         // and ^C: (static member (*) : double * ^C -> ^C)
-    //         and ^C: (static member (/) : ^C * double -> ^C)
-    //         and ^C: (static member get_Zero : unit -> ^C)
-    //         and ^C: (static member get_One : unit -> ^C)> =
-    //     {
-    //         replication : EvolutionMatrix<'I>
-    //         decay : Multiplier<'I>
-    //         recyclingRate : RecyclingRate
-    //         numberOfMolecules : NumberOfMolecules
-    //         domain : 'D
-    //     }
-
-        // member inline md.mean (x : SubstanceData<'I>) : ^C =
-        //     let projector (p : 'I) : ^C = p.toCoord md.domain
-        //     let converter (v : int64) = double v
-        //     let u = x.protocell.value
-        //     let mean = u.mean converter projector
-        //     mean
-
-
-        //==============================================================
+        member inline md.stdDev (x : SubstanceData<'I>) : 'C =
+            (x.protocell.value.variance double (fun (p : 'I) -> p.toCoord md.domain)).sqrt()
 
         member inline md.invariant (x : SubstanceData<'I>) =
             let f = x.food.value
@@ -206,13 +156,6 @@ module Models =
             let int_u = u.total()
             let inv = (int64 n) * (int_u + w) + f
             inv
-
-        // member inline md.mean (x : SubstanceData<'I>) =
-        //     let projector (p : 'I) = p.toCoord md.domain
-        //     let converter (v : int64) = double v
-        //     let u = x.protocell.value
-        //     let mean = u.mean converter projector
-        //     mean
 
         member inline md.evolve (p : EvolutionContext<'I, int64>, x : SubstanceData<'I>) =
             let f = x.food.value
@@ -267,13 +210,6 @@ module Models =
              result
 
 
-    // let getMean (md: SimpleEvolutionModel<'I, 'C, 'D>) x =
-    //     let converter (v : int64) : double = double v
-    //     let projector (p : 'I) : 'C = p.toCoord md.domain
-    //     let u = x.protocell.value
-    //     let mean = u.mean converter projector
-    //     mean
-
     type SimpleEvolutionModel1D = SimpleEvolutionModel<Point1D, Coord1D, Domain>
     type SimpleEvolutionModel2D = SimpleEvolutionModel<Point2D, Coord2D, Domain2D>
     type SimpleEvolutionModel3D = SimpleEvolutionModel<Point3D, Coord3D, Domain3D>
@@ -284,66 +220,66 @@ module Models =
     type SimpleEvolutionModel8D = SimpleEvolutionModel<Point8D, Coord8D, Domain8D>
 
 
-    // 1D versions
-    let getMean1D (md : SimpleEvolutionModel1D) x =
-        x.protocell.value.mean double (fun (p : Point1D) -> p.toCoord md.domain)
-
-    let getStdDev1D (md : SimpleEvolutionModel1D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point1D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 2D versions
-    let getMean2D (md : SimpleEvolutionModel2D) x =
-        x.protocell.value.mean double (fun (p : Point2D) -> p.toCoord md.domain)
-
-    let getStdDev2D (md : SimpleEvolutionModel2D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point2D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 3D versions
-    let getMean3D (md : SimpleEvolutionModel3D) x =
-        x.protocell.value.mean double (fun (p : Point3D) -> p.toCoord md.domain)
-
-    let getStdDev3D (md : SimpleEvolutionModel3D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point3D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 4D versions
-    let getMean4D (md : SimpleEvolutionModel4D) x =
-        x.protocell.value.mean double (fun (p : Point4D) -> p.toCoord md.domain)
-
-    let getStdDev4D (md : SimpleEvolutionModel4D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point4D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 5D versions
-    let getMean5D (md : SimpleEvolutionModel5D) x =
-        x.protocell.value.mean double (fun (p : Point5D) -> p.toCoord md.domain)
-
-    let getStdDev5D (md : SimpleEvolutionModel5D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point5D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 6D versions
-    let getMean6D (md : SimpleEvolutionModel6D) x =
-        x.protocell.value.mean double (fun (p : Point6D) -> p.toCoord md.domain)
-
-    let getStdDev6D (md : SimpleEvolutionModel6D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point6D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 7D versions
-    let getMean7D (md : SimpleEvolutionModel7D) x =
-        x.protocell.value.mean double (fun (p : Point7D) -> p.toCoord md.domain)
-
-    let getStdDev7D (md : SimpleEvolutionModel7D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point7D) -> p.toCoord md.domain)
-        variance.sqrt()
-
-    // 8D versions
-    let getMean8D (md : SimpleEvolutionModel8D) x =
-        x.protocell.value.mean double (fun (p : Point8D) -> p.toCoord md.domain)
-
-    let getStdDev8D (md : SimpleEvolutionModel8D) x =
-        let variance = x.protocell.value.variance double (fun (p : Point8D) -> p.toCoord md.domain)
-        variance.sqrt()
+    // // 1D versions
+    // let getMean1D (md : SimpleEvolutionModel1D) x =
+    //     x.protocell.value.mean double (fun (p : Point1D) -> p.toCoord md.domain)
+    //
+    // let getStdDev1D (md : SimpleEvolutionModel1D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point1D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 2D versions
+    // let getMean2D (md : SimpleEvolutionModel2D) x =
+    //     x.protocell.value.mean double (fun (p : Point2D) -> p.toCoord md.domain)
+    //
+    // let getStdDev2D (md : SimpleEvolutionModel2D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point2D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 3D versions
+    // let getMean3D (md : SimpleEvolutionModel3D) x =
+    //     x.protocell.value.mean double (fun (p : Point3D) -> p.toCoord md.domain)
+    //
+    // let getStdDev3D (md : SimpleEvolutionModel3D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point3D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 4D versions
+    // let getMean4D (md : SimpleEvolutionModel4D) x =
+    //     x.protocell.value.mean double (fun (p : Point4D) -> p.toCoord md.domain)
+    //
+    // let getStdDev4D (md : SimpleEvolutionModel4D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point4D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 5D versions
+    // let getMean5D (md : SimpleEvolutionModel5D) x =
+    //     x.protocell.value.mean double (fun (p : Point5D) -> p.toCoord md.domain)
+    //
+    // let getStdDev5D (md : SimpleEvolutionModel5D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point5D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 6D versions
+    // let getMean6D (md : SimpleEvolutionModel6D) x =
+    //     x.protocell.value.mean double (fun (p : Point6D) -> p.toCoord md.domain)
+    //
+    // let getStdDev6D (md : SimpleEvolutionModel6D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point6D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 7D versions
+    // let getMean7D (md : SimpleEvolutionModel7D) x =
+    //     x.protocell.value.mean double (fun (p : Point7D) -> p.toCoord md.domain)
+    //
+    // let getStdDev7D (md : SimpleEvolutionModel7D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point7D) -> p.toCoord md.domain)
+    //     variance.sqrt()
+    //
+    // // 8D versions
+    // let getMean8D (md : SimpleEvolutionModel8D) x =
+    //     x.protocell.value.mean double (fun (p : Point8D) -> p.toCoord md.domain)
+    //
+    // let getStdDev8D (md : SimpleEvolutionModel8D) x =
+    //     let variance = x.protocell.value.variance double (fun (p : Point8D) -> p.toCoord md.domain)
+    //     variance.sqrt()

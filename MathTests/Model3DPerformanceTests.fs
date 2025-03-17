@@ -73,10 +73,10 @@ type Model3DPerformanceTests(output: ITestOutputHelper) =
         // Create evolution context
         let evolutionContext =
             {
-                getPoissonSampler = fun _ lambda -> poissonSampler.nextPoisson lambda
+                getPoissonSampler = fun _ -> poissonSampler.nextPoisson
                 sampler = poissonSampler
-                toDouble = fun x -> double x
-                fromDouble = fun x -> int64 x
+                toDouble = double
+                fromDouble = int64
             }
 
         // Create initial substance data
@@ -124,6 +124,7 @@ type Model3DPerformanceTests(output: ITestOutputHelper) =
         output.WriteLine($"Final food: {result.food.value}")
         output.WriteLine($"Final waste: {result.waste.value}")
         output.WriteLine($"Final total protocells: {totalProtocells}")
+        output.WriteLine($"Final count of different protocells: {finalProtocells.values.Length}")
 
         output.WriteLine($"initial invariant: {invariant0}")
         output.WriteLine($"final invariant: {invariant}")
@@ -133,7 +134,7 @@ type Model3DPerformanceTests(output: ITestOutputHelper) =
         // Report memory usage if possible
         let currentProcess = Process.GetCurrentProcess()
         let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
-        output.WriteLine($"  Approximate memory usage: {memoryMB} MB")
+        output.WriteLine($"Approximate memory usage: {memoryMB} MB")
 
         // Find max count and its location
         let mutable maxCount = 0L

@@ -10,34 +10,54 @@ open FluentAssertions
 open System
 open System.Diagnostics
 
-type Model2DPerformanceTests(output: ITestOutputHelper) =
-    let writeLine = output.WriteLine
+module Helpers =
+    let inline runEvolutionModelTest<'I, 'C, 'D
+            when ^I: equality
+            and ^I: comparison
+            and ^I: (member toCoord : ^D -> ^C)
 
-    [<Fact>]
-    member _.``Evolution model performance test 2D`` () =
+            and ^C: equality
+            and ^C: comparison
+            and ^C: (static member ( + ) : ^C * ^C -> ^C)
+            and ^C: (static member ( - ) : ^C * ^C -> ^C)
+            and ^C: (static member ( * ) : ^C * ^C -> ^C)
+            and (^C or double): (static member ( .* ) : double * ^C -> ^C)
+            and (^C or double): (static member ( *. ) : ^C * double -> ^C)
+            and ^C: (static member ( / ) : ^C * ^C -> ^C)
+            and (^C or double): (static member ( /. ) : ^C * double -> ^C)
+            and ^C: (static member ( ** ) : ^C * ^C -> double)
+            and ^C: ( member total : unit -> double)
+            and ^C: ( member sqrt : unit -> ^C)
+            and ^C: (static member Zero : ^C)
+            and ^C: (static member One : ^C)
+            and ^D : (member dimension : int)>
+            (name: string)
+            writeLine
+            (createDomain: DomainIntervals -> DomainRange -> 'D)
+            (createCenterPoint: int -> 'I)
+            (createTridiagonalMatrix: int -> float -> SparseMatrix<'I, float>) =
+
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
 
-        // Set number of epochs
-        let noOfEpochs = NoOfEpochs 100_000
-
-        // Create a domain with 1000 x 1000 intervals
+        let noOfEpochs = NoOfEpochs 1_000_000
         let domainIntervals = DomainIntervals 1000
-        let domain = Domain2D.create(domainIntervals, DomainRange.defaultValue)
+        let domain = createDomain domainIntervals DomainRange.defaultValue
 
-        writeLine($"Domain created with {domainIntervals.value}x{domainIntervals.value} intervals")
+        let dimension = domain.dimension
+        writeLine($"Domain created with {domainIntervals.value}^{dimension} intervals")
 
         // Create model parameters
         let a = 0.99 // Parameter for tridiagonal matrix
 
         // Create the evolution matrix
         let d = domainIntervals.value // Number of points in domain
-        let evolutionMatrix = createTridiagonalMatrix2D d a
+        let evolutionMatrix = createTridiagonalMatrix d a
 
         // Create multiplier for evolution matrix - spherically symmetric function 0.1 * (1.0 + 1.0 * r^2)
         let evolutionMultiplier =
-            Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+            Multiplier.sphericallySymmetric<'C>
+                (fun (p : 'I) -> p.toCoord domain)
                 (fun rSquared -> 0.1 * (1.0 + 1.0 * rSquared))
 
         // Create the evolution matrix wrapper
@@ -50,8 +70,8 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         // Create decay function - spherically symmetric function 0.01 * (1.0 + ((3.0/2.0)*r)^8 / 8!)
         let factorial8 = 40320.0 // 8!
         let decay =
-            Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+            Multiplier.sphericallySymmetric<'C>
+                (fun (p : 'I) -> p.toCoord domain)
                 (fun rSquared ->
                     let r = Math.Sqrt(rSquared)
                     let term = Math.Pow(1.5 * r, 8.0) / factorial8
@@ -81,8 +101,8 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
             }
 
         // Create initial substance data
-        // Center point in domain (500, 500) for 1000 x 1000 intervals
-        let centerPoint = { i0 = 500; i1 = 500 }
+        // Center point in domain
+        let centerPoint = createCenterPoint (domainIntervals.value / 2)
 
         let protocells = 1000L
 
@@ -117,6 +137,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         let mean = model.mean result
         let stdDev = model.stdDev result
 
+        writeLine($"{name} results:")
         writeLine($"Setup time: {setupTime} ms")
         writeLine($"Evolution time: {evolutionTime} ms")
         writeLine($"Time per epoch: {double evolutionTime / double noOfEpochs.value:F2} ms")
@@ -138,7 +159,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
 
         // Find max count and its location
         let mutable maxCount = 0L
-        let mutable maxLocation = Unchecked.defaultof<Point2D>
+        let mutable maxLocation = Unchecked.defaultof<'I>
 
         finalProtocells.values
         |> Array.iter (fun item ->
@@ -147,8 +168,31 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
                 maxLocation <- item.x
         )
 
-        writeLine($"Max protocell count: {maxCount} at location ({maxLocation.i0}, {maxLocation.i1})")
+        writeLine($"Max protocell count: {maxCount} at location {maxLocation}")
 
         // Simple assertions to verify the test ran correctly
         totalProtocells.Should().BeGreaterThan(0L, "total number of protocells should be positive") |> ignore
         invariant.Should().Be(invariant0, "invariant should be preserved") |> ignore
+
+open Helpers
+
+type ModelPerformanceTests(output: ITestOutputHelper) =
+    let writeLine = output.WriteLine
+
+    [<Fact>]
+    member _.``Evolution model performance test 2D`` () =
+        runEvolutionModelTest<Point2D, Coord2D, Domain2D>
+            "2D Model"
+            writeLine
+            (fun i r -> Domain2D.create(i, r))
+            (fun mid -> { i0 = mid; i1 = mid })
+            createTridiagonalMatrix2D
+
+    [<Fact>]
+    member _.``Evolution model performance test 3D`` () =
+        runEvolutionModelTest<Point3D, Coord3D, Domain3D>
+            "3D Model"
+            writeLine
+            (fun i r -> Domain3D.create(i, r))
+            (fun mid -> { i0 = mid; i1 = mid; i2 = mid })
+            createTridiagonalMatrix3D
