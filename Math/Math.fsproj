@@ -44,7 +44,7 @@
         <Compile Include="Primitives.fs" />
         <Compile Include="Sparse.fs" />
         <Compile Include="Tridiagonal.fs" />
-        <Compile Include="Stats.fs" />
+        <Compile Include="Evolution.fs" />
         <Compile Include="Models.fs" />
     </ItemGroup>
 

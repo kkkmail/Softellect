@@ -95,78 +95,6 @@ module Primitives =
     //         Some $"{commonStr}{separator}{extraActuals}"
 
 
-    let poissonSample rnd lambda =
-        if lambda <= 0.0 then 0L
-        else
-            if lambda <= 2e9 then
-                // Use MathNet.Numerics.Distributions for small lambda
-                try
-                    int64 (Poisson.Sample(rnd, lambda))
-                with e ->
-                    failwith $"lambda: {lambda}, exception: {e}"
-            else
-                // Use Gaussian approximation for large lambda
-                let mu = lambda
-                let sigma = sqrt lambda
-                let sample = Normal.Sample(rnd, mu, sigma)
-                int64 (Math.Round(sample))
-
-
-    /// Encapsulation of a Poisson distribution sampler.
-    /// It takes a value of lambda and returns next random number of events.
-    type PoissonSingleSampler =
-        | PoissonSingleSampler of (float -> int64)
-
-        member inline private r.value = let (PoissonSingleSampler v) = r in v
-        member r.nextPoisson lambda = r.value lambda
-        static member create rnd = poissonSample rnd |> PoissonSingleSampler
-
-
-    /// Encapsulation of a Poisson distribution sampler factory suitable for both sequential and parallel code.
-    type PoissonMultiSampler =
-        {
-            sampler : PoissonSingleSampler
-            parallelSampler : PoissonSingleSampler[]
-        }
-
-        static member create n (rnd : Random) =
-            let r() = Random(rnd.Next())
-            let sampler = PoissonSingleSampler.create (r())
-            let parallelSampler = [| for _ in 0..(n - 1) -> PoissonSingleSampler.create (r()) |]
-            {
-                sampler = sampler
-                parallelSampler = parallelSampler
-            }
-
-
-    type PoissonSampler =
-        | SingleSampler of PoissonSingleSampler
-        | MultiSampler of PoissonMultiSampler
-
-        member p.sampler =
-            match p with
-            | SingleSampler s -> s
-            | MultiSampler s -> s.sampler
-
-        member p.getSampler i =
-            match p with
-            | SingleSampler s -> s
-            | MultiSampler s -> s.parallelSampler[i]
-
-        member p.length =
-            match p with
-            | SingleSampler _ -> 0
-            | MultiSampler s -> s.parallelSampler.Length
-
-        static member createMultiSampler n rnd = PoissonMultiSampler.create n rnd |> MultiSampler
-        static member createSingleSampler rnd = PoissonSingleSampler.create rnd |> SingleSampler
-
-
-    type EvolutionType =
-        | DifferentialEvolution
-        | DiscreteEvolution
-
-
     /// Linear representation of a vector (array).
     type Vector<'T when ^T: (static member ( * ) : ^T * ^T -> ^T) and ^T: (static member ( + ) : ^T * ^T -> ^T) and ^T: (static member ( - ) : ^T * ^T -> ^T)> =
         | Vector of 'T[]
@@ -1091,41 +1019,6 @@ module Primitives =
         }
 
         member dd.domain() = Domain.create (dd.domainIntervals, dd.domainRange)
-
-
-    /// TODO kk:20231017 - Only scalar eps is supported for now.
-    /// Type to describe a function used to calculate eps in mutation probability calculations.
-    type EpsFunc =
-        | EpsFunc of (Domain -> double -> double)
-
-        member r.invoke = let (EpsFunc v) = r in v
-
-
-    type Eps0 =
-        | Eps0 of double
-
-        member r.value = let (Eps0 v) = r in v
-        static member defaultValue = Eps0 0.01
-        static member defaultNarrowValue = Eps0 0.005
-        static member defaultWideValue = Eps0 0.02
-        // member e.modelString = toModelString Eps0.defaultValue.value e.value |> bindPrefix "e"
-
-
-    type EpsFuncValue =
-        | ScalarEps of Eps0
-
-        member ef.epsFunc (_ : Domain) : EpsFunc =
-            match ef with
-            | ScalarEps e -> EpsFunc (fun _ _ -> e.value)
-
-
-    type ProbabilityParams =
-        {
-            domainParams : DomainParams
-            zeroThreshold : ZeroThreshold<double>
-            maxIndexDiff : int option
-            epsFuncValue : EpsFuncValue
-        }
 
 module ZeroThreshold =
     let defaultValue = Primitives.ZeroThreshold 1.0e-05

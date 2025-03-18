@@ -3,6 +3,7 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Tridiagonal
+open Softellect.Math.Evolution
 open Softellect.Math.Models
 open Xunit
 open Xunit.Abstractions

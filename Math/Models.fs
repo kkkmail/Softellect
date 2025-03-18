@@ -2,6 +2,7 @@
 
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
+open Softellect.Math.Evolution
 
 /// TODO kk:20250315 - This is not generic enough to be sitting here.
 ///     However, I need to run some tests to see how all the new logic works.
@@ -37,11 +38,11 @@ module Models =
         //     |> Option.defaultValue EmptyString
 
         /// Calculates how much waste is recycled.
-        member r.evolve (p : PoissonSingleSampler) w =
+        member r.evolveStep (p : PoissonSampler<int64>) w =
             if w <= 0L then 0L
             else
                 let lambda = r.value * (double w)
-                let retVal = p.nextPoisson lambda
+                let retVal = p.next lambda
                 min retVal w // Cannot recycle more than we have.
 
 
@@ -157,19 +158,19 @@ module Models =
             let inv = (int64 n) * (int_u + w) + f
             inv
 
-        member inline md.evolve (p : EvolutionContext<'I, int64>, x : SubstanceData<'I>) =
+        member inline md.evolveStep (p : EvolutionContext<'I, int64>) (x : SubstanceData<'I>) : SubstanceData<'I> =
             let f = x.food.value
             let w = x.waste.value
             let u = x.protocell.value
-            let s = p.sampler
+            let s = p.poissonSampler
 
             let n = md.numberOfMolecules.value
 
-            let r = md.recyclingRate.evolve s w
-            let gamma_u = u.evolve (p, md.decay)
+            let r = md.recyclingRate.evolveStep s w
+            let gamma_u = md.decay.evolveStep p u
             let int_gamma_u = gamma_u.total()
             let f_n = (pown (double (max f 0L)) n)
-            let int_k_u = u.evolve (p, md.replication, f_n)
+            let int_k_u = md.replication.evolveStep p f_n u
             let int_int_k_u = int_k_u.total()
 
             // Note that the food could be "eaten" beyond zero. If that happens, then it will be treated as exact zero until enough waste is recycled.
@@ -192,7 +193,7 @@ module Models =
                 let f_n1 = max (min (((double f) + (double r) * (double n)) / (c * (double n))) f_n) 0.0
 
                 //   2. Recalculate df and du.
-                let int_k_u = u.evolve (p, md.replication, f_n1)
+                let int_k_u = md.replication.evolveStep p f_n1 u
                 let int_int_k_u = int_k_u.total()
 
                 let df = (int64 n) * (r - int_int_k_u)
@@ -205,8 +206,8 @@ module Models =
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
 
-        member inline md.evolve (p : EvolutionContext<'I, int64>, x0 : SubstanceData<'I>, n : NoOfEpochs) =
-             let result = [|for i in 0..n.value -> i |] |> Array.fold (fun acc _ -> md.evolve (p, acc)) x0
+        member inline md.evolve (p : EvolutionContext<'I, int64>) (n : NoOfEpochs) (x0 : SubstanceData<'I>) =
+             let result = [|for i in 0..n.value -> i |] |> Array.fold (fun acc _ -> md.evolveStep p acc) x0
              result
 
 
@@ -218,68 +219,3 @@ module Models =
     type SimpleEvolutionModel6D = SimpleEvolutionModel<Point6D, Coord6D, Domain6D>
     type SimpleEvolutionModel7D = SimpleEvolutionModel<Point7D, Coord7D, Domain7D>
     type SimpleEvolutionModel8D = SimpleEvolutionModel<Point8D, Coord8D, Domain8D>
-
-
-    // // 1D versions
-    // let getMean1D (md : SimpleEvolutionModel1D) x =
-    //     x.protocell.value.mean double (fun (p : Point1D) -> p.toCoord md.domain)
-    //
-    // let getStdDev1D (md : SimpleEvolutionModel1D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point1D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 2D versions
-    // let getMean2D (md : SimpleEvolutionModel2D) x =
-    //     x.protocell.value.mean double (fun (p : Point2D) -> p.toCoord md.domain)
-    //
-    // let getStdDev2D (md : SimpleEvolutionModel2D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point2D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 3D versions
-    // let getMean3D (md : SimpleEvolutionModel3D) x =
-    //     x.protocell.value.mean double (fun (p : Point3D) -> p.toCoord md.domain)
-    //
-    // let getStdDev3D (md : SimpleEvolutionModel3D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point3D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 4D versions
-    // let getMean4D (md : SimpleEvolutionModel4D) x =
-    //     x.protocell.value.mean double (fun (p : Point4D) -> p.toCoord md.domain)
-    //
-    // let getStdDev4D (md : SimpleEvolutionModel4D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point4D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 5D versions
-    // let getMean5D (md : SimpleEvolutionModel5D) x =
-    //     x.protocell.value.mean double (fun (p : Point5D) -> p.toCoord md.domain)
-    //
-    // let getStdDev5D (md : SimpleEvolutionModel5D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point5D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 6D versions
-    // let getMean6D (md : SimpleEvolutionModel6D) x =
-    //     x.protocell.value.mean double (fun (p : Point6D) -> p.toCoord md.domain)
-    //
-    // let getStdDev6D (md : SimpleEvolutionModel6D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point6D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 7D versions
-    // let getMean7D (md : SimpleEvolutionModel7D) x =
-    //     x.protocell.value.mean double (fun (p : Point7D) -> p.toCoord md.domain)
-    //
-    // let getStdDev7D (md : SimpleEvolutionModel7D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point7D) -> p.toCoord md.domain)
-    //     variance.sqrt()
-    //
-    // // 8D versions
-    // let getMean8D (md : SimpleEvolutionModel8D) x =
-    //     x.protocell.value.mean double (fun (p : Point8D) -> p.toCoord md.domain)
-    //
-    // let getStdDev8D (md : SimpleEvolutionModel8D) x =
-    //     let variance = x.protocell.value.variance double (fun (p : Point8D) -> p.toCoord md.domain)
-    //     variance.sqrt()
