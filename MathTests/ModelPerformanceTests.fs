@@ -116,6 +116,24 @@ module Helpers =
                 protocell = ProtoCellData initialProtocells
             }
 
+        let outputData i s =
+            let invariant = model.invariant s
+            let mean = model.mean s
+            let stdDev = model.stdDev s
+
+            ()
+
+        let callBack i s =
+            ()
+
+        let ctx =
+            {
+                evolutionContext = evolutionContext
+                noOfEpochs = noOfEpochs
+                initialData = initialSubstanceData
+                callBack = callBack
+            }
+
         writeLine("Initial model and data created")
         writeLine($"Initial protocells: {initialProtocells.total()}")
 
@@ -126,7 +144,7 @@ module Helpers =
         let setupTime = stopwatch.ElapsedMilliseconds
 
         stopwatch.Restart()
-        let result = model.evolve evolutionContext noOfEpochs initialSubstanceData
+        let result = model.evolve ctx
         let evolutionTime = stopwatch.ElapsedMilliseconds
 
         // Display results

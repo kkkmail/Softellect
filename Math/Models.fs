@@ -72,10 +72,6 @@ module Models =
             protocell : ProtoCellData<'I>
         }
 
-        // member inline d.evolve (p : EvolutionContext<'I, 'T>) =
-        //
-        //     failwith ""
-
 
     type MoleculeCount =
         | MoleculeCount of int64
@@ -106,13 +102,30 @@ module Models =
             }
 
 
-    /// A very simple evolutionary model:
-    ///     du(x, t) / dt = r(t) * k0 * sum(ka(y) * p(x,y) * u(y, t), {y}) - g0 * g(x) * u(x, t)
-    ///     dr(t) / dt = -r(t) * k0 * sum(sum(ka(y) * p(x,y) * u(y,t), {y}), {x}) + s * w(t)
+    type ModelContext<'I, 'T, 'S
+            when ^I: equality
+            and ^I: comparison
+            and ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison> =
+        {
+            evolutionContext : EvolutionContext<'I, 'T>
+            noOfEpochs : NoOfEpochs
+            initialData : 'S
+            callBack : int -> 'S -> unit
+        }
+
+
+    /// A very simple arbitrary dimension evolutionary model (x is a point in the domain):
+    ///     du(x, t) / dt = f(t)^n * k0 * sum(ka(y) * p(x,y) * u(y, t), {y}) - g0 * g(x) * u(x, t)
+    ///     df(t) / dt = n * (-f(t)^n * k0 * sum(sum(ka(y) * p(x,y) * u(y,t), {y}), {x}) + s * w(t))
     ///     dw(t) / dt = -s * w(t) + g0 * sum(g(x) * u(x, t), {x})
     ///
     /// where:
-    ///     k0 * ka(y) * p(x, y) is an EvolutionMatrix - replication rate of evolving from y to x.
+    ///     f(t) * k0 * ka(y) * p(x, y) is an EvolutionMatrix - replication rate of evolving from y to x.
     ///     g0 * g(x) is a Multiplier - decay rate.
     ///     s is a constant recycling rate.
     type SimpleEvolutionModel<'I, 'C, 'D
@@ -206,10 +219,18 @@ module Models =
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
 
-        member inline md.evolve (p : EvolutionContext<'I, int64>) (n : NoOfEpochs) (x0 : SubstanceData<'I>) =
-             let result = [|for i in 0..n.value -> i |] |> Array.fold (fun acc _ -> md.evolveStep p acc) x0
-             result
+        // member inline md.evolve (p : EvolutionContext<'I, int64>) (n : NoOfEpochs) (x0 : SubstanceData<'I>) =
+        //      let result = [|for i in 0..n.value -> i |] |> Array.fold (fun acc _ -> md.evolveStep p acc) x0
+        //      result
 
+        member inline md.evolve (ctx : ModelContext<'I, int64, SubstanceData<'I>>)=
+             let g acc i =
+                 let r = md.evolveStep ctx.evolutionContext acc
+                 ctx.callBack i r
+                 r
+
+             let result = [| for i in 0..ctx.noOfEpochs.value -> i |] |> Array.fold g ctx.initialData
+             result
 
     type SimpleEvolutionModel1D = SimpleEvolutionModel<Point1D, Coord1D, Domain>
     type SimpleEvolutionModel2D = SimpleEvolutionModel<Point2D, Coord2D, Domain2D>
