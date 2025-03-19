@@ -90,7 +90,7 @@ module Helpers =
 
         // Create random for Poisson sampler
         let random = Random(1) // Fixed seed for reproducibility
-        let poissonSampler : PoissonSampler<int64> = PoissonSampler.create random
+        let poissonSampler = PoissonSampler.create int64 random
 
         // Create evolution context
         let evolutionContext =

@@ -4,30 +4,34 @@ open System
 open System.Collections.Generic
 open FSharp.Collections
 open MathNet.Numerics.Distributions
-open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 
 module Evolution =
 
-    let poissonSample rnd lambda =
-        if lambda <= 0.0 then 0L
+    let inline private poissonSample<'T
+            when ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison> converter rnd lambda =
+        if lambda <= 0.0 then LanguagePrimitives.GenericZero<'T>
         else
             if lambda <= 2e9 then
                 // Use MathNet.Numerics.Distributions for small lambda
                 try
-                    int64 (Poisson.Sample(rnd, lambda))
-                with e ->
-                    failwith $"lambda: {lambda}, exception: {e}"
+                    converter (double (Poisson.Sample(rnd, lambda)))
+                with e -> failwith $"lambda: {lambda}, exception: {e}"
             else
                 // Use Gaussian approximation for large lambda
                 let mu = lambda
                 let sigma = sqrt lambda
                 let sample = Normal.Sample(rnd, mu, sigma)
-                int64 (Math.Round(sample))
+                converter (Math.Round(sample))
 
 
     /// State for the deterministic Poisson sampler
-    type private DeterministicPoissonState =
+    type DeterministicPoissonState =
         {
             mutable Remainder: float  // Stores the fractional part between calls
         }
@@ -36,7 +40,7 @@ module Evolution =
 
 
     /// Helper function that implements deterministic Poisson sampling with state
-    let private deterministicPoissonSample (state: DeterministicPoissonState) (lambda: float): int64 =
+    let deterministicPoissonSample (state: DeterministicPoissonState) (lambda: float) : int64 =
         // Add the remainder from previous call
         let adjustedLambda = lambda + state.Remainder
 
@@ -53,14 +57,20 @@ module Evolution =
 
     /// Encapsulation of a Poisson distribution sampler.
     /// It takes a value of lambda and returns next random number of events.
-    type PoissonSampler<'T> =
+    type PoissonSampler<'T
+            when ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison> =
         | PoissonSampler of (float -> 'T)
 
         member inline private r.invoke = let (PoissonSampler v) = r in v
-        member r.next lambda = r.invoke lambda
-        static member create rnd = poissonSample rnd |> PoissonSampler
+        member inline r.next lambda = r.invoke lambda
+        static member inline create (converter : double -> ^T) rnd = poissonSample converter rnd |> PoissonSampler
 
-        static member deterministic() =
+        static member inline deterministic() =
             let state = DeterministicPoissonState.create()
             PoissonSampler (deterministicPoissonSample state)
 
@@ -120,7 +130,15 @@ module Evolution =
         | DiscreteEvolution
 
 
-    type EvolutionContext<'I, 'T> =
+    type EvolutionContext<'I, 'T
+            when ^I: equality
+            and ^I: comparison
+            and ^T: (static member ( * ) : ^T * ^T -> ^T)
+            and ^T: (static member ( + ) : ^T * ^T -> ^T)
+            and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member Zero : ^T)
+            and ^T: equality
+            and ^T: comparison> =
         {
             poissonSampler: PoissonSampler<'T>
             toDouble : 'T -> double
