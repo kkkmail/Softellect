@@ -463,9 +463,9 @@ type MomentTests(output: ITestOutputHelper) =
                 let moment1 =
                     pointsWithWeights
                     |> Array.fold (fun acc (coord, weight) ->
-                        let weightedCoord = coord * weight
+                        let weightedCoord = coord *. weight
                         acc + weightedCoord) Coord8D.Zero
-                    |> fun sum -> sum / totalWeight
+                    |> fun sum -> sum /. totalWeight
 
                 // Calculate second moment (mean of squares)
                 let moment2 =
@@ -481,8 +481,8 @@ type MomentTests(output: ITestOutputHelper) =
                             x6 = coord.x6 * coord.x6
                             x7 = coord.x7 * coord.x7
                         }
-                        acc + (squaredCoord * weight)) Coord8D.Zero
-                    |> fun sum -> sum / totalWeight
+                        acc + (squaredCoord *. weight)) Coord8D.Zero
+                    |> fun sum -> sum /. totalWeight
 
                 (moment1, moment2)
 

@@ -69,7 +69,7 @@ type Model3DPerformanceTests(output: ITestOutputHelper) =
 
         // Create random for Poisson sampler
         let random = Random(1) // Fixed seed for reproducibility
-        let poissonSampler = PoissonSingleSampler.create random
+        let poissonSampler = PoissonSampler.create random
 
         // Create evolution context
         let evolutionContext =

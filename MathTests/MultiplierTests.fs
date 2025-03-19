@@ -2,6 +2,7 @@
 
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
+open Softellect.Math.Evolution
 open Xunit
 open Xunit.Abstractions
 open FluentAssertions

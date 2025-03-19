@@ -6,6 +6,7 @@ open FluentAssertions
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Tridiagonal
+open Softellect.Math.Evolution
 open Xunit.Abstractions
 
 type PoissonEvolutionTests(output: ITestOutputHelper) =
@@ -30,12 +31,12 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         let getMultiplier = fun _ -> 1.0 // No scaling
 
         // Create evolution parameter
-        let evolutionParam = {
-            getPoissonSampler = fun _ -> deterministicPoissonSampler
-            sampler = PoissonSingleSampler deterministicPoissonSampler
-            toDouble = fun (n: int64) -> double n
-            fromDouble = fun (d: double) -> int64 d
-        }
+        let evolutionParam =
+            {
+                poissonSampler = PoissonSampler deterministicPoissonSampler
+                toDouble = fun (n: int64) -> double n
+                fromDouble = fun (d: double) -> int64 d
+            }
 
         let evolutionMatrix =
             {
@@ -44,7 +45,7 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
             }
 
         // Act
-        let evolvedArray = initialArray.evolve (evolutionParam, evolutionMatrix, 1.0)
+        let evolvedArray = evolutionMatrix.evolveStep evolutionParam 1.0 initialArray
 
         // Assert
         // Get all values in the evolved array

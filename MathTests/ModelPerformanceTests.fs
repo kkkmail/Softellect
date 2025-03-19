@@ -3,6 +3,7 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Tridiagonal
+open Softellect.Math.Evolution
 open Softellect.Math.Models
 open Xunit
 open Xunit.Abstractions
@@ -89,13 +90,12 @@ module Helpers =
 
         // Create random for Poisson sampler
         let random = Random(1) // Fixed seed for reproducibility
-        let poissonSampler = PoissonSingleSampler.create random
+        let poissonSampler : PoissonSampler<int64> = PoissonSampler.create random
 
         // Create evolution context
         let evolutionContext =
             {
-                getPoissonSampler = fun _ -> poissonSampler.nextPoisson
-                sampler = poissonSampler
+                poissonSampler = poissonSampler
                 toDouble = double
                 fromDouble = int64
             }
@@ -126,7 +126,7 @@ module Helpers =
         let setupTime = stopwatch.ElapsedMilliseconds
 
         stopwatch.Restart()
-        let result = model.evolve(evolutionContext, initialSubstanceData, noOfEpochs)
+        let result = model.evolve evolutionContext noOfEpochs initialSubstanceData
         let evolutionTime = stopwatch.ElapsedMilliseconds
 
         // Display results

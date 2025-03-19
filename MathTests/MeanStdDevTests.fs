@@ -5,6 +5,7 @@ open FluentAssertions
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Models
+open Softellect.Math.Evolution
 open Xunit.Abstractions
 open System
 
@@ -54,7 +55,7 @@ type Mean2DTests() =
         let substanceData = createSubstanceData2D [| (50, 50, 100L) |]
 
         // Act
-        let mean = getMean2D model substanceData
+        let mean = model.mean substanceData
 
         // Assert
         mean.x0.Should().BeApproximately(0.0, 0.1, "mean x0 should be at center of domain") |> ignore
@@ -70,7 +71,7 @@ type Mean2DTests() =
         |]
 
         // Act
-        let mean = getMean2D model substanceData
+        let mean = model.mean substanceData
 
         // Assert
         mean.x0.Should().BeApproximately(0.0, 0.1, "mean x0 should be at center with symmetric points") |> ignore
@@ -86,7 +87,7 @@ type Mean2DTests() =
         |]
 
         // Act
-        let mean = getMean2D model substanceData
+        let mean = model.mean substanceData
 
         // Assert
         mean.x0.Should().BeGreaterThan(0.0, "mean x0 should shift toward heavier point") |> ignore
@@ -103,7 +104,7 @@ type Mean2DTests() =
         |]
 
         // Act
-        let mean = getMean2D model substanceData
+        let mean = model.mean substanceData
 
         // Assert
         mean.x0.Should().BeApproximately(0.0, 0.1, "mean x0 should be at center with uniform grid") |> ignore
@@ -118,7 +119,7 @@ type StdDev2DTests() =
         let substanceData = createSubstanceData2D [| (50, 50, 100L) |]
 
         // Act
-        let stdDev = getStdDev2D model substanceData
+        let stdDev = model.stdDev substanceData
 
         // Assert
         stdDev.x0.Should().BeApproximately(0.0, 0.1, "stdDev x0 should be close to zero for single point") |> ignore
@@ -134,7 +135,7 @@ type StdDev2DTests() =
         |]
 
         // Act
-        let stdDev = getStdDev2D model substanceData
+        let stdDev = model.stdDev substanceData
 
         // Assert
         // Reducing the expected value from 0.5 to 0.3 to make the test pass
@@ -151,7 +152,7 @@ type StdDev2DTests() =
         |]
 
         // Act
-        let stdDev = getStdDev2D model substanceData
+        let stdDev = model.stdDev substanceData
 
         // Assert
         stdDev.x0.Should().BeGreaterThan(0.3, "stdDev x0 should be significant with variation in both directions") |> ignore
@@ -168,7 +169,7 @@ type StdDev2DTests() =
         |]
 
         // Act
-        let stdDev = getStdDev2D model substanceData
+        let stdDev = model.stdDev substanceData
 
         // Assert
         stdDev.x0.Should().BeGreaterThan(0.3, "stdDev x0 should be significant with uniform grid") |> ignore
@@ -191,8 +192,8 @@ type CombinedTests() =
         |]
 
         // Act
-        let mean = getMean2D model substanceData
-        let stdDev = getStdDev2D model substanceData
+        let mean = model.mean substanceData
+        let stdDev = model.stdDev substanceData
 
         // Assert
         // Mean should be off-center
@@ -213,8 +214,8 @@ type CombinedTests() =
         // Act & Assert
         // Use Action type for exception testing
         let action = Action(fun () ->
-            let mean = getMean2D model substanceData
-            let stdDev = getStdDev2D model substanceData
+            let mean = model.mean substanceData
+            let stdDev = model.stdDev substanceData
             // Both should be default values or zero
             mean.Should().BeEquivalentTo(Coord2D.Zero, "mean should default to zero with empty distribution") |> ignore
             stdDev.Should().BeEquivalentTo(Coord2D.Zero, "stdDev should default to zero with empty distribution") |> ignore
