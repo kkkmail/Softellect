@@ -43,6 +43,7 @@
         </None>
         <Compile Include="Primitives.fs" />
         <Compile Include="Sparse.fs" />
+        <Compile Include="Sparse2.fs" />
         <Compile Include="Tridiagonal.fs" />
         <Compile Include="Evolution.fs" />
         <Compile Include="Models.fs" />
