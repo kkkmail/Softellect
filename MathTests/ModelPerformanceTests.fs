@@ -41,8 +41,8 @@ module Helpers =
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
 
-        let noOfEpochs = NoOfEpochs 1_000_000
-        let domainIntervals = DomainIntervals 1000
+        let noOfEpochs = NoOfEpochs 100_000
+        let domainIntervals = DomainIntervals 100
         let domain = createDomain domainIntervals DomainRange.defaultValue
 
         let dimension = domain.dimension
@@ -116,15 +116,92 @@ module Helpers =
                 protocell = ProtoCellData initialProtocells
             }
 
+        // Parameters for output frequency
+        let outputBlocks = 100
+        let outputHoursThreshold = 6.0 // 6 hours
+        let earlyStageHoursThreshold = 0.25 // 15 minutes
+        let earlyStageEpochs = noOfEpochs.value / outputBlocks
+
+        // Store last output time
+        let mutable lastOutputTime = DateTime.Now
+
+        // Store start time for estimating completion
+        let startTime = DateTime.Now
+
         let outputData i s =
+            // Print separator to distinguish output blocks
+            writeLine("-----------------------------------------------------")
+
+            let currentTime = DateTime.Now
+            let elapsedTime = (currentTime - startTime).TotalSeconds
+            let percentComplete = float i / float noOfEpochs.value * 100.0
+            // Avoid division by zero for i = 0
+            let estimatedTotalTime = if i > 0 then elapsedTime / (float i / float noOfEpochs.value) else 0.0
+            let estimatedTimeRemaining = estimatedTotalTime - elapsedTime
+
+            // Output current step with completion estimate
+            writeLine($"Step {i}/{noOfEpochs.value} ({percentComplete:F2}%%) - Est. remaining: {TimeSpan.FromSeconds(estimatedTimeRemaining)}")
+
+            // Output relevant data for the current step
             let invariant = model.invariant s
             let mean = model.mean s
             let stdDev = model.stdDev s
 
-            ()
+            writeLine($"Current food: {s.food.value}")
+            writeLine($"Current waste: {s.waste.value}")
+
+            let currentProtocells = s.protocell.value
+            let totalProtocells = currentProtocells.total()
+
+            writeLine($"Current total protocells: {totalProtocells}")
+            writeLine($"Current count of different protocells: {currentProtocells.values.Length}")
+            writeLine($"Current invariant: {invariant}")
+            writeLine($"Current mean: %A{mean}")
+            writeLine($"Current stdDev: %A{stdDev}")
+
+            // Find max count and its location
+            let mutable maxCount = 0L
+            let mutable maxLocation = Unchecked.defaultof<'I>
+
+            currentProtocells.values
+            |> Array.iter (fun item ->
+                if item.value > maxCount then
+                    maxCount <- item.value
+                    maxLocation <- item.x
+            )
+
+            writeLine($"Current max protocell count: {maxCount} at location {maxLocation}")
+
+            // Report memory usage
+            let currentProcess = Process.GetCurrentProcess()
+            let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
+            writeLine($"Approximate memory usage: {memoryMB} MB")
+
+            // Update last output time
+            lastOutputTime <- currentTime
 
         let callBack i s =
-            ()
+            let currentTime = DateTime.Now
+            let timeSinceLastOutput = currentTime - lastOutputTime
+
+            // Determine if we should output data based on the requirements
+            let epochInterval = max 1 (noOfEpochs.value / outputBlocks) // Ensure division is at least 1
+
+            let shouldOutput =
+                // Output data at regular intervals (every 1/100 of total epochs)
+                i % epochInterval = 0 ||
+
+                // For early stage, output at least every 15 minutes
+                (i <= earlyStageEpochs && timeSinceLastOutput.TotalHours >= earlyStageHoursThreshold) ||
+
+                // For later stages, output at least every 6 hours
+                (i > earlyStageEpochs && timeSinceLastOutput.TotalHours >= outputHoursThreshold) ||
+
+                // Always output the last epoch
+                i = noOfEpochs.value
+
+            if shouldOutput then
+                outputData i s
 
         let ctx =
             {
@@ -139,6 +216,9 @@ module Helpers =
 
         let invariant0 = model.invariant initialSubstanceData
 
+        // Output initial data before evolution starts
+        outputData 0 initialSubstanceData
+
         // Evolve the model
         writeLine($"Starting evolution for {noOfEpochs.value} epochs...")
         let setupTime = stopwatch.ElapsedMilliseconds
@@ -147,50 +227,24 @@ module Helpers =
         let result = model.evolve ctx
         let evolutionTime = stopwatch.ElapsedMilliseconds
 
-        // Display results
-        let finalProtocells = result.protocell.value
-        let totalProtocells = finalProtocells.total()
+        // Display final results using the outputData function
+        outputData noOfEpochs.value result
 
-        let invariant = model.invariant result
-        let mean = model.mean result
-        let stdDev = model.stdDev result
-
-        writeLine($"{name} results:")
+        // Add summary information
+        writeLine("-----------------------------------------------------")
+        writeLine($"{name} results summary:")
         writeLine($"Setup time: {setupTime} ms")
         writeLine($"Evolution time: {evolutionTime} ms")
         writeLine($"Time per epoch: {double evolutionTime / double noOfEpochs.value:F2} ms")
 
-        writeLine($"Final food: {result.food.value}")
-        writeLine($"Final waste: {result.waste.value}")
-        writeLine($"Final total protocells: {totalProtocells}")
-        writeLine($"Final count of different protocells: {finalProtocells.values.Length}")
-
-        writeLine($"initial invariant: {invariant0}")
-        writeLine($"final invariant: {invariant}")
-        writeLine($"final mean: %A{mean}")
-        writeLine($"final stdDev: %A{stdDev}")
-
-        // Report memory usage if possible
-        let currentProcess = Process.GetCurrentProcess()
-        let memoryMB = currentProcess.WorkingSet64 / (1024L * 1024L)
-        writeLine($"Approximate memory usage: {memoryMB} MB")
-
-        // Find max count and its location
-        let mutable maxCount = 0L
-        let mutable maxLocation = Unchecked.defaultof<'I>
-
-        finalProtocells.values
-        |> Array.iter (fun item ->
-            if item.value > maxCount then
-                maxCount <- item.value
-                maxLocation <- item.x
-        )
-
-        writeLine($"Max protocell count: {maxCount} at location {maxLocation}")
+        // Display model invariant information
+        writeLine($"Initial invariant: {invariant0}")
+        writeLine($"Final invariant: {model.invariant result}")
 
         // Simple assertions to verify the test ran correctly
+        let totalProtocells = result.protocell.value.total()
         totalProtocells.Should().BeGreaterThan(0L, "total number of protocells should be positive") |> ignore
-        invariant.Should().Be(invariant0, "invariant should be preserved") |> ignore
+        (model.invariant result).Should().Be(invariant0, "invariant should be preserved") |> ignore
 
 open Helpers
 

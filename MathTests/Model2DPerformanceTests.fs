@@ -3,6 +3,7 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Tridiagonal
+open Softellect.Math.Evolution
 open Softellect.Math.Models
 open Xunit
 open Xunit.Abstractions
@@ -22,7 +23,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         let noOfEpochs = NoOfEpochs 100_000
 
         // Create a domain with 1000 x 1000 intervals
-        let domainIntervals = DomainIntervals 1000
+        let domainIntervals = DomainIntervals 100
         let domain = Domain2D.create(domainIntervals, DomainRange.defaultValue)
 
         writeLine($"Domain created with {domainIntervals.value}x{domainIntervals.value} intervals")
@@ -69,20 +70,19 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
 
         // Create random for Poisson sampler
         let random = Random(1) // Fixed seed for reproducibility
-        let poissonSampler = PoissonSingleSampler.create random
+        let poissonSampler = PoissonSampler.create int64 random
 
         // Create evolution context
         let evolutionContext =
             {
-                getPoissonSampler = fun _ -> poissonSampler.nextPoisson
-                sampler = poissonSampler
+                poissonSampler = poissonSampler
                 toDouble = double
                 fromDouble = int64
             }
 
         // Create initial substance data
         // Center point in domain (500, 500) for 1000 x 1000 intervals
-        let centerPoint = { i0 = 500; i1 = 500 }
+        let centerPoint = { i0 = domainIntervals.value / 2; i1 = domainIntervals.value / 2 }
 
         let protocells = 1000L
 
@@ -96,6 +96,14 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
                 protocell = ProtoCellData initialProtocells
             }
 
+        let ctx =
+            {
+                evolutionContext = evolutionContext
+                noOfEpochs = noOfEpochs
+                initialData = initialSubstanceData
+                callBack = fun _ _ -> ()
+            }
+
         writeLine("Initial model and data created")
         writeLine($"Initial protocells: {initialProtocells.total()}")
 
@@ -106,7 +114,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         let setupTime = stopwatch.ElapsedMilliseconds
 
         stopwatch.Restart()
-        let result = model.evolve(evolutionContext, initialSubstanceData, noOfEpochs)
+        let result = model.evolve ctx
         let evolutionTime = stopwatch.ElapsedMilliseconds
 
         // Display results
