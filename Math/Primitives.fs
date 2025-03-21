@@ -13,15 +13,12 @@ module Primitives =
             subtract: 'T -> 'T -> 'T
             multiply: 'T -> 'T -> 'T
             divide: 'T -> 'T -> 'T
-            scalaMultiply: 'T -> 'T -> double
+            dot: 'T -> 'T -> double
             multiplyByDouble: double -> 'T -> 'T
             sqrt: 'T -> 'T
-            // toDouble: 'T -> double
             zero: 'T
             one: 'T
             filter: 'T -> bool
-            // isZero: 'T -> bool
-            // greaterThan: 'T -> 'T -> bool
         }
 
 
@@ -156,7 +153,7 @@ module Primitives =
         member inline r.convert converter = r.value |> Array.map (fun a -> a |> Array.map converter) |> Matrix
 
         // /// Matrix multiplication (not implemented yet as it is not needed).
-        // static member inline ( ** ) (a : Matrix<'T>, b : Matrix<'T>) : Matrix<'T> =
+        // static member inline dot (a : Matrix<'T>, b : Matrix<'T>) : Matrix<'T> =
         //     failwith "Matrix multiplication is not implemented yet."
 
         static member inline (*) (a : 'T, b : Matrix<'T>) : Matrix<'T> =
@@ -723,7 +720,8 @@ module Primitives =
         static member ( *. ) (a : Coord1D, d : double) = d .* a
         static member (/) (a : Coord1D, b : Coord1D) = { x0 = a.x0 / b.x0 }
         static member ( /. ) (a : Coord1D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord1D, b : Coord1D) = a.x0 * b.x0
+        static member dot (a : Coord1D) (b : Coord1D) = a.x0 * b.x0
+        static member ( ** ) (a : Coord1D, b : Coord1D) = Coord1D.dot a b
         member this.total() = this.x0
         member this.sqrt() = { x0 = sqrt (abs this.x0) }
 
@@ -744,7 +742,8 @@ module Primitives =
         static member ( *. ) (a : Coord2D, d : double) = d .* a
         static member (/) (a : Coord2D, b : Coord2D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1 }
         static member ( /. ) (a : Coord2D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord2D, b : Coord2D) = a.x0 * b.x0 + a.x1 * b.x1
+        static member dot (a : Coord2D) (b : Coord2D) = a.x0 * b.x0 + a.x1 * b.x1
+        static member ( ** ) (a : Coord2D, b : Coord2D) = Coord2D.dot a b
         member this.total() = this.x0 + this.x1
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1) }
 
@@ -766,7 +765,8 @@ module Primitives =
         static member ( *. ) (a : Coord3D, d : double) = d .* a
         static member (/) (a : Coord3D, b : Coord3D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2 }
         static member ( /. ) (a : Coord3D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord3D, b : Coord3D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2
+        static member dot (a : Coord3D) (b : Coord3D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2
+        static member ( ** ) (a : Coord3D, b : Coord3D) = Coord3D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2) }
 
@@ -789,7 +789,8 @@ module Primitives =
         static member ( *. ) (a : Coord4D, d : double) = d .* a
         static member (/) (a : Coord4D, b : Coord4D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3 }
         static member ( /. ) (a : Coord4D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord4D, b : Coord4D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3
+        static member dot (a : Coord4D) (b : Coord4D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3
+        static member ( ** ) (a : Coord4D, b : Coord4D) = Coord4D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3) }
 
@@ -813,7 +814,8 @@ module Primitives =
         static member ( *. ) (a : Coord5D, d : double) = d .* a
         static member (/) (a : Coord5D, b : Coord5D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4 }
         static member ( /. ) (a : Coord5D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord5D, b : Coord5D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4
+        static member dot (a : Coord5D) (b : Coord5D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4
+        static member ( ** ) (a : Coord5D, b : Coord5D) = Coord5D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3); x4 = sqrt (abs this.x4) }
 
@@ -838,7 +840,8 @@ module Primitives =
         static member ( *. ) (a : Coord6D, d : double) = d .* a
         static member (/) (a : Coord6D, b : Coord6D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5 }
         static member ( /. ) (a : Coord6D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord6D, b : Coord6D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5
+        static member dot (a : Coord6D) (b : Coord6D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5
+        static member ( ** ) (a : Coord6D, b : Coord6D) = Coord6D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3); x4 = sqrt (abs this.x4); x5 = sqrt (abs this.x5) }
 
@@ -864,7 +867,8 @@ module Primitives =
         static member ( *. ) (a : Coord7D, d : double) = d .* a
         static member (/) (a : Coord7D, b : Coord7D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5; x6 = a.x6 / b.x6 }
         static member ( /. ) (a : Coord7D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord7D, b : Coord7D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6
+        static member dot (a : Coord7D) (b : Coord7D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6
+        static member ( ** ) (a : Coord7D, b : Coord7D) = Coord7D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3); x4 = sqrt (abs this.x4); x5 = sqrt (abs this.x5); x6 = sqrt (abs this.x6) }
 
@@ -891,7 +895,8 @@ module Primitives =
         static member ( *. ) (a : Coord8D, d : double) = d .* a
         static member (/) (a : Coord8D, b : Coord8D) = { x0 = a.x0 / b.x0; x1 = a.x1 / b.x1; x2 = a.x2 / b.x2; x3 = a.x3 / b.x3; x4 = a.x4 / b.x4; x5 = a.x5 / b.x5; x6 = a.x6 / b.x6; x7 = a.x7 / b.x7 }
         static member ( /. ) (a : Coord8D, d : double) = a *. (1.0 / d)
-        static member ( ** ) (a : Coord8D, b : Coord8D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6 + a.x7 * b.x7
+        static member dot (a : Coord8D) (b : Coord8D) = a.x0 * b.x0 + a.x1 * b.x1 + a.x2 * b.x2 + a.x3 * b.x3 + a.x4 * b.x4 + a.x5 * b.x5 + a.x6 * b.x6 + a.x7 * b.x7
+        static member ( ** ) (a : Coord8D, b : Coord8D) = Coord8D.dot a b
         member this.total() = this.x0 + this.x1 + this.x2 + this.x3 + this.x4 + this.x5 + this.x6 + this.x7
         member this.sqrt() = { x0 = sqrt (abs this.x0); x1 = sqrt (abs this.x1); x2 = sqrt (abs this.x2); x3 = sqrt (abs this.x3); x4 = sqrt (abs this.x4); x5 = sqrt (abs this.x5); x6 = sqrt (abs this.x6); x7 = sqrt (abs this.x7) }
 
@@ -1039,6 +1044,205 @@ module Primitives =
                 x6 = d.d6.points[p.i6]
                 x7 = d.d7.points[p.i7]
             }
+
+
+    let arithmeticOperations1D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord1D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord1D.Zero
+            one = Coord1D.One
+            filter = fun e -> e > Coord1D.Zero
+        }
+
+
+    let conversionParameters1D d =
+        {
+            arithmetic = arithmeticOperations1D
+            converter = double
+            projector = fun (p : Point1D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations2D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord2D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord2D.Zero
+            one = Coord2D.One
+            filter = fun e -> e > Coord2D.Zero
+        }
+
+
+    let arithmeticOperationsDouble =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = (*)
+            multiplyByDouble = (*)
+            sqrt = sqrt
+            zero = 0.0
+            one = 1.0
+            filter = fun e -> e > 0.0
+        }
+
+
+    let conversionParameters2D d =
+        {
+            arithmetic = arithmeticOperations2D
+            converter = double
+            projector = fun (p : Point2D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations3D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord3D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord3D.Zero
+            one = Coord3D.One
+            filter = fun e -> e > Coord3D.Zero
+        }
+
+
+    let conversionParameters3D d =
+        {
+            arithmetic = arithmeticOperations3D
+            converter = double
+            projector = fun (p : Point3D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations4D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord4D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord4D.Zero
+            one = Coord4D.One
+            filter = fun e -> e > Coord4D.Zero
+        }
+
+
+    let conversionParameters4D d =
+        {
+            arithmetic = arithmeticOperations4D
+            converter = double
+            projector = fun (p : Point4D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations5D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord5D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord5D.Zero
+            one = Coord5D.One
+            filter = fun e -> e > Coord5D.Zero
+        }
+
+
+    let conversionParameters5D d =
+        {
+            arithmetic = arithmeticOperations5D
+            converter = double
+            projector = fun (p : Point5D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations6D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord6D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord6D.Zero
+            one = Coord6D.One
+            filter = fun e -> e > Coord6D.Zero
+        }
+
+
+    let conversionParameters6D d =
+        {
+            arithmetic = arithmeticOperations6D
+            converter = double
+            projector = fun (p : Point6D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations7D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord7D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord7D.Zero
+            one = Coord7D.One
+            filter = fun e -> e > Coord7D.Zero
+        }
+
+
+    let conversionParameters7D d =
+        {
+            arithmetic = arithmeticOperations7D
+            converter = double
+            projector = fun (p : Point7D) -> p.toCoord d
+        }
+
+
+    let arithmeticOperations8D =
+        {
+            add = (+)
+            subtract = (-)
+            multiply = (*)
+            divide = (/)
+            dot = Coord8D.dot
+            multiplyByDouble = (.*)
+            sqrt = _.sqrt()
+            zero = Coord8D.Zero
+            one = Coord8D.One
+            filter = fun e -> e > Coord8D.Zero
+        }
+
+
+    let conversionParameters8D d =
+        {
+            arithmetic = arithmeticOperations8D
+            converter = double
+            projector = fun (p : Point8D) -> p.toCoord d
+        }
 
     type DomainParams =
         {

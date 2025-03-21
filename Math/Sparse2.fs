@@ -30,8 +30,8 @@ module Sparse2 =
             map : Lazy<Map<'I, 'T>>
         }
 
-        static member create arithmetic (v: SparseValue<'I, 'T>[]) =
-            let values = v |> Array.filter (fun e -> arithmetic.filter e.value)
+        static member create filter (v: SparseValue<'I, 'T>[]) =
+            let values = v |> Array.filter (fun e -> filter e.value)
 
             {
                 values = values
@@ -110,7 +110,7 @@ module Sparse2 =
                     if dict.ContainsKey(key) then dict[key] <- arithmetic.add dict[key] v.value
                     else dict.Add(key, v.value)
 
-            SparseArray.toSparseArray arithmetic dict
+            SparseArray.toSparseArray arithmetic.filter dict
 
         static member multiply arithmetic (arrays: list<SparseArray<'I, 'T>>) =
             let result = Dictionary<'I, 'T>()
@@ -132,7 +132,7 @@ module Sparse2 =
                 for v in h.getValues() do result.Add(v.x, v.value)
                 t |> List.iter processArray
 
-            SparseArray.toSparseArray arithmetic result
+            SparseArray.toSparseArray arithmetic.filter result
 
         member array.add arithmetic b = SparseArray.sum arithmetic [array; b]
 
@@ -147,9 +147,7 @@ module Sparse2 =
                 if dict.ContainsKey(key) then dict[key] <- arithmetic.subtract dict[key] v.value
                 else dict.Add(key, arithmetic.subtract arithmetic.zero v.value)
 
-            SparseArray.toSparseArray arithmetic dict
-
-
+            SparseArray.toSparseArray arithmetic.filter dict
 
 
     /// A sparse matrix representation
@@ -185,7 +183,7 @@ module Sparse2 =
                     if result.ContainsKey(x) then result[x] <- arithmetic.add result[x] product
                     else result.Add(x, product)
 
-            SparseArray.toSparseArray arithmetic result
+            SparseArray.toSparseArray arithmetic.filter result
 
         member matrix.leftMultiply arithmetic (array: SparseArray<'I, 'T>) =
             let result = Dictionary<'I, 'T>()
@@ -207,9 +205,7 @@ module Sparse2 =
                     if result.ContainsKey(y) then result[y] <- arithmetic.add result[y] product
                     else result.Add(y, product)
 
-            SparseArray.toSparseArray arithmetic result
-
-
+            SparseArray.toSparseArray arithmetic.filter result
 
 
     // let private createAbove (arithmetic: ArithmeticOperations<'T>) (threshold: 'T) (v: 'T[]) =
