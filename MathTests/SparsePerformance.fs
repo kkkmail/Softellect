@@ -15,39 +15,47 @@ module SparsePerformance =
     type SparseArrayMultiplicationTests(output: ITestOutputHelper) =
         let multiplySparseArrays = Softellect.Math.Sparse.multiplySparseArrays
 
-        let createRandomSparseArray2D (size: int) (density: float) (random: Random) =
-            // Create a random 2D sparse array with the specified density
-            let createElements converter =
-                [|
-                    for _ in 0 .. (int (float size * float size * density)) - 1 do
-                        let x = random.Next(size)
-                        let y = random.Next(size)
-                        let point = { i0 = x; i1 = y }
-                        let value = random.Next(1, 100) |> int64  // Using int64 values
-                        yield (point, value)
-                |]
-                |> Array.distinctBy fst
-                |> Array.map converter
-
-            // Create using the same random seed but separate element generation to avoid bias
-            let oldElements : Softellect.Math.Sparse.SparseValue<Point2D, int64>[] = createElements (fun (point, value) -> { x = point; value = value })
-            let newElements : Softellect.Math.Sparse2.SparseValue<Point2D, int64>[] = createElements (fun (point, value) -> { x = point; value = value })
-
-            let oldArray = OldSparseArray2D.create oldElements
-            let newArray = NewSparseArray2D.create (fun e -> e > 0L) newElements
-
-            (oldArray, newArray)
-
         let createRandomSparseArrays2D (count: int) (size: int) (density: float) =
-            let random = Random(42) // Use the same seed for reproducibility
-            [| for _ in 1 .. count do yield createRandomSparseArray2D size density random |]
+            // Single random generator with fixed seed
+            let random = Random(1)
+
+            // Create both arrays with exactly the same elements
+            let arrays =
+                [|
+                    for _ in 1 .. count do
+                        // Generate the elements once
+                        let elements =
+                            [|
+                                for _ in 0 .. (int (float size * float size * density)) - 1 do
+                                    let x = random.Next(size)
+                                    let y = random.Next(size)
+                                    let point = { i0 = x; i1 = y }
+                                    let value = random.Next(1, 100) |> int64
+                                    yield (point, value)
+                            |]
+                            |> Array.distinctBy fst
+
+                        // Create both arrays with the same elements
+                        let oldElements = elements |> Array.map (fun (point, value) ->
+                            { x = point; value = value } : Softellect.Math.Sparse.SparseValue<Point2D, int64>)
+
+                        let newElements = elements |> Array.map (fun (point, value) ->
+                            { x = point; value = value } : Softellect.Math.Sparse2.SparseValue<Point2D, int64>)
+
+                        let oldArray = OldSparseArray2D.create oldElements
+                        let newArray = NewSparseArray2D.create (fun e -> e > 0L) newElements
+
+                        yield (oldArray, newArray)
+                |]
+
+            arrays
 
         [<Fact>]
         let ``Compare performance of sparse array multiplication in 2D``() =
             // Parameters for the test
-            let arrayCount = 2
+            let arrayCount = 4
             let size = 1000
-            let density = 0.5 // 50% of elements are non-zero
+            let density = 0.6 // 60% of elements are non-zero
 
             output.WriteLine($"Testing multiplication of {arrayCount} sparse arrays of size {size}x{size} with density {density}")
 
@@ -57,6 +65,10 @@ module SparsePerformance =
             // Extract old and new arrays
             let oldArrays = arraySets |> Array.map fst |> List.ofArray
             let newArrays = arraySets |> Array.map snd |> List.ofArray
+
+            // Output initial array sizes to verify they match
+            for i in 0 .. arrayCount - 1 do
+                output.WriteLine($"Array {i+1}: Old has {oldArrays[i].values.Length} elements, New has {newArrays[i].values.Length} elements")
 
             // Create a single stopwatch for both tests
             let stopwatch = Stopwatch()
@@ -80,7 +92,6 @@ module SparsePerformance =
             output.WriteLine($"Speedup factor: {oldElapsed.TotalMilliseconds / newElapsed.TotalMilliseconds}")
 
             // Verify that both implementations produce identical results with int64
-
             let oldCount = oldResult.values.Length
             let newCount = newResult.values.Length
 
@@ -111,5 +122,3 @@ module SparsePerformance =
                 oldValue.x.i0.Should().Be(newValue.x.i0, $"Coordinate i0 at index {i} should match") |> ignore
                 oldValue.x.i1.Should().Be(newValue.x.i1, $"Coordinate i1 at index {i} should match") |> ignore
                 oldValue.value.Should().Be(newValue.value, $"Value at index {i} should match") |> ignore
-
-        // You might want to add more tests for other dimensions or operations
