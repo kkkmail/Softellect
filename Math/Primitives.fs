@@ -6,6 +6,34 @@ open System
 
 module Primitives =
 
+    /// Arithmetic operations record that encapsulates all required operations
+    type ArithmeticOperations<'T> =
+        {
+            add: 'T -> 'T -> 'T
+            subtract: 'T -> 'T -> 'T
+            multiply: 'T -> 'T -> 'T
+            divide: 'T -> 'T -> 'T
+            scalaMultiply: 'T -> 'T -> double
+            multiplyByDouble: double -> 'T -> 'T
+            sqrt: 'T -> 'T
+            // toDouble: 'T -> double
+            zero: 'T
+            one: 'T
+            filter: 'T -> bool
+            // isZero: 'T -> bool
+            // greaterThan: 'T -> 'T -> bool
+        }
+
+
+    /// Record containing conversion parameters
+    type ConversionParameters<'I, 'T, 'C> =
+        {
+            arithmetic: ArithmeticOperations<'C>
+            converter: 'T -> double
+            projector: 'I -> 'C
+        }
+
+
     // [<Literal>]
     // let DefaultRootFolder = DefaultRootDrive + @":\" + ContGenBaseName + @"\Clm\"
     //
