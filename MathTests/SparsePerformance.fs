@@ -9,8 +9,8 @@ open Softellect.Math.Primitives
 
 module SparsePerformance =
 
-    type OldSparseArray2D = Softellect.Math.Sparse.SparseArray<Point2D, double>
-    type NewSparseArray2D = Softellect.Math.Sparse2.SparseArray<Point2D, double>
+    type OldSparseArray2D = Softellect.Math.Sparse.SparseArray<Point2D, int64>
+    type NewSparseArray2D = Softellect.Math.Sparse2.SparseArray<Point2D, int64>
 
     type SparseArrayMultiplicationTests(output: ITestOutputHelper) =
         let multiplySparseArrays = Softellect.Math.Sparse.multiplySparseArrays
@@ -23,18 +23,18 @@ module SparsePerformance =
                         let x = random.Next(size)
                         let y = random.Next(size)
                         let point = { i0 = x; i1 = y }
-                        let value = random.NextDouble()
+                        let value = random.Next(1, 100) |> int64  // Using int64 values
                         yield (point, value)
                 |]
                 |> Array.distinctBy fst
                 |> Array.map converter
 
             // Create using the same random seed but separate element generation to avoid bias
-            let oldElements : Softellect.Math.Sparse.SparseValue<Point2D, double>[] = createElements (fun (point, value) -> { x = point; value = value })
-            let newElements : Softellect.Math.Sparse2.SparseValue<Point2D, double>[] = createElements (fun (point, value) -> { x = point; value = value })
+            let oldElements : Softellect.Math.Sparse.SparseValue<Point2D, int64>[] = createElements (fun (point, value) -> { x = point; value = value })
+            let newElements : Softellect.Math.Sparse2.SparseValue<Point2D, int64>[] = createElements (fun (point, value) -> { x = point; value = value })
 
             let oldArray = OldSparseArray2D.create oldElements
-            let newArray = NewSparseArray2D.create (fun e -> e > 0.0) newElements
+            let newArray = NewSparseArray2D.create (fun e -> e > 0L) newElements
 
             (oldArray, newArray)
 
@@ -58,27 +58,28 @@ module SparsePerformance =
             let oldArrays = arraySets |> Array.map fst |> List.ofArray
             let newArrays = arraySets |> Array.map snd |> List.ofArray
 
+            // Create a single stopwatch for both tests
+            let stopwatch = Stopwatch()
+
             // Benchmark the old implementation
-            let oldStopwatch = Stopwatch.StartNew()
+            stopwatch.Restart()
             let oldResult = multiplySparseArrays oldArrays
-            oldStopwatch.Stop()
-            let oldElapsed = oldStopwatch.Elapsed
+            stopwatch.Stop()
+            let oldElapsed = stopwatch.Elapsed
 
             // Benchmark the new implementation
-            let newStopwatch = Stopwatch.StartNew()
-            // Use the pre-defined arithmeticOperations2D
-            let newResult = NewSparseArray2D.multiply arithmeticOperationsDouble newArrays
-            newStopwatch.Stop()
-            let newElapsed = newStopwatch.Elapsed
+            stopwatch.Restart()
+            // Use the pre-defined arithmeticOperations for int64
+            let newResult = NewSparseArray2D.multiply arithmeticOperationsInt64 newArrays
+            stopwatch.Stop()
+            let newElapsed = stopwatch.Elapsed
 
             // Output the results
             output.WriteLine($"Old implementation took {oldElapsed.TotalMilliseconds} ms")
             output.WriteLine($"New implementation took {newElapsed.TotalMilliseconds} ms")
             output.WriteLine($"Speedup factor: {oldElapsed.TotalMilliseconds / newElapsed.TotalMilliseconds}")
 
-            // Verify that both implementations produce similar results
-            // Note: We can't directly compare elements since the implementations might be different
-            // But we can check for comparable number of non-zero elements and similar statistics
+            // Verify that both implementations produce identical results with int64
 
             let oldCount = oldResult.values.Length
             let newCount = newResult.values.Length
@@ -86,23 +87,29 @@ module SparsePerformance =
             output.WriteLine($"Old result has {oldCount} non-zero elements")
             output.WriteLine($"New result has {newCount} non-zero elements")
 
-            // We would expect roughly similar counts if the algorithms are equivalent
-            // But not necessarily identical due to floating point differences
-            let countDifference = Math.Abs(oldCount - newCount)
-            let countDifferencePercent = float countDifference / float (max oldCount newCount) * 100.0
+            // With int64, we expect exact matches
+            oldCount.Should().Be(newCount, "Both implementations should produce the same number of non-zero elements") |> ignore
 
-            output.WriteLine($"Element count difference: {countDifference} ({countDifferencePercent:F2}%%)")
-
-            // We could also check some statistical properties of the results
-            let oldValues = oldResult.values
-            let newValues = newResult.values
-
-            let oldSum = oldValues |> Array.sumBy _.value
-            let newSum = newValues |> Array.sumBy _.value
+            // Compare the sums to ensure they're the same
+            let oldSum = oldResult.values |> Array.sumBy _.value
+            let newSum = newResult.values |> Array.sumBy _.value
 
             output.WriteLine($"Old result sum: {oldSum}")
             output.WriteLine($"New result sum: {newSum}")
 
-            // Assert that the implementations produce roughly similar results
-            countDifferencePercent.Should().BeLessThan(10.0, "The implementations should produce similar number of non-zero elements") |> ignore
-            (abs (oldSum - newSum)).Should().BeLessThan(oldSum * 0.1, "The sums should be roughly similar") |> ignore
+            // With int64, the sums should be exactly equal
+            oldSum.Should().Be(newSum, "Both implementations should produce identical sums") |> ignore
+
+            // For a more thorough check, we could sort the elements and compare them directly
+            let oldSorted = oldResult.values |> Array.sortBy _.x
+            let newSorted = newResult.values |> Array.sortBy _.x
+
+            for i in 0 .. oldSorted.Length - 1 do
+                let oldValue = oldSorted[i]
+                let newValue = newSorted[i]
+
+                oldValue.x.i0.Should().Be(newValue.x.i0, $"Coordinate i0 at index {i} should match") |> ignore
+                oldValue.x.i1.Should().Be(newValue.x.i1, $"Coordinate i1 at index {i} should match") |> ignore
+                oldValue.value.Should().Be(newValue.value, $"Value at index {i} should match") |> ignore
+
+        // You might want to add more tests for other dimensions or operations
