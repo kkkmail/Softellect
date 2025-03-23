@@ -12,31 +12,39 @@ open System
 open System.Diagnostics
 
 module Helpers =
-    let inline runEvolutionModelTest<'I, 'C, 'D
-            when ^I: equality
-            and ^I: comparison
-            and ^I: (member toCoord : ^D -> ^C)
-
-            and ^C: equality
-            and ^C: comparison
-            and ^C: (static member ( + ) : ^C * ^C -> ^C)
-            and ^C: (static member ( - ) : ^C * ^C -> ^C)
-            and ^C: (static member ( * ) : ^C * ^C -> ^C)
-            and (^C or double): (static member ( .* ) : double * ^C -> ^C)
-            and (^C or double): (static member ( *. ) : ^C * double -> ^C)
-            and ^C: (static member ( / ) : ^C * ^C -> ^C)
-            and (^C or double): (static member ( /. ) : ^C * double -> ^C)
-            and ^C: (static member ( ** ) : ^C * ^C -> double)
-            and ^C: ( member total : unit -> double)
-            and ^C: ( member sqrt : unit -> ^C)
-            and ^C: (static member Zero : ^C)
-            and ^C: (static member One : ^C)
-            and ^D : (member dimension : int)>
-            (name: string)
+    // let inline runEvolutionModelTest<'I, 'C, 'D
+    //         when ^I: equality
+    //         and ^I: comparison
+    //         and ^I: (member toCoord : ^D -> ^C)
+    //
+    //         and ^C: equality
+    //         and ^C: comparison
+    //         and ^C: (static member ( + ) : ^C * ^C -> ^C)
+    //         and ^C: (static member ( - ) : ^C * ^C -> ^C)
+    //         and ^C: (static member ( * ) : ^C * ^C -> ^C)
+    //         and (^C or double): (static member ( .* ) : double * ^C -> ^C)
+    //         and (^C or double): (static member ( *. ) : ^C * double -> ^C)
+    //         and ^C: (static member ( / ) : ^C * ^C -> ^C)
+    //         and (^C or double): (static member ( /. ) : ^C * double -> ^C)
+    //         and ^C: (static member ( ** ) : ^C * ^C -> double)
+    //         and ^C: ( member total : unit -> double)
+    //         and ^C: ( member sqrt : unit -> ^C)
+    //         and ^C: (static member Zero : ^C)
+    //         and ^C: (static member One : ^C)
+    //         and ^D : (member dimension : int)>
+    //         (name: string)
+    //         writeLine
+    //         (createDomain: DomainIntervals -> DomainRange -> 'D)
+    //         (createCenterPoint: int -> 'I)
+    //         (createTridiagonalMatrix: int -> float -> SparseMatrix<'I, float>) =
+    let inline runEvolutionModelTest<'I, 'C, 'D when 'I: equality and 'I: comparison>
+            (name : string)
             writeLine
-            (createDomain: DomainIntervals -> DomainRange -> 'D)
-            (createCenterPoint: int -> 'I)
-            (createTridiagonalMatrix: int -> float -> SparseMatrix<'I, float>) =
+            (createDomain : DomainIntervals -> DomainRange -> 'D)
+            (createCenterPoint : int -> 'I)
+            (createTridiagonalMatrix : int -> float -> SparseMatrix<'I, float>)
+            (toCoord : 'I -> 'D -> 'C)
+            (converter : 'D -> ConversionParameters<'I, int64, 'C>)=
 
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
@@ -45,8 +53,8 @@ module Helpers =
         let domainIntervals = DomainIntervals 100
         let domain = createDomain domainIntervals DomainRange.defaultValue
 
-        let dimension = domain.dimension
-        writeLine($"Domain created with {domainIntervals.value}^{dimension} intervals")
+        // let dimension = domain.dimension
+        // writeLine($"Domain created with {domainIntervals.value}^{dimension} intervals")
 
         // Create model parameters
         let a = 0.99 // Parameter for tridiagonal matrix
@@ -58,7 +66,7 @@ module Helpers =
         // Create multiplier for evolution matrix - spherically symmetric function 0.1 * (1.0 + 1.0 * r^2)
         let evolutionMultiplier =
             Multiplier.sphericallySymmetric<'C>
-                (fun (p : 'I) -> p.toCoord domain)
+                (fun p -> toCoord p domain)
                 (fun rSquared -> 0.1 * (1.0 + 1.0 * rSquared))
 
         // Create the evolution matrix wrapper
@@ -70,13 +78,13 @@ module Helpers =
 
         // Create decay function - spherically symmetric function 0.01 * (1.0 + ((3.0/2.0)*r)^8 / 8!)
         let factorial8 = 40320.0 // 8!
-        let decay =
-            Multiplier.sphericallySymmetric<'C>
-                (fun (p : 'I) -> p.toCoord domain)
-                (fun rSquared ->
-                    let r = Math.Sqrt(rSquared)
-                    let term = Math.Pow(1.5 * r, 8.0) / factorial8
-                    0.01 * (1.0 + term))
+        let decay = failwith ""
+            // Multiplier.sphericallySymmetric<'C>
+            //     (fun p -> toCoord p domain)
+            //     (fun rSquared ->
+            //         let r = Math.Sqrt(rSquared)
+            //         let term = Math.Pow(1.5 * r, 8.0) / factorial8
+            //         0.01 * (1.0 + term))
 
         // Create the model
         let model =
@@ -85,7 +93,7 @@ module Helpers =
                 decay = decay
                 recyclingRate = RecyclingRate 1.0
                 numberOfMolecules = NumberOfMolecules 1
-                domain = domain
+                converter = converter domain
             }
 
         // Create random for Poisson sampler
@@ -163,12 +171,12 @@ module Helpers =
             let mutable maxCount = 0L
             let mutable maxLocation = Unchecked.defaultof<'I>
 
-            currentProtocells.values
-            |> Array.iter (fun item ->
-                if item.value > maxCount then
-                    maxCount <- item.value
-                    maxLocation <- item.x
-            )
+            // currentProtocells.values
+            // |> Array.iter (fun item ->
+            //     if item.value > maxCount then
+            //         maxCount <- item.value
+            //         maxLocation <- item.x
+            // )
 
             writeLine($"Current max protocell count: {maxCount} at location {maxLocation}")
 
@@ -259,6 +267,9 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
             (fun i r -> Domain2D.create(i, r))
             (fun mid -> { i0 = mid; i1 = mid })
             createTridiagonalMatrix2D
+            _.toCoord
+            conversionParameters2D
+
 
     [<Fact>]
     member _.``Evolution model performance test 3D`` () =
@@ -268,3 +279,5 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
             (fun i r -> Domain3D.create(i, r))
             (fun mid -> { i0 = mid; i1 = mid; i2 = mid })
             createTridiagonalMatrix3D
+            _.toCoord
+            conversionParameters3D

@@ -23,7 +23,6 @@ module Models =
 
         member r.value = let (NumberOfMolecules v) = r in v
         static member defaultValue = NumberOfMolecules 1
-        static member defaultValue2 = NumberOfMolecules 2
 
 
     type RecyclingRate =
@@ -65,7 +64,7 @@ module Models =
         member r.total() = r.value.total()
 
 
-    type SubstanceData<'I when ^I: equality and ^I: comparison> =
+    type SubstanceData<'I when 'I: equality and 'I: comparison> =
         {
             food : FoodData
             waste : WasteData
@@ -88,7 +87,6 @@ module Models =
     type ModelInitParams =
         {
             uInitial : MoleculeCount
-            // protocellInitParams : EeInfDiffModel.ProtocellInitParams
             totalMolecules : MoleculeCount
             seedValue : int
         }
@@ -96,21 +94,12 @@ module Models =
         static member defaultValue =
             {
                 uInitial = MoleculeCount.OneThousand
-                // protocellInitParams = EeInfDiffModel.ProtocellInitParams.defaultValue
                 totalMolecules = MoleculeCount.OneBillion
                 seedValue = 1
             }
 
 
-    type ModelContext<'I, 'T, 'S
-            when ^I: equality
-            and ^I: comparison
-            and ^T: (static member ( * ) : ^T * ^T -> ^T)
-            and ^T: (static member ( + ) : ^T * ^T -> ^T)
-            and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison> =
+    type ModelContext<'I, 'T, 'S when 'I: equality and 'I: comparison and 'T: equality and 'T: comparison> =
         {
             evolutionContext : EvolutionContext<'I, 'T>
             noOfEpochs : NoOfEpochs
@@ -128,40 +117,23 @@ module Models =
     ///     f(t) * k0 * ka(y) * p(x, y) is an EvolutionMatrix - replication rate of evolving from y to x.
     ///     g0 * g(x) is a Multiplier - decay rate.
     ///     s is a constant recycling rate.
-    type SimpleEvolutionModel<'I, 'C, 'D
-            when ^I: equality
-            and ^I: comparison
-            and ^I: (member toCoord : ^D -> ^C)
-
-            and ^C: equality
-            and ^C: comparison
-            and ^C: (static member ( + ) : ^C * ^C -> ^C)
-            and ^C: (static member ( - ) : ^C * ^C -> ^C)
-            and ^C: (static member ( * ) : ^C * ^C -> ^C)
-            and (^C or double): (static member ( .* ) : double * ^C -> ^C)
-            and (^C or double): (static member ( *. ) : ^C * double -> ^C)
-            and ^C: (static member ( / ) : ^C * ^C -> ^C)
-            and (^C or double): (static member ( /. ) : ^C * double -> ^C)
-            and ^C: (static member ( ** ) : ^C * ^C -> double)
-            and ^C: ( member total : unit -> double)
-            and ^C: ( member sqrt : unit -> ^C)
-            and ^C: (static member Zero : ^C)
-            and ^C: (static member One : ^C)> =
+    type SimpleEvolutionModel<'I, 'C when 'I: equality and 'I: comparison> =
+    // type SimpleEvolutionModel<'I, 'C when 'I: equality and 'I: comparison and 'C: equality and 'C: comparison> =
         {
             replication : EvolutionMatrix<'I>
             decay : Multiplier<'I>
             recyclingRate : RecyclingRate
             numberOfMolecules : NumberOfMolecules
-            domain : 'D
+            converter : ConversionParameters<'I, int64, 'C>
         }
 
-        member inline md.mean (x : SubstanceData<'I>) : 'C =
-            x.protocell.value.mean double (fun (p : 'I) -> p.toCoord md.domain)
+        member md.mean (x : SubstanceData<'I>) : 'C =
+            x.protocell.value.mean md.converter
 
-        member inline md.stdDev (x : SubstanceData<'I>) : 'C =
-            (x.protocell.value.variance double (fun (p : 'I) -> p.toCoord md.domain)).sqrt()
+        member md.stdDev (x : SubstanceData<'I>) : 'C =
+            (x.protocell.value.variance md.converter) |> md.converter.arithmetic.sqrt
 
-        member inline md.invariant (x : SubstanceData<'I>) =
+        member md.invariant (x : SubstanceData<'I>) =
             let f = x.food.value
             let w = x.waste.value
             let u = x.protocell.value
@@ -189,12 +161,12 @@ module Models =
             // Note that the food could be "eaten" beyond zero. If that happens, then it will be treated as exact zero until enough waste is recycled.
             let df = (int64 n) * (r - int_int_k_u)
             let dw = - r + int_gamma_u
-            let du = int_k_u - gamma_u
+            let du = int_k_u.subtract gamma_u
 
             if f + df >= 0L then
                 let f1 = f + df |> FoodData
                 let w1 = w + dw |> WasteData
-                let u1 = u + du |> ProtoCellData
+                let u1 = u.add du |> ProtoCellData
 
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
@@ -210,18 +182,14 @@ module Models =
                 let int_int_k_u = int_k_u.total()
 
                 let df = (int64 n) * (r - int_int_k_u)
-                let du = int_k_u - gamma_u
+                let du = int_k_u.subtract gamma_u
 
                 let f1 = f + df |> FoodData
                 let w1 = w + dw |> WasteData
-                let u1 = u + du |> ProtoCellData
+                let u1 = u.add du |> ProtoCellData
 
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
-
-        // member inline md.evolve (p : EvolutionContext<'I, int64>) (n : NoOfEpochs) (x0 : SubstanceData<'I>) =
-        //      let result = [|for i in 0..n.value -> i |] |> Array.fold (fun acc _ -> md.evolveStep p acc) x0
-        //      result
 
         member inline md.evolve (ctx : ModelContext<'I, int64, SubstanceData<'I>>)=
              let g acc i =
@@ -232,11 +200,11 @@ module Models =
              let result = [| for i in 0..ctx.noOfEpochs.value -> i |] |> Array.fold g ctx.initialData
              result
 
-    type SimpleEvolutionModel1D = SimpleEvolutionModel<Point1D, Coord1D, Domain>
-    type SimpleEvolutionModel2D = SimpleEvolutionModel<Point2D, Coord2D, Domain2D>
-    type SimpleEvolutionModel3D = SimpleEvolutionModel<Point3D, Coord3D, Domain3D>
-    type SimpleEvolutionModel4D = SimpleEvolutionModel<Point4D, Coord4D, Domain4D>
-    type SimpleEvolutionModel5D = SimpleEvolutionModel<Point5D, Coord5D, Domain5D>
-    type SimpleEvolutionModel6D = SimpleEvolutionModel<Point6D, Coord6D, Domain6D>
-    type SimpleEvolutionModel7D = SimpleEvolutionModel<Point7D, Coord7D, Domain7D>
-    type SimpleEvolutionModel8D = SimpleEvolutionModel<Point8D, Coord8D, Domain8D>
+    type SimpleEvolutionModel1D = SimpleEvolutionModel<Point1D, Coord1D>
+    type SimpleEvolutionModel2D = SimpleEvolutionModel<Point2D, Coord2D>
+    type SimpleEvolutionModel3D = SimpleEvolutionModel<Point3D, Coord3D>
+    type SimpleEvolutionModel4D = SimpleEvolutionModel<Point4D, Coord4D>
+    type SimpleEvolutionModel5D = SimpleEvolutionModel<Point5D, Coord5D>
+    type SimpleEvolutionModel6D = SimpleEvolutionModel<Point6D, Coord6D>
+    type SimpleEvolutionModel7D = SimpleEvolutionModel<Point7D, Coord7D>
+    type SimpleEvolutionModel8D = SimpleEvolutionModel<Point8D, Coord8D>

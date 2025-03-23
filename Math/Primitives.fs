@@ -1061,7 +1061,7 @@ module Primitives =
         }
 
 
-    let conversionParameters1D d =
+    let conversionParameters1D d  : ConversionParameters<Point1D, int64, Coord1D> =
         {
             arithmetic = arithmeticOperations1D
             converter = double
@@ -1084,7 +1084,7 @@ module Primitives =
         }
 
 
-    let conversionParameters2D d =
+    let conversionParameters2D d  : ConversionParameters<Point2D, int64, Coord2D> =
         {
             arithmetic = arithmeticOperations2D
             converter = double
@@ -1107,7 +1107,7 @@ module Primitives =
         }
 
 
-    let conversionParameters3D d =
+    let conversionParameters3D d  : ConversionParameters<Point3D, int64, Coord3D> =
         {
             arithmetic = arithmeticOperations3D
             converter = double
@@ -1130,7 +1130,7 @@ module Primitives =
         }
 
 
-    let conversionParameters4D d =
+    let conversionParameters4D d : ConversionParameters<Point4D, int64, Coord4D> =
         {
             arithmetic = arithmeticOperations4D
             converter = double
@@ -1153,7 +1153,7 @@ module Primitives =
         }
 
 
-    let conversionParameters5D d =
+    let conversionParameters5D d  : ConversionParameters<Point5D, int64, Coord5D> =
         {
             arithmetic = arithmeticOperations5D
             converter = double
@@ -1176,7 +1176,7 @@ module Primitives =
         }
 
 
-    let conversionParameters6D d =
+    let conversionParameters6D d  : ConversionParameters<Point6D, int64, Coord6D> =
         {
             arithmetic = arithmeticOperations6D
             converter = double
@@ -1199,7 +1199,7 @@ module Primitives =
         }
 
 
-    let conversionParameters7D d =
+    let conversionParameters7D d  : ConversionParameters<Point7D, int64, Coord7D> =
         {
             arithmetic = arithmeticOperations7D
             converter = double
@@ -1222,7 +1222,7 @@ module Primitives =
         }
 
 
-    let conversionParameters8D d =
+    let conversionParameters8D d  : ConversionParameters<Point8D, int64, Coord8D> =
         {
             arithmetic = arithmeticOperations8D
             converter = double

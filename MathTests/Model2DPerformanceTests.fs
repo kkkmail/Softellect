@@ -65,7 +65,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
                 decay = decay
                 recyclingRate = RecyclingRate 1.0
                 numberOfMolecules = NumberOfMolecules 1
-                domain = domain
+                converter = conversionParameters2D domain
             }
 
         // Create random for Poisson sampler

@@ -6,7 +6,6 @@ open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 open Softellect.Math.Models
 open Softellect.Math.Evolution
-open Xunit.Abstractions
 open System
 
 module MeanStdDev2D =
@@ -18,12 +17,12 @@ module MeanStdDev2D =
             replication =
                 {
                     multiplier = Multiplier.identity
-                    evolutionMatrix = SparseMatrix.empty
+                    evolutionMatrix = SparseMatrix.empty()
                 }
             decay = Multiplier.identity
             recyclingRate = RecyclingRate.defaultValue
             numberOfMolecules = NumberOfMolecules.defaultValue
-            domain = domain
+            converter = conversionParameters2D domain
         }
 
     /// Helper function to create a sparse array with specific points and values

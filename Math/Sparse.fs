@@ -7,16 +7,17 @@ open Softellect.Math.Primitives
 
 module Sparse =
 
-    /// Representation of non-zero value in an abstract sparse array.
+    /// Representation of non-zero value in an abstract sparse array
     type SparseValue<'I, 'T
             when ^I: equality
             and ^I: comparison
+
+            and ^T: equality
+            and ^T: comparison
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison> =
+            and ^T: (static member Zero : ^T)> =
         {
             x : 'I
             value : 'T
@@ -25,185 +26,162 @@ module Sparse =
         member inline r.convert converter = { x = r.x; value = converter r.value }
 
 
+    let inline private createLookupMap (values: SparseValue<'I, 'T>[]) =
+        values
+        |> Array.map (fun v -> v.x, v.value)
+        |> Map.ofArray
+
+
+    /// A sparse array implementation
     type SparseArray<'I, 'T
             when ^I: equality
             and ^I: comparison
+
+            and ^T: equality
+            and ^T: comparison
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison> =
+            and ^T: (static member Zero : ^T)> =
         {
             values : SparseValue<'I, 'T>[]
             map : Lazy<Map<'I, 'T>>
         }
 
-        member inline r.total() = r.values |> Seq.ofArray |> Seq.map _.value |> Seq.sum
-
-        static member inline private createLookupMap (values: SparseValue<'I, 'T>[]) =
-            values
-            |> Array.map (fun v -> v.x, v.value)
-            |> Map.ofArray
-
-        member inline a.tryFind i = a.map.Value.TryFind i
-        member inline a.getValues() = a.values |> Seq.ofArray
-
-        static member inline create v =
+        static member inline create (v: SparseValue<'I, 'T>[]) =
             // Remove all zero values.
-            let values = v |> Array.filter (fun e -> e.value <> LanguagePrimitives.GenericZero<'T>)
+            let values = v |> Array.filter (fun e -> e.value <> LanguagePrimitives.GenericZero)
 
             {
                 values = values
-                map = new Lazy<Map<'I, 'T>>(fun () -> SparseArray.createLookupMap values)
+                map = Lazy<Map<'I, 'T>>(fun () -> createLookupMap values)
             }
 
-        static member inline empty = SparseArray<'I, 'T>.create [||]
+        static member inline empty() : SparseArray<'I, 'T> =
+            {
+                values = [||]
+                map = Lazy<Map<'I, 'T>>(fun () -> Map.empty)
+            }
 
-        static member inline createAbove (z : ZeroThreshold<'T>) (v : 'T[]) =
-            v
-            |> Array.mapi (fun i e -> if e >= z.value then Some { x = i; value = e } else None)
-            |> Array.choose id
+
+        member inline array.tryFind (i: 'I) = array.map.Value.TryFind i
+        member inline array.getValues()  = array.values |> Seq.ofArray
+        member inline array.total() = array.values |> Array.sumBy _.value
+
+
+        member inline array.convert  converter =
+            array.values
+            |> Array.map (fun e -> e.convert converter)
             |> SparseArray.create
 
-        member inline r.convert converter =
-            r.values |> Array.map (fun v -> v.convert converter) |> SparseArray.create
+        member inline array.moment (parameters: ConversionParameters<'I, 'T, 'C>) n =
+            // Sum of all values (as double)
+            let mutable x0 = 0.0
+            for v in array.values do x0 <- x0 + parameters.converter v.value
 
-        member inline r.moment (converter : ^T -> ^V) (projector : ^I -> ^C ) (n : int) : ^C =
-            let c = r.values |> Array.map (fun v -> v.convert converter)
-            let x0 = c |> Array.sumBy _.value
+            if x0 > 0.0 then
+                // Calculate weighted sum
+                let mutable xn = parameters.arithmetic.zero
 
-            if x0 > LanguagePrimitives.GenericZero<'V>
-            then
-                let xn =
-                    c
-                    |> Array.map (fun v -> (pown (projector v.x) n) *. v.value)
-                    |> Array.sum
+                for v in array.values do
+                    let proj = parameters.projector v.x
+                    let powed =
+                        [1..n-1]
+                        |> List.fold (fun p _ -> parameters.arithmetic.multiply p proj) proj
 
-                xn /. x0
-            else LanguagePrimitives.GenericZero<'C>
+                    let valueDouble = parameters.converter v.value
+                    let term = parameters.arithmetic.multiplyByDouble valueDouble powed
+                    xn <- parameters.arithmetic.add xn term
 
-        member inline r.mean (converter : ^T -> ^V) (projector : ^I -> ^C ) : ^C =
-            let m1 = r.moment converter projector 1
-            m1
+                // Divide by sum to get moment
+                parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
+            else parameters.arithmetic.zero
 
-        member inline r.variance (converter : ^T -> ^V) (projector : ^I -> ^C ) : ^C =
-            let m1 = r.moment converter projector 1
-            let m2 = r.moment converter projector 2
-            let variance = m2 - (m1 * m1)
-            variance
+        member inline array.mean parameters = array.moment parameters 1
 
-        static member inline (*) (a : SparseArray<'I, 'U>, b : 'U) : SparseArray<'I, 'U> =
-            a.values |> Array.map (fun e -> e * b) |> SparseArray.create
+        member inline array.variance parameters =
+            let m1 = array.moment parameters 1
+            let m2 = array.moment parameters 2
+            let m1Squared = parameters.arithmetic.multiply m1 m1
+            parameters.arithmetic.subtract m2 m1Squared
 
-        static member inline (*) (a : 'U, b : SparseArray<'I, 'U>) = b * a
-
-
-    /// Extract the key/value pairs from the dictionary into an SparseArray.
-    let inline private toSparseArray (dict : Dictionary<'I, 'T>) =
-        let resultArray =
+        static member inline internal toSparseArray (dict: Dictionary<'I, 'T>) =
             dict
             |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
             |> Seq.toArray
+            |> SparseArray.create
 
-        resultArray |> SparseArray.create
-
-
-    let inline sumSparseArrays (arrays: list<SparseArray<'I, 'T>>) : SparseArray<'I, 'T> =
-        let dict = Dictionary<'I, 'T>()
-
-        for values in arrays do
-            for v in values.getValues() do
-                let key = v.x
-
-                if dict.ContainsKey(key) then dict[key] <- dict[key] + v.value
-                else dict.Add(key, v.value)
-
-        toSparseArray dict
-
-
-    let inline multiplySparseArrays (arrays: list<SparseArray<'I, 'T>>) : SparseArray<'I, 'T> =
-        let result = Dictionary<'I, 'T>()
-        let keysToRemove = HashSet<'I>()
-
-        let g (a : SparseArray<'I, 'T>) =
-            keysToRemove.Clear()
-
-            for key in result.Keys do
-                match a.tryFind key with
-                | Some value -> result[key] <- result[key] * value
-                | None -> keysToRemove.Add key |> ignore
-
-            for key in keysToRemove do result.Remove(key) |> ignore
-
-        match arrays with
-        | [] -> ()
-        | h :: t ->
-            for v in h.getValues() do result.Add(v.x, v.value)
-            t |> List.map g |> ignore
-
-        toSparseArray result
-
-
-    type SparseArray<'I, 'T
-            when ^I: equality
-            and ^I: comparison
-            and ^T: (static member ( * ) : ^T * ^T -> ^T)
-            and ^T: (static member ( + ) : ^T * ^T -> ^T)
-            and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison>
-        with
-
-        static member inline (*) (a : SparseArray<'I, 'T>, b : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
-            [ a; b ] |> multiplySparseArrays
-
-        static member inline (+) (a : SparseArray<'I, 'T>, b : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
-            [ a; b ] |> sumSparseArrays
-
-        static member inline (-) (a : SparseArray<'I, 'T>, b : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
+        static member inline sum  (arrays: list<SparseArray<'I, 'T>>) =
             let dict = Dictionary<'I, 'T>()
 
-            for v in a.getValues() do
-                let key = v.x
+            for array in arrays do
+                for v in array.getValues() do
+                    let key = v.x
 
-                if dict.ContainsKey(key) then dict[key] <- v.value
-                else dict.Add(key, v.value)
+                    if dict.ContainsKey(key) then dict[key] <- dict[key] + v.value
+                    else dict.Add(key, v.value)
+
+            SparseArray.toSparseArray dict
+
+        static member inline multiply (arrays: list<SparseArray<'I, 'T>>) =
+            let result = Dictionary<'I, 'T>()
+            let keysToRemove = HashSet<'I>()
+
+            let processArray (a: SparseArray<'I, 'T>) =
+                keysToRemove.Clear()
+
+                for key in result.Keys do
+                    match a.tryFind key with
+                    | Some value -> result[key] <- result[key] * value
+                    | None -> keysToRemove.Add key |> ignore
+
+                for key in keysToRemove do result.Remove(key) |> ignore
+
+            match arrays with
+            | [] -> ()
+            | h :: t ->
+                for v in h.getValues() do result.Add(v.x, v.value)
+                t |> List.iter processArray
+
+            SparseArray.toSparseArray result
+
+        member inline array.add b = SparseArray.sum [array; b]
+
+        member inline array.subtract (b: SparseArray<'I, 'T>) =
+            let dict = Dictionary<'I, 'T>()
+
+            for v in array.getValues() do dict.Add(v.x, v.value)
 
             for v in b.getValues() do
                 let key = v.x
 
                 if dict.ContainsKey(key) then dict[key] <- dict[key] - v.value
-                else dict.Add(key, LanguagePrimitives.GenericZero<'T> - v.value)
+                else dict.Add(key, LanguagePrimitives.GenericZero - v.value)
 
-            toSparseArray dict
+            SparseArray.toSparseArray dict
 
 
-    /// A sparse matrix representation.
-    ///
-    /// A sparse matrix is coded as two functions that return a sparse array for a given x or y.
-    /// This is done that way because the matrices that we are after are insanely huge,
-    /// and they absolutely cannot be stored in memory, even in sparse form.
-    ///
-    /// The  largest matrix that we've run a matrix * vector multiplication test
-    /// was about 3,906,250,000 x 3,906,250,000 matrix for the total of about 1.5E+19 elements in size.
-    ///
-    /// The caller is responsible for providing the correct functions that return the correct sparse arrays.
-    /// One is not enough as recalculating the other is very time-consuming and likely impossible for very large matrices.
+    /// A sparse matrix representation
     type SparseMatrix<'I, 'T
             when ^I: equality
             and ^I: comparison
+
+            and ^T: equality
+            and ^T: comparison
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison> =
+            and ^T: (static member Zero : ^T)> =
         {
-            x_y : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given x.
-            y_x : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given y.
+            x_y : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given x
+            y_x : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given y
         }
+
+        static member inline empty() : SparseMatrix<'I, 'T> =
+            {
+                x_y = fun _ -> SparseArray.empty()
+                y_x = fun _ -> SparseArray.empty()
+            }
 
         /// Multiply a SparseMatrix by a SparseArray
         static member inline (*) (matrix : SparseMatrix<'I, 'T>, array : SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
@@ -226,11 +204,7 @@ module Sparse =
                     if result.ContainsKey(x) then result[x] <- result[x] + product
                     else result.Add(x, product)
 
-            // Convert the result dictionary to a SparseArray
-            result
-            |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
-            |> Seq.toArray
-            |> SparseArray.create
+            SparseArray.toSparseArray result
 
         /// Multiply a SparseArray by a SparseMatrix (reverse order)
         static member inline (*) (array : SparseArray<'I, 'T>, matrix : SparseMatrix<'I, 'T>) : SparseArray<'I, 'T> =
@@ -249,23 +223,35 @@ module Sparse =
                     let y = y_sparse_value.x
                     let matrix_value = y_sparse_value.value
 
-                    // Calculate multiplication
                     let product = x_value * matrix_value
+                    if result.ContainsKey(y) then result[y] <- result[y] + product
+                    else result.Add(y, product)
 
-                    // Add to result
-                    if result.ContainsKey(y) then
-                        result[y] <- result[y] + product
-                    else
-                        result.Add(y, product)
+            SparseArray.toSparseArray result
 
-            // Convert the result dictionary to a SparseArray
-            result
-            |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
-            |> Seq.toArray
-            |> SparseArray.create
 
-        static member inline empty =
-            {
-                x_y = fun _ -> SparseArray<'I, 'T>.empty
-                y_x = fun _ -> SparseArray<'I, 'T>.empty
-            }
+    // let private createAbove (arithmetic: ArithmeticOperations<'T>) (threshold: 'T) (v: 'T[]) =
+    //     v
+    //     |> Array.mapi (fun i e ->
+    //         if not (arithmetic.zero <> e) &&  e > threshold
+    //         then Some { x = i; value = e }
+    //         else None)
+    //     |> Array.choose id
+    //     |> create arithmetic
+
+
+    // let private multiplyByScalar (arithmetic: ArithmeticOperations<'T>) (array: SparseArray<'I, 'T>) (scalar: 'T) =
+    //     array.values
+    //     |> Array.map (fun e ->
+    //         {
+    //             x = e.x
+    //             value = arithmetic.multiply e.value scalar
+    //         })
+    //     |> SparseArray.create arithmetic
+
+
+
+
+
+    // let private multiply (arithmetic: ArithmeticOperations<'T>) (a: SparseArray<'I, 'T>) (b: SparseArray<'I, 'T>) : SparseArray<'I, 'T> =
+    //     multiplySparseArrays arithmetic [a; b]
