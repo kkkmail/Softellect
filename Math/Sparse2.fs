@@ -89,16 +89,11 @@ module Sparse2 =
             let m1Squared = parameters.arithmetic.multiply m1 m1
             parameters.arithmetic.subtract m2 m1Squared
 
-        static member internal toSparseArray arithmetic (dict: Dictionary<'I, 'T>) =
+        static member internal toSparseArray filter (dict: Dictionary<'I, 'T>) =
             dict
-            |> Seq.map (fun kvp ->
-                {
-                    x = kvp.Key
-                    value = kvp.Value
-                })
+            |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
             |> Seq.toArray
-            |> SparseArray.create arithmetic
-
+            |> SparseArray.create filter
 
         static member sum arithmetic (arrays: list<SparseArray<'I, 'T>>) =
             let dict = Dictionary<'I, 'T>()

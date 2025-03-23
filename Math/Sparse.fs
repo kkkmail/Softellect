@@ -222,14 +222,9 @@ module Sparse =
                     let x = x_sparse_value.x
                     let matrix_value = x_sparse_value.value
 
-                    // Calculate multiplication
                     let product = matrix_value * y_value
-
-                    // Add to result
-                    if result.ContainsKey(x) then
-                        result[x] <- result[x] + product
-                    else
-                        result.Add(x, product)
+                    if result.ContainsKey(x) then result[x] <- result[x] + product
+                    else result.Add(x, product)
 
             // Convert the result dictionary to a SparseArray
             result
