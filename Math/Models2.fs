@@ -61,7 +61,7 @@ module Models2 =
         | ProtoCellData of SparseArray<'I, int64>
 
         member r.value = let (ProtoCellData v) = r in v
-        member r.total() = r.value.total arithmeticOperationsInt64
+        member r.total() = r.value.total()
 
 
     type SubstanceData<'I when 'I: equality and 'I: comparison> =
@@ -138,7 +138,7 @@ module Models2 =
             let u = x.protocell.value
             let n = md.numberOfMolecules.value
 
-            let int_u = u.total arithmeticOperationsInt64
+            let int_u = u.total()
             let inv = (int64 n) * (int_u + w) + f
             inv
 
@@ -152,20 +152,20 @@ module Models2 =
 
             let r = md.recyclingRate.evolveStep s w
             let gamma_u = md.decay.evolveStep p u
-            let int_gamma_u = gamma_u.total arithmeticOperationsInt64
+            let int_gamma_u = gamma_u.total()
             let f_n = (pown (double (max f 0L)) n)
             let int_k_u = md.replication.evolveStep p f_n u
-            let int_int_k_u = int_k_u.total arithmeticOperationsInt64
+            let int_int_k_u = int_k_u.total()
 
             // Note that the food could be "eaten" beyond zero. If that happens, then it will be treated as exact zero until enough waste is recycled.
             let df = (int64 n) * (r - int_int_k_u)
             let dw = - r + int_gamma_u
-            let du = int_k_u.subtract arithmeticOperationsInt64 gamma_u
+            let du = int_k_u.subtract gamma_u
 
             if f + df >= 0L then
                 let f1 = f + df |> FoodData
                 let w1 = w + dw |> WasteData
-                let u1 = u.add arithmeticOperationsInt64 du |> ProtoCellData
+                let u1 = u.add du |> ProtoCellData
 
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
@@ -178,14 +178,14 @@ module Models2 =
 
                 //   2. Recalculate df and du.
                 let int_k_u = md.replication.evolveStep p f_n1 u
-                let int_int_k_u = int_k_u.total arithmeticOperationsInt64
+                let int_int_k_u = int_k_u.total()
 
                 let df = (int64 n) * (r - int_int_k_u)
-                let du = int_k_u.subtract arithmeticOperationsInt64 gamma_u
+                let du = int_k_u.subtract gamma_u
 
                 let f1 = f + df |> FoodData
                 let w1 = w + dw |> WasteData
-                let u1 = u.add arithmeticOperationsInt64 du |> ProtoCellData
+                let u1 = u.add du |> ProtoCellData
 
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal

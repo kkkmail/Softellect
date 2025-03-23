@@ -49,7 +49,7 @@ module SparsePerformance =
                             { x = point; value = value } : Softellect.Math.Sparse2.SparseValue<Point2D, int64>)
 
                         let oldArray = OldSparseArray2D.create oldElements
-                        let newArray = NewSparseArray2D.create (fun e -> e > 0L) newElements
+                        let newArray = NewSparseArray2D.create newElements
 
                         yield (oldArray, newArray)
                 |]
@@ -65,7 +65,7 @@ module SparsePerformance =
         let convertToDouble2 (array: Softellect.Math.Sparse2.SparseArray<Point2D, int64>) =
             let doubleValues = array.values |> Array.map (fun sv ->
                 { x = sv.x; value = float sv.value } : Softellect.Math.Sparse2.SparseValue<Point2D, float>)
-            Softellect.Math.Sparse2.SparseArray.create (fun e -> e <> 0.0) doubleValues
+            Softellect.Math.Sparse2.SparseArray.create doubleValues
 
         // Convert a set of arrays to double
         let convertArraySetsToDouble (arraySets: (OldSparseArray2D * NewSparseArray2D)[]) =
@@ -104,7 +104,7 @@ module SparsePerformance =
             // Benchmark the new implementation
             stopwatch.Restart()
             // Use the pre-defined arithmeticOperations for int64
-            let newResult = NewSparseArray2D.multiply arithmeticOperationsInt64 newArrays
+            let newResult = NewSparseArray2D.multiply newArrays
             stopwatch.Stop()
             let newElapsed = stopwatch.Elapsed
 
@@ -178,7 +178,7 @@ module SparsePerformance =
             // Benchmark the new implementation
             stopwatch.Restart()
             // Use the pre-defined arithmeticOperations for double
-            let newResult = NewSparseArrayDouble2D.multiply arithmeticOperationsDouble newArrays
+            let newResult = NewSparseArrayDouble2D.multiply newArrays
             stopwatch.Stop()
             let newElapsed = stopwatch.Elapsed
 
@@ -248,7 +248,7 @@ module SparsePerformance =
             // Benchmark the new implementation
             stopwatch.Restart()
             // Use the pre-defined arithmeticOperations for double
-            let newResult = NewSparseArrayDouble2D.sum arithmeticOperationsDouble newArrays
+            let newResult = NewSparseArrayDouble2D.sum newArrays
             stopwatch.Stop()
             let newElapsed = stopwatch.Elapsed
 
@@ -317,7 +317,7 @@ module SparsePerformance =
 
             // Benchmark the new implementation (using multiply method)
             stopwatch.Restart()
-            let newResult = newMatrix.multiply arithmeticOperationsDouble newArray
+            let newResult = newMatrix * newArray
             stopwatch.Stop()
             let newElapsed = stopwatch.Elapsed
 

@@ -49,7 +49,7 @@ module Tridiagonal2 =
             if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
             if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         // x_y function: essentially transposition of y_x
         { x_y = y_x; y_x = y_x }
@@ -106,7 +106,7 @@ module Tridiagonal2 =
             if point.i1 > 0 then values.Add({ x = { point with i1 = point.i1 - 1 }; value = move_prob })
             if point.i1 < d - 1 then values.Add({ x = { point with i1 = point.i1 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         // x_y function: essentially transposition of y_x
         { x_y = y_x; y_x = y_x }
@@ -175,7 +175,7 @@ module Tridiagonal2 =
             if point.i2 > 0 then values.Add({ x = { point with i2 = point.i2 - 1 }; value = move_prob })
             if point.i2 < d - 1 then values.Add({ x = { point with i2 = point.i2 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }
 
@@ -238,7 +238,7 @@ module Tridiagonal2 =
             if point.i3 > 0 then values.Add({ x = { point with i3 = point.i3 - 1 }; value = move_prob })
             if point.i3 < d - 1 then values.Add({ x = { point with i3 = point.i3 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }
 
@@ -301,7 +301,7 @@ module Tridiagonal2 =
             if point.i4 > 0 then values.Add({ x = { point with i4 = point.i4 - 1 }; value = move_prob })
             if point.i4 < d - 1 then values.Add({ x = { point with i4 = point.i4 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }
 
@@ -369,7 +369,7 @@ module Tridiagonal2 =
             if point.i5 > 0 then values.Add({ x = { point with i5 = point.i5 - 1 }; value = move_prob })
             if point.i5 < d - 1 then values.Add({ x = { point with i5 = point.i5 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }
 
@@ -442,7 +442,7 @@ module Tridiagonal2 =
             if point.i6 > 0 then values.Add({ x = { point with i6 = point.i6 - 1 }; value = move_prob })
             if point.i6 < d - 1 then values.Add({ x = { point with i6 = point.i6 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }
 
@@ -520,6 +520,6 @@ module Tridiagonal2 =
             if point.i7 > 0 then values.Add({ x = { point with i7 = point.i7 - 1 }; value = move_prob })
             if point.i7 < d - 1 then values.Add({ x = { point with i7 = point.i7 + 1 }; value = move_prob })
 
-            SparseArray.create (fun e -> e > 0.0) (values.ToArray())
+            SparseArray.create (values.ToArray())
 
         { x_y = y_x; y_x = y_x }

@@ -1230,34 +1230,34 @@ module Primitives =
         }
 
 
-    let arithmeticOperationsDouble =
-        {
-            add = (+)
-            subtract = (-)
-            multiply = (*)
-            divide = (/)
-            dot = (*)
-            multiplyByDouble = (*)
-            sqrt = sqrt
-            zero = 0.0
-            one = 1.0
-            filter = fun e -> e > 0.0
-        }
-
-
-    let arithmeticOperationsInt64 =
-        {
-            add = (+)
-            subtract = (-)
-            multiply = (*)
-            divide = (/)
-            dot = fun a b -> double a * double b
-            multiplyByDouble = fun d e -> int64 (d * double e)
-            sqrt = fun e -> int64 (sqrt (double e) )
-            zero = 0L
-            one = 1L
-            filter = fun e -> e > 0L
-        }
+    // let arithmeticOperationsDouble =
+    //     {
+    //         add = (+)
+    //         subtract = (-)
+    //         multiply = (*)
+    //         divide = (/)
+    //         dot = (*)
+    //         multiplyByDouble = (*)
+    //         sqrt = sqrt
+    //         zero = 0.0
+    //         one = 1.0
+    //         filter = fun e -> e > 0.0
+    //     }
+    //
+    //
+    // let arithmeticOperationsInt64 =
+    //     {
+    //         add = (+)
+    //         subtract = (-)
+    //         multiply = (*)
+    //         divide = (/)
+    //         dot = fun a b -> double a * double b
+    //         multiplyByDouble = fun d e -> int64 (d * double e)
+    //         sqrt = fun e -> int64 (sqrt (double e) )
+    //         zero = 0L
+    //         one = 1L
+    //         filter = fun e -> e > 0L
+    //     }
 
 
     type DomainParams =

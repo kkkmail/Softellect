@@ -163,7 +163,7 @@ module Evolution2 =
             |> Seq.map g
             |> Seq.choose id
             |> Seq.toArray
-            |> SparseArray.create p.filter
+            |> SparseArray.create
 
 
     /// A type to describe Poisson evolution.
@@ -224,7 +224,7 @@ module Evolution2 =
             result
             |> Seq.map (fun kvp -> { x = kvp.Key; value = kvp.Value })
             |> Seq.toArray
-            |> SparseArray.create p.filter
+            |> SparseArray.create
 
         // /// Evolve a SparseArray by a given multiplier.
         // /// Only positive values are considered for evolution.
