@@ -1,7 +1,7 @@
 ﻿namespace Softellect.Tests.MathTests
 
-open System
-open Softellect.Tests.MathTests.MultidimensionalTests
+open Softellect.Math.Primitives
+open Softellect.Math.Tridiagonal
 open Xunit
 open Xunit.Abstractions
 open FluentAssertions
@@ -72,7 +72,7 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
 
     let toOldSparse2DArray (array: SparseArray<int[], float>) : SparseArray<Point2D, float> =
         array.getValues()
-        |> Seq.map (fun v -> {x = { x = v.x[0]; y = v.x[1]}; value = v.value})
+        |> Seq.map (fun v -> {x = { i0 = v.x[0]; i1 = v.x[1]}; value = v.value})
         |> Seq.toArray
         |> SparseArray.create
 
@@ -86,7 +86,7 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
         output.WriteLine($"Creating 2D matrices with d = {d} using old and new methods")
 
         // Create matrix using old method from MultidimensionalTests
-        let oldMatrix = MultidimensionalTests.Helpers.create2DTridiagonalMatrix d a
+        let oldMatrix = createTridiagonalMatrix2D d a
 
         // Create matrix using new method from MultidimensionalSparseTests
         let newMatrix = MultidimensionalSparseTests.Helpers.createTridiagonalMatrix d k a
@@ -97,7 +97,7 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
 
         for i in 0..(d-1) do
             for j in 0..(d-1) do
-                let oldPoint : MultidimensionalTests.Point2D = { x = i; y = j }
+                let oldPoint : Point2D = { i0 = i; i1 = j }
                 let newPoint = [|i; j|]
 
                 let oldResult = oldMatrix.x_y oldPoint
@@ -113,7 +113,7 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
 
         for i in 0..(d-1) do
             for j in 0..(d-1) do
-                let oldPoint : MultidimensionalTests.Point2D = { x = i; y = j }
+                let oldPoint : Point2D = { i0 = i; i1 = j }
                 let newPoint = [|i; j|]
 
                 let oldResult = oldMatrix.y_x oldPoint

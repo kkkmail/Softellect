@@ -75,7 +75,7 @@ module Sparse =
             |> Array.map (fun e -> e.convert converter)
             |> SparseArray.create
 
-        member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
+        member inline array.momentOld (parameters: ConversionParameters<'I, 'C>) n =
             let x0 = array.values |> Array.sumBy (fun e -> double e.value)
 
             if x0 > 0.0 then
@@ -95,25 +95,25 @@ module Sparse =
                 parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
             else parameters.arithmetic.zero
 
-        // member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
-        //     let c = array.values |> Array.map (fun v -> v.convert double)
-        //     let x0 = c |> Array.sumBy _.value
-        //
-        //     let pown x n =
-        //         let v = parameters.projector x
-        //         let mutable result = parameters.arithmetic.one
-        //         for _ in 1..n do result <- parameters.arithmetic.multiply result v
-        //         result
-        //
-        //     if x0 > 0.0
-        //     then
-        //         let xn =
-        //             c
-        //             |> Array.map (fun v -> parameters.arithmetic.multiplyByDouble v.value (pown v.x n))
-        //             |> Array.sum
-        //
-        //         parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
-        //     else parameters.arithmetic.zero
+        member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
+            let c = array.values |> Array.map (fun v -> v.convert double)
+            let x0 = c |> Array.sumBy _.value
+
+            let pown x n =
+                let v = parameters.projector x
+                let mutable result = parameters.arithmetic.one
+                for _ in 1..n do result <- parameters.arithmetic.multiply result v
+                result
+
+            if x0 > 0.0
+            then
+                let xn =
+                    c
+                    |> Array.map (fun v -> parameters.arithmetic.multiplyByDouble v.value (pown v.x n))
+                    |> Array.fold parameters.arithmetic.add parameters.arithmetic.zero
+
+                parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
+            else parameters.arithmetic.zero
 
         member inline array.mean parameters = array.moment parameters 1
 

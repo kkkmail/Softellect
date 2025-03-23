@@ -6,6 +6,8 @@ open System.Diagnostics
 open Xunit
 open FluentAssertions
 open Softellect.Math.Sparse
+open Softellect.Math.Primitives
+open Softellect.Math.Tridiagonal
 
 /// Module for testing multidimensional sparse matrices
 /// Current results:
@@ -85,17 +87,6 @@ open Softellect.Math.Sparse
 ///   Approximate memory usage: 16202 MB
 ///
 module MultidimensionalTests =
-    /// 2D point representation
-    type Point2D = { x: int; y: int }
-
-
-    /// 3D point representation
-    type Point3D = { x: int; y: int; z: int }
-
-
-    /// 4D point representation
-    type Point4D = { x: int; y: int; z: int; w: int }
-
 
     /// Helper functions for creating multi-dimensional test data
     module Helpers =
@@ -122,172 +113,6 @@ module MultidimensionalTests =
             let dist = Math.Sqrt(sumSquares)
             Math.Abs(dist - radius) <= epsilon
 
-        /// Create a 3-diagonal sparse matrix for 2D space
-        let create2DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point2D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith "Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            {
-                x_y = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j = point.x, point.y
-                    let values = ResizeArray<SparseValue<Point2D, float>>()
-
-                    // Only include elements that would be non-zero
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1 }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-
-                y_x = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j = point.x, point.y
-                    let values = ResizeArray<SparseValue<Point2D, float>>()
-
-                    // Only include elements that would be non-zero
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1 }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-            }
-
-        /// Create a 3-diagonal sparse matrix for 3D space
-        let create3DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point3D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith "Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            {
-                x_y = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j, k = point.x, point.y, point.z
-                    let values = ResizeArray<SparseValue<Point3D, float>>()
-
-                    // Only include elements that would be non-zero
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j; z = k }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j; z = k }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1; z = k }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1; z = k }; value = b })
-
-                    // Off-diagonal in z direction
-                    if k > 0 then
-                        values.Add({ x = { x = i; y = j; z = k - 1 }; value = b })
-
-                    if k < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-
-                y_x = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j, k = point.x, point.y, point.z
-                    let values = ResizeArray<SparseValue<Point3D, float>>()
-
-                    // Only include elements that would be non-zero
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j; z = k }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j; z = k }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1; z = k }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1; z = k }; value = b })
-
-                    // Off-diagonal in z direction
-                    if k > 0 then
-                        values.Add({ x = { x = i; y = j; z = k - 1 }; value = b })
-
-                    if k < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-            }
-
         /// Create a thin hypersphere vector in 2D
         let create2DHypersphereVector (d: int) (radius: float) (epsilon: float) : SparseArray<Point2D, float> =
             let values = ResizeArray<SparseValue<Point2D, float>>()
@@ -299,7 +124,7 @@ module MultidimensionalTests =
 
                     // Check if point is on the hypersphere (circle in 2D)
                     if isNearHypersphere radius epsilon [|x; y|] then
-                        values.Add({ x = { x = i; y = j }; value = 1.0 })
+                        values.Add({ x = { i0 = i; i1 = j }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -316,116 +141,9 @@ module MultidimensionalTests =
 
                         // Check if point is on the hypersphere (sphere in 3D)
                         if isNearHypersphere radius epsilon [|x; y; z|] then
-                            values.Add({ x = { x = i; y = j; z = k }; value = 1.0 })
+                            values.Add({ x = { i0 = i; i1 = j; i2 = k }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
-
-
-        /// Create a 3-diagonal sparse matrix for 4D space
-        let create4DTridiagonalMatrix (d: int) (a: float) : SparseMatrix<Point4D, float> =
-            // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith "Parameter a must be in range (0, 1)"
-
-            // Calculate b based on the constraint a + 2b = 1
-            let b = (1.0 - a) / 2.0
-
-            // Create the matrix as functions (no full instantiation)
-            {
-                x_y = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j, k, l = point.x, point.y, point.z, point.w
-                    let values = ResizeArray<SparseValue<Point4D, float>>()
-
-                    // Only include elements that would be non-zero
-
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j; z = k; w = l }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j; z = k; w = l }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1; z = k; w = l }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1; z = k; w = l }; value = b })
-
-                    // Off-diagonal in z direction
-                    if k > 0 then
-                        values.Add({ x = { x = i; y = j; z = k - 1; w = l }; value = b })
-
-                    if k < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k + 1; w = l }; value = b })
-
-                    // Off-diagonal in w direction
-                    if l > 0 then
-                        values.Add({ x = { x = i; y = j; z = k; w = l - 1 }; value = b })
-
-                    if l < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k; w = l + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-
-                y_x = fun point ->
-                    xyStopwatch.Restart()
-
-                    let i, j, k, l = point.x, point.y, point.z, point.w
-                    let values = ResizeArray<SparseValue<Point4D, float>>()
-
-                    // Only include elements that would be non-zero
-
-                    // Diagonal element
-                    values.Add({ x = point; value = a })
-
-                    // Off-diagonal in x direction
-                    if i > 0 then
-                        values.Add({ x = { x = i - 1; y = j; z = k; w = l }; value = b })
-
-                    if i < d - 1 then
-                        values.Add({ x = { x = i + 1; y = j; z = k; w = l }; value = b })
-
-                    // Off-diagonal in y direction
-                    if j > 0 then
-                        values.Add({ x = { x = i; y = j - 1; z = k; w = l }; value = b })
-
-                    if j < d - 1 then
-                        values.Add({ x = { x = i; y = j + 1; z = k; w = l }; value = b })
-
-                    // Off-diagonal in z direction
-                    if k > 0 then
-                        values.Add({ x = { x = i; y = j; z = k - 1; w = l }; value = b })
-
-                    if k < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k + 1; w = l }; value = b })
-
-                    // Off-diagonal in w direction
-                    if l > 0 then
-                        values.Add({ x = { x = i; y = j; z = k; w = l - 1 }; value = b })
-
-                    if l < d - 1 then
-                        values.Add({ x = { x = i; y = j; z = k; w = l + 1 }; value = b })
-
-                    let retVal = SparseArray.create (values.ToArray())
-
-                    xyStopwatch.Stop()
-                    xyCallCount <- xyCallCount + 1
-                    xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-
-                    retVal
-            }
 
 
         /// Create a thin hypersphere vector in 4D (a 3-sphere)
@@ -443,7 +161,7 @@ module MultidimensionalTests =
 
                             // Check if point is on the hypersphere (3-sphere in 4D)
                             if isNearHypersphere radius epsilon [|x; y; z; w|] then
-                                values.Add({ x = { x = i; y = j; z = k; w = l }; value = 1.0 })
+                                values.Add({ x = { i0 = i; i1 = j; i2 = k; i3 = l }; value = 1.0 })
 
             SparseArray.create (values.ToArray())
 
@@ -462,7 +180,7 @@ module MultidimensionalTests =
 
             for i in 0..(d-1) do
                 for j in 0..(d-1) do
-                    let fromPoint = { x = i; y = j }
+                    let fromPoint = { i0 = i; i1 = j }
                     let toPoints = Dictionary<Point2D, float>()
 
                     // Diagonal element
@@ -470,17 +188,17 @@ module MultidimensionalTests =
 
                     // Off-diagonal in x direction
                     if i > 0 then
-                        toPoints.Add({ x = i - 1; y = j }, b)
+                        toPoints.Add({ i0 = i - 1; i1 = j }, b)
 
                     if i < d - 1 then
-                        toPoints.Add({ x = i + 1; y = j }, b)
+                        toPoints.Add({ i0 = i + 1; i1 = j }, b)
 
                     // Off-diagonal in y direction
                     if j > 0 then
-                        toPoints.Add({ x = i; y = j - 1 }, b)
+                        toPoints.Add({ i0 = i; i1 = j - 1 }, b)
 
                     if j < d - 1 then
-                        toPoints.Add({ x = i; y = j + 1 }, b)
+                        toPoints.Add({ i0 = i; i1 = j + 1 }, b)
 
                     matrix.Add(fromPoint, toPoints)
 
@@ -530,7 +248,7 @@ module MultidimensionalTests =
 
             // Create the matrix (just defines the functions, doesn't instantiate all values)
             let stopwatch = Stopwatch.StartNew()
-            let matrix = create2DTridiagonalMatrix d a
+            let matrix = createTridiagonalMatrix2D d a
             let creationTime = stopwatch.ElapsedMilliseconds
 
             // Create the vector (circle in 2D case)
@@ -545,7 +263,7 @@ module MultidimensionalTests =
                 seq {
                     for i in 0..(sampleSize-1) do
                         for j in 0..(sampleSize-1) do
-                            let count = (matrix.x_y { x = i; y = j }).getValues() |> Seq.length
+                            let count = (matrix.x_y { i0 = i; i1 = j }).getValues() |> Seq.length
                             yield count
                 }
                 |> Seq.sum
@@ -595,7 +313,7 @@ module MultidimensionalTests =
 
             // Create the matrix (just defines the functions, doesn't instantiate all values)
             let stopwatch = Stopwatch.StartNew()
-            let matrix = create3DTridiagonalMatrix d a
+            let matrix = createTridiagonalMatrix3D d a
             let creationTime = stopwatch.ElapsedMilliseconds
 
             // Create the vector (sphere in 3D case)
@@ -611,7 +329,7 @@ module MultidimensionalTests =
                     for i in 0..(sampleSize-1) do
                         for j in 0..(sampleSize-1) do
                             for k in 0..(sampleSize-1) do
-                                let count = (matrix.x_y { x = i; y = j; z = k }).getValues() |> Seq.length
+                                let count = (matrix.x_y { i0 = i; i1 = j; i2 = k }).getValues() |> Seq.length
                                 yield count
                 }
                 |> Seq.sum
@@ -665,7 +383,7 @@ module MultidimensionalTests =
 
             // Create the matrix (just defines the functions, doesn't instantiate all values)
             let stopwatch = Stopwatch.StartNew()
-            let matrix = Helpers.create4DTridiagonalMatrix d a
+            let matrix = createTridiagonalMatrix4D d a
             let creationTime = stopwatch.ElapsedMilliseconds
             output.WriteLine($"Matrix functions created in {creationTime} ms")
 
@@ -690,7 +408,7 @@ module MultidimensionalTests =
                         for j in 0..(sampleSize-1) do
                             for k in 0..(sampleSize-1) do
                                 for l in 0..(sampleSize-1) do
-                                    let count = (matrix.x_y { x = i; y = j; z = k; w = l }).getValues() |> Seq.length
+                                    let count = (matrix.x_y { i0 = i; i1 = j; i2 = k; i3 = l }).getValues() |> Seq.length
                                     yield count
                 }
                 |> Seq.sum

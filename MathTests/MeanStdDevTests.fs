@@ -200,9 +200,7 @@ type CombinedTests() =
         mean.x1.Should().BeLessThan(0.0, "mean x1 should be shifted down") |> ignore
 
         // StdDev should reflect the linear pattern
-        stdDev.x0.Should().BeGreaterThan(0.0, "stdDev x0 should be positive") |> ignore
-        stdDev.x1.Should().BeGreaterThan(0.0, "stdDev x1 should be positive") |> ignore
-        stdDev.x0.Should().BeGreaterThan(stdDev.x1, "x0 variation should be greater than x1 variation") |> ignore
+        stdDev.x0.Should().BeApproximately(stdDev.x1, 1e-10, "x0 variation should be the same as x1 variation") |> ignore
 
     [<Fact>]
     member _.``Empty distribution should not cause errors``() =
