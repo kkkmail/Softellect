@@ -12,31 +12,6 @@ open System
 open System.Diagnostics
 
 module Helpers =
-    // let inline runEvolutionModelTest<'I, 'C, 'D
-    //         when ^I: equality
-    //         and ^I: comparison
-    //         and ^I: (member toCoord : ^D -> ^C)
-    //
-    //         and ^C: equality
-    //         and ^C: comparison
-    //         and ^C: (static member ( + ) : ^C * ^C -> ^C)
-    //         and ^C: (static member ( - ) : ^C * ^C -> ^C)
-    //         and ^C: (static member ( * ) : ^C * ^C -> ^C)
-    //         and (^C or double): (static member ( .* ) : double * ^C -> ^C)
-    //         and (^C or double): (static member ( *. ) : ^C * double -> ^C)
-    //         and ^C: (static member ( / ) : ^C * ^C -> ^C)
-    //         and (^C or double): (static member ( /. ) : ^C * double -> ^C)
-    //         and ^C: (static member ( ** ) : ^C * ^C -> double)
-    //         and ^C: ( member total : unit -> double)
-    //         and ^C: ( member sqrt : unit -> ^C)
-    //         and ^C: (static member Zero : ^C)
-    //         and ^C: (static member One : ^C)
-    //         and ^D : (member dimension : int)>
-    //         (name: string)
-    //         writeLine
-    //         (createDomain: DomainIntervals -> DomainRange -> 'D)
-    //         (createCenterPoint: int -> 'I)
-    //         (createTridiagonalMatrix: int -> float -> SparseMatrix<'I, float>) =
     let inline runEvolutionModelTest<'I, 'C, 'D when 'I: equality and 'I: comparison>
             (name : string)
             writeLine
@@ -170,12 +145,12 @@ module Helpers =
             let mutable maxCount = 0L
             let mutable maxLocation = Unchecked.defaultof<'I>
 
-            // currentProtocells.values
-            // |> Array.iter (fun item ->
-            //     if item.value > maxCount then
-            //         maxCount <- item.value
-            //         maxLocation <- item.x
-            // )
+            currentProtocells.values
+            |> Array.iter (fun item ->
+                if item.value > maxCount then
+                    maxCount <- item.value
+                    maxLocation <- item.x
+            )
 
             writeLine($"Current max protocell count: {maxCount} at location {maxLocation}")
 
