@@ -143,7 +143,7 @@ module Models =
             let inv = (int64 n) * (int_u + w) + f
             inv
 
-        member inline md.evolveStep (p : EvolutionContext<'I, int64>) (x : SubstanceData<'I>) : SubstanceData<'I> =
+        member md.evolveStep (p : EvolutionContext<'I, int64>) (x : SubstanceData<'I>) : SubstanceData<'I> =
             let f = x.food.value
             let w = x.waste.value
             let u = x.protocell.value
@@ -191,7 +191,7 @@ module Models =
                 let retVal =  { food = f1; waste = w1; protocell = u1 }
                 retVal
 
-        member inline md.evolve (ctx : ModelContext<'I, int64, SubstanceData<'I>>)=
+        member md.evolve (ctx : ModelContext<'I, int64, SubstanceData<'I>>)=
              let g acc i =
                  let r = md.evolveStep ctx.evolutionContext acc
                  ctx.callBack i r

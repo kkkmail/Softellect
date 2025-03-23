@@ -76,12 +76,9 @@ module Sparse =
             |> SparseArray.create
 
         member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
-            // Sum of all values (as double)
-            let mutable x0 = 0.0
-            for v in array.values do x0 <- x0 + double v.value
+            let x0 = array.values |> Array.sumBy (fun e -> double e.value)
 
             if x0 > 0.0 then
-                // Calculate weighted sum
                 let mutable xn = parameters.arithmetic.zero
 
                 for v in array.values do
@@ -97,6 +94,26 @@ module Sparse =
                 // Divide by sum to get moment
                 parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
             else parameters.arithmetic.zero
+
+        // member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
+        //     let c = array.values |> Array.map (fun v -> v.convert double)
+        //     let x0 = c |> Array.sumBy _.value
+        //
+        //     let pown x n =
+        //         let v = parameters.projector x
+        //         let mutable result = parameters.arithmetic.one
+        //         for _ in 1..n do result <- parameters.arithmetic.multiply result v
+        //         result
+        //
+        //     if x0 > 0.0
+        //     then
+        //         let xn =
+        //             c
+        //             |> Array.map (fun v -> parameters.arithmetic.multiplyByDouble v.value (pown v.x n))
+        //             |> Array.sum
+        //
+        //         parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
+        //     else parameters.arithmetic.zero
 
         member inline array.mean parameters = array.moment parameters 1
 
