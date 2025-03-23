@@ -57,8 +57,8 @@
 
     <ItemGroup>
         <PackageReference Include="alglib.net" Version="3.19.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.3" />
         <PackageReference Include="Softellect.OdePackInterop" Version="9.0.100.5" />
         <PackageReference Update="FSharp.Core" Version="9.0.201" />
     </ItemGroup>
