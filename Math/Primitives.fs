@@ -514,12 +514,14 @@ module Primitives =
         member d.range = d.maxValue - d.minValue
         static member defaultValue = { minValue = -1.0; maxValue = 1.0 }
 
+
     /// Number of intervals in the domain.
     type DomainIntervals =
         | DomainIntervals of int
 
         member r.value = let (DomainIntervals v) = r in v
         static member defaultValue = DomainIntervals 100
+
 
     /// Describes a function domain suitable for integral approximation.
     /// Equidistant grid is used to reduce the number of multiplications.

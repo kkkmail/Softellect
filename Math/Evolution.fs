@@ -125,7 +125,6 @@ module Evolution =
             poissonSampler: PoissonSampler<'T>
             toDouble : 'T -> double
             fromDouble : double -> 'T
-            // filter : 'T -> bool
         }
 
 
