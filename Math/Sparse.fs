@@ -42,6 +42,7 @@ module Sparse =
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member op_Explicit : ^T -> double)
             and ^T: (static member Zero : ^T)> =
         {
             values : SparseValue<'I, 'T>[]
@@ -74,10 +75,10 @@ module Sparse =
             |> Array.map (fun e -> e.convert converter)
             |> SparseArray.create
 
-        member inline array.moment (parameters: ConversionParameters<'I, 'T, 'C>) n =
+        member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
             // Sum of all values (as double)
             let mutable x0 = 0.0
-            for v in array.values do x0 <- x0 + parameters.converter v.value
+            for v in array.values do x0 <- x0 + double v.value
 
             if x0 > 0.0 then
                 // Calculate weighted sum
@@ -89,7 +90,7 @@ module Sparse =
                         [1..n-1]
                         |> List.fold (fun p _ -> parameters.arithmetic.multiply p proj) proj
 
-                    let valueDouble = parameters.converter v.value
+                    let valueDouble = double v.value
                     let term = parameters.arithmetic.multiplyByDouble valueDouble powed
                     xn <- parameters.arithmetic.add xn term
 
@@ -171,6 +172,7 @@ module Sparse =
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
+            and ^T: (static member op_Explicit : ^T -> double)
             and ^T: (static member Zero : ^T)> =
         {
             x_y : 'I -> SparseArray<'I, 'T> // Returns a sparse array for the given x

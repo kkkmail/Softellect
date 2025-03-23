@@ -23,10 +23,9 @@ module Primitives =
 
 
     /// Record containing conversion parameters
-    type ConversionParameters<'I, 'T, 'C> =
+    type ConversionParameters<'I, 'C> =
         {
             arithmetic: ArithmeticOperations<'C>
-            converter: 'T -> double
             projector: 'I -> 'C
         }
 
@@ -1061,10 +1060,9 @@ module Primitives =
         }
 
 
-    let conversionParameters1D d  : ConversionParameters<Point1D, int64, Coord1D> =
+    let conversionParameters1D d  : ConversionParameters<Point1D, Coord1D> =
         {
             arithmetic = arithmeticOperations1D
-            converter = double
             projector = fun (p : Point1D) -> p.toCoord d
         }
 
@@ -1084,10 +1082,9 @@ module Primitives =
         }
 
 
-    let conversionParameters2D d  : ConversionParameters<Point2D, int64, Coord2D> =
+    let conversionParameters2D d  : ConversionParameters<Point2D, Coord2D> =
         {
             arithmetic = arithmeticOperations2D
-            converter = double
             projector = fun (p : Point2D) -> p.toCoord d
         }
 
@@ -1107,10 +1104,9 @@ module Primitives =
         }
 
 
-    let conversionParameters3D d  : ConversionParameters<Point3D, int64, Coord3D> =
+    let conversionParameters3D d  : ConversionParameters<Point3D, Coord3D> =
         {
             arithmetic = arithmeticOperations3D
-            converter = double
             projector = fun (p : Point3D) -> p.toCoord d
         }
 
@@ -1130,10 +1126,9 @@ module Primitives =
         }
 
 
-    let conversionParameters4D d : ConversionParameters<Point4D, int64, Coord4D> =
+    let conversionParameters4D d : ConversionParameters<Point4D, Coord4D> =
         {
             arithmetic = arithmeticOperations4D
-            converter = double
             projector = fun (p : Point4D) -> p.toCoord d
         }
 
@@ -1153,10 +1148,9 @@ module Primitives =
         }
 
 
-    let conversionParameters5D d  : ConversionParameters<Point5D, int64, Coord5D> =
+    let conversionParameters5D d  : ConversionParameters<Point5D, Coord5D> =
         {
             arithmetic = arithmeticOperations5D
-            converter = double
             projector = fun (p : Point5D) -> p.toCoord d
         }
 
@@ -1176,10 +1170,9 @@ module Primitives =
         }
 
 
-    let conversionParameters6D d  : ConversionParameters<Point6D, int64, Coord6D> =
+    let conversionParameters6D d  : ConversionParameters<Point6D, Coord6D> =
         {
             arithmetic = arithmeticOperations6D
-            converter = double
             projector = fun (p : Point6D) -> p.toCoord d
         }
 
@@ -1199,10 +1192,9 @@ module Primitives =
         }
 
 
-    let conversionParameters7D d  : ConversionParameters<Point7D, int64, Coord7D> =
+    let conversionParameters7D d  : ConversionParameters<Point7D, Coord7D> =
         {
             arithmetic = arithmeticOperations7D
-            converter = double
             projector = fun (p : Point7D) -> p.toCoord d
         }
 
@@ -1222,42 +1214,11 @@ module Primitives =
         }
 
 
-    let conversionParameters8D d  : ConversionParameters<Point8D, int64, Coord8D> =
+    let conversionParameters8D d  : ConversionParameters<Point8D, Coord8D> =
         {
             arithmetic = arithmeticOperations8D
-            converter = double
             projector = fun (p : Point8D) -> p.toCoord d
         }
-
-
-    // let arithmeticOperationsDouble =
-    //     {
-    //         add = (+)
-    //         subtract = (-)
-    //         multiply = (*)
-    //         divide = (/)
-    //         dot = (*)
-    //         multiplyByDouble = (*)
-    //         sqrt = sqrt
-    //         zero = 0.0
-    //         one = 1.0
-    //         filter = fun e -> e > 0.0
-    //     }
-    //
-    //
-    // let arithmeticOperationsInt64 =
-    //     {
-    //         add = (+)
-    //         subtract = (-)
-    //         multiply = (*)
-    //         divide = (/)
-    //         dot = fun a b -> double a * double b
-    //         multiplyByDouble = fun d e -> int64 (d * double e)
-    //         sqrt = fun e -> int64 (sqrt (double e) )
-    //         zero = 0L
-    //         one = 1L
-    //         filter = fun e -> e > 0L
-    //     }
 
 
     type DomainParams =

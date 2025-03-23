@@ -124,7 +124,7 @@ module Models =
             decay : Multiplier<'I>
             recyclingRate : RecyclingRate
             numberOfMolecules : NumberOfMolecules
-            converter : ConversionParameters<'I, int64, 'C>
+            converter : ConversionParameters<'I, 'C>
         }
 
         member md.mean (x : SubstanceData<'I>) : 'C =

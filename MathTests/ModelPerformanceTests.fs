@@ -43,8 +43,7 @@ module Helpers =
             (createDomain : DomainIntervals -> DomainRange -> 'D)
             (createCenterPoint : int -> 'I)
             (createTridiagonalMatrix : int -> float -> SparseMatrix<'I, float>)
-            (toCoord : 'I -> 'D -> 'C)
-            (converter : 'D -> ConversionParameters<'I, int64, 'C>)=
+            (converter : 'D -> ConversionParameters<'I, 'C>)=
 
         // Measure execution time
         let stopwatch = Stopwatch.StartNew()
@@ -66,7 +65,7 @@ module Helpers =
         // Create multiplier for evolution matrix - spherically symmetric function 0.1 * (1.0 + 1.0 * r^2)
         let evolutionMultiplier =
             Multiplier.sphericallySymmetric<'C>
-                (fun p -> toCoord p domain)
+                (converter domain)
                 (fun rSquared -> 0.1 * (1.0 + 1.0 * rSquared))
 
         // Create the evolution matrix wrapper
@@ -78,13 +77,13 @@ module Helpers =
 
         // Create decay function - spherically symmetric function 0.01 * (1.0 + ((3.0/2.0)*r)^8 / 8!)
         let factorial8 = 40320.0 // 8!
-        let decay = failwith ""
-            // Multiplier.sphericallySymmetric<'C>
-            //     (fun p -> toCoord p domain)
-            //     (fun rSquared ->
-            //         let r = Math.Sqrt(rSquared)
-            //         let term = Math.Pow(1.5 * r, 8.0) / factorial8
-            //         0.01 * (1.0 + term))
+        let decay =
+            Multiplier.sphericallySymmetric<'C>
+                (converter domain)
+                (fun rSquared ->
+                    let r = Math.Sqrt(rSquared)
+                    let term = Math.Pow(1.5 * r, 8.0) / factorial8
+                    0.01 * (1.0 + term))
 
         // Create the model
         let model =
@@ -267,7 +266,6 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
             (fun i r -> Domain2D.create(i, r))
             (fun mid -> { i0 = mid; i1 = mid })
             createTridiagonalMatrix2D
-            _.toCoord
             conversionParameters2D
 
 
@@ -279,5 +277,4 @@ type ModelPerformanceTests(output: ITestOutputHelper) =
             (fun i r -> Domain3D.create(i, r))
             (fun mid -> { i0 = mid; i1 = mid; i2 = mid })
             createTridiagonalMatrix3D
-            _.toCoord
             conversionParameters3D

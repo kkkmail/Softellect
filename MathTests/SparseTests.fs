@@ -22,12 +22,14 @@ module SparseTestHelpers =
     let inline createMatrixFromTriples<'I, 'T
             when ^I: equality
             and ^I: comparison
+
+            and ^T: equality
+            and ^T: comparison
             and ^T: (static member ( * ) : ^T * ^T -> ^T)
             and ^T: (static member ( + ) : ^T * ^T -> ^T)
             and ^T: (static member ( - ) : ^T * ^T -> ^T)
-            and ^T: (static member Zero : ^T)
-            and ^T: equality
-            and ^T: comparison>
+            and ^T: (static member op_Explicit : ^T -> double)
+            and ^T: (static member Zero : ^T)>
             (triples: ('I * 'I * 'T)[])
             (createSparseArray: ('I * 'T)[] -> SparseArray<'I, 'T>) : SparseMatrix<'I, 'T> =
 

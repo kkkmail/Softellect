@@ -25,6 +25,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         // Create a domain with 1000 x 1000 intervals
         let domainIntervals = DomainIntervals 100
         let domain = Domain2D.create(domainIntervals, DomainRange.defaultValue)
+        let converter = conversionParameters2D domain
 
         writeLine($"Domain created with {domainIntervals.value}x{domainIntervals.value} intervals")
 
@@ -38,7 +39,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         // Create multiplier for evolution matrix - spherically symmetric function 0.1 * (1.0 + 1.0 * r^2)
         let evolutionMultiplier =
             Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+                converter
                 (fun rSquared -> 0.1 * (1.0 + 1.0 * rSquared))
 
         // Create the evolution matrix wrapper
@@ -52,7 +53,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
         let factorial8 = 40320.0 // 8!
         let decay =
             Multiplier.sphericallySymmetric<Coord2D>
-                (fun (p : Point2D) -> p.toCoord domain)
+                converter
                 (fun rSquared ->
                     let r = Math.Sqrt(rSquared)
                     let term = Math.Pow(1.5 * r, 8.0) / factorial8
@@ -65,7 +66,7 @@ type Model2DPerformanceTests(output: ITestOutputHelper) =
                 decay = decay
                 recyclingRate = RecyclingRate 1.0
                 numberOfMolecules = NumberOfMolecules 1
-                converter = conversionParameters2D domain
+                converter = converter
             }
 
         // Create random for Poisson sampler

@@ -19,7 +19,7 @@ type MultiplierTests(output: ITestOutputHelper) =
         let gaussianFunc (rSquared: double): double = Math.Exp(-rSquared)
 
         // Create multiplier
-        let multiplier = Multiplier.sphericallySymmetric<Coord2D> (fun (p : Point2D) -> p.toCoord domain) gaussianFunc
+        let multiplier = Multiplier.sphericallySymmetric<Coord2D> (conversionParameters2D domain) gaussianFunc
 
         // Act & Assert
 
@@ -82,7 +82,7 @@ type MultiplierTests(output: ITestOutputHelper) =
         let quadraticFunc (rSquared: double): double = 1.0 + 2.0 * rSquared
 
         // Create multiplier
-        let multiplier = Multiplier.sphericallySymmetric<Coord2D> (fun (p : Point2D) -> p.toCoord domain) quadraticFunc
+        let multiplier = Multiplier.sphericallySymmetric<Coord2D> (conversionParameters2D domain) quadraticFunc
 
         // Act & Assert
 

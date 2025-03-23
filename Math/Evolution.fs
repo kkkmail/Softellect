@@ -4,6 +4,7 @@ open System
 open System.Collections.Generic
 open FSharp.Collections
 open MathNet.Numerics.Distributions
+open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 
 module Evolution =
@@ -57,7 +58,7 @@ module Evolution =
 
         member inline private r.invoke = let (PoissonSampler v) = r in v
         member inline r.next lambda = r.invoke lambda
-        static member inline create converter rnd = poissonSample converter rnd |> PoissonSampler
+        static member inline create converter rnd : PoissonSampler<'T> = poissonSample converter rnd |> PoissonSampler
 
         static member inline deterministic() =
             let state = DeterministicPoissonState.create()
@@ -137,11 +138,10 @@ module Evolution =
 
         /// Creates a spherically symmetric multiplier by projecting the input to coordinates
         /// and calculating the radius, then applying a function to the radius.
-        static member inline sphericallySymmetric<'C when ^C: (static member ( ** ) : ^C * ^C -> double)>
-            (toCoord : 'I -> 'C) (radiusFunc : double -> double) : Multiplier<'I> =
+        static member inline sphericallySymmetric (converter : ConversionParameters<'I, 'C>) (radiusFunc : double -> double) : Multiplier<'I> =
                 Multiplier (fun i ->
-                    let coord = toCoord i
-                    let rSquared = (^C: (static member ( ** ) : ^C * ^C -> double) (coord, coord))
+                    let coord = converter.projector i
+                    let rSquared = converter.arithmetic.dot coord coord
                     radiusFunc rSquared
                 )
 
