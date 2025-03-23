@@ -1,8 +1,6 @@
 ﻿namespace Softellect.Math
 
 open FSharp.Collections
-open MathNet.Numerics.Distributions
-open System
 
 module Primitives =
 
