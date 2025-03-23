@@ -11,10 +11,16 @@ module SparsePerformance =
 
     type OldSparseArray2D = Softellect.Math.Sparse.SparseArray<Point2D, int64>
     type NewSparseArray2D = Softellect.Math.Sparse2.SparseArray<Point2D, int64>
+    type OldSparseArrayDouble2D = Softellect.Math.Sparse.SparseArray<Point2D, float>
+    type NewSparseArrayDouble2D = Softellect.Math.Sparse2.SparseArray<Point2D, float>
 
-    type SparseArrayMultiplicationTests(output: ITestOutputHelper) =
-        let multiplySparseArrays = Softellect.Math.Sparse.multiplySparseArrays
+    type SparseArrayPerformanceTests(output: ITestOutputHelper) =
+        // Functions from old implementation
+        let multiplyInt64SparseArrays = Softellect.Math.Sparse.multiplySparseArrays
+        let multiplyDoubleSparseArrays = Softellect.Math.Sparse.multiplySparseArrays
+        let sumSparseArrays = Softellect.Math.Sparse.sumSparseArrays
 
+        // Helper functions to create arrays and convert types
         let createRandomSparseArrays2D (count: int) (size: int) (density: float) =
             // Single random generator with fixed seed
             let random = Random(1)
@@ -50,14 +56,30 @@ module SparsePerformance =
 
             arrays
 
+        // Extract conversion functions for reuse
+        let convertToDouble (array: Softellect.Math.Sparse.SparseArray<Point2D, int64>) =
+            let doubleValues = array.values |> Array.map (fun sv ->
+                { x = sv.x; value = float sv.value } : Softellect.Math.Sparse.SparseValue<Point2D, float>)
+            Softellect.Math.Sparse.SparseArray.create doubleValues
+
+        let convertToDouble2 (array: Softellect.Math.Sparse2.SparseArray<Point2D, int64>) =
+            let doubleValues = array.values |> Array.map (fun sv ->
+                { x = sv.x; value = float sv.value } : Softellect.Math.Sparse2.SparseValue<Point2D, float>)
+            Softellect.Math.Sparse2.SparseArray.create (fun e -> e <> 0.0) doubleValues
+
+        // Convert a set of arrays to double
+        let convertArraySetsToDouble (arraySets: (OldSparseArray2D * NewSparseArray2D)[]) =
+            arraySets |> Array.map (fun (oldArray, newArray) ->
+                (convertToDouble oldArray, convertToDouble2 newArray))
+
         [<Fact>]
-        let ``Compare performance of sparse array multiplication in 2D``() =
+        let ``Compare performance of sparse array multiplication in 2D (int64)``() =
             // Parameters for the test
             let arrayCount = 4
             let size = 1000
             let density = 0.6 // 60% of elements are non-zero
 
-            output.WriteLine($"Testing multiplication of {arrayCount} sparse arrays of size {size}x{size} with density {density}")
+            output.WriteLine($"Testing multiplication of {arrayCount} int64 sparse arrays of size {size}x{size} with density {density}")
 
             // Create random sparse arrays
             let arraySets = createRandomSparseArrays2D arrayCount size density
@@ -75,7 +97,7 @@ module SparsePerformance =
 
             // Benchmark the old implementation
             stopwatch.Restart()
-            let oldResult = multiplySparseArrays oldArrays
+            let oldResult = multiplyInt64SparseArrays oldArrays
             stopwatch.Stop()
             let oldElapsed = stopwatch.Elapsed
 
@@ -124,6 +146,146 @@ module SparsePerformance =
                 oldValue.value.Should().Be(newValue.value, $"Value at index {i} should match") |> ignore
 
         [<Fact>]
+        let ``Compare performance of sparse array multiplication in 2D (double)``() =
+            // Parameters for the test
+            let arrayCount = 4
+            let size = 1000
+            let density = 0.6 // 60% of elements are non-zero
+
+            output.WriteLine($"Testing multiplication of {arrayCount} double sparse arrays of size {size}x{size} with density {density}")
+
+            // Create random sparse arrays and convert to double
+            let arraySets = createRandomSparseArrays2D arrayCount size density
+            let doubleArraySets = convertArraySetsToDouble arraySets
+
+            // Extract old and new arrays
+            let oldArrays = doubleArraySets |> Array.map fst |> List.ofArray
+            let newArrays = doubleArraySets |> Array.map snd |> List.ofArray
+
+            // Output initial array sizes to verify they match
+            for i in 0 .. arrayCount - 1 do
+                output.WriteLine($"Array {i+1}: Old has {oldArrays[i].values.Length} elements, New has {newArrays[i].values.Length} elements")
+
+            // Create a single stopwatch for both tests
+            let stopwatch = Stopwatch()
+
+            // Benchmark the old implementation
+            stopwatch.Restart()
+            let oldResult = multiplyDoubleSparseArrays oldArrays
+            stopwatch.Stop()
+            let oldElapsed = stopwatch.Elapsed
+
+            // Benchmark the new implementation
+            stopwatch.Restart()
+            // Use the pre-defined arithmeticOperations for double
+            let newResult = NewSparseArrayDouble2D.multiply arithmeticOperationsDouble newArrays
+            stopwatch.Stop()
+            let newElapsed = stopwatch.Elapsed
+
+            // Output the results
+            output.WriteLine($"Old implementation took {oldElapsed.TotalMilliseconds} ms")
+            output.WriteLine($"New implementation took {newElapsed.TotalMilliseconds} ms")
+            output.WriteLine($"Speedup factor: {oldElapsed.TotalMilliseconds / newElapsed.TotalMilliseconds}")
+
+            // Verify that both implementations produce similar results (allowing for floating point differences)
+            let oldCount = oldResult.values.Length
+            let newCount = newResult.values.Length
+
+            output.WriteLine($"Old result has {oldCount} non-zero elements")
+            output.WriteLine($"New result has {newCount} non-zero elements")
+
+            // For floating point, we allow small differences in element count due to precision
+            let countDiff = abs (oldCount - newCount)
+            output.WriteLine($"Element count difference: {countDiff}")
+
+            // If the counts differ significantly, we should investigate
+            let countThreshold = oldCount / 100 // Allow 1% difference
+            countDiff.Should().BeLessThanOrEqualTo(countThreshold, "Element counts should be similar") |> ignore
+
+            // Compare the sums to ensure they're close enough
+            let oldSum = oldResult.values |> Array.sumBy _.value
+            let newSum = newResult.values |> Array.sumBy _.value
+
+            output.WriteLine($"Old result sum: {oldSum}")
+            output.WriteLine($"New result sum: {newSum}")
+
+            // For floating point, we allow small differences in sum
+            let relativeError = Math.Abs(oldSum - newSum) / Math.Max(Math.Abs(oldSum), Math.Abs(newSum))
+            output.WriteLine($"Relative error in sum: {relativeError}")
+
+            relativeError.Should().BeLessThan(1e-10, "Sums should be very close") |> ignore
+
+        [<Fact>]
+        let ``Compare performance of sparse array summation in 2D (double)``() =
+            // Parameters for the test
+            let arrayCount = 10 // More arrays for summation test
+            let size = 1000
+            let density = 0.4 // 40% of elements are non-zero
+
+            output.WriteLine($"Testing summation of {arrayCount} double sparse arrays of size {size}x{size} with density {density}")
+
+            // Create random sparse arrays and convert to double
+            let arraySets = createRandomSparseArrays2D arrayCount size density
+            let doubleArraySets = convertArraySetsToDouble arraySets
+
+            // Extract old and new arrays
+            let oldArrays = doubleArraySets |> Array.map fst |> List.ofArray
+            let newArrays = doubleArraySets |> Array.map snd |> List.ofArray
+
+            // Output initial array sizes to verify they match
+            for i in 0 .. arrayCount - 1 do
+                output.WriteLine($"Array {i+1}: Old has {oldArrays[i].values.Length} elements, New has {newArrays[i].values.Length} elements")
+
+            // Create a single stopwatch for both tests
+            let stopwatch = Stopwatch()
+
+            // Benchmark the old implementation
+            stopwatch.Restart()
+            let oldResult = sumSparseArrays oldArrays
+            stopwatch.Stop()
+            let oldElapsed = stopwatch.Elapsed
+
+            // Benchmark the new implementation
+            stopwatch.Restart()
+            // Use the pre-defined arithmeticOperations for double
+            let newResult = NewSparseArrayDouble2D.sum arithmeticOperationsDouble newArrays
+            stopwatch.Stop()
+            let newElapsed = stopwatch.Elapsed
+
+            // Output the results
+            output.WriteLine($"Old implementation took {oldElapsed.TotalMilliseconds} ms")
+            output.WriteLine($"New implementation took {newElapsed.TotalMilliseconds} ms")
+            output.WriteLine($"Speedup factor: {oldElapsed.TotalMilliseconds / newElapsed.TotalMilliseconds}")
+
+            // Verify that both implementations produce similar results (allowing for floating point differences)
+            let oldCount = oldResult.values.Length
+            let newCount = newResult.values.Length
+
+            output.WriteLine($"Old result has {oldCount} non-zero elements")
+            output.WriteLine($"New result has {newCount} non-zero elements")
+
+            // For floating point, we allow small differences in element count due to precision
+            let countDiff = Math.Abs(oldCount - newCount)
+            output.WriteLine($"Element count difference: {countDiff}")
+
+            // If the counts differ significantly, we should investigate
+            let countThreshold = oldCount / 100 // Allow 1% difference
+            countDiff.Should().BeLessThanOrEqualTo(countThreshold, "Element counts should be similar") |> ignore
+
+            // Compare the sums to ensure they're close enough
+            let oldSum = oldResult.values |> Array.sumBy _.value
+            let newSum = newResult.values |> Array.sumBy _.value
+
+            output.WriteLine($"Old result sum: {oldSum}")
+            output.WriteLine($"New result sum: {newSum}")
+
+            // For floating point, we allow small differences in sum
+            let relativeError = Math.Abs(oldSum - newSum) / Math.Max(Math.Abs(oldSum), Math.Abs(newSum))
+            output.WriteLine($"Relative error in sum: {relativeError}")
+
+            relativeError.Should().BeLessThan(1e-10, "Sums should be very close") |> ignore
+
+        [<Fact>]
         let ``Compare performance of tridiagonal matrix by sparse array multiplication in 2D``() =
             // Parameters for the test
             let size = 1000
@@ -136,20 +298,8 @@ module SparsePerformance =
             let oldMatrix = Softellect.Math.Tridiagonal.createTridiagonalMatrix2D size alpha
             let newMatrix = Softellect.Math.Tridiagonal2.createTridiagonalMatrix2D size alpha
 
-            // Create a sparse array for multiplication (convert from int64 to double)
+            // Create a sparse array for multiplication
             let (oldArrayInt64, newArrayInt64) = createRandomSparseArrays2D 1 size arrayDensity |> Array.head
-
-            // Convert array values from int64 to double
-            let convertToDouble (array: Softellect.Math.Sparse.SparseArray<Point2D, int64>) =
-                let doubleValues = array.values |> Array.map (fun sv ->
-                    { x = sv.x; value = float sv.value } : Softellect.Math.Sparse.SparseValue<Point2D, float>)
-                Softellect.Math.Sparse.SparseArray.create doubleValues
-
-            let convertToDouble2 (array: Softellect.Math.Sparse2.SparseArray<Point2D, int64>) =
-                let doubleValues = array.values |> Array.map (fun sv ->
-                    { x = sv.x; value = float sv.value } : Softellect.Math.Sparse2.SparseValue<Point2D, float>)
-                Softellect.Math.Sparse2.SparseArray.create (fun e -> e <> 0.0) doubleValues
-
             let oldArray = convertToDouble oldArrayInt64
             let newArray = convertToDouble2 newArrayInt64
 

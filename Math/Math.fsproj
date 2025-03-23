@@ -47,7 +47,9 @@
         <Compile Include="Tridiagonal.fs" />
         <Compile Include="Tridiagonal2.fs" />
         <Compile Include="Evolution.fs" />
+        <Compile Include="Evolution2.fs" />
         <Compile Include="Models.fs" />
+        <Compile Include="Models2.fs" />
     </ItemGroup>
 
     <ItemGroup>
