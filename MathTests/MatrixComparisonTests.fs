@@ -12,22 +12,22 @@ open Softellect.Math.Sparse
 type MatrixComparisonTests(output: ITestOutputHelper) =
 
     /// Helper to extract sparse values from an array
-    let extractValues (sparseArray: SparseArray<'I, 'T>) =
+    let extractValues (sparseArray: SparseArray<'I, double>) =
         sparseArray.getValues()
         |> Seq.map (fun v -> (v.x, v.value))
         |> Seq.sortBy fst
         |> Seq.toArray
 
     /// Print sparse array contents
-    let printSparseArray name (array: SparseArray<'I, 'T>) =
+    let printSparseArray name (array: SparseArray<'I, double>) =
         output.WriteLine($"{name}:")
         let values = extractValues array
-        for (idx, value) in values do
+        for idx, value in values do
             output.WriteLine($"  {idx} -> {value}")
         output.WriteLine($"  Total elements: {values.Length}")
 
     /// Compare two sparse arrays and print differences
-    let compareSparseArrays name1 (array1: SparseArray<'I, 'T>) name2 (array2: SparseArray<'I, 'T>) =
+    let compareSparseArrays name1 (array1: SparseArray<'I, double>) name2 (array2: SparseArray<'I, double>) =
         let values1 = extractValues array1 |> Map.ofArray
         let values2 = extractValues array2 |> Map.ofArray
 

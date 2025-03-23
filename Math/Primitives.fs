@@ -7,18 +7,17 @@ open System
 module Primitives =
 
     /// Arithmetic operations record that encapsulates all required operations
-    type ArithmeticOperations<'T> =
+    type ArithmeticOperations<'C> =
         {
-            add: 'T -> 'T -> 'T
-            subtract: 'T -> 'T -> 'T
-            multiply: 'T -> 'T -> 'T
-            divide: 'T -> 'T -> 'T
-            dot: 'T -> 'T -> double
-            multiplyByDouble: double -> 'T -> 'T
-            sqrt: 'T -> 'T
-            zero: 'T
-            one: 'T
-            filter: 'T -> bool
+            add: 'C -> 'C -> 'C
+            subtract: 'C -> 'C -> 'C
+            multiply: 'C -> 'C -> 'C
+            divide: 'C -> 'C -> 'C
+            dot: 'C -> 'C -> double
+            multiplyByDouble: double -> 'C -> 'C
+            sqrt: 'C -> 'C
+            zero: 'C
+            one: 'C
         }
 
 
@@ -1056,7 +1055,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord1D.Zero
             one = Coord1D.One
-            filter = fun e -> e > Coord1D.Zero
         }
 
 
@@ -1078,7 +1076,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord2D.Zero
             one = Coord2D.One
-            filter = fun e -> e > Coord2D.Zero
         }
 
 
@@ -1100,7 +1097,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord3D.Zero
             one = Coord3D.One
-            filter = fun e -> e > Coord3D.Zero
         }
 
 
@@ -1122,7 +1118,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord4D.Zero
             one = Coord4D.One
-            filter = fun e -> e > Coord4D.Zero
         }
 
 
@@ -1144,7 +1139,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord5D.Zero
             one = Coord5D.One
-            filter = fun e -> e > Coord5D.Zero
         }
 
 
@@ -1166,7 +1160,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord6D.Zero
             one = Coord6D.One
-            filter = fun e -> e > Coord6D.Zero
         }
 
 
@@ -1188,7 +1181,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord7D.Zero
             one = Coord7D.One
-            filter = fun e -> e > Coord7D.Zero
         }
 
 
@@ -1210,7 +1202,6 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord8D.Zero
             one = Coord8D.One
-            filter = fun e -> e > Coord8D.Zero
         }
 
 
