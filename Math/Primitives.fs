@@ -398,25 +398,6 @@ module Primitives =
     //             step = range / (double noOfIntervals)
     //             domainRange = r
     //         }
-    //
-    //
-    // /// A multi-dimensional domain in cartesian coordinates.
-    // type MultiDimensionalDomain =
-    //     | MultiDimensionalDomain of Domain[]
-    //
-    //     member m.value = let (MultiDimensionalDomain v) = m in v
-    //     static member create (d : DomainParams[]) = d |> Array.map _.domain() |> MultiDimensionalDomain
-    //
-    //
-    // // /// Data that describes a rectangle in x * y space.
-    // // type Domain2D =
-    // //     {
-    // //         xDomain : Domain
-    // //         yDomain : Domain
-    // //     }
-    // //
-    // //     member d.normalize v = v * d.xDomain.step * d.yDomain.step
-
 
     let factorial n = [ 1..n ] |> List.fold (*) 1
 
@@ -527,12 +508,12 @@ module Primitives =
     /// Equidistant grid is used to reduce the number of multiplications.
     type Domain =
         {
-            points : double[]
+            points : Vector<double>
             step : double
             domainRange : DomainRange
         }
 
-        member d.noOfIntervals = d.points.Length - 1 |> DomainIntervals
+        member d.noOfIntervals = d.points.value.Length - 1 |> DomainIntervals
         member d.normalize v = v * d.step
         member d.dimension = 1
 
@@ -544,7 +525,7 @@ module Primitives =
             let points = [| for i in 0..noOfIntervals -> r.minValue + rn * (double i) |]
 
             {
-                points = points
+                points = Vector points
                 step = range / (double noOfIntervals)
                 domainRange = r
             }
@@ -907,7 +888,7 @@ module Primitives =
 
         member p.toCoord (d : Domain) =
             {
-                x0 = d.points[p.i0]
+                x0 = d.points.value[p.i0]
             }
 
     /// 2D point representation
@@ -919,8 +900,8 @@ module Primitives =
 
         member p.toCoord (d : Domain2D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
             }
 
     /// 3D point representation
@@ -933,9 +914,9 @@ module Primitives =
 
         member p.toCoord (d : Domain3D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
             }
 
     /// 4D point representation
@@ -949,10 +930,10 @@ module Primitives =
 
         member p.toCoord (d : Domain4D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
-                x3 = d.d3.points[p.i3]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
+                x3 = d.d3.points.value[p.i3]
             }
 
     /// 5D point representation
@@ -967,11 +948,11 @@ module Primitives =
 
         member p.toCoord (d : Domain5D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
-                x3 = d.d3.points[p.i3]
-                x4 = d.d4.points[p.i4]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
+                x3 = d.d3.points.value[p.i3]
+                x4 = d.d4.points.value[p.i4]
             }
 
     /// 6D point representation
@@ -987,12 +968,12 @@ module Primitives =
 
         member p.toCoord (d : Domain6D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
-                x3 = d.d3.points[p.i3]
-                x4 = d.d4.points[p.i4]
-                x5 = d.d5.points[p.i5]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
+                x3 = d.d3.points.value[p.i3]
+                x4 = d.d4.points.value[p.i4]
+                x5 = d.d5.points.value[p.i5]
             }
 
     /// 7D point representation
@@ -1009,13 +990,13 @@ module Primitives =
 
         member p.toCoord (d : Domain7D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
-                x3 = d.d3.points[p.i3]
-                x4 = d.d4.points[p.i4]
-                x5 = d.d5.points[p.i5]
-                x6 = d.d6.points[p.i6]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
+                x3 = d.d3.points.value[p.i3]
+                x4 = d.d4.points.value[p.i4]
+                x5 = d.d5.points.value[p.i5]
+                x6 = d.d6.points.value[p.i6]
             }
 
     /// 8D point representation
@@ -1033,14 +1014,14 @@ module Primitives =
 
         member p.toCoord (d : Domain8D) =
             {
-                x0 = d.d0.points[p.i0]
-                x1 = d.d1.points[p.i1]
-                x2 = d.d2.points[p.i2]
-                x3 = d.d3.points[p.i3]
-                x4 = d.d4.points[p.i4]
-                x5 = d.d5.points[p.i5]
-                x6 = d.d6.points[p.i6]
-                x7 = d.d7.points[p.i7]
+                x0 = d.d0.points.value[p.i0]
+                x1 = d.d1.points.value[p.i1]
+                x2 = d.d2.points.value[p.i2]
+                x3 = d.d3.points.value[p.i3]
+                x4 = d.d4.points.value[p.i4]
+                x5 = d.d5.points.value[p.i5]
+                x6 = d.d6.points.value[p.i6]
+                x7 = d.d7.points.value[p.i7]
             }
 
 
