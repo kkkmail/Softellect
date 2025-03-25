@@ -410,9 +410,9 @@ module Common =
 
 
     type SolverType =
-        | OdeSolver
-        | FredholmSolver
-        | UserDefinedSolver
+        | OdeSolverType
+        | FredholmSolverType
+        | UserDefinedSolverType
 
 
     type ProgressUpdateInfo<'P> =
