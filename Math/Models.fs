@@ -118,7 +118,6 @@ module Models =
     ///     g0 * g(x) is a Multiplier - decay rate.
     ///     s is a constant recycling rate.
     type SimpleEvolutionModel<'I, 'C when 'I: equality and 'I: comparison> =
-    // type SimpleEvolutionModel<'I, 'C when 'I: equality and 'I: comparison and 'C: equality and 'C: comparison> =
         {
             replication : EvolutionMatrix<'I>
             decay : Multiplier<'I>
