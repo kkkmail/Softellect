@@ -3,6 +3,7 @@
 open System.Collections.Generic
 open FSharp.Collections
 open System
+open MBrace.FsPickler
 open Softellect.Math.Primitives
 
 module Sparse =
@@ -33,6 +34,7 @@ module Sparse =
 
 
     /// A sparse array implementation
+    [<CustomPickler>]
     type SparseArray<'I, 'T
             when ^I: equality
             and ^I: comparison
@@ -58,17 +60,22 @@ module Sparse =
                 map = Lazy<Map<'I, 'T>>(fun () -> createLookupMap values)
             }
 
+        static member inline CreatePickler(resolver : IPicklerResolver) =
+            let name = nameof(SparseArray)
+            let pickler = resolver.Resolve<SparseValue<'I, 'T>[]> ()
+            let writer (w : WriteState) (a : SparseArray<'I, 'T>) = pickler.Write w name a.values
+            let reader (r : ReadState) = let v = pickler.Read r name in ( SparseArray<'I, 'T>.create v)
+            Pickler.FromPrimitives(reader, writer)
+
         static member inline empty() : SparseArray<'I, 'T> =
             {
                 values = [||]
                 map = Lazy<Map<'I, 'T>>(fun () -> Map.empty)
             }
 
-
         member inline array.tryFind (i: 'I) = array.map.Value.TryFind i
         member inline array.getValues()  = array.values |> Seq.ofArray
         member inline array.total() = array.values |> Array.sumBy _.value
-
 
         member inline array.convert  converter =
             array.values

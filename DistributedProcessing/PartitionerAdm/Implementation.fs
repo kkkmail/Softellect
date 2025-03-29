@@ -159,7 +159,7 @@ module Implementation =
                             description = de
                         }
 
-                    Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map _.value.Length |> Option.defaultValue 0):N0}"
+                    Logger.logInfo $"Solver with id '{s}', name '{n}', folder '{f}', and hash '{hash}' was added. Solver size: {(solver.solverData |> Option.map _.value.Length |> Option.defaultValue 0):N0}"
                     let r1 = ctx.partitionerAdmProxy.saveSolver solver
                     let r2 = ctx.partitionerAdmProxy.tryUndeploySolver solver.solverId
                     let r = combineUnitResults r1 r2
