@@ -63,7 +63,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
         <ProjectReference Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj" />
-        <ProjectReference Include="..\..\..\MessagingService\MessagingService.fsproj" />
+        <ProjectReference Include="..\WorkerNodeAdm\WorkerNodeAdm.fsproj" />
     </ItemGroup>
 
 </Project>

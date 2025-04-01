@@ -64,6 +64,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerService.fsproj" />
+        <ProjectReference Include="..\PartitionerAdm\PartitionerAdm.fsproj" />
     </ItemGroup>
 
 </Project>
