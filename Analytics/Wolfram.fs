@@ -15,7 +15,7 @@ open Softellect.Analytics.AppSettings
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
 
-    ///. An encapsulation of Wolfram code file content.
+    /// An encapsulation of Wolfram code file content.
     type WolframCode =
         | WolframCode of string
 
@@ -328,7 +328,7 @@ module Wolfram =
         let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
         let gridLines = p.gridLines |> Option.map (fun g -> ", GridLines -> " + (match g with | UserDefinedGridLines v -> v | _ -> $"%A{g}")) |> Option.defaultValue EmptyString
         let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
-        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
+        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue EmptyString
         let plotLegends = ", PlotLegends -> legends"
         let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
 
@@ -343,9 +343,7 @@ module Wolfram =
         data |> WolframCode
 
 
-    let getListLinePlot i o p d =
-        let data = getListLinePlotData o p d
-
+    let private exportPlot i o data =
         let request =
             {
                 wolframCode = data
@@ -357,10 +355,78 @@ module Wolfram =
         | Ok v ->
             {
                 binaryContent = v
-                fileName = o
+                fileName = request.outputFileName
             }
             |> BinaryResult
             |> Some
         | Error e ->
-            Logger.logError $"getListLinePlot - Error: %A{e}."
+            Logger.logError $"Cannot export Mathematica plot from %A{request.inputFileName} into %A{request.outputFileName} - Error: %A{e}."
             None
+
+
+    let getListLinePlot i o p d =
+        getListLinePlotData o p d |> exportPlot i o
+
+
+    type PlotTheme =
+        | ClassicPlotTheme
+
+        member p.value =
+            match p with
+            | ClassicPlotTheme -> "{\"Classic\", \"ClassicLights\"}"
+
+
+    type ListPlot3DParams =
+        {
+            plotRange : PlotRange option
+            plotTheme : PlotTheme option
+            imageSize : ImageSize option
+            labelStyle : LabelStyle option
+            axesLabel : DataLabel3D option
+            extraParams : string option // Any additional parameters that you want to pass to ListPlot3D. The string will be passed as is.
+        }
+
+        static member defaultValue =
+            {
+                plotRange = Some PlotRange.defaultValue
+                plotTheme = Some PlotTheme.ClassicPlotTheme
+                imageSize = Some ImageSize.defaultValue
+                labelStyle = Some LabelStyle.defaultValue
+                axesLabel = Some DataLabel3D.defaultValue
+                extraParams = None
+            }
+
+
+    type ListPlot3DData =
+        {
+            xData : double[]
+            yData : double[]
+            zData : double[][]
+        }
+
+
+    let getListLinePlot3DData (o : FileName) (p : ListPlot3DParams) (d : ListPlot3DData) =
+        let plotTheme = p.plotTheme |> Option.map (fun p -> $", PlotTheme -> {p}") |> Option.defaultValue EmptyString
+        let axesLabel = p.axesLabel |> Option.map (fun a -> $", AxesLabel -> {a}") |> Option.defaultValue EmptyString
+        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
+        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue EmptyString
+        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
+        let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
+
+        let data =
+            [
+                $"x = {(toWolframNotation d.xData)};"
+                $"y = {(toWolframNotation d.yData)};"
+                $"z = {(toWolframNotation d.zData)};"
+                $"xLen = Length[x];"
+                $"yLen = Length[y];"
+                $"data = Flatten[Table[{{x[[ii]], y[[jj]], z[[ii, jj]]}}, {{ii, 1, xLen}}, {{jj, 1, yLen}}], 1];"
+                $"outputFile = \"{o.toWolframNotation()}\";"
+                $"Export[outputFile, ListPlot3D[data{plotTheme}{axesLabel}{plotRange}{labelStyle}{imageSize}{extra}], \"PNG\"];"
+            ]
+            |> joinStrings Nl
+        data |> WolframCode
+
+
+    let getListPlot3D (i : FileName) (o : FileName) (p : ListPlot3DParams) (d : ListPlot3DData) =
+        getListLinePlot3DData o p d |> exportPlot i o
