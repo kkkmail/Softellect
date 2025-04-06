@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Diagnostics
 open System.Threading.Tasks
 open System.IO
 open System.IO.Compression
@@ -519,9 +520,9 @@ module Core =
     type FileName
         with
 
-        /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory
-        /// unless the file name is already a name with a full path.
-        /// Optional folder name allow specifying a subfolder unless it is a fullly qualified folder name.
+        /// Gets the full file name located in the folder where the assembly normally resides on disk or
+        /// the installation directory unless the file name is already a name with a full path.
+        /// Optional folder name allow specifying a subfolder unless it is a fully qualified folder name.
         member f.tryGetFullFileName(fo : FolderName option) =
             try
                 let fileName = f.value
@@ -583,3 +584,18 @@ module Core =
         | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
 
         ()
+
+
+    /// Tries to execute a given file with given command line parameters and wait for exit.
+    let tryExecuteFile (FileName fileName) (commandLine: string) =
+        try
+            let startInfo = ProcessStartInfo()
+            startInfo.FileName <- fileName
+            startInfo.Arguments <- commandLine
+            startInfo.UseShellExecute <- false
+
+            use p = Process.Start(startInfo)
+            p.WaitForExit()
+            Ok p.ExitCode
+        with
+        | e -> ExecuteFileExn e |> Error

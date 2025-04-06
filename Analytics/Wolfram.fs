@@ -30,6 +30,16 @@ module Wolfram =
 
         static member defaultValue = PlotRange.All
 
+        member this.value =
+            match this with
+            | All -> "All"
+            | Full -> "Full"
+            | Automatic -> "Automatic"
+            | UserDefinedPlotRange v -> v
+
+    let getPlotRange (x : PlotRange option) =
+        x |> Option.map (fun r -> ", PlotRange -> " + r.value) |> Option.defaultValue EmptyString
+
 
     type GridLines =
         | Automatic
@@ -37,6 +47,16 @@ module Wolfram =
         | UserDefinedGridLines of string // You are on your own here.
 
         static member defaultValue = GridLines.Automatic
+
+        member this.value =
+            match this with
+            | Automatic -> "Automatic"
+            // | None -> "None"
+            | UserDefinedGridLines v -> v
+
+
+    let getGridLines (x : GridLines option) =
+         x |> Option.map (fun g -> ", GridLines -> " + g.value) |> Option.defaultValue EmptyString
 
 
     type ImageSize =
@@ -49,6 +69,18 @@ module Wolfram =
 
         static member defaultValue = ImageSize.Large
 
+        member this.value =
+            match this with
+            | Tiny -> "Tiny"
+            | Small -> "Small"
+            | Medium -> "Medium"
+            | Large -> "Large"
+            | Full -> "Full"
+            | UserDefinedImageSize v -> v
+
+
+    let getImageSize (x : ImageSize option) =
+        x |> Option.map (fun i -> ", ImageSize -> " + i.value) |> Option.defaultValue EmptyString
 
     type LabelStyle =
         | LabelStyle of string
@@ -56,6 +88,10 @@ module Wolfram =
         member this.value = let (LabelStyle v) = this in v
 
         static member defaultValue = LabelStyle "{FontSize -> 16, Bold, Black}"
+
+
+    let getLabelStyle (x : LabelStyle option) =
+        x |> Option.map (fun i -> ", LabelStyle -> " + i.value) |> Option.defaultValue EmptyString
 
 
     let private baseIndent = "  "
@@ -307,6 +343,15 @@ module Wolfram =
             extraParams : string option // Any additional parameters that you want to pass to ListLinePlot. The string will be passed as is.
         }
 
+        member p.options =
+            [
+                getPlotRange p.plotRange
+                getGridLines p.gridLines
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+            ]
+            |> joinStrings EmptyString
+
         static member defaultValue =
             {
                 frame = true
@@ -324,11 +369,7 @@ module Wolfram =
         let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
         let frame = if p.frame then ", Frame -> True" else EmptyString
 
-        // If the plot size, grid lines, image size are user defined, then send them as is. Otherwise, use %A to get a full name.
-        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
-        let gridLines = p.gridLines |> Option.map (fun g -> ", GridLines -> " + (match g with | UserDefinedGridLines v -> v | _ -> $"%A{g}")) |> Option.defaultValue EmptyString
-        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
-        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue EmptyString
+        let options = p.options
         let plotLegends = ", PlotLegends -> legends"
         let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
 
@@ -337,7 +378,7 @@ module Wolfram =
                 xyData
                 $"legends = {(toWolframNotation legends)};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}{extra}], \"PNG\"];"
+                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{options}{plotLegends}{extra}], \"PNG\"];"
             ]
             |> joinStrings Nl
         data |> WolframCode
@@ -375,6 +416,30 @@ module Wolfram =
             match p with
             | ClassicPlotTheme -> "{\"Classic\", \"ClassicLights\"}"
 
+        static member defaultValue = ClassicPlotTheme
+
+    let getPlotTheme (x : PlotTheme option) =
+        x |> Option.map (fun p -> ", PlotTheme -> " + p.value) |> Option.defaultValue EmptyString
+
+
+    type ImagePadding =
+        | XyPadding of double * double
+        | UserDefinedPadding of string // You are on your own here.
+
+        static member defaultValue = XyPadding(70.05, 20.45)
+
+        member ip.value =
+            match ip with
+            | XyPadding (x, y) -> $"{{{{{x}, 0}}, {{{y}, 0}}}}"
+            | UserDefinedPadding v -> v
+
+    let getImagePadding (x : ImagePadding option) =
+        x |> Option.map (fun i -> ", ImagePadding -> " + i.value) |> Option.defaultValue EmptyString
+
+
+    let getAxesLabel3D (x : DataLabel3D option) =
+        x |> Option.map (fun a -> $", AxesLabel -> {{{a.xLabel}, {a.yLabel}, {a.zLabel}}}") |> Option.defaultValue EmptyString
+
 
     type ListPlot3DParams =
         {
@@ -383,50 +448,47 @@ module Wolfram =
             imageSize : ImageSize option
             labelStyle : LabelStyle option
             axesLabel : DataLabel3D option
+            imagePadding : ImagePadding option
             extraParams : string option // Any additional parameters that you want to pass to ListPlot3D. The string will be passed as is.
         }
+
+        member p.options =
+            [
+                getPlotRange p.plotRange
+                getPlotTheme p.plotTheme
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+                getAxesLabel3D p.axesLabel
+                getImagePadding p.imagePadding
+            ]
+            |> joinStrings EmptyString
 
         static member defaultValue =
             {
                 plotRange = Some PlotRange.defaultValue
-                plotTheme = Some PlotTheme.ClassicPlotTheme
+                plotTheme = Some PlotTheme.defaultValue
                 imageSize = Some ImageSize.defaultValue
                 labelStyle = Some LabelStyle.defaultValue
                 axesLabel = Some DataLabel3D.defaultValue
+                imagePadding = Some ImagePadding.defaultValue
                 extraParams = None
             }
 
 
-    type ListPlot3DData =
-        {
-            xData : double[]
-            yData : double[]
-            zData : double[][]
-        }
-
-
-    let getListLinePlot3DData (o : FileName) (p : ListPlot3DParams) (d : ListPlot3DData) =
-        let plotTheme = p.plotTheme |> Option.map (fun p -> $", PlotTheme -> {p}") |> Option.defaultValue EmptyString
-        let axesLabel = p.axesLabel |> Option.map (fun a -> $", AxesLabel -> {a}") |> Option.defaultValue EmptyString
-        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
-        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue EmptyString
-        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
+    let getListLinePlot3DData (o : FileName) (p : ListPlot3DParams) (d : DataPoint3D list) =
+        let options = p.options
         let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
+        let data = d |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y}, {toWolframNotation p.z} }}") |> joinStrings ", "
 
         let data =
             [
-                $"x = {(toWolframNotation d.xData)};"
-                $"y = {(toWolframNotation d.yData)};"
-                $"z = {(toWolframNotation d.zData)};"
-                $"xLen = Length[x];"
-                $"yLen = Length[y];"
-                $"data = Flatten[Table[{{x[[ii]], y[[jj]], z[[ii, jj]]}}, {{ii, 1, xLen}}, {{jj, 1, yLen}}], 1];"
+                $"data = {{ {data} }};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListPlot3D[data{plotTheme}{axesLabel}{plotRange}{labelStyle}{imageSize}{extra}], \"PNG\"];"
+                $"Export[outputFile, ListPlot3D[data{options}{extra}], \"PNG\"];"
             ]
             |> joinStrings Nl
         data |> WolframCode
 
 
-    let getListPlot3D (i : FileName) (o : FileName) (p : ListPlot3DParams) (d : ListPlot3DData) =
+    let getListPlot3D (i : FileName) (o : FileName) (p : ListPlot3DParams) (d : DataPoint3D list) =
         getListLinePlot3DData o p d |> exportPlot i o

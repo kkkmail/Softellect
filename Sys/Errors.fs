@@ -40,6 +40,7 @@ module Errors =
 
 
     type FileError =
+        | ExecuteFileExn of exn
         | GeneralFileExn of exn
         | GetFolderNameExn of exn
         | GetFileNameExn of exn

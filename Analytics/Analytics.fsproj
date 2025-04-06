@@ -48,6 +48,7 @@
         <Compile Include="Primitives.fs" />
         <Compile Include="AppSettings.fs" />
         <Compile Include="Wolfram.fs" />
+        <Compile Include="FFMpeg.fs" />
     </ItemGroup>
 
     <ItemGroup>
