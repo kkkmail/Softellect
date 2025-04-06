@@ -4,6 +4,7 @@ open System
 open Microsoft.FSharp.Reflection
 open System.Text
 open Softellect.Analytics.Primitives
+open Softellect.Math.Primitives
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
@@ -449,6 +450,8 @@ module Wolfram =
             labelStyle : LabelStyle option
             axesLabel : DataLabel3D option
             imagePadding : ImagePadding option
+            threshold : double option // If provided, then values smaller than that will be colored white.
+            meshPoints : int
             extraParams : string option // Any additional parameters that you want to pass to ListPlot3D. The string will be passed as is.
         }
 
@@ -463,6 +466,17 @@ module Wolfram =
             ]
             |> joinStrings EmptyString
 
+        member p.optionsWhite =
+            [
+                getPlotRange p.plotRange
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+                getAxesLabel3D p.axesLabel
+                getImagePadding p.imagePadding
+                ", BoundaryStyle -> None"
+            ]
+            |> joinStrings EmptyString
+
         static member defaultValue =
             {
                 plotRange = Some PlotRange.defaultValue
@@ -471,22 +485,47 @@ module Wolfram =
                 labelStyle = Some LabelStyle.defaultValue
                 axesLabel = Some DataLabel3D.defaultValue
                 imagePadding = Some ImagePadding.defaultValue
+                threshold = Some 1.0e-10
+                meshPoints = 20
                 extraParams = None
             }
 
 
     let getListLinePlot3DData (o : FileName) (p : ListPlot3DParams) (d : DataPoint3D list) =
-        let options = p.options
         let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
         let data = d |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y}, {toWolframNotation p.z} }}") |> joinStrings ", "
+
+        let mesh() =
+            let x = d |> List.map _.x |> List.distinct
+            let y = d |> List.map _.y |> List.distinct
+            let xRange = { minValue = List.min x; maxValue = List.max x }
+            let yRange = { minValue = List.min y; maxValue = List.max y }
+            $", Mesh -> {{Subdivide[{toWolframNotation xRange.minValue}, {toWolframNotation xRange.maxValue}, {p.meshPoints}], Subdivide[{toWolframNotation yRange.minValue}, {toWolframNotation yRange.maxValue}, {p.meshPoints}]}}"
+
+        let regionFunction (v : double) (above : bool) =
+            let comparison = if above then ">" else "<="
+            $", RegionFunction -> Function[{{x, y, z}}, z {comparison} {toWolframNotation v}]"
 
         let data =
             [
                 $"data = {{ {data} }};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListPlot3D[data{options}{extra}], \"PNG\"];"
             ]
+            @
+            match p.threshold with
+            | None ->
+                [
+                    $"Export[outputFile, ListPlot3D[data{p.options}{extra}], \"PNG\"];"
+                ]
+            | Some v ->
+                [
+                    $"c1 = ListPlot3D[data{getPlotTheme p.plotTheme}{p.optionsWhite}{regionFunction v true}{mesh()}{extra}];"
+                    $"c2 = ListPlot3D[data, Lighting -> \"Neutral\", PlotStyle -> White{getPlotTheme p.plotTheme}{p.optionsWhite}{regionFunction v false}{mesh()}{extra}];"
+                    $"Export[outputFile, Show[c1, c2, PlotRange -> All], \"PNG\"];"
+
+                ]
             |> joinStrings Nl
+
         data |> WolframCode
 
 

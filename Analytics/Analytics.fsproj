@@ -58,6 +58,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Math\Math.fsproj" />
         <ProjectReference Include="..\Sys\Sys.fsproj" />
     </ItemGroup>
 

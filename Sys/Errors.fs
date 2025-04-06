@@ -100,6 +100,11 @@ module Errors =
         | WindowsApiDisallowedOperationErr of string
 
 
+    type FFMpegError =
+        | FFMpegExn of exn
+        | FFMpegCallErr of int
+
+
     type SysError =
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
@@ -109,3 +114,4 @@ module Errors =
         | TimerEventErr of TimerEventError
         | CryptoErr of CryptoError
         | WindowsApiErr of WindowsApiError
+        | FFMpegErr of FFMpegError

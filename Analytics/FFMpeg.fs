@@ -33,16 +33,13 @@ module FFMpeg =
 
     let getFrameFiles (d : AnimationData) =
         try
-            match (FileName (Path.Join(d.framesFolder.value, d.filePrefix + "*" + d.frameExtension.value))).tryGetFullFileName() with
-            | Ok fileName ->
-                let files = Directory.GetFiles(fileName.value)
+            let files = Directory.GetFiles(d.framesFolder.value, d.filePrefix + "*" + d.frameExtension.value)
 
-                files
-                |> Array.toList
-                |> List.sort
-                |> List.map FileName
-                |> Ok
-            | Error e -> Error e
+            files
+            |> Array.toList
+            |> List.sort
+            |> List.map FileName
+            |> Ok
         with
         | e ->
             Logger.logError $"getFrameFiles - error: %A{e}."
@@ -68,8 +65,9 @@ module FFMpeg =
         | Ok concatFileName ->
             try
                 let sb = StringBuilder()
+                let normalize (FileName s) = s.Replace("\\","\\\\") // Need to escape backslashes for ffmpeg.
                 sb.AppendLine("ffconcat version 1.0") |> ignore
-                for file in files do sb.AppendLine($"file '{file.value}'") |> ignore
+                for file in files do sb.AppendLine($"file {(normalize file)}") |> ignore
                 File.WriteAllText(concatFileName.value, sb.ToString())
                 Ok concatFileName
             with
@@ -95,6 +93,7 @@ module FFMpeg =
 
     let createAnimation (d : AnimationData) =
         let files = getFrameFiles d
+        let toError e = e |> FileErr |> Error
 
         match files with
         | Ok f ->
@@ -107,7 +106,7 @@ module FFMpeg =
                     let ffmpegArgs =
                         [
                             $"-y -f concat -safe 0 -r {frameRate}"
-                            $"-i {concatFileName}"
+                            $"-i {concatFileName.value}"
                             $"-framerate {frameRate}"
                             outputFile.value
                         ]
@@ -116,28 +115,21 @@ module FFMpeg =
                     match tryExecuteFile d.ffmpegExecutable ffmpegArgs with
                     | Ok r ->
                         Logger.logInfo $"createAnimation - ffmpeg result: %A{r}."
-                        Ok outputFile
+
+                        match r with
+                        | 0 -> Ok outputFile
+                        | _ ->
+                            Logger.logError $"createAnimation - ffmpeg error: %A{r}."
+                            FFMpegCallErr r |> FFMpegErr |> Error
                     | Error e ->
                         Logger.logError $"createAnimation - error: %A{e}."
-                        Error e
+                        toError e
                 | Error e ->
                     Logger.logError $"createAnimation - error: %A{e}."
-                    Error e
+                    toError e
             | Error e ->
                 Logger.logError $"createAnimation - error: %A{e}."
-                Error e
+                toError e
         | Error e ->
             Logger.logError $"createAnimation - error: %A{e}."
-            Error e
-
-        // [
-        //     "-framerate"
-        //     frameRate.ToString()
-        //     "-i"
-        //     (d.inputFolder.value + d.filePrefix + "%d" + d.frameExtension.value)
-        //     "-c:v"
-        //     "libx264"
-        //     "-pix_fmt"
-        //     "yuv420p"
-        //     (d.outputFolder.value + d.filePrefix + d.animationExtension.value)
-        // ]
+            toError e
