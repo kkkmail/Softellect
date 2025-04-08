@@ -437,6 +437,16 @@ module WorkerNodeService =
         | e -> e |> CopyAppSettingsExn |> toError
 
 
+    let private deleteSolverFolder solverFolder =
+        match deleteFolderRecursive solverFolder with
+        | Ok () ->
+            Logger.logTrace $"deleteSolverFolder: deleted '%A{solverFolder}'."
+            Ok()
+        | Error e ->
+            Logger.logError $"deleteSolverFolder: failed to delete '%A{solverFolder}' with error: '%A{e}'."
+            e |> CannotDeleteOldSolverErr |> TryDeploySolverErr |> Error
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -448,6 +458,7 @@ module WorkerNodeService =
             tryRunSolverProcess : TryRunSolverProcessProxy -> int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
+            deleteSolverFolder : FolderName -> DistributedProcessingUnitResult
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
             copyAppSettings : FolderName -> DistributedProcessingUnitResult
             checkSolverRunning : SolverName -> CheckRunningResult
@@ -485,6 +496,7 @@ module WorkerNodeService =
                 tryRunSolverProcess = tryRunSolverProcess (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
+                deleteSolverFolder = deleteSolverFolder
                 unpackSolver = unpackSolver
                 copyAppSettings = copyAppSettings
                 checkSolverRunning = checkSolverRunning i.workerNodeLocalInto

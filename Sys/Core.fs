@@ -599,3 +599,91 @@ module Core =
             Ok p.ExitCode
         with
         | e -> ExecuteFileExn e |> Error
+
+
+    /// Well-known Windows top-level folders we must never delete
+    let private wellKnownTopFolders =
+        [
+            Path.GetPathRoot(Environment.SystemDirectory)          // e.g. "C:\"
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows)
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+            Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Users")
+        ]
+        |> List.map _.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+
+
+    /// Check if the folder is dangerous (one of the system folders).
+    let private isWellKnownTopFolder (FolderName folderPath) =
+        let normalized = folderPath.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+        wellKnownTopFolders |> List.exists (fun top -> normalized = top)
+
+
+    /// Tries to delete a file safely.
+    let private tryDeleteFile (path : FileName) =
+        try
+            if File.Exists(path.value) then File.Delete(path.value)
+            Ok ()
+        with ex -> (path, ex) |> DeleteFileExn |> Error
+
+
+    /// Tries to delete an empty directory safely.
+    let private tryDeleteEmptyFolder (path : FolderName) =
+        try
+            if Directory.Exists(path.value) then Directory.Delete(path.value)
+            Ok ()
+        with ex -> (path, ex) |> DeleteFolderExn |> Error
+
+
+    let private elevateIfErr result =
+        match result with
+        | Ok () -> Ok ()
+        | Error e ->
+            match e with
+            | [] -> Ok()
+            | [ e1 ] -> e1 |> FileErr |> Error
+            | _ -> e |> List.map FileErr |> AggregateErr |> Error
+
+
+    let private alreadyDeleted (folderPath: FolderName) =
+        try
+            not (Directory.Exists(folderPath.value)) |> Ok
+        with e -> folderPath |> DeleteFolderErr |> Error
+
+
+    let rec private delete (folderPath: FolderName) =
+        match alreadyDeleted folderPath with
+        | Ok true -> Ok()
+        | Ok false ->
+            let mutable errors = []
+
+            try
+                // Delete all files
+                for file in Directory.GetFiles(folderPath.value, "*", SearchOption.TopDirectoryOnly) do
+                    match tryDeleteFile (FileName file) with
+                    | Ok () -> ()
+                    | Error err -> errors <- err :: errors
+
+                // Recursively process subfolders
+                for subfolder in Directory.GetDirectories(folderPath.value, "*", SearchOption.TopDirectoryOnly) do
+                    match delete (FolderName subfolder) with
+                    | Ok () -> ()
+                    | Error errs -> errors <- errs @ errors
+
+                // Delete the folder itself
+                match tryDeleteEmptyFolder folderPath with
+                | Ok () -> ()
+                | Error err -> errors <- err :: errors
+            with e -> errors <- (DeleteFolderExn (folderPath, e)) :: errors
+
+            match errors with
+            | [] -> Ok()
+            | _ -> Error errors
+        | Error e -> Error [e]
+
+
+    /// Recursively delete contents of a directory, then the directory itself.
+    let deleteFolderRecursive (folderPath: FolderName) =
+        match isWellKnownTopFolder folderPath with
+        | true -> folderPath |> DeleteFolderErr |> FileErr |> Error
+        | false -> delete folderPath |> elevateIfErr

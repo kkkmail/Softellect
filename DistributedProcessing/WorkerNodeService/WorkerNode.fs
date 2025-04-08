@@ -40,10 +40,13 @@ module WorkerNode =
         let result =
             match proxy.checkSolverRunning s.solverName with
             | CanRun ->
-                match proxy.unpackSolver solverLocation s with
+                match proxy.deleteSolverFolder solverLocation with
                 | Ok () ->
-                    match proxy.copyAppSettings solverLocation with
-                    | Ok() -> proxy.setSolverDeployed s.solverId
+                    match proxy.unpackSolver solverLocation s with
+                    | Ok () ->
+                        match proxy.copyAppSettings solverLocation with
+                        | Ok() -> proxy.setSolverDeployed s.solverId
+                        | Error e -> Error e
                     | Error e -> Error e
                 | Error e -> Error e
             | TooManyRunning n ->

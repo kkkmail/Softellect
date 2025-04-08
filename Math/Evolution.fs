@@ -16,8 +16,9 @@ module Evolution =
             // Use MathNet.Numerics.Distributions for small lambda
             try
                 double (Poisson.Sample(rnd, lambda))
-            with e -> failwith $"lambda: {lambda}, exception: {e}"
-        | _       ->
+            with
+            | e -> failwith $"lambda: {lambda}, exception: {e}"
+        | _ ->
             // Use Gaussian approximation for large lambda
             let mu = lambda
             let sigma = sqrt lambda

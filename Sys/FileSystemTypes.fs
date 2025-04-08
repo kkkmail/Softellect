@@ -98,14 +98,14 @@ module FileSystemTypes =
     /// Tries to delete object if it exists.
     let tryDeleteData<'T, 'A> getStorageFolder serviceName tableName (objectId : 'A) =
         let w() =
-            try
-                match getFileName getStorageFolder serializationFormat serviceName tableName objectId with
-                | Ok (FileName f) ->
-                    if File.Exists f then File.Delete f
+            match getFileName getStorageFolder serializationFormat serviceName tableName objectId with
+            | Ok f ->
+                try
+                    if File.Exists f.value then File.Delete f.value
                     Ok ()
-                | Error e -> Error e
-            with
-            | e -> e |> DeleteFileExn |> FileErr |> Error
+                with
+                | e -> (f, e) |> DeleteFileExn |> FileErr |> Error
+            | Error e -> Error e
         tryRopFun (fun e -> e |> GeneralFileExn |> FileErr) w
 
 

@@ -79,7 +79,7 @@ module FFMpeg =
 
     let getOutputFileName (d : AnimationData) =
         try
-            match (FileName (Path.Join(d.outputFolder.value, d.filePrefix + d.animationExtension.value))).tryGetFullFileName() with
+            match (FileName (Path.Join(d.outputFolder.value, d.filePrefix + "animation" + d.animationExtension.value))).tryGetFullFileName() with
             | Ok fileName ->
                 match fileName.tryEnsureFolderExists() with
                 | Ok () -> Ok fileName

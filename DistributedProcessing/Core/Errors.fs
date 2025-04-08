@@ -368,6 +368,7 @@ module Errors =
         | CanNotDeployDueToRunningSolversErr of int
         | TryDeploySolverExn of exn
         | TryDeploySolverCriticalErr of string
+        | CannotDeleteOldSolverErr of SysError
 
 
     type CopyAppSettingsError =
