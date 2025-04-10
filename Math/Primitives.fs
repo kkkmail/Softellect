@@ -496,6 +496,139 @@ module Primitives =
         static member defaultValue = { minValue = -1.0; maxValue = 1.0 }
 
 
+    type DomainRange2D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange3D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange4D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+            r3 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+                r3 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange5D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+            r3 : DomainRange
+            r4 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+                r3 = DomainRange.defaultValue
+                r4 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange6D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+            r3 : DomainRange
+            r4 : DomainRange
+            r5 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+                r3 = DomainRange.defaultValue
+                r4 = DomainRange.defaultValue
+                r5 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange7D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+            r3 : DomainRange
+            r4 : DomainRange
+            r5 : DomainRange
+            r6 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+                r3 = DomainRange.defaultValue
+                r4 = DomainRange.defaultValue
+                r5 = DomainRange.defaultValue
+                r6 = DomainRange.defaultValue
+            }
+
+
+    type DomainRange8D =
+        {
+            r0 : DomainRange
+            r1 : DomainRange
+            r2 : DomainRange
+            r3 : DomainRange
+            r4 : DomainRange
+            r5 : DomainRange
+            r6 : DomainRange
+            r7 : DomainRange
+        }
+
+        static member defaultValue =
+            {
+                r0 = DomainRange.defaultValue
+                r1 = DomainRange.defaultValue
+                r2 = DomainRange.defaultValue
+                r3 = DomainRange.defaultValue
+                r4 = DomainRange.defaultValue
+                r5 = DomainRange.defaultValue
+                r6 = DomainRange.defaultValue
+                r7 = DomainRange.defaultValue
+            }
+
+
     /// Number of intervals in the domain.
     type DomainIntervals =
         | DomainIntervals of int
@@ -543,6 +676,12 @@ module Primitives =
                 d1 = Domain.create(n, r)
             }
 
+        static member create (n : DomainIntervals, r : DomainRange2D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+            }
+
         member d.dimension = 2
 
 
@@ -559,6 +698,13 @@ module Primitives =
                 d0 = Domain.create(n, r)
                 d1 = Domain.create(n, r)
                 d2 = Domain.create(n, r)
+            }
+
+        static member create (n : DomainIntervals, r : DomainRange3D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
             }
 
         member d.dimension = 3
@@ -579,6 +725,14 @@ module Primitives =
                 d1 = Domain.create(n, r)
                 d2 = Domain.create(n, r)
                 d3 = Domain.create(n, r)
+            }
+
+        static member create (n : DomainIntervals, r : DomainRange4D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
+                d3 = Domain.create(n, r.r3)
             }
 
         member d.dimension = 4
@@ -603,6 +757,15 @@ module Primitives =
                 d4 = Domain.create(n, r)
             }
 
+        static member create (n : DomainIntervals, r : DomainRange5D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
+                d3 = Domain.create(n, r.r3)
+                d4 = Domain.create(n, r.r4)
+            }
+
         member d.dimension = 5
 
 
@@ -625,6 +788,16 @@ module Primitives =
                 d3 = Domain.create(n, r)
                 d4 = Domain.create(n, r)
                 d5 = Domain.create(n, r)
+            }
+
+        static member create (n : DomainIntervals, r : DomainRange6D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
+                d3 = Domain.create(n, r.r3)
+                d4 = Domain.create(n, r.r4)
+                d5 = Domain.create(n, r.r5)
             }
 
         member d.dimension = 6
@@ -653,6 +826,17 @@ module Primitives =
                 d6 = Domain.create(n, r)
             }
 
+        static member create (n : DomainIntervals, r : DomainRange7D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
+                d3 = Domain.create(n, r.r3)
+                d4 = Domain.create(n, r.r4)
+                d5 = Domain.create(n, r.r5)
+                d6 = Domain.create(n, r.r6)
+            }
+
         member d.dimension = 7
 
 
@@ -679,6 +863,18 @@ module Primitives =
                 d5 = Domain.create(n, r)
                 d6 = Domain.create(n, r)
                 d7 = Domain.create(n, r)
+            }
+
+        static member create (n : DomainIntervals, r : DomainRange8D) =
+            {
+                d0 = Domain.create(n, r.r0)
+                d1 = Domain.create(n, r.r1)
+                d2 = Domain.create(n, r.r2)
+                d3 = Domain.create(n, r.r3)
+                d4 = Domain.create(n, r.r4)
+                d5 = Domain.create(n, r.r5)
+                d6 = Domain.create(n, r.r6)
+                d7 = Domain.create(n, r.r7)
             }
 
         member d.dimension = 8
