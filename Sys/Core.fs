@@ -52,14 +52,8 @@ module Core =
     let unZip (b : byte[]) = b |> unZipBytes |> fromByteArray
 
 
-    let private getCurrentYearStart() : DateTimeOffset =
-        DateTimeOffset(DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0), TimeSpan.Zero)
-
-
     /// Zips the contents of the specified folder and all subfolders.
     let zipFolder (FolderName folderPath) =
-        let dt = getCurrentYearStart()
-
         try
             if not (Directory.Exists(folderPath)) then Error $"Folder {folderPath} does not exist."
             else
@@ -76,7 +70,7 @@ module Core =
                         for file in directory.GetFiles() |> Array.sortBy _.Name do
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
-                            entry.LastWriteTime <- dt // Must use that for a deterministic archive. It will force an update once a year.
+                            entry.LastWriteTime <- file.LastWriteTime
                             use entryStream = entry.Open()
                             use fileStream = file.OpenRead()
                             fileStream.CopyTo(entryStream)

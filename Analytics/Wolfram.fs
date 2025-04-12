@@ -364,10 +364,10 @@ module Wolfram =
             }
 
 
-    let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D array) =
-        let legends = d |> Array.map _.dataLabel.value
-        let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
-        let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
+    let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D list) =
+        let legends = d |> List.map _.dataLabel.value
+        let xyData = d |> List.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
+        let xyVar = d |> List.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
         let frame = if p.frame then ", Frame -> True" else EmptyString
 
         let options = p.options

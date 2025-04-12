@@ -85,7 +85,8 @@ module Program =
 
             let d =
                 c1.Head.resultData.x
-                |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
+                |> List.ofArray
+                |> List.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
 
             let p = { ListLineParams.defaultValue with imageSize = UserDefinedImageSize "1000" |> Some}
 

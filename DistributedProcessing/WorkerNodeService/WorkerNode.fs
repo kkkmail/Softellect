@@ -35,17 +35,23 @@ module WorkerNode =
     let private tryDeploySolver  (i : WorkerNodeRunnerContext) (s : Solver) =
         let proxy = i.workerNodeProxy
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
+        Logger.logTrace $"tryDeploySolver: %A{s.solverId}, %A{s.solverName}, solverLocation: '{solverLocation.value}'."
         let toError e = e |> TryDeploySolverErr |> Error
 
         let result =
             match proxy.checkSolverRunning s.solverName with
             | CanRun ->
+                Logger.logTrace $"Solver %A{s.solverId} is not running. Proceeding with deployment."
                 match proxy.deleteSolverFolder solverLocation with
                 | Ok () ->
+                    Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' folder deleted."
                     match proxy.unpackSolver solverLocation s with
                     | Ok () ->
+                        Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' unpacked."
                         match proxy.copyAppSettings solverLocation with
-                        | Ok() -> proxy.setSolverDeployed s.solverId
+                        | Ok() ->
+                            Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied."
+                            proxy.setSolverDeployed s.solverId
                         | Error e -> Error e
                     | Error e -> Error e
                 | Error e -> Error e
@@ -53,10 +59,10 @@ module WorkerNode =
                 Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
                 n |> CanNotDeployDueToRunningSolversErr |> toError
             | GetProcessesByNameExn e ->
-                Logger.logCrit $"Exception: %A{e}."
+                Logger.logCrit $"Exception: %A{e}, %A{s.solverId}, %A{s.solverName}."
                 e |> TryDeploySolverExn |> toError
             | AlreadyRunning p ->
-                let m = $"This should never happen: %A{p}."
+                let m = $"This should never happen: %A{p}, %A{s.solverId}, %A{s.solverName}."
                 Logger.logCrit m
                 m |> TryDeploySolverCriticalErr |> toError
 
