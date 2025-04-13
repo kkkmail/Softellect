@@ -155,6 +155,13 @@ module Primitives =
                 None
 
 
+    /// An encapsulation of a file suffix used to construct a file name.
+    type FileSuffix =
+        | FileSuffix of string
+
+        member this.value = let (FileSuffix v) = this in v
+
+
     type VersionNumber =
         | VersionNumber of string
 
