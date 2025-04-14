@@ -16,6 +16,7 @@ module Primitives =
             sqrt: 'C -> 'C
             zero: 'C
             one: 'C
+            toArray: ('C -> double[]) option
         }
 
 
@@ -1232,10 +1233,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord1D.Zero
             one = Coord1D.One
+            toArray = (fun (a : Coord1D) -> [| a.x0 |]) |> Some
         }
 
 
-    let conversionParameters1D d  : ConversionParameters<Point1D, Coord1D> =
+    let conversionParameters1D d : ConversionParameters<Point1D, Coord1D> =
         {
             arithmetic = arithmeticOperations1D
             projector = fun (p : Point1D) -> p.toCoord d
@@ -1253,10 +1255,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord2D.Zero
             one = Coord2D.One
+            toArray = (fun (a : Coord2D) -> [| a.x0; a.x1 |]) |> Some
         }
 
 
-    let conversionParameters2D d  : ConversionParameters<Point2D, Coord2D> =
+    let conversionParameters2D d : ConversionParameters<Point2D, Coord2D> =
         {
             arithmetic = arithmeticOperations2D
             projector = fun (p : Point2D) -> p.toCoord d
@@ -1274,10 +1277,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord3D.Zero
             one = Coord3D.One
+            toArray = (fun (a : Coord3D) -> [| a.x0; a.x1; a.x2 |]) |> Some
         }
 
 
-    let conversionParameters3D d  : ConversionParameters<Point3D, Coord3D> =
+    let conversionParameters3D d : ConversionParameters<Point3D, Coord3D> =
         {
             arithmetic = arithmeticOperations3D
             projector = fun (p : Point3D) -> p.toCoord d
@@ -1295,6 +1299,7 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord4D.Zero
             one = Coord4D.One
+            toArray = (fun (a : Coord4D) -> [| a.x0; a.x1; a.x2; a.x3 |]) |> Some
         }
 
 
@@ -1316,10 +1321,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord5D.Zero
             one = Coord5D.One
+            toArray = (fun (a : Coord5D) -> [| a.x0; a.x1; a.x2; a.x3; a.x4 |]) |> Some
         }
 
 
-    let conversionParameters5D d  : ConversionParameters<Point5D, Coord5D> =
+    let conversionParameters5D d : ConversionParameters<Point5D, Coord5D> =
         {
             arithmetic = arithmeticOperations5D
             projector = fun (p : Point5D) -> p.toCoord d
@@ -1337,10 +1343,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord6D.Zero
             one = Coord6D.One
+            toArray = (fun (a : Coord6D) -> [| a.x0; a.x1; a.x2; a.x3; a.x4; a.x5 |]) |> Some
         }
 
 
-    let conversionParameters6D d  : ConversionParameters<Point6D, Coord6D> =
+    let conversionParameters6D d : ConversionParameters<Point6D, Coord6D> =
         {
             arithmetic = arithmeticOperations6D
             projector = fun (p : Point6D) -> p.toCoord d
@@ -1358,10 +1365,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord7D.Zero
             one = Coord7D.One
+            toArray = (fun (a : Coord7D) -> [| a.x0; a.x1; a.x2; a.x3; a.x4; a.x5; a.x6 |]) |> Some
         }
 
 
-    let conversionParameters7D d  : ConversionParameters<Point7D, Coord7D> =
+    let conversionParameters7D d : ConversionParameters<Point7D, Coord7D> =
         {
             arithmetic = arithmeticOperations7D
             projector = fun (p : Point7D) -> p.toCoord d
@@ -1379,10 +1387,11 @@ module Primitives =
             sqrt = _.sqrt()
             zero = Coord8D.Zero
             one = Coord8D.One
+            toArray = (fun (a : Coord8D) -> [| a.x0; a.x1; a.x2; a.x3; a.x4; a.x5; a.x6; a.x7 |]) |> Some
         }
 
 
-    let conversionParameters8D d  : ConversionParameters<Point8D, Coord8D> =
+    let conversionParameters8D d : ConversionParameters<Point8D, Coord8D> =
         {
             arithmetic = arithmeticOperations8D
             projector = fun (p : Point8D) -> p.toCoord d

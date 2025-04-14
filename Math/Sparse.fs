@@ -102,6 +102,7 @@ module Sparse =
                 parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
             else parameters.arithmetic.zero
 
+        /// Calculates diagonal moment of the array.
         member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
             let c = array.values |> Array.map (fun v -> v.convert double)
             let x0 = c |> Array.sumBy _.value
@@ -129,6 +130,70 @@ module Sparse =
             let m2 = array.moment parameters 2
             let m1Squared = parameters.arithmetic.multiply m1 m1
             parameters.arithmetic.subtract m2 m1Squared
+
+        // Calculate 1st order tensor moment
+        member inline array.tensorMoment1 (parameters: ConversionParameters<'I, 'C>) =
+            match parameters.arithmetic.toArray with
+            | Some toArrayFn ->
+                let c = array.values |> Array.map (fun v -> v.convert double)
+                let x0 = c |> Array.sumBy _.value
+                let dims = (toArrayFn parameters.arithmetic.one).Length
+                let tensor = Array.create dims 0.0
+
+                if x0 > 0.0 then
+                    for point in c do
+                        let v = toArrayFn (parameters.projector point.x)
+                        for i in 0..dims-1 do tensor[i] <- tensor[i] + point.value * v[i]
+
+                    for i in 0..dims-1 do tensor[i] <- tensor[i] / x0
+                Some tensor
+            | None -> None
+
+        // Calculate 2nd order tensor moment (returns a 2D jagged array)
+        member inline array.tensorMoment2 (parameters: ConversionParameters<'I, 'C>) =
+            match parameters.arithmetic.toArray with
+            | Some toArrayFn ->
+                let c = array.values |> Array.map (fun v -> v.convert double)
+                let x0 = c |> Array.sumBy _.value
+                let dims = (toArrayFn parameters.arithmetic.one).Length
+                let tensor = Array.init dims (fun _ -> Array.create dims 0.0)
+
+                if x0 > 0.0 then
+                    for point in c do
+                        let v = toArrayFn (parameters.projector point.x)
+                        for i in 0..dims-1 do for j in 0..dims-1 do tensor[i][j] <- tensor[i][j] + point.value * v[i] * v[j]
+
+                    for i in 0..dims-1 do for j in 0..dims-1 do tensor[i][j] <- tensor[i][j] / x0
+                Some tensor
+            | None -> None
+
+        member inline array.tensorVariance (parameters: ConversionParameters<'I, 'C>) =
+            match array.tensorMoment1 parameters, array.tensorMoment2 parameters with
+            | Some m1, Some m2 ->
+                let dims = m1.Length
+                for i in 0..dims-1 do for j in 0..dims-1 do m2[i][j] <- m2[i][j] - m1[i] * m1[j]
+                Some m2
+            | _ -> None
+
+        // Calculate 3rd order tensor moment (returns a 3D jagged array)
+        member inline array.tensorMoment3 (parameters: ConversionParameters<'I, 'C>) =
+            match parameters.arithmetic.toArray with
+            | Some toArrayFn ->
+                let c = array.values |> Array.map (fun v -> v.convert double)
+                let x0 = c |> Array.sumBy _.value
+                let dims = (toArrayFn parameters.arithmetic.one).Length
+                let tensor = Array.init dims (fun _ -> Array.init dims (fun _ -> Array.create dims 0.0))
+
+                if x0 > 0.0 then
+                    for point in c do
+                        let v = toArrayFn (parameters.projector point.x)
+                        for i in 0..dims-1 do for j in 0..dims-1 do for k in 0..dims-1 do tensor.[i].[j].[k] <- tensor.[i].[j].[k] + point.value * v.[i] * v.[j] * v.[k]
+
+                    for i in 0..dims-1 do for j in 0..dims-1 do for k in 0..dims-1 do tensor.[i].[j].[k] <- tensor.[i].[j].[k] / x0
+
+                Some tensor
+            | None -> None
+
 
         static member inline internal toSparseArray (dict: Dictionary<'I, 'T>) =
             dict
