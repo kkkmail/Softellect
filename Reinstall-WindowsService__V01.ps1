@@ -198,56 +198,22 @@ function Clear-ServiceFolder {
     $errors = @()
     
     try {
-        # First attempt to delete everything recursively in one go
-        try {
-            Write-Log -Message "Attempting to delete all files and folders recursively..."
-            # Use -Force to delete hidden and read-only files, -Recurse to delete subfolders
-            Remove-Item -Path "$ServiceFolder\*" -Force -Recurse -ErrorAction Stop
-            
-            # If we get here, the deletion was successful
-            Write-Log -Message "All files and folders deleted successfully."
-        }
-        catch {
-            Write-Log -Level Warning -Message "Bulk deletion failed, falling back to individual file deletion."
-            
-            # If bulk delete fails, get all files first, then folders, and delete them individually
-            # Get all files first (not folders)
-            $files = Get-ChildItem -Path $ServiceFolder -Recurse -File
-            
-            # Delete each file individually
-            foreach ($file in $files) {
-                try {
-                    Write-Log -Level Info -Message "Deleting file: $($file.FullName)"
-                    Remove-Item -Path $file.FullName -Force -ErrorAction Stop
-                }
-                catch {
-                    $errors += "Failed to delete file '$($file.FullName)': $_"
-                }
+        # Get all items in the service folder
+        $items = Get-ChildItem -Path $ServiceFolder -Recurse
+        
+        # Delete each item, collecting errors
+        foreach ($item in $items) {
+            try {
+                Remove-Item -Path $item.FullName -Force -Recurse -ErrorAction Stop
             }
-            
-            # Now get all folders (from deepest to root)
-            $folders = Get-ChildItem -Path $ServiceFolder -Recurse -Directory | 
-                        Sort-Object -Property FullName -Descending
-            
-            # Delete each folder individually (from deepest to shallowest)
-            foreach ($folder in $folders) {
-                try {
-                    Write-Log -Level Info -Message "Deleting folder: $($folder.FullName)"
-                    Remove-Item -Path $folder.FullName -Force -Recurse -ErrorAction Stop
-                }
-                catch {
-                    $errors += "Failed to delete folder '$($folder.FullName)': $_"
-                }
+            catch {
+                $errors += "Failed to delete '$($item.FullName)': $_"
             }
         }
         
-        # Check if folder is empty after all deletion attempts
-        $remainingItems = Get-ChildItem -Path $ServiceFolder -Force
+        # Check if folder is empty
+        $remainingItems = Get-ChildItem -Path $ServiceFolder -Recurse -ErrorAction SilentlyContinue
         if ($remainingItems) {
-            Write-Log -Level Warning -Message "Service folder still contains items after cleanup."
-            foreach ($item in $remainingItems) {
-                Write-Log -Level Warning -Message "Remaining item: $($item.FullName)"
-            }
             $errors += "Service folder is not empty after cleanup."
         }
     }
@@ -285,68 +251,12 @@ function Restore-ServiceFromBackup {
         $clearErrors = Clear-ServiceFolder
         if ($clearErrors) {
             $errors += $clearErrors
-            Write-Log -Level Warning -Message "Could not fully clear service folder before restore."
-        }
-        
-        # Check if backup folder exists
-        if (-not (Test-Path -Path $BackupFolder)) {
-            $errors += "Backup folder '$BackupFolder' does not exist."
-            return $errors
         }
         
         # Copy all files from backup to service folder
-        Write-Log -Message "Copying files from backup folder to service folder..."
-        try {
-            # Try bulk copy first
-            Copy-Item -Path "$BackupFolder\*" -Destination $ServiceFolder -Recurse -Force -ErrorAction Stop
-            Write-Log -Message "All files restored from backup successfully."
-        }
-        catch {
-            Write-Log -Level Warning -Message "Bulk restore failed, falling back to individual file restore: $_"
-            
-            # If bulk copy fails, copy files individually
-            $files = Get-ChildItem -Path $BackupFolder -Recurse
-            
-            foreach ($file in $files) {
-                try {
-                    # Get the relative path from backup folder
-                    $relativePath = $file.FullName.Substring($BackupFolder.Length)
-                    $destinationPath = Join-Path -Path $ServiceFolder -ChildPath $relativePath
-                    
-                    # If it's a directory, create it
-                    if ($file.PSIsContainer) {
-                        if (-not (Test-Path -Path $destinationPath)) {
-                            New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
-                        }
-                        Write-Log -Message "Created directory during restore: $destinationPath"
-                    }
-                    # If it's a file, copy it
-                    else {
-                        # Ensure the destination directory exists
-                        $destinationDir = Split-Path -Path $destinationPath -Parent
-                        if (-not (Test-Path -Path $destinationDir)) {
-                            New-Item -Path $destinationDir -ItemType Directory -Force | Out-Null
-                            Write-Log -Message "Created directory during restore: $destinationDir"
-                        }
-                        
-                        # Copy the file
-                        Copy-Item -Path $file.FullName -Destination $destinationPath -Force
-                        Write-Log -Message "Restored file: $($file.FullName) to $destinationPath"
-                    }
-                }
-                catch {
-                    $errors += "Failed to restore '$($file.FullName)': $_"
-                }
-            }
-        }
+        Copy-Item -Path "$BackupFolder\*" -Destination $ServiceFolder -Recurse -Force -ErrorAction Stop
         
-        # Verify all files were restored correctly
-        $backupItems = Get-ChildItem -Path $BackupFolder -Recurse | Where-Object { -not $_.PSIsContainer }
-        $restoredItems = Get-ChildItem -Path $ServiceFolder -Recurse | Where-Object { -not $_.PSIsContainer }
-        
-        if ($backupItems.Count -gt $restoredItems.Count) {
-            $errors += "Not all files were restored. Backup count: $($backupItems.Count), Restored count: $($restoredItems.Count)"
-        }
+        Write-Log -Message "Service restored from backup successfully."
     }
     catch {
         $errors += "Failed to restore service from backup: $_"
@@ -450,77 +360,9 @@ function Copy-InstallationToService {
     $errors = @()
     
     try {
-        # First check if the installation folder exists and has content
-        if (-not (Test-Path -Path $InstallationFolder)) {
-            $errors += "Installation folder '$InstallationFolder' does not exist."
-            return $errors
-        }
-        
-        # Get items in the installation folder
-        $items = Get-ChildItem -Path $InstallationFolder -Force
-        if (-not $items) {
-            $errors += "Installation folder '$InstallationFolder' is empty."
-            return $errors
-        }
-        
-        # Create the service folder if it doesn't exist
-        if (-not (Test-Path -Path $ServiceFolder)) {
-            New-Item -Path $ServiceFolder -ItemType Directory -Force | Out-Null
-        }
-        
         # Copy all files from installation folder to service folder
-        Write-Log -Message "Copying files from '$InstallationFolder' to '$ServiceFolder'..."
-        try {
-            # Try bulk copy first
-            Copy-Item -Path "$InstallationFolder\*" -Destination $ServiceFolder -Recurse -Force -ErrorAction Stop
-            Write-Log -Message "All files copied successfully."
-        }
-        catch {
-            Write-Log -Level Warning -Message "Bulk copy failed, falling back to individual file copy: $_"
-            
-            # If bulk copy fails, copy files individually
-            $files = Get-ChildItem -Path $InstallationFolder -Recurse
-            
-            foreach ($file in $files) {
-                try {
-                    # Get the relative path from installation folder
-                    $relativePath = $file.FullName.Substring($InstallationFolder.Length)
-                    $destinationPath = Join-Path -Path $ServiceFolder -ChildPath $relativePath
-                    
-                    # If it's a directory, create it
-                    if ($file.PSIsContainer) {
-                        if (-not (Test-Path -Path $destinationPath)) {
-                            New-Item -Path $destinationPath -ItemType Directory -Force | Out-Null
-                        }
-                        Write-Log -Message "Created directory: $destinationPath"
-                    }
-                    # If it's a file, copy it
-                    else {
-                        # Ensure the destination directory exists
-                        $destinationDir = Split-Path -Path $destinationPath -Parent
-                        if (-not (Test-Path -Path $destinationDir)) {
-                            New-Item -Path $destinationDir -ItemType Directory -Force | Out-Null
-                            Write-Log -Message "Created directory: $destinationDir"
-                        }
-                        
-                        # Copy the file
-                        Copy-Item -Path $file.FullName -Destination $destinationPath -Force
-                        Write-Log -Message "Copied file: $($file.FullName) to $destinationPath"
-                    }
-                }
-                catch {
-                    $errors += "Failed to copy '$($file.FullName)': $_"
-                }
-            }
-        }
-        
-        # Verify all files were copied correctly
-        $sourceItems = Get-ChildItem -Path $InstallationFolder -Recurse | Where-Object { -not $_.PSIsContainer }
-        $destItems = Get-ChildItem -Path $ServiceFolder -Recurse | Where-Object { -not $_.PSIsContainer }
-        
-        if ($sourceItems.Count -gt $destItems.Count) {
-            $errors += "Not all files were copied. Source count: $($sourceItems.Count), Destination count: $($destItems.Count)"
-        }
+        Copy-Item -Path "$InstallationFolder\*" -Destination $ServiceFolder -Recurse -Force -ErrorAction Stop
+        Write-Log -Message "Files copied from installation folder to service folder."
     }
     catch {
         $errors += "Failed to copy files from installation folder to service folder: $_"
@@ -550,7 +392,6 @@ function Copy-FilesToKeep {
                 # Create directory structure if needed
                 $destDir = Split-Path -Path $destFile -Parent
                 if (-not (Test-Path -Path $destDir)) {
-                    Write-Log -Message "Creating directory: $destDir"
                     New-Item -Path $destDir -ItemType Directory -Force | Out-Null
                 }
                 
@@ -564,14 +405,6 @@ function Copy-FilesToKeep {
         }
         catch {
             $errors += "Failed to copy file '$file' to keep: $_"
-        }
-    }
-    
-    # Verify that all files to keep were copied
-    foreach ($file in $FilesToKeep) {
-        $destFile = Join-Path -Path $ServiceFolder -ChildPath $file
-        if (-not (Test-Path -Path $destFile)) {
-            $errors += "File to keep '$file' was not found in the service folder after copying."
         }
     }
     
@@ -651,12 +484,9 @@ try {
     Write-Log -Message "Clearing service folder..."
     $clearErrors = Clear-ServiceFolder
     
-    # Filter out "not found" errors since they're not actual failures
-    $realErrors = $clearErrors | Where-Object { $_ -notmatch "because it does not exist" }
-    
-    if ($realErrors -and $realErrors.Count -gt 0) {
+    if ($clearErrors) {
         Write-Log -Level Error -Message "Errors during service folder cleanup:"
-        foreach ($error in $realErrors) {
+        foreach ($error in $clearErrors) {
             Write-Log -Level Error -Message " - $error"
         }
         
