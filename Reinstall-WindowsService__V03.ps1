@@ -742,8 +742,8 @@ try {
     # Success
     Write-Log -Message "Service reinstallation completed successfully!"
     
-    # Clean up backup folder (using $null to discard the return value)
-    $null = Remove-BackupFolder -BackupFolder $backupFolder
+    # Clean up backup folder
+    Remove-BackupFolder -BackupFolder $backupFolder
     
     Exit 0
 }
