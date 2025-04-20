@@ -30,6 +30,12 @@
         <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Install-WorkerNodeService.ps1" Link="Install-WorkerNodeService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\..\..\Reinstall-WindowsService.ps1" Link="Reinstall-WindowsService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Reinstall-WorkerNodeService.ps1" Link="Reinstall-WorkerNodeService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Start-WorkerNodeService.ps1" Link="Start-WorkerNodeService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

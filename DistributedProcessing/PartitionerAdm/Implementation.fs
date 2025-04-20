@@ -139,7 +139,7 @@ module Implementation =
     let addSolver (ctx : PartitionerAdmContext) (x : list<AddSolverArgs>) =
         let so = x |> List.tryPick (fun e -> match e with | AddSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
         let no = x |> List.tryPick (fun e -> match e with | Name name -> SolverName name |> Some | _ -> None)
-        let fo = x |> List.tryPick (fun e -> match e with | Folder folder -> FolderName folder |> Some | _ -> None)
+        let fo = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder folder -> FolderName folder |> Some | _ -> None)
         let de = x |> List.tryPick (fun e -> match e with | Description description -> description |> Some | _ -> None)
         let force = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
 
@@ -258,6 +258,60 @@ module Implementation =
         | Error e, Ok _ -> Error e
         | Ok _, Error e -> Error e
         | Error e1, Error e2 -> e1 + e2 |> Error
+
+
+    let addWorkerNodeService (ctx : PartitionerAdmContext) (x : list<AddWorkerNodeServiceArgs>) =
+        // Map the worker node service args to solver args
+        let solverArgs =
+            [
+                // Use the predefined worker node service ID
+                AddSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
+
+                // Use the predefined worker node service name
+                AddSolverArgs.Name(SolverName.workerNodeServiceName.value)
+
+                // Map the folder parameter
+                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
+                | Some folder -> AddSolverArgs.Folder(folder)
+                | None -> failwith "Folder parameter is required for adding worker node service."
+
+                // Map the force parameter if it exists
+                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
+                | Some force -> AddSolverArgs.Force(force)
+                | None -> AddSolverArgs.Force(false) // Default to false if not provided
+            ]
+
+        // Log that we're adding a worker node service
+        Logger.logInfo $"""Adding worker node service from folder '{solverArgs |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder f -> Some f | _ -> None) |> Option.defaultValue "unknown"}'"""
+
+        // Call the existing addSolver function with our mapped parameters
+        addSolver ctx solverArgs
+
+
+    let sendWorkerNodeService (ctx : PartitionerAdmContext) (x : list<SendWorkerNodeServiceArgs>) =
+        // Map the worker node service args to solver args
+        let solverArgs =
+            [
+                // Use the predefined worker node service ID
+                SendSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
+
+                // Map the worker node ID parameter
+                match x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.WorkerNodeId id -> Some id | _ -> None) with
+                | Some id -> SendSolverArgs.WorkerNodeId(id)
+                | None -> failwith "WorkerNodeId parameter is required for sending worker node service."
+
+                // Map the force parameter if it exists
+                match x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
+                | Some force -> SendSolverArgs.Force(force)
+                | None -> SendSolverArgs.Force(false) // Default to false if not provided
+            ]
+
+        // Log that we're sending a worker node service
+        let workerNodeId = x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.WorkerNodeId id -> Some id | _ -> None)
+        Logger.logInfo $"Sending worker node service to worker node with ID: %A{workerNodeId}"
+
+        // Call the existing sendSolver function with our mapped parameters
+        sendSolver ctx solverArgs
 
 
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =

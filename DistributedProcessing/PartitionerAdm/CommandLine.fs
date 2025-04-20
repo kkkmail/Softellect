@@ -52,6 +52,32 @@ module CommandLine =
 
     and
         [<CliPrefix(CliPrefix.Dash)>]
+        AddWorkerNodeServiceArgs =
+            | [<Mandatory>] [<Unique>] [<AltCommandLine("-s")>] Folder of string
+            |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+
+            interface IArgParserTemplate with
+                member this.Usage =
+                    match this with
+                    | Folder _ -> "worker node service folder."
+                    | Force _ -> "pass true to force updating worker node service with the same hash."
+
+
+        and
+            [<CliPrefix(CliPrefix.Dash)>]
+            SendWorkerNodeServiceArgs =
+            | [<Mandatory>] [<Unique>] [<AltCommandLine("-w")>] WorkerNodeId of Guid
+            |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+
+            interface IArgParserTemplate with
+                member this.Usage =
+                    match this with
+                    | WorkerNodeId _ -> "worker node id."
+                    | Force _ -> "pass true to force sending already deployed worker node service."
+
+
+    and
+        [<CliPrefix(CliPrefix.Dash)>]
         ModifyRunQueueArgs =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-q")>] RunQueueIdToModify of Guid
         |               [<Unique>] [<AltCommandLine("-c")>] CancelOrAbort of bool
@@ -111,6 +137,8 @@ module CommandLine =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ImportPublicKey of ParseResults<ImportPublicKeyArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddWorkerNodeService of ParseResults<AddWorkerNodeServiceArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendWorkerNodeService of ParseResults<SendWorkerNodeServiceArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -122,3 +150,5 @@ module CommandLine =
                 | GenerateKeys _ -> "generates encryption keys."
                 | ExportPublicKey _ -> "exports partitioner public key."
                 | ImportPublicKey _ -> "import worker node public key."
+                | AddWorkerNodeService _ -> "add worker node service."
+                | SendWorkerNodeService _ -> "send worker node service to a worker node."

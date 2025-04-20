@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
+open Softellect.Sys.Core
 open Softellect.Sys.Logging
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
@@ -51,7 +52,16 @@ module WorkerNode =
                         match proxy.copyAppSettings solverLocation with
                         | Ok() ->
                             Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied."
-                            proxy.setSolverDeployed s.solverId
+                            let g() = proxy.setSolverDeployed s.solverId
+
+                            if s.solverId = SolverId.workerNodeServiceId
+                            then
+                                match proxy.reinstallWorkerNodeService solverLocation (getAssemblyLocation()) with
+                                | Ok() ->
+                                    Logger.logTrace $"Worker node service reinstalled from location: '{solverLocation.value}'."
+                                    g()
+                                | Error e -> Error e
+                            else g()
                         | Error e -> Error e
                     | Error e -> Error e
                 | Error e -> Error e

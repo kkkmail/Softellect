@@ -390,6 +390,12 @@ module Errors =
         | LoadAllActiveWorkerNodeIdsDbErr of DbError
 
 
+    type ReinstallWorkerNodeServiceError =
+        | ReinstallWorkerNodeServiceExn of exn
+        | FailedToStartReinstallProcess
+        | FailedToCreateReinstallTempFolder of FolderName * FileError
+
+
     type DistributedProcessingError =
         | DistributedProcessingAggregateErr of DistributedProcessingError * List<DistributedProcessingError>
         | TryLoadSolverRunnersErr of TryLoadSolverRunnersError
@@ -486,6 +492,7 @@ module Errors =
         | GetLocationErr of GetLocationError
         | LoadAllActiveSolverIdsErr of LoadAllActiveSolverIdsError
         | LoadAllActiveWorkerNodeIdsErr of LoadAllActiveWorkerNodeIdsError
+        | ReinstallWorkerNodeServiceErr of ReinstallWorkerNodeServiceError
 
         static member addError a b =
             match a, b with

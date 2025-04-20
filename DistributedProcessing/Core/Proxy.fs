@@ -447,6 +447,48 @@ module WorkerNodeService =
             e |> CannotDeleteOldSolverErr |> TryDeploySolverErr |> Error
 
 
+    let private reinstallWorkerNodeService (tempFolder : FolderName) (installationFolder : FolderName) (workerNodeServiceFolder : FolderName) : DistributedProcessingUnitResult =
+        Logger.logInfo $"Reinstalling worker node service from '{installationFolder}' to '{workerNodeServiceFolder}'"
+
+        try
+            let outputFile = FileName($"""worker_node_reinstall_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.txt""").combine tempFolder
+
+            match tempFolder.tryEnsureFolderExists() with
+            | Ok() ->
+                let scriptName = "Reinstall-WorkerNodeService.ps1"
+                let psArgs = $"-ExecutionPolicy Bypass -File \"{scriptName}\" -ServiceFolder \"{workerNodeServiceFolder.value}\" -InstallationFolder \"{installationFolder.value}\""
+                let cmdArgs = $"/c powershell.exe {psArgs} > {outputFile.value} 2>&1 3>&1 4>&1 5>&1 6>&1"
+
+                let procStartInfo =
+                    ProcessStartInfo(
+                        RedirectStandardOutput = false,
+                        RedirectStandardError = false,
+                        UseShellExecute = true,
+                        FileName = "cmd.exe",
+                        Arguments = cmdArgs,
+                        WindowStyle = ProcessWindowStyle.Normal
+                    )
+
+                procStartInfo.WorkingDirectory <- workerNodeServiceFolder.value
+
+                let proc = new Process(StartInfo = procStartInfo)
+                let started = proc.Start()
+
+                if started then
+                    Logger.logInfo $"Started worker node service reinstallation process. Output will be captured in: {outputFile.value}"
+                    Ok ()
+                else
+                    Logger.logError $"Failed to start process for reinstalling worker node service"
+                    FailedToStartReinstallProcess |> ReinstallWorkerNodeServiceErr |> Error
+            | Error e ->
+                Logger.logError $"Failed to create output folder: %A{tempFolder}, error: '{e}'."
+                (tempFolder, e) |> FailedToCreateReinstallTempFolder |> ReinstallWorkerNodeServiceErr |> Error
+        with
+        | ex ->
+            Logger.logError $"Exception during worker node service reinstallation: '%A{ex}'."
+            ex |> ReinstallWorkerNodeServiceExn |> ReinstallWorkerNodeServiceErr |> Error
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -470,6 +512,7 @@ module WorkerNodeService =
             tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
             getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
             deleteRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            reinstallWorkerNodeService : FolderName -> FolderName -> DistributedProcessingUnitResult
         }
 
         member p.tryRunSolverProcessProxy =
@@ -508,6 +551,7 @@ module WorkerNodeService =
                 tryUpdateFailedSolver = tryUpdateFailedSolver
                 getFailedSolverMessageInfo = getFailedSolverMessageInfo i.workerNodeInfo.partitionerId
                 deleteRunQueue = deleteRunQueue
+                reinstallWorkerNodeService = reinstallWorkerNodeService i.workerNodeLocalInto.solverOutputLocation
             }
 
 

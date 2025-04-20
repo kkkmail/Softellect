@@ -14,7 +14,7 @@ module Worker =
 
     type IWorkerNodeService =
         inherit IHostedService
-        /// To check if service is working.
+        /// To check if the service is working.
         abstract ping : unit -> DistributedProcessingUnitResult
 
 

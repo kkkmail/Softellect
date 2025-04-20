@@ -210,12 +210,18 @@ module Common =
 
         member this.value = let (SolverId v) = this in v
 
+        /// A special solver id for the worker node service.
+        static member workerNodeServiceId = Guid("28B87A76-ECC0-4C9B-B73A-50EAC06B46E3") |> SolverId
+
 
     type SolverName =
         | SolverName of string
 
         member this.value = let (SolverName v) = this in v
         member this.folderName = this.value |> FolderName
+
+        /// A special solver name for the worker node service.
+        static member workerNodeServiceName = "WorkerNodeService" |> SolverName
 
 
     type SolverData =
