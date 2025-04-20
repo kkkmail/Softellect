@@ -16,6 +16,10 @@ param (
     [string[]]$FilesToKeep = @("appsettings.json")
 )
 
+# Output PowerShell version for diagnostics
+Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+Write-Host "PowerShell Edition: $($PSVersionTable.PSEdition)"
+
 # Check if we have the necessary permissions
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 $hasAdminRights = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
