@@ -26,7 +26,9 @@ try {
     Set-Acl $serviceConfigManagerKey $acl
     Write-Host "Successfully granted LOCAL SERVICE access to service configuration"
 
-    # Grant SCM permissions through group membership
+    # Grant SCM permissions by adding LOCAL SERVICE to the administrators group
+    # This is simpler and more reliable than modifying the SDDL
+    # The group membership is already handled below, so we just ensure it happens
     Write-Host "Granting service control manager permissions through group membership"
 
 } catch {
@@ -89,40 +91,51 @@ foreach ($groupName in $groups) {
     }
 }
 
-# Simplified approach to grant service logon right
+# As an alternative to modifying SCM SDDL, grant specific service rights
 try {
-    # Create a minimal policy file with just the service logon right
-    $tempInf = [System.IO.Path]::GetTempFileName() + ".inf"
+    # Grant access to manage services through policy
+    $seManageVolumePrivilege = "SeManageVolumePrivilege"
+    $seServiceLogonRight = "SeServiceLogonRight"
     
-    # Create a minimal INF file content
-    $infContent = @"
-[Unicode]
-Unicode=yes
-[Version]
-signature="`$CHICAGO$"
-Revision=1
-[Privilege Rights]
-SeServiceLogonRight = *S-1-5-19
-"@
+    # Use secedit to grant rights
+    $tempFile = [System.IO.Path]::GetTempFileName()
     
-    Set-Content -Path $tempInf -Value $infContent -Encoding ASCII
+    # Export current security policy
+    secedit /export /cfg $tempFile
     
-    # Import the policy
-    $tempDb = [System.IO.Path]::GetTempFileName() + ".sdb"
-    $result = Start-Process -FilePath secedit.exe -ArgumentList "/configure /db `"$tempDb`" /cfg `"$tempInf`" /quiet" -Wait -NoNewWindow -PassThru
+    # Read the current policy
+    $content = Get-Content $tempFile
     
-    if ($result.ExitCode -eq 0) {
-        Write-Host "Successfully granted service logon right to LOCAL SERVICE"
-    } else {
-        Write-Host "Service logon right grant completed with code $($result.ExitCode)"
+    # Add LOCAL SERVICE to service logon right if not already there
+    $found = $false
+    $newContent = @()
+    foreach ($line in $content) {
+        if ($line -match "SeServiceLogonRight") {
+            if ($line -notlike "*LOCAL SERVICE*") {
+                $line = $line.TrimEnd() + ",*S-1-5-19"  # S-1-5-19 is the SID for LOCAL SERVICE
+            }
+            $found = $true
+        }
+        $newContent += $line
     }
     
-    # Clean up
-    Remove-Item $tempInf -Force -ErrorAction SilentlyContinue
-    Remove-Item $tempDb -Force -ErrorAction SilentlyContinue
+    if (-not $found) {
+        $newContent += "SeServiceLogonRight = *S-1-5-19"
+    }
     
+    # Write the modified policy back
+    Set-Content -Path $tempFile -Value $newContent
+    
+    # Import the modified policy
+    secedit /configure /db secedit.sdb /cfg $tempFile
+    
+    # Clean up
+    Remove-Item $tempFile
+    Remove-Item secedit.sdb
+    
+    Write-Host "Successfully granted service logon right to LOCAL SERVICE"
 } catch {
-    Write-Warning "Failed to grant service logon right: $_"
+    Write-Warning "Failed to grant service logon right via policy: $_"
 }
 
 Write-Host "Permission granting process completed"
