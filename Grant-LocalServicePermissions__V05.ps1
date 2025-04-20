@@ -26,10 +26,38 @@ try {
     Set-Acl $serviceConfigManagerKey $acl
     Write-Host "Successfully granted LOCAL SERVICE access to service configuration"
 
-    # Grant SCM permissions by adding LOCAL SERVICE to the administrators group
-    # This is simpler and more reliable than modifying the SDDL
-    # The group membership is already handled below, so we just ensure it happens
-    Write-Host "Granting service control manager permissions through group membership"
+    # Get the current SCM security descriptor and add LOCAL SERVICE permissions
+    $sid = (New-Object System.Security.Principal.NTAccount($localServiceName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    
+    # Get current SCM permissions
+    $currentSddl = (& sc.exe sdshow scmanager).Trim()
+    
+    # Parse the current SDDL to add our ACE
+    if ($currentSddl) {
+        # Check if LOCAL SERVICE already has permissions
+        if ($currentSddl -notlike "*$sid*") {
+            # Extract the existing DACL and add our ACE
+            if ($currentSddl -match "D:(?:\(.*?\))+") {
+                $dacl = $matches[0]
+                $newAce = "(A;;CCLCRPWPDTLOCRSDRCWDWO;;;$sid)"
+                
+                # Insert our ACE right after "D:"
+                $newDacl = $dacl.Replace("D:", "D:$newAce")
+                $newSddl = $currentSddl.Replace($dacl, $newDacl)
+                
+                # Apply new SCM permissions
+                Write-Host "Updating SCM permissions..."
+                & sc.exe sdset scmanager $newSddl
+                Write-Host "Successfully granted service control manager permissions to LOCAL SERVICE"
+            } else {
+                Write-Warning "Unable to parse current SDDL format"
+            }
+        } else {
+            Write-Host "LOCAL SERVICE already has SCM permissions"
+        }
+    } else {
+        Write-Warning "Unable to retrieve current SCM security descriptor"
+    }
 
 } catch {
     Write-Warning "Failed to grant access to service configuration: $_"
@@ -91,51 +119,17 @@ foreach ($groupName in $groups) {
     }
 }
 
-# As an alternative to modifying SCM SDDL, grant specific service rights
-try {
-    # Grant access to manage services through policy
-    $seManageVolumePrivilege = "SeManageVolumePrivilege"
-    $seServiceLogonRight = "SeServiceLogonRight"
-    
-    # Use secedit to grant rights
-    $tempFile = [System.IO.Path]::GetTempFileName()
-    
-    # Export current security policy
-    secedit /export /cfg $tempFile
-    
-    # Read the current policy
-    $content = Get-Content $tempFile
-    
-    # Add LOCAL SERVICE to service logon right if not already there
-    $found = $false
-    $newContent = @()
-    foreach ($line in $content) {
-        if ($line -match "SeServiceLogonRight") {
-            if ($line -notlike "*LOCAL SERVICE*") {
-                $line = $line.TrimEnd() + ",*S-1-5-19"  # S-1-5-19 is the SID for LOCAL SERVICE
-            }
-            $found = $true
-        }
-        $newContent += $line
+# Grant service logon right using ntrights if available
+$ntrightsPath = "C:\Windows\System32\ntrights.exe"
+if (Test-Path -Path $ntrightsPath) {
+    try {
+        & $ntrightsPath +r SeServiceLogonRight -u "NT AUTHORITY\LOCAL SERVICE"
+        Write-Host "Successfully granted service logon right"
+    } catch {
+        Write-Warning "Failed to grant service logon right: $_"
     }
-    
-    if (-not $found) {
-        $newContent += "SeServiceLogonRight = *S-1-5-19"
-    }
-    
-    # Write the modified policy back
-    Set-Content -Path $tempFile -Value $newContent
-    
-    # Import the modified policy
-    secedit /configure /db secedit.sdb /cfg $tempFile
-    
-    # Clean up
-    Remove-Item $tempFile
-    Remove-Item secedit.sdb
-    
-    Write-Host "Successfully granted service logon right to LOCAL SERVICE"
-} catch {
-    Write-Warning "Failed to grant service logon right via policy: $_"
+} else {
+    Write-Host "NTRights utility not found, skipping service logon right grant"
 }
 
 Write-Host "Permission granting process completed"
