@@ -11,8 +11,10 @@ param (
 $localServiceName = "NT AUTHORITY\LOCAL SERVICE"
 $localServiceAccount = New-Object System.Security.Principal.NTAccount($localServiceName)
 
-# Grant service management permissions
+# Grant service management permissions for the specific service
+$serviceName = "WorkerNodeService-1"  # Update this if it's dynamic
 try {
+    # Main services key
     $serviceConfigManagerKey = "HKLM:\SYSTEM\CurrentControlSet\Services"
     $acl = Get-Acl $serviceConfigManagerKey
     $rule = New-Object System.Security.AccessControl.RegistryAccessRule(
@@ -25,6 +27,30 @@ try {
     $acl.SetAccessRule($rule)
     Set-Acl $serviceConfigManagerKey $acl
     Write-Host "Successfully granted LOCAL SERVICE access to service configuration"
+
+    # Grant permissions to the specific service key
+    $specificServiceKey = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName"
+    if (Test-Path $specificServiceKey) {
+        $serviceAcl = Get-Acl $specificServiceKey
+        $serviceRule = New-Object System.Security.AccessControl.RegistryAccessRule(
+            $localServiceAccount,
+            "FullControl",
+            "ContainerInherit,ObjectInherit",
+            "None",
+            "Allow"
+        )
+        $serviceAcl.SetAccessRule($serviceRule)
+        Set-Acl $specificServiceKey $serviceAcl
+        Write-Host "Successfully granted LOCAL SERVICE access to $serviceName service configuration"
+    }
+
+    # More importantly, grant service control permissions
+    # Using the sc.exe utility to grant permissions
+    $sid = (New-Object System.Security.Principal.NTAccount($localServiceName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    $sddl = "D:(A;;RPWPCCDCLCSWRCWDWOGA;;;$sid)"  # Full control for LOCAL SERVICE
+    & sc.exe sdset $serviceName "$sddl"
+    Write-Host "Successfully granted service control permissions to LOCAL SERVICE for $serviceName"
+
 } catch {
     Write-Warning "Failed to grant access to service configuration: $_"
 }
