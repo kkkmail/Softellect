@@ -84,105 +84,13 @@ function TryStopService([string] $serviceName)
     }
 }
 
-function UninstallService_Old([string] $serviceName)
+function UninstallService([string] $serviceName)
 {
     Write-Host "Attempting to uninstall service: $serviceName..."
     if (Get-Service $serviceName -ErrorAction SilentlyContinue)
     {
         Remove-Service -Name $serviceName
         Write-Host "    Uninstalled service: $serviceName."
-    }
-    else
-    {
-        Write-Host "    Service: $serviceName is not found."
-    }
-}
-
-# Instead of using Remove-Service, we can use sc.exe or WMI to uninstall the service
-
-function UninstallService([string] $serviceName)
-{
-    Write-Host "Attempting to stop service: $serviceName..."
-    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-    
-    if($service)
-    {
-        if ($service.Status -eq 'Running')
-        {
-            Write-Host "    Stopping service: $serviceName."
-            Stop-Service -Name $serviceName -Force -ErrorAction Stop
-            Write-Host "    Stopped service: $serviceName."
-        }
-        else
-        {
-            Write-Host "    Service: $serviceName is not running."
-        }
-        
-        Write-Host "Attempting to uninstall service: $serviceName..."
-        
-        # Method 1: Try using sc.exe which is more universally available
-        try {
-            $output = & sc.exe delete $serviceName 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "    Uninstalled service: $serviceName."
-                return
-            }
-            else {
-                Write-Host "    sc.exe delete failed with exit code: $LASTEXITCODE. Trying alternative method..."
-            }
-        }
-        catch {
-            Write-Host "    sc.exe delete failed with exception: $_. Trying alternative method..."
-        }
-        
-        # Method 2: Try using WMI to delete the service
-        try {
-            $wmiService = Get-WmiObject -Class Win32_Service -Filter "Name='$serviceName'"
-            if ($wmiService) {
-                $result = $wmiService.Delete()
-                if ($result.ReturnValue -eq 0) {
-                    Write-Host "    Uninstalled service: $serviceName via WMI."
-                    return
-                }
-                else {
-                    Write-Host "    WMI delete failed with return value: $($result.ReturnValue). Trying alternative method..."
-                }
-            }
-            else {
-                Write-Host "    WMI service not found. Trying alternative method..."
-            }
-        }
-        catch {
-            Write-Host "    WMI delete failed with exception: $_. Trying alternative method..."
-        }
-        
-        # Method 3: Try using the .NET ServiceInstaller class
-        try {
-            Add-Type -TypeDefinition @"
-                using System;
-                using System.ServiceProcess;
-                using System.Configuration.Install;
-                
-                public class ServiceUninstaller {
-                    public static void Uninstall(string serviceName) {
-                        ServiceInstaller installer = new ServiceInstaller();
-                        installer.ServiceName = serviceName;
-                        installer.Context = new InstallContext();
-                        installer.Uninstall(null);
-                    }
-                }
-"@
-            
-            [ServiceUninstaller]::Uninstall($serviceName)
-            Write-Host "    Uninstalled service: $serviceName via .NET ServiceInstaller."
-            return
-        }
-        catch {
-            Write-Host "    .NET ServiceInstaller failed with exception: $_."
-        }
-        
-        # If all methods fail, throw an error
-        throw "Failed to uninstall service: $serviceName. All methods failed."
     }
     else
     {

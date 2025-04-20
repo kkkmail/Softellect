@@ -1,4 +1,3 @@
-#Requires -RunAsAdministrator
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
@@ -16,6 +15,30 @@ param (
     [Parameter(Mandatory = $false)]
     [string[]]$FilesToKeep = @("appsettings.json")
 )
+
+# Check if we have the necessary permissions
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+$hasAdminRights = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+# Check if we can access the service control manager
+$canManageServices = $false
+try {
+    $null = Get-Service -Name DoesNotExist -ErrorAction Stop
+    $canManageServices = $true
+} catch [System.Management.Automation.RuntimeException] {
+    if ($_.Exception.Message -like "*Access is denied*") {
+        $canManageServices = $false
+    } else {
+        $canManageServices = $true
+    }
+}
+
+# If we don't have admin rights but can manage services (like LOCAL SERVICE can), continue
+if (-not $hasAdminRights -and $canManageServices) {
+    Write-Host "Running with service management permissions (though not full administrator)"
+} elseif (-not $hasAdminRights) {
+    throw "This script requires administrator privileges or service management permissions to run."
+}
 
 # Log function to handle formatted output
 function Write-Log {

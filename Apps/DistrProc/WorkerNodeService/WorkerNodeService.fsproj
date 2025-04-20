@@ -27,6 +27,12 @@
         <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\..\..\Grant-LocalServicePermissions.ps1" Link="Grant-LocalServicePermissions.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Grant-WorkerNodeServicePermissions.ps1" Link="Grant-WorkerNodeServicePermissions.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Install-WorkerNodeService.ps1" Link="Install-WorkerNodeService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

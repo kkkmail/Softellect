@@ -469,7 +469,7 @@ module WorkerNodeService =
                         WindowStyle = ProcessWindowStyle.Normal
                     )
 
-                procStartInfo.WorkingDirectory <- workerNodeServiceFolder.value
+                procStartInfo.WorkingDirectory <- installationFolder.value
 
                 let proc = new Process(StartInfo = procStartInfo)
                 let started = proc.Start()
