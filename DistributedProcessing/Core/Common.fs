@@ -547,3 +547,21 @@ module Common =
     type RetryState =
         | CanRetry
         | ExceededRetryCount of RetryInto
+
+
+    type SettingName =
+        | SettingName of string
+
+        member this.value = let (SettingName v) = this in v
+
+
+    type Setting =
+        {
+            settingName : SettingName
+            settingBool : bool option
+            settingGuid : Guid option
+            settingLong : int64 option
+            settingText : string option
+            settingBinary : byte[] option
+            createdOn : DateTime
+        }

@@ -110,11 +110,13 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
-    let private partitionerPublicKeySetting = "395A5869D3104C2D9FD87421B501D622"
-    let private partitionerPrivateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
+    let private partitionerPublicKeySettingName = SettingName "395A5869D3104C2D9FD87421B501D622"
+    let private partitionerPrivateKeySettingName = SettingName "EC25A0A61B4749938BC80B833BBA351D"
 
-    let private workerNodePublicKeySetting = "BD95B603BBFB4C5BB8C74A4C36783EB3"
-    let private workerNodePrivateKeySetting = "A895B4BDC0354D6EB776D26DD30BA943"
+    let private workerNodePublicKeySettingName = SettingName "BD95B603BBFB4C5BB8C74A4C36783EB3"
+    let private workerNodePrivateKeySettingName = SettingName "A895B4BDC0354D6EB776D26DD30BA943"
+
+    let private workerNodeReinstallationSettingName = SettingName "54A1D285-7F93-4242-9E07-E99F90CBF898"
 
 #endif
 
@@ -165,6 +167,7 @@ module WorkerNodeService =
     type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     type private MessageEntity = DbContext.``dbo.MessageEntity``
     type private ModelDataEntity = DbContext.``dbo.ModelDataEntity``
+    type private SettingEntity = DbContext.``dbo.SettingEntity``
 
 #endif
 
@@ -221,8 +224,75 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
+    let tryLoadSetting (SettingName keyName) =
+        let elevate e = e |> TryLoadSettingErr
+        let fromDbError e = e |> TryLoadSettingDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v ->
+                {
+                    settingName = v.SettingName |> SettingName
+                    settingBool = v.SettingBool
+                    settingGuid = v.SettingGuid
+                    settingLong = v.SettingLong
+                    settingText = v.SettingText
+                    settingBinary = v.SettingBinary
+                    createdOn = v.CreatedOn
+                }
+                |> Some
+                |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    let trySaveSetting (setting : Setting) =
+        let elevate e = e |> TrySaveSettingErr
+        let fromDbError e = e |> TrySaveSettingDbErr |> elevate
+
+        let update (s : SettingEntity) =
+            s.SettingName <- setting.settingName.value
+            s.SettingBool <- setting.settingBool
+            s.SettingGuid <- setting.settingGuid
+            s.SettingLong <- setting.settingLong
+            s.SettingText <- setting.settingText
+            s.SettingBinary <- setting.settingBinary
+            s.CreatedOn <- DateTime.Now
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let eso =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = setting.settingName.value)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match eso with
+            | Some existingSetting -> update existingSetting
+            | None -> ctx.Dbo.Setting.Create() |> update
+
+            ctx.SubmitUpdates()
+            Ok ()
+
+        tryDbFun fromDbError g
+
+
     /// Tries loading a public or private key out of setting using a given key name.
-    let private tryLoadEncryptionKey toKey keyName =
+    let private tryLoadEncryptionKey toKey (SettingName keyName) =
         let elevate e = e |> TryLoadEncryptionKeyErr
         let fromDbError e = e |> TryLoadEncryptionKeyDbErr |> elevate
 
@@ -244,7 +314,7 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private trySaveEncryptionKey fromKey keyName encryptionKey =
+    let private trySaveEncryptionKey fromKey (SettingName keyName) encryptionKey =
         let elevate e = e |> TrySaveEncryptionKeyErr
         let fromDbError e = e |> TrySaveEncryptionKeyDbErr |> elevate
 
@@ -269,7 +339,6 @@ module WorkerNodeService =
                 let newSetting = ctx.Dbo.Setting.Create()
                 newSetting.SettingName <- keyName
                 newSetting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
-                //ctx.Dbo.Setting.Add(newSetting) |> ignore
 
             // Save changes to the database
             ctx.SubmitUpdates()
@@ -713,24 +782,24 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySetting
-    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySettingName
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySettingName
 
-    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySetting privateKey
-    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySettingName privateKey
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySettingName publicKey
 
 #endif
 
 #if WORKERNODE_ADM || WORKER_NODE
 
-    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
-    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting
+    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySettingName
+    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySettingName
 
-    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySetting publicKey
-    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySetting privateKey
+    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySettingName publicKey
+    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySettingName privateKey
 
-    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
-    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySettingName
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySettingName publicKey
 
 #endif
 
@@ -1602,5 +1671,12 @@ module WorkerNodeService =
                 (fun _ -> Error (q |> TryUpdateFailedSolverNoRunQueueErr |> TryUpdateFailedSolverErr))
 
         tryDbFun fromDbError g
+
+
+    let tryGetWorkerNodeReinstallationBuildNumber() =
+        match tryLoadSetting workerNodeReinstallationSettingName with
+        | Ok (Some s) -> s.settingLong |> Option.map int |> Ok
+        | Ok None -> Ok None
+        | Error e -> Error e
 
 #endif

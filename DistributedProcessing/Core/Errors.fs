@@ -324,6 +324,14 @@ module Errors =
         | TrySaveEncryptionKeyDbErr of DbError
 
 
+    type TryLoadSettingError =
+        | TryLoadSettingDbErr of DbError
+
+
+    type TrySaveSettingError =
+        | TrySaveSettingDbErr of DbError
+
+
     type TryLoadPartitionerPublicKeyError =
         | TryLoadPartitionerPublicKeyDbErr of DbError
         | NoPartitionerPublicKeyErr
@@ -481,6 +489,8 @@ module Errors =
         | TryDecryptSolverErr of TryDecryptSolverError
         | TryLoadEncryptionKeyErr of TryLoadEncryptionKeyError
         | TrySaveEncryptionKeyErr of TrySaveEncryptionKeyError
+        | TryLoadSettingErr of TryLoadSettingError
+        | TrySaveSettingErr of TrySaveSettingError
         | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
         | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
         | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
