@@ -1,1 +1,1 @@
-.\Reinstall-WindowsService.ps1 -ServiceFolder "C:\WorkerNode\WNS" -InstallationFolder "C:\GitHub\Softellect\Apps\DistrProc\WorkerNodeService\bin\x64\Release\net9.0"
+.\Reinstall-WindowsService.ps1 -ServiceFolder "C:\WorkerNode\WNS" -InstallationFolder "C:\WorkerNode\Solvers\WorkerNodeService"
