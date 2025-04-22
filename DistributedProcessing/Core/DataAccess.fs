@@ -1673,10 +1673,28 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryGetWorkerNodeReinstallationBuildNumber() =
+    let tryGetWorkerNodeReinstallationInfo() =
         match tryLoadSetting workerNodeReinstallationSettingName with
-        | Ok (Some s) -> s.settingLong |> Option.map int |> Ok
+        | Ok (Some s) ->
+            match s.settingLong with
+            | Some v -> int v |> BuildNumber |> Some |> Ok
+            | None -> Ok None
         | Ok None -> Ok None
         | Error e -> Error e
+
+
+    let trySaveWorkerNodeReinstallationInfo (BuildNumber buildNumber) =
+        let s =
+            {
+                settingName = workerNodeReinstallationSettingName
+                settingBool = None
+                settingGuid = None
+                settingLong = Some (int64 buildNumber)
+                settingText = None
+                settingBinary = None
+                createdOn = DateTime.Now
+            }
+
+        trySaveSetting s
 
 #endif

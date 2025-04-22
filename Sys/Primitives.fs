@@ -42,6 +42,13 @@ module Primitives =
     let minutesPerHour = 60<minute/hour>
 
 
+    type BuildNumber =
+        | BuildNumber of int
+
+        member this.value = let (BuildNumber v) = this in v
+        static member currentBuildNumber = BuildNumber BuildInfo.BuildNumber
+
+
     /// IPAddress cannot be serialized by FsPickler.
     /// Extend when needed.
     type IpAddress =

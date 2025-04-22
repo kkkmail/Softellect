@@ -513,6 +513,8 @@ module WorkerNodeService =
             getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
             deleteRunQueue : RunQueueId -> DistributedProcessingUnitResult
             reinstallWorkerNodeService : FolderName -> FolderName -> DistributedProcessingUnitResult
+            tryGetWorkerNodeReinstallationInfo : unit -> DistributedProcessingResult<BuildNumber option>
+            trySaveWorkerNodeReinstallationInfo : BuildNumber -> DistributedProcessingUnitResult
         }
 
         member p.tryRunSolverProcessProxy =
@@ -552,6 +554,8 @@ module WorkerNodeService =
                 getFailedSolverMessageInfo = getFailedSolverMessageInfo i.workerNodeInfo.partitionerId
                 deleteRunQueue = deleteRunQueue
                 reinstallWorkerNodeService = reinstallWorkerNodeService i.workerNodeLocalInto.solverOutputLocation
+                tryGetWorkerNodeReinstallationInfo = tryGetWorkerNodeReinstallationInfo
+                trySaveWorkerNodeReinstallationInfo = trySaveWorkerNodeReinstallationInfo
             }
 
 

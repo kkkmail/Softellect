@@ -7,6 +7,7 @@ open Softellect.Messaging.Primitives
 open Softellect.Messaging.Errors
 open Softellect.Sys.Core
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Sys.Rop
 open Softellect.Sys.TimerEvents
 open Softellect.Messaging.Proxy
@@ -39,44 +40,76 @@ module WorkerNode =
         Logger.logTrace $"tryDeploySolver: %A{s.solverId}, %A{s.solverName}, solverLocation: '{solverLocation.value}'."
         let toError e = e |> TryDeploySolverErr |> Error
 
-        let result =
-            match proxy.checkSolverRunning s.solverName with
-            | CanRun ->
-                Logger.logTrace $"Solver %A{s.solverId} is not running. Proceeding with deployment."
-                match proxy.deleteSolverFolder solverLocation with
-                | Ok () ->
-                    Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' folder deleted."
-                    match proxy.unpackSolver solverLocation s with
-                    | Ok () ->
-                        Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' unpacked."
-                        match proxy.copyAppSettings solverLocation with
-                        | Ok() ->
-                            Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied."
-                            let g() = proxy.setSolverDeployed s.solverId
+        let install() =
+            match proxy.reinstallWorkerNodeService solverLocation (getAssemblyLocation()) with
+            | Ok() ->
+                Logger.logTrace $"Worker node service reinstalled from location: '{solverLocation.value}'."
+                Ok()
+            | Error e -> Error e
 
-                            if s.solverId = SolverId.workerNodeServiceId
-                            then
-                                match proxy.reinstallWorkerNodeService solverLocation (getAssemblyLocation()) with
-                                | Ok() ->
-                                    Logger.logTrace $"Worker node service reinstalled from location: '{solverLocation.value}'."
-                                    g()
-                                | Error e -> Error e
-                            else g()
+        let deploy install =
+            match proxy.deleteSolverFolder solverLocation with
+            | Ok () ->
+                Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' folder deleted."
+                match proxy.unpackSolver solverLocation s with
+                | Ok () ->
+                    Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' unpacked."
+                    match proxy.copyAppSettings solverLocation with
+                    | Ok() ->
+                        Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied."
+                        match proxy.setSolverDeployed s.solverId with
+                        | Ok() -> install()
                         | Error e -> Error e
                     | Error e -> Error e
                 | Error e -> Error e
-            | TooManyRunning n ->
-                Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
-                n |> CanNotDeployDueToRunningSolversErr |> toError
-            | GetProcessesByNameExn e ->
-                Logger.logCrit $"Exception: %A{e}, %A{s.solverId}, %A{s.solverName}."
-                e |> TryDeploySolverExn |> toError
-            | AlreadyRunning p ->
-                let m = $"This should never happen: %A{p}, %A{s.solverId}, %A{s.solverName}."
-                Logger.logCrit m
-                m |> TryDeploySolverCriticalErr |> toError
+            | Error e -> Error e
 
-        notifyOfSolverDeployment i s.solverId result
+
+        match s.solverId = SolverId.workerNodeServiceId with
+        | false ->
+            let result =
+                match proxy.checkSolverRunning s.solverName with
+                | CanRun ->
+                    Logger.logTrace $"Solver %A{s.solverId} is not running. Proceeding with deployment."
+                    deploy (fun () -> Ok())
+                | TooManyRunning n ->
+                    Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
+                    n |> CanNotDeployDueToRunningSolversErr |> toError
+                | GetProcessesByNameExn e ->
+                    Logger.logCrit $"Exception: %A{e}, %A{s.solverId}, %A{s.solverName}."
+                    e |> TryDeploySolverExn |> toError
+                | AlreadyRunning p ->
+                    let m = $"This should never happen: %A{p}, %A{s.solverId}, %A{s.solverName}."
+                    Logger.logCrit m
+                    m |> TryDeploySolverCriticalErr |> toError
+
+            notifyOfSolverDeployment i s.solverId result
+        | true -> deploy install
+
+
+    let private notifyOfReinstallation (i : WorkerNodeRunnerContext) =
+        let currentBuildNumber = BuildNumber.currentBuildNumber
+        let proxy = i.workerNodeProxy
+
+        let notify result =
+            Logger.logTrace $"notifyOfReinstallation: %A{currentBuildNumber}, result: %A{result}."
+            notifyOfSolverDeployment i SolverId.workerNodeServiceId result
+
+        let update() =
+            Logger.logTrace $"notifyOfReinstallation: saving build number %A{currentBuildNumber}."
+            proxy.trySaveWorkerNodeReinstallationInfo currentBuildNumber
+
+        match proxy.tryGetWorkerNodeReinstallationInfo() with
+        | Ok (Some r) ->
+            Logger.logTrace $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}."
+
+            match r = currentBuildNumber with
+            | true ->
+                Logger.logTrace $"Worker node service already reinstalled. Build number: %A{r}."
+                Ok() // Already reinstalled and notified.
+            | false -> update() |> notify
+        | Ok None -> update() |> notify
+        | Error e -> Error e |> notify
 
 
     let private processSolver (i : WorkerNodeRunnerContext) (s : Solver) =
@@ -247,8 +280,7 @@ module WorkerNode =
                         do d.start()
 
                         eventHandlers <- [ h; s; d ]
-
-                        Ok ()
+                        notifyOfReinstallation i
                     | Error e -> UnableToStartMessagingClientErr e |> Error
                 | Error e -> Error e
             | true ->
