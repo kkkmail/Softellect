@@ -35,6 +35,7 @@ module WorkerNode =
 
 
     let private tryDeploySolver  (i : WorkerNodeRunnerContext) (s : Solver) =
+        let currentBuildNumber = BuildNumber.currentBuildNumber
         let proxy = i.workerNodeProxy
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
         Logger.logTrace $"tryDeploySolver: %A{s.solverId}, %A{s.solverName}, solverLocation: '{solverLocation.value}'."
@@ -84,7 +85,31 @@ module WorkerNode =
                     m |> TryDeploySolverCriticalErr |> toError
 
             notifyOfSolverDeployment i s.solverId result
-        | true -> deploy install
+        | true ->
+            let notify result = notifyOfSolverDeployment i SolverId.workerNodeServiceId result
+
+            match deploy install with
+            | Ok () ->
+                Logger.logTrace $"Checking build number..."
+
+                match proxy.tryGetWorkerNodeReinstallationInfo() with
+                | Ok (Some r) ->
+                    match r = currentBuildNumber with
+                    | true ->
+                        Logger.logTrace $"Worker node service already reinstalled. Build number: %A{r}. Notifying Partitioner."
+                        Ok() |> notify // Already installed current build number.
+                    | false ->
+                        Logger.logTrace $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}."
+                        Ok() // Do not notify as reinstallation has not been performed yet.
+                | Ok None ->
+                    Logger.logTrace $"Worker node service does not have registered build number, current build number %A{currentBuildNumber}."
+                    Ok() // Do not notify as reinstallation has not been performed yet.
+                | Error e ->
+                    Logger.logError $"Error getting worker node reinstallation info: %A{e}."
+                    Error e |> notify
+            | Error e ->
+                Logger.logError $"Error deploying worker node service: %A{e}."
+                Error e |> notify
 
 
     let private notifyOfReinstallation (i : WorkerNodeRunnerContext) =

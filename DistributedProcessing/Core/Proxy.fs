@@ -515,6 +515,7 @@ module WorkerNodeService =
             reinstallWorkerNodeService : FolderName -> FolderName -> DistributedProcessingUnitResult
             tryGetWorkerNodeReinstallationInfo : unit -> DistributedProcessingResult<BuildNumber option>
             trySaveWorkerNodeReinstallationInfo : BuildNumber -> DistributedProcessingUnitResult
+            tryDeleteWorkerNodeReinstallationInfo : unit -> DistributedProcessingUnitResult
         }
 
         member p.tryRunSolverProcessProxy =
@@ -556,6 +557,7 @@ module WorkerNodeService =
                 reinstallWorkerNodeService = reinstallWorkerNodeService i.workerNodeLocalInto.solverOutputLocation
                 tryGetWorkerNodeReinstallationInfo = tryGetWorkerNodeReinstallationInfo
                 trySaveWorkerNodeReinstallationInfo = trySaveWorkerNodeReinstallationInfo
+                tryDeleteWorkerNodeReinstallationInfo = tryDeleteWorkerNodeReinstallationInfo
             }
 
 

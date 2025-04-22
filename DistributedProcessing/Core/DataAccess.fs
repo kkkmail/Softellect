@@ -257,12 +257,14 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
+    /// TODO kk:20250422 - Mysterious error when trying to save an setting.
+    ///     Implicit conversion from data type nvarchar to varbinary(max) is not allowed. Use the CONVERT function to run this query.
     let trySaveSetting (setting : Setting) =
         let elevate e = e |> TrySaveSettingErr
         let fromDbError e = e |> TrySaveSettingDbErr |> elevate
 
-        let update (s : SettingEntity) =
-            s.SettingName <- setting.settingName.value
+        let update (existing : bool) (s : SettingEntity) =
+            if not existing then s.SettingName <- setting.settingName.value
             s.SettingBool <- setting.settingBool
             s.SettingGuid <- setting.settingGuid
             s.SettingLong <- setting.settingLong
@@ -282,11 +284,36 @@ module WorkerNodeService =
                 }
 
             match eso with
-            | Some existingSetting -> update existingSetting
-            | None -> ctx.Dbo.Setting.Create() |> update
+            | Some existingSetting -> update true existingSetting
+            | None -> ctx.Dbo.Setting.Create() |> update false
 
             ctx.SubmitUpdates()
             Ok ()
+
+        tryDbFun fromDbError g
+
+
+    let tryDeleteSetting (SettingName keyName) =
+        let elevate e = e |> TryDeleteSettingErr
+        let fromDbError e = e |> TryDeleteSettingDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let settingToDelete =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select s
+                    exactlyOneOrDefault
+                }
+
+            match settingToDelete with
+            | null -> Ok false  // Setting not found, nothing to delete
+            | setting ->
+                setting.Delete()
+                ctx.SubmitUpdates()
+                Ok true  // Successfully deleted
 
         tryDbFun fromDbError g
 
@@ -1683,6 +1710,12 @@ module WorkerNodeService =
         | Error e -> Error e
 
 
+    let tryDeleteWorkerNodeReinstallationInfo() =
+        match tryDeleteSetting workerNodeReinstallationSettingName with
+        | Ok _ -> Ok()
+        | Error e -> Error e
+
+
     let trySaveWorkerNodeReinstallationInfo (BuildNumber buildNumber) =
         let s =
             {
@@ -1695,6 +1728,8 @@ module WorkerNodeService =
                 createdOn = DateTime.Now
             }
 
-        trySaveSetting s
+        match tryDeleteWorkerNodeReinstallationInfo() with
+        | Ok _ -> trySaveSetting s
+        | Error e -> Error e
 
 #endif
