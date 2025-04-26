@@ -1,71 +1,99 @@
 // This script increments the build number in BuildInfo.fs
-// and updates Version/PackageVersion in the project file
- 
+// and updates Version/PackageVersion in multiple project files
+
 open System
 open System.IO
 open System.Text.RegularExpressions
 open System.Xml.Linq
- 
+
+// Configure projects to update (relative paths from script location)
+let projectsToUpdate = [
+    // Project name, relative path to project file
+    ("Sys", "Sys.fsproj") 
+    ("Wcf", @"..\Wcf\Wcf.fsproj")
+]
+
 // Get the directory of the script
 let scriptDir = __SOURCE_DIRECTORY__
- 
+
 // Path to the BuildInfo.fs file (relative to script location)
 let buildInfoPath = Path.Combine(scriptDir, "BuildInfo.fs")
-// Path to the project file
-let projectFilePath = Path.Combine(scriptDir, "Sys.fsproj")
+
 // Path to a lock file to prevent infinite loops
 let lockFilePath = Path.Combine(scriptDir, ".version-update-lock")
- 
-try
-    // Check if we're in a loop by reading lock file content
-    let mutable isInLoop = false
+
+/// Checks if a lock file exists and if we're in a loop
+let checkForLoop() =
     if File.Exists(lockFilePath) then
         try
             let lockContent = File.ReadAllText(lockFilePath)
             let timestamp = DateTime.Parse(lockContent)
             
-            // If lock is less than 60 seconds old, we're in a loop
-            if (DateTime.Now - timestamp).TotalSeconds < 60 then
-                isInLoop <- true
+            // If lock is less than 3600 seconds old, we're in a loop
+            if (DateTime.Now - timestamp).TotalSeconds < 3_600 then
                 printfn "Detected potential loop. Skipping version update."
+                true
+            else
+                false
         with
         | _ -> 
             // If we can't parse the timestamp, consider it invalid
-            isInLoop <- false
-    
-    // If we're in a loop, exit early
-    if isInLoop then
-        exit 0
-        
-    // Write current timestamp to lock file
-    File.WriteAllText(lockFilePath, DateTime.Now.ToString("o"))
-    
-    // Read the current content
-    let content = File.ReadAllText(buildInfoPath)
- 
-    // Define regex pattern to find the build number
-    let pattern = @"let\s+BuildNumber\s+=\s+(\d+)"
-    let regex = Regex(pattern)
- 
-    // Find and increment the build number
-    let match' = regex.Match(content)
-    if match'.Success then
-        let currentBuildNumber = Int32.Parse(match'.Groups.[1].Value)
-        let newBuildNumber = currentBuildNumber + 1
- 
-        // Replace with the new build number
-        let newContent = regex.Replace(content, $"let BuildNumber = %d{newBuildNumber}")
- 
-        // Write the updated content back to the file
-        File.WriteAllText(buildInfoPath, newContent)
- 
-        printfn $"Build number incremented from %d{currentBuildNumber} to %d{newBuildNumber}"
- 
-        // Now update the project file
+            false
+    else
+        false
+
+/// Creates or updates the lock file with current timestamp
+let updateLockFile (addSeconds: float) =
+    let timestamp =
+        if addSeconds = 0.0 then
+            DateTime.Now
+        else 
+            DateTime.Now.AddSeconds(addSeconds)
+            
+    try
+        File.WriteAllText(lockFilePath, timestamp.ToString("o"))
+    with
+    | ex -> printfn $"Warning: Could not update lock file: %s{ex.Message}"
+
+/// Increments the build number in BuildInfo.fs file
+let incrementBuildNumber () =
+    try
+        // Read the current content
+        let content = File.ReadAllText(buildInfoPath)
+
+        // Define regex pattern to find the build number
+        let pattern = @"let\s+BuildNumber\s+=\s+(\d+)"
+        let regex = Regex(pattern)
+
+        // Find and increment the build number
+        let match' = regex.Match(content)
+        if match'.Success then
+            let currentBuildNumber = Int32.Parse(match'.Groups.[1].Value)
+            let newBuildNumber = currentBuildNumber + 1
+
+            // Replace with the new build number
+            let newContent = regex.Replace(content, $"let BuildNumber = %d{newBuildNumber}")
+
+            // Write the updated content back to the file
+            File.WriteAllText(buildInfoPath, newContent)
+
+            printfn $"Build number incremented from %d{currentBuildNumber} to %d{newBuildNumber}"
+            Some newBuildNumber
+        else
+            printfn $"Error: Could not find BuildNumber pattern in file %s{buildInfoPath}"
+            None
+    with
+    | ex -> 
+        printfn $"Error incrementing build number in %s{buildInfoPath}: %s{ex.Message}"
+        None
+
+/// Updates version in a project file based on new build number
+let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
+    try
         if File.Exists(projectFilePath) then
             // Load the project file as XML
             let projectXml = XDocument.Load(projectFilePath)
- 
+
             // Find Version and PackageVersion elements
             let ns = XNamespace.None
             let versionElements =
@@ -75,16 +103,17 @@ try
                         e.Name.LocalName = "Version" ||
                         e.Name.LocalName = "PackageVersion")
                     |> Seq.toArray
- 
+
             if versionElements.Length > 0 then
                 // Extract version pattern (assuming format like 9.0.100.5)
                 let firstVersionValue = versionElements.[0].Value
                 let versionParts = firstVersionValue.Split('.')
- 
+
                 if versionParts.Length >= 4 then
                     // Check if the last part of version already matches the new build number
                     if versionParts.[3] = newBuildNumber.ToString() then
-                        printfn "Version already up to date, no changes needed"
+                        printfn $"Version in %s{projectFilePath} already up to date, no changes needed"
+                        true
                     else
                         // Keep major.minor.patch but update build number
                         let newVersion = String.Join(".", [|
@@ -93,33 +122,62 @@ try
                             versionParts.[2]  // patch
                             newBuildNumber.ToString() // new build number
                         |])
- 
+
                         // Update all version elements
                         for element in versionElements do
                             element.Value <- newVersion
- 
+
                         // Save changes
                         projectXml.Save(projectFilePath)
-                        printfn $"Updated Version/PackageVersion to {newVersion}"
+                        printfn $"Updated Version/PackageVersion to %s{newVersion} in %s{projectFilePath}"
+                        true
                 else
-                    printfn "Warning: Version format not as expected, no update made to project file"
+                    printfn $"Warning: Version format not as expected in %s{projectFilePath}, no update made"
+                    false
             else
-                printfn "Warning: Could not find Version or PackageVersion elements in project file"
+                printfn $"Warning: Could not find Version or PackageVersion elements in %s{projectFilePath}"
+                false
         else
-            printfn $"Warning: Project file not found at %s{projectFilePath}"
-    else
-        printfn "Error: Could not find BuildNumber pattern in file"
-        exit 1
+            printfn $"Warning: Project file %s{projectFilePath} not found"
+            false
+    with
+    | ex -> 
+        printfn $"Error updating project version in %s{projectFilePath}: %s{ex.Message}"
+        false
+
+// Main execution
+try
+    // Check if we're in a loop
+    if checkForLoop() then
+        exit 0
         
-    // Update the lock file with a "completed" timestamp instead of deleting it
-    File.WriteAllText(lockFilePath, DateTime.Now.AddSeconds(10.0).ToString("o"))
+    // Update lock file
+    updateLockFile 0.0
+    
+    // Increment build number once
+    match incrementBuildNumber() with
+    | Some newBuildNumber ->
+        // Update all project versions
+        for (projectName, projectFileRelPath) in projectsToUpdate do
+            printfn $"Processing project: %s{projectName}"
+            let projectFilePath = Path.Combine(scriptDir, projectFileRelPath)
+            let success = updateProjectVersion projectFilePath newBuildNumber
+            
+            if success then
+                printfn $"Successfully updated %s{projectName}"
+            else
+                printfn $"Failed to update project version for %s{projectName}"
+                
+    | None -> 
+        printfn "Failed to increment build number, skipping project updates"
+        
+    // Update the lock file with a "completed" timestamp
+    updateLockFile 10.0
+    
+    printfn "All projects processed successfully"
 with
 | ex ->
     // Update the lock file with an "error" timestamp
-    try
-        File.WriteAllText(lockFilePath, DateTime.Now.AddSeconds(10.0).ToString("o"))
-    with
-    | _ -> ()
-    
-    printfn $"Error: %s{ex.Message}"
+    updateLockFile 3_600
+    printfn $"Error in main execution: %s{ex.Message}"
     exit 1
