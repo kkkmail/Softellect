@@ -6,11 +6,27 @@ open System.IO
 open System.Text.RegularExpressions
 open System.Xml.Linq
 
+// If true, check for a loop using a lock file.
+// Otherwise, check only for the presence of the lock file.
+let checkTimeStamp = false
+
 // Configure projects to update (relative paths from script location)
 let projectsToUpdate = [
     // Project name, relative path to project file
     ("Sys", "Sys.fsproj") 
     ("Wcf", @"..\Wcf\Wcf.fsproj")
+    ("Analytics", @"..\Analytics\Analytics.fsproj")
+    ("Math", @"..\Math\Math.fsproj")
+    ("Messaging", @"..\Messaging\Messaging.fsproj")
+    ("MessagingService", @"..\MessagingService\MessagingService.fsproj")
+    ("DistributedProcessing\Core", @"..\DistributedProcessing\Core\Core.fsproj")
+    ("DistributedProcessing\MessagingService", @"..\DistributedProcessing\MessagingService\MessagingService.fsproj")
+    ("DistributedProcessing\ModelGenerator", @"..\DistributedProcessing\ModelGenerator\ModelGenerator.fsproj")
+    ("DistributedProcessing\PartitionerAdm", @"..\DistributedProcessing\PartitionerAdm\PartitionerAdm.fsproj")
+    ("DistributedProcessing\PartitionerService", @"..\DistributedProcessing\PartitionerService\PartitionerService.fsproj")
+    ("DistributedProcessing\SolverRunner", @"..\DistributedProcessing\SolverRunner\SolverRunner.fsproj")
+    ("DistributedProcessing\WorkerNodeAdm", @"..\DistributedProcessing\WorkerNodeAdm\WorkerNodeAdm.fsproj")
+    ("DistributedProcessing\WorkerNodeService", @"..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj")
 ]
 
 // Get the directory of the script
@@ -26,15 +42,21 @@ let lockFilePath = Path.Combine(scriptDir, ".version-update-lock")
 let checkForLoop() =
     if File.Exists(lockFilePath) then
         try
-            let lockContent = File.ReadAllText(lockFilePath)
-            let timestamp = DateTime.Parse(lockContent)
+            if checkTimeStamp then
+                // Read the lock file content and parse the timestamp
+                let lockContent = File.ReadAllText(lockFilePath)
+                let timestamp = DateTime.Parse(lockContent)
             
-            // If lock is less than 3600 seconds old, we're in a loop
-            if (DateTime.Now - timestamp).TotalSeconds < 3_600 then
-                printfn "Detected potential loop. Skipping version update."
-                true
+                // If lock is less than 3600 seconds old, we're in a loop
+                if (DateTime.Now - timestamp).TotalSeconds < 3_600 then
+                    printfn "Detected potential loop. Skipping version update."
+                    true
+                else
+                    false
             else
-                false
+                // If checkTimeStamp is false, just check for existence of the lock file
+                printfn "Lock file exists but checkTimeStamp is false. Skipping version update."
+                true
         with
         | _ -> 
             // If we can't parse the timestamp, consider it invalid

@@ -1,80 +1,74 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <Platforms>x64</Platforms>
-        <AssemblyName>Softellect.DistributedProcessing.MessagingService</AssemblyName>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Authors>Konstantin Konstantinov</Authors>
-        <Company>Softellect Systems, Inc.</Company>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>9.0.100.5</Version>
-        <PackageVersion>9.0.100.5</PackageVersion>
-        <Description>Distributed processing messaging service...</Description>
-        <PackageTags>client;server;framework</PackageTags>
-        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/MessagingService</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <DefineConstants>DEBUG</DefineConstants>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\MessagingService\MessagingFunctions.ps1" Link="MessagingFunctions.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\MessagingService\Start-MessagingService.ps1" Link="Start-MessagingService.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\MessagingService\Stop-MessagingService.ps1" Link="Stop-MessagingService.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\MessagingService\Uninstall-MessagingService.ps1" Link="Uninstall-MessagingService.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
-        <Content Include="appsettings.json">
-            <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </Content>
-        <None Include="..\..\log4net.config" Link="log4net.config">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Compile Include="Program.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.3" />
-        <PackageReference Update="FSharp.Core" Version="9.0.201" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\MessagingService\MessagingService.fsproj" />
-        <ProjectReference Include="..\Core\Core.fsproj" />
-    </ItemGroup>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Platforms>x64</Platforms>
+    <AssemblyName>Softellect.DistributedProcessing.MessagingService</AssemblyName>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>9.0.100.20</Version>
+    <PackageVersion>9.0.100.20</PackageVersion>
+    <Description>Distributed processing messaging service...</Description>
+    <PackageTags>client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/MessagingService</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\MessagingService\MessagingFunctions.ps1" Link="MessagingFunctions.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\MessagingService\Start-MessagingService.ps1" Link="Start-MessagingService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\MessagingService\Stop-MessagingService.ps1" Link="Stop-MessagingService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\MessagingService\Uninstall-MessagingService.ps1" Link="Uninstall-MessagingService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="MessagingVersionInfo.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
+    <None Include="MessagingServiceName.PS1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
+    <Content Include="appsettings.json">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <None Include="..\..\log4net.config" Link="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.3" />
+    <PackageReference Update="FSharp.Core" Version="9.0.201" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MessagingService\MessagingService.fsproj" />
+    <ProjectReference Include="..\Core\Core.fsproj" />
+  </ItemGroup>
 </Project>

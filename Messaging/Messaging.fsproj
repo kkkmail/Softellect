@@ -1,65 +1,59 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <AssemblyName>Softellect.Messaging</AssemblyName>
-        <Platforms>x64</Platforms>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Authors>Konstantin Konstantinov</Authors>
-        <Company>Softellect Systems, Inc.</Company>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>9.0.100.5</Version>
-        <PackageVersion>9.0.100.5</PackageVersion>
-        <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
-        <PackageTags>messaging;client;server;framework</PackageTags>
-        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <DefineConstants>DEBUG</DefineConstants>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Compile Include="Primitives.fs" />
-        <Compile Include="VersionInfo.fs" />
-        <Compile Include="Errors.fs" />
-        <Compile Include="ServiceInfo.fs" />
-        <Compile Include="Proxy.fs" />
-        <Compile Include="Client.fs" />
-        <Compile Include="Service.fs" />
-        <Compile Include="AppSettings.fs" />
-        <Compile Include="DataAccess.fs" />
-        <Compile Include="ServiceProxy.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Sys\Sys.fsproj" />
-        <ProjectReference Include="..\Wcf\Wcf.fsproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="SQLProvider" Version="1.4.12" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
-        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
-        <PackageReference Include="System.Data.Common" Version="4.3.0" />
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-        <PackageReference Update="FSharp.Core" Version="9.0.201" />
-    </ItemGroup>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>Softellect.Messaging</AssemblyName>
+    <Platforms>x64</Platforms>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>9.0.100.20</Version>
+    <PackageVersion>9.0.100.20</PackageVersion>
+    <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
+    <PackageTags>messaging;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Messaging</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="Primitives.fs" />
+    <Compile Include="VersionInfo.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="ServiceInfo.fs" />
+    <Compile Include="Proxy.fs" />
+    <Compile Include="Client.fs" />
+    <Compile Include="Service.fs" />
+    <Compile Include="AppSettings.fs" />
+    <Compile Include="DataAccess.fs" />
+    <Compile Include="ServiceProxy.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SQLProvider" Version="1.4.12" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.3" />
+    <PackageReference Include="System.Data.Common" Version="4.3.0" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Update="FSharp.Core" Version="9.0.201" />
+  </ItemGroup>
 </Project>

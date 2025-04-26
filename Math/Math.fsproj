@@ -1,60 +1,54 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <Platforms>x64</Platforms>
-        <AssemblyName>Softellect.Math</AssemblyName>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Authors>Konstantin Konstantinov</Authors>
-        <Company>Softellect Systems, Inc.</Company>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Version>9.0.100.5</Version>
-        <PackageVersion>9.0.100.5</PackageVersion>
-        <Description>Softellect Math Library provides primitive mathematical types and functionality needed by other Softellect packages.</Description>
-        <PackageTags>framework</PackageTags>
-        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Math</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <DefineConstants>DEBUG</DefineConstants>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <PlatformTarget>x64</PlatformTarget>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Compile Include="Primitives.fs" />
-        <Compile Include="Sparse.fs" />
-        <Compile Include="Tridiagonal.fs" />
-        <Compile Include="Evolution.fs" />
-        <Compile Include="Models.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="9.0.201" />
-        <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Sys\Sys.fsproj" />
-    </ItemGroup>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Platforms>x64</Platforms>
+    <AssemblyName>Softellect.Math</AssemblyName>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>9.0.100.20</Version>
+    <PackageVersion>9.0.100.20</PackageVersion>
+    <Description>Softellect Math Library provides primitive mathematical types and functionality needed by other Softellect packages.</Description>
+    <PackageTags>framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Math</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <PlatformTarget>x64</PlatformTarget>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="Primitives.fs" />
+    <Compile Include="Sparse.fs" />
+    <Compile Include="Tridiagonal.fs" />
+    <Compile Include="Evolution.fs" />
+    <Compile Include="Models.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="9.0.201" />
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+  </ItemGroup>
 </Project>
