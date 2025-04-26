@@ -89,6 +89,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Math", "Math\Math.fsproj", 
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MathTests", "MathTests\MathTests.fsproj", "{10DF607B-4352-4790-8B41-11A44A9006FD}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PreBuild", "Sys\PreBuild.fsproj", "{AB6CF110-06C4-CEA5-0372-C640315BC333}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -231,6 +233,10 @@ Global
 		{10DF607B-4352-4790-8B41-11A44A9006FD}.Debug|x64.Build.0 = Debug|x64
 		{10DF607B-4352-4790-8B41-11A44A9006FD}.Release|x64.ActiveCfg = Release|x64
 		{10DF607B-4352-4790-8B41-11A44A9006FD}.Release|x64.Build.0 = Release|x64
+		{AB6CF110-06C4-CEA5-0372-C640315BC333}.Debug|x64.ActiveCfg = Debug|x64
+		{AB6CF110-06C4-CEA5-0372-C640315BC333}.Debug|x64.Build.0 = Debug|x64
+		{AB6CF110-06C4-CEA5-0372-C640315BC333}.Release|x64.ActiveCfg = Release|x64
+		{AB6CF110-06C4-CEA5-0372-C640315BC333}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

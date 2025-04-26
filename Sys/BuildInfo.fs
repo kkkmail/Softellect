@@ -3,4 +3,4 @@ namespace Softellect.Sys
 module BuildInfo =
 
     [<Literal>]
-    let BuildNumber = 14
+    let BuildNumber = 16
