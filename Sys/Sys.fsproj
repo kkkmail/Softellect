@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.100.22</Version>
-    <PackageVersion>9.0.100.22</PackageVersion>
+    <Version>9.0.100.23</Version>
+    <PackageVersion>9.0.100.23</PackageVersion>
     <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -28,6 +28,9 @@
     <PlatformTarget>x64</PlatformTarget>
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
+  <Target Name="EnsurePreBuildIsBuilt" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="PreBuild.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" BuildInParallel="false" />
+  </Target>
   <ItemGroup>
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -82,8 +85,5 @@
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
     <PackageReference Include="FSharp.Data" Version="6.6.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="PreBuild.fsproj" />
   </ItemGroup>
 </Project>
