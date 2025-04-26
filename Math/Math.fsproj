@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.100.20</Version>
-    <PackageVersion>9.0.100.20</PackageVersion>
+    <Version>9.0.100.22</Version>
+    <PackageVersion>9.0.100.22</PackageVersion>
     <Description>Softellect Math Library provides primitive mathematical types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -45,7 +45,7 @@
     <Compile Include="Models.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="9.0.201" />
+    <PackageReference Update="FSharp.Core" Version="9.0.202" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>

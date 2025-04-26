@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.100.20</Version>
-    <PackageVersion>9.0.100.20</PackageVersion>
+    <Version>9.0.100.22</Version>
+    <PackageVersion>9.0.100.22</PackageVersion>
     <Description>Softellect Wcf Library provides F# wrapper around WCF.</Description>
     <PackageTags>wcf;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -49,8 +49,8 @@
     <PackageReference Include="CoreWCF.Http" Version="1.7.0" />
     <PackageReference Include="CoreWCF.NetTcp" Version="1.7.0" />
     <PackageReference Include="CoreWCF.Primitives" Version="1.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.3" />
-    <PackageReference Update="FSharp.Core" Version="9.0.201" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.4" />
+    <PackageReference Update="FSharp.Core" Version="9.0.202" />
   </ItemGroup>
 </Project>
