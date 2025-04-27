@@ -4,6 +4,12 @@ open FSharp.Collections
 
 module Primitives =
 
+    type DistanceFunction<'C, 'V> =
+        | DistanceFunction of ('C -> 'C -> 'V)
+
+        member this.invoke = let (DistanceFunction v) = this in v
+
+
     /// Arithmetic operations record that encapsulates all required operations
     type ArithmeticOperations<'C> =
         {
@@ -19,6 +25,10 @@ module Primitives =
             toArray: ('C -> double[]) option
         }
 
+        member ao.distance a b =
+            let c = ao.subtract a b
+            ao.dot c c |> sqrt
+
 
     /// Record containing conversion parameters
     type ConversionParameters<'I, 'C> =
@@ -26,6 +36,48 @@ module Primitives =
             arithmetic: ArithmeticOperations<'C>
             projector: 'I -> 'C
         }
+
+
+    /// Based on https://github.com/TheAlgorithms/F-Sharp/blob/main/Algorithms/Strings/LevenshteinDistance.fs
+    let rec levenshteinDistance (firstWord : string) (secondWord : string) : int =
+        // The longer word should come first
+
+        match secondWord.Length with
+        | s when s > firstWord.Length -> levenshteinDistance secondWord firstWord
+        | 0 -> firstWord.Length
+        | _ ->
+            let mutable previousRow = [ 0 .. secondWord.Length ]
+
+            firstWord
+            |> Seq.iteri
+                (fun i c1 ->
+                    let mutable currentRow = [ i + 1 ]
+
+                    secondWord
+                    |> Seq.iteri
+                        (fun j c2 ->
+                            let insertions = previousRow.[j + 1] + 1
+                            let deletions = currentRow.[j] + 1
+
+                            let substitutions =
+                                previousRow.[j] + (if c1 <> c2 then 1 else 0)
+
+                            // Get the minimum to append to the current row
+                            currentRow <-
+                                currentRow
+                                |> List.append [ (min insertions (min deletions substitutions)) ])
+
+                    previousRow <- currentRow |> List.rev)
+
+            previousRow |> List.rev |> List.item 0
+
+
+    /// Needs a double to perform large summations and multiplications.
+    let levenshteinDistanceFunction =
+        DistanceFunction (fun a b -> (levenshteinDistance a b |> double))
+
+
+    let cartesianDistanceFunction (ao : ArithmeticOperations<'C>) = DistanceFunction ao.distance
 
 
     // [<Literal>]

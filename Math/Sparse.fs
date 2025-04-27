@@ -25,6 +25,7 @@ module Sparse =
         }
 
         member inline r.convert converter = { x = r.x; value = converter r.value }
+        member inline r.project projector = { x = projector r.x; value = r.value }
 
 
     let inline private createLookupMap (values: SparseValue<'I, 'T>[]) =
@@ -77,30 +78,15 @@ module Sparse =
         member inline array.getValues()  = array.values |> Seq.ofArray
         member inline array.total() = array.values |> Array.sumBy _.value
 
-        member inline array.convert  converter =
+        member inline array.convert converter =
             array.values
             |> Array.map (fun e -> e.convert converter)
             |> SparseArray.create
 
-        member inline array.momentOld (parameters: ConversionParameters<'I, 'C>) n =
-            let x0 = array.values |> Array.sumBy (fun e -> double e.value)
-
-            if x0 > 0.0 then
-                let mutable xn = parameters.arithmetic.zero
-
-                for v in array.values do
-                    let proj = parameters.projector v.x
-                    let powed =
-                        [1..n-1]
-                        |> List.fold (fun p _ -> parameters.arithmetic.multiply p proj) proj
-
-                    let valueDouble = double v.value
-                    let term = parameters.arithmetic.multiplyByDouble valueDouble powed
-                    xn <- parameters.arithmetic.add xn term
-
-                // Divide by sum to get moment
-                parameters.arithmetic.multiplyByDouble (1.0 / x0) xn
-            else parameters.arithmetic.zero
+        member inline array.project projector =
+            array.values
+            |> Array.map (fun e -> e.project projector)
+            |> SparseArray.create
 
         /// Calculates diagonal moment of the array.
         member inline array.moment (parameters: ConversionParameters<'I, 'C>) n =
@@ -125,11 +111,32 @@ module Sparse =
 
         member inline array.mean parameters = array.moment parameters 1
 
-        member inline array.variance parameters =
+        member inline array.variance (parameters: ConversionParameters<'I, 'C>) =
             let m1 = array.moment parameters 1
             let m2 = array.moment parameters 2
             let m1Squared = parameters.arithmetic.multiply m1 m1
             parameters.arithmetic.subtract m2 m1Squared
+
+        member inline array.variance (df : DistanceFunction<'I, double>) : double =
+            let values =
+                array.values
+                |> Array.map (fun v -> v.convert double)
+
+            let x0 = values |> Array.sumBy _.value
+
+            if x0 > 0.0
+            then
+                let d a b =
+                    let x = df.invoke a.x b.x
+                    x * x * a.value * b.value
+
+                let v =
+                    values
+                    |> Array.map (fun a -> values |> Array.map (d a) |> Array.sum)
+                    |> Array.sum
+
+                v / (2.0 * x0 * x0)
+            else 0.0
 
         // Calculate 1st order tensor moment
         member inline array.tensorMoment1 (parameters: ConversionParameters<'I, 'C>) =
