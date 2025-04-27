@@ -35,6 +35,7 @@
         <Compile Include="MomentTests.fs" />
         <Compile Include="MeanStdDevTests.fs" />
         <Compile Include="SparseArrayVarianceTests.fs" />
+        <Compile Include="SparseArray2DVarianceTests.fs" />
         <Compile Include="MultiplierTests.fs" />
         <Compile Include="TypeTests.fs" />
         <Compile Include="ModelPerformanceTests.fs" />
