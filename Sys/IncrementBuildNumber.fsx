@@ -13,7 +13,7 @@ let checkTimeStamp = false
 // Configure projects to update (relative paths from script location)
 let projectsToUpdate = [
     // Project name, relative path to project file
-    ("Sys", "Sys.fsproj") 
+    ("Sys", "Sys.fsproj")
     ("Wcf", @"..\Wcf\Wcf.fsproj")
     ("Analytics", @"..\Analytics\Analytics.fsproj")
     ("Math", @"..\Math\Math.fsproj")
@@ -46,7 +46,7 @@ let checkForLoop() =
                 // Read the lock file content and parse the timestamp
                 let lockContent = File.ReadAllText(lockFilePath)
                 let timestamp = DateTime.Parse(lockContent)
-            
+
                 // If lock is less than 3600 seconds old, we're in a loop
                 if (DateTime.Now - timestamp).TotalSeconds < 3_600 then
                     printfn "Detected potential loop. Skipping version update."
@@ -58,7 +58,7 @@ let checkForLoop() =
                 printfn "Lock file exists but checkTimeStamp is false. Skipping version update."
                 true
         with
-        | _ -> 
+        | _ ->
             // If we can't parse the timestamp, consider it invalid
             false
     else
@@ -69,9 +69,9 @@ let updateLockFile (addSeconds: float) =
     let timestamp =
         if addSeconds = 0.0 then
             DateTime.Now
-        else 
+        else
             DateTime.Now.AddSeconds(addSeconds)
-            
+
     try
         File.WriteAllText(lockFilePath, timestamp.ToString("o"))
     with
@@ -105,9 +105,39 @@ let incrementBuildNumber () =
             printfn $"Error: Could not find BuildNumber pattern in file %s{buildInfoPath}"
             None
     with
-    | ex -> 
+    | ex ->
         printfn $"Error incrementing build number in %s{buildInfoPath}: %s{ex.Message}"
         None
+
+/// Extracts FSharp.Core version from project file
+let extractFSharpCoreVersion (projectXml: XDocument) =
+    try
+        let ns = XNamespace.None
+        // Look for PackageReference for FSharp.Core
+        let fsharpCoreElement =
+            projectXml.Descendants(ns + "PackageReference")
+            |> Seq.tryFind (fun e ->
+                let includeAttr = e.Attribute(XName.Get("Include"))
+                let updateAttr = e.Attribute(XName.Get("Update"))
+                (includeAttr <> null && includeAttr.Value = "FSharp.Core") ||
+                (updateAttr <> null && updateAttr.Value = "FSharp.Core"))
+
+        match fsharpCoreElement with
+        | Some element ->
+            let versionAttr = element.Attribute(XName.Get("Version"))
+            if versionAttr <> null then
+                let versionValue = versionAttr.Value
+                let versionParts = versionValue.Split('.')
+                if versionParts.Length >= 3 then
+                    // Extract first 3 parts of version
+                    Some (versionParts.[0], versionParts.[1], versionParts.[2])
+                else
+                    None
+            else
+                None
+        | None -> None
+    with
+    | _ -> None
 
 /// Updates version in a project file based on new build number
 let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
@@ -115,6 +145,9 @@ let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
         if File.Exists(projectFilePath) then
             // Load the project file as XML
             let projectXml = XDocument.Load(projectFilePath)
+
+            // Try to extract FSharp.Core version first
+            let fsharpCoreVersion = extractFSharpCoreVersion projectXml
 
             // Find Version and PackageVersion elements
             let ns = XNamespace.None
@@ -127,35 +160,55 @@ let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
                     |> Seq.toArray
 
             if versionElements.Length > 0 then
-                // Extract version pattern (assuming format like 9.0.100.5)
-                let firstVersionValue = versionElements.[0].Value
-                let versionParts = firstVersionValue.Split('.')
+                // Determine the new version
+                let newVersion =
+                    match fsharpCoreVersion with
+                    | Some (major, minor, patch) ->
+                        // Use FSharp.Core version with our build number
+                        String.Join(".", [| major; minor; patch; newBuildNumber.ToString() |])
+                    | None ->
+                        // Fall back to original behavior
+                        printfn $"Warning: Could not find FSharp.Core version in %s{projectFilePath}, using current version format"
+                        // Extract version pattern (assuming format like 9.0.100.5)
+                        let firstVersionValue = versionElements.[0].Value
+                        let versionParts = firstVersionValue.Split('.')
 
-                if versionParts.Length >= 4 then
-                    // Check if the last part of version already matches the new build number
-                    if versionParts.[3] = newBuildNumber.ToString() then
-                        printfn $"Version in %s{projectFilePath} already up to date, no changes needed"
-                        true
-                    else
-                        // Keep major.minor.patch but update build number
-                        let newVersion = String.Join(".", [|
-                            versionParts.[0]  // major
-                            versionParts.[1]  // minor
-                            versionParts.[2]  // patch
-                            newBuildNumber.ToString() // new build number
-                        |])
+                        if versionParts.Length >= 4 then
+                            // Keep major.minor.patch but update build number
+                            String.Join(".", [|
+                                versionParts.[0]  // major
+                                versionParts.[1]  // minor
+                                versionParts.[2]  // patch
+                                newBuildNumber.ToString() // new build number
+                            |])
+                        else
+                            // Unexpected format, append build number
+                            $"%s{firstVersionValue}.%d{newBuildNumber}"
 
-                        // Update all version elements
-                        for element in versionElements do
-                            element.Value <- newVersion
+                // Check if the version already matches (only needed for fallback case)
+                // Check if we need to update when using current implementation
+                let skipUpdate =
+                    match fsharpCoreVersion with
+                    | None ->
+                        let firstVersionValue = versionElements.[0].Value
+                        let versionParts = firstVersionValue.Split('.')
+                        versionParts.Length >= 4 && versionParts.[3] = newBuildNumber.ToString()
+                    | Some _ ->
+                        false
 
-                        // Save changes
-                        projectXml.Save(projectFilePath)
-                        printfn $"Updated Version/PackageVersion to %s{newVersion} in %s{projectFilePath}"
-                        true
+                if skipUpdate then
+                    printfn $"Version in %s{projectFilePath} already up to date, no changes needed"
+                    true
                 else
-                    printfn $"Warning: Version format not as expected in %s{projectFilePath}, no update made"
-                    false
+
+                // Update all version elements
+                for element in versionElements do
+                    element.Value <- newVersion
+
+                // Save changes
+                projectXml.Save(projectFilePath)
+                printfn $"Updated Version/PackageVersion to %s{newVersion} in %s{projectFilePath}"
+                true
             else
                 printfn $"Warning: Could not find Version or PackageVersion elements in %s{projectFilePath}"
                 false
@@ -163,7 +216,7 @@ let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
             printfn $"Warning: Project file %s{projectFilePath} not found"
             false
     with
-    | ex -> 
+    | ex ->
         printfn $"Error updating project version in %s{projectFilePath}: %s{ex.Message}"
         false
 
@@ -172,10 +225,10 @@ try
     // Check if we're in a loop
     if checkForLoop() then
         exit 0
-        
+
     // Update lock file
     updateLockFile 0.0
-    
+
     // Increment build number once
     match incrementBuildNumber() with
     | Some newBuildNumber ->
@@ -184,18 +237,18 @@ try
             printfn $"Processing project: %s{projectName}"
             let projectFilePath = Path.Combine(scriptDir, projectFileRelPath)
             let success = updateProjectVersion projectFilePath newBuildNumber
-            
+
             if success then
                 printfn $"Successfully updated %s{projectName}"
             else
                 printfn $"Failed to update project version for %s{projectName}"
-                
-    | None -> 
+
+    | None ->
         printfn "Failed to increment build number, skipping project updates"
-        
+
     // Update the lock file with a "completed" timestamp
     updateLockFile 10.0
-    
+
     printfn "All projects processed successfully"
 with
 | ex ->
