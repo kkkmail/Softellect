@@ -1,14 +1,11 @@
 ﻿namespace Softellect.Sys
 
-open System
 open System.Diagnostics
-open System.IO
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions
 open log4net
-// open Softellect.Sys.Primitives
 
 module Logging =
 
