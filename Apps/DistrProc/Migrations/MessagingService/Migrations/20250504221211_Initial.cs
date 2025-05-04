@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Softellect.MessagingService.Database.Migrations
+namespace Softellect.Migrations.MessagingService.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration

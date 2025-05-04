@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Softellect.MessagingService.Database;
+using Softellect.Migrations.MessagingService;
 
 #nullable disable
 
-namespace Softellect.MessagingService.Database.Migrations
+namespace Softellect.Migrations.MessagingService.Migrations
 {
     [DbContext(typeof(MessagingDbContext))]
     partial class MessagingDbContextModelSnapshot : ModelSnapshot
@@ -22,7 +22,7 @@ namespace Softellect.MessagingService.Database.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Softellect.MessagingService.Database.DeliveryType", b =>
+            modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Property<int>("DeliveryTypeId")
                         .ValueGeneratedOnAdd()
@@ -42,7 +42,7 @@ namespace Softellect.MessagingService.Database.Migrations
                     b.ToTable("DeliveryType");
                 });
 
-            modelBuilder.Entity("Softellect.MessagingService.Database.Message", b =>
+            modelBuilder.Entity("Softellect.Migrations.Common.Message", b =>
                 {
                     b.Property<Guid>("MessageId")
                         .ValueGeneratedOnAdd()
@@ -88,9 +88,9 @@ namespace Softellect.MessagingService.Database.Migrations
                     b.ToTable("Message");
                 });
 
-            modelBuilder.Entity("Softellect.MessagingService.Database.Message", b =>
+            modelBuilder.Entity("Softellect.Migrations.Common.Message", b =>
                 {
-                    b.HasOne("Softellect.MessagingService.Database.DeliveryType", "DeliveryType")
+                    b.HasOne("Softellect.Migrations.Common.DeliveryType", "DeliveryType")
                         .WithMany("Messages")
                         .HasForeignKey("DeliveryTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -99,7 +99,7 @@ namespace Softellect.MessagingService.Database.Migrations
                     b.Navigation("DeliveryType");
                 });
 
-            modelBuilder.Entity("Softellect.MessagingService.Database.DeliveryType", b =>
+            modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Navigation("Messages");
                 });

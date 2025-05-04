@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Softellect.MessagingService.Database;
+namespace Softellect.Migrations.Common;
 
 [Table("Message")]
 public class Message

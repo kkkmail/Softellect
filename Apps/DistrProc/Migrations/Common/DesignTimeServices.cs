@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.SqlServer.Design.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Softellect.MessagingService.Database;
+namespace Softellect.Migrations.Common;
 
 #pragma warning disable EF1001
 public class DesignTimeServices : IDesignTimeServices
