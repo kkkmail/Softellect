@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>x64</Platforms>
+    <RootNamespace>gMessagingService.Database</RootNamespace>
+    <AssemblyName>DistributedProcessingMessagingService.Database</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BaseOutputPath>$(MSBuildProjectDirectory)\bin\x64\</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\$(TargetFramework)\</OutputPath>
+    <RuntimeIdentifier>x64</RuntimeIdentifier>
+    <EFProjectOutputPath>$(OutputPath)</EFProjectOutputPath>
+    <EfProjectPlatform>x64</EfProjectPlatform>
+    <EfProjectConfiguration>Release</EfProjectConfiguration>
+    <EfProjectTargetDir>$(MSBuildProjectDirectory)\bin\$(EfProjectPlatform)\$(EfProjectConfiguration)\$(TargetFramework)</EfProjectTargetDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+    <PublishDir>bin\x64\Release\net9.0</PublishDir>
+    <OutDir>bin\x64\Release\net9.0</OutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\DistributedProcessing\MessagingService\appsettings.json" Link="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4"><!--
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            -->
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

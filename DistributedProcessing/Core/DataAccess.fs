@@ -848,7 +848,7 @@ module WorkerNodeService =
         (row, md)
 
 
-    /// Saves a new model data into a database fur further processing.
+    /// Saves new model data into a database fur further processing.
     let saveModelData (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
