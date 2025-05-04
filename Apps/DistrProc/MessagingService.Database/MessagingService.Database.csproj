@@ -10,13 +10,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BaseOutputPath>$(MSBuildProjectDirectory)\bin\x64\</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(Configuration)\$(TargetFramework)\</OutputPath>
+    <BaseOutputPath>$(MSBuildProjectDirectory)\bin\</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
     <RuntimeIdentifier>x64</RuntimeIdentifier>
     <EFProjectOutputPath>$(OutputPath)</EFProjectOutputPath>
     <EfProjectPlatform>x64</EfProjectPlatform>
     <EfProjectConfiguration>Release</EfProjectConfiguration>
-    <EfProjectTargetDir>$(MSBuildProjectDirectory)\bin\$(EfProjectPlatform)\$(EfProjectConfiguration)\$(TargetFramework)</EfProjectTargetDir>
+    <EfProjectTargetDir>$(MSBuildProjectDirectory)\bin\$(EfProjectPlatform)\$(EfProjectConfiguration)\</EfProjectTargetDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
