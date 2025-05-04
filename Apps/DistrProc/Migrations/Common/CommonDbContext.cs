@@ -17,12 +17,8 @@ public abstract class CommonDbContext<TContext> : DbContext where TContext: DbCo
     protected static DbContextOptions<TContext> GetDesignTimeOptions()
     {
         var optionsBuilder = new DbContextOptionsBuilder<TContext>();
-        var assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        var directoryName = Path.GetDirectoryName(assemblyLocation);
-        var basePath = new Uri(directoryName!).LocalPath;
-        var appSettingsPath = Path.Combine(basePath, "appsettings.json");
-        var json = File.ReadAllText(appSettingsPath);
-        var appSettings = JObject.Parse(json);
+        var basePath = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!).LocalPath;
+        var appSettings = JObject.Parse(File.ReadAllText(Path.Combine(basePath, "appsettings.json")));
         var connectionString = appSettings["connectionStrings"]![TContext.GetServiceName()]!.ToString();
         optionsBuilder.UseSqlServer(connectionString);
         return optionsBuilder.Options;
