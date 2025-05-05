@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrations.Common", "Apps\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrations.MessagingService", "Apps\DistrProc\Migrations\MessagingService\Migrations.MessagingService.csproj", "{DED6D3D7-1596-45CF-A861-9338B7F61A15}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrations.WorkerNodeService", "Apps\DistrProc\Migrations\WorkerNodeService\Migrations.WorkerNodeService.csproj", "{2877651A-F233-4D77-804C-31ECFCBCA7EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{DED6D3D7-1596-45CF-A861-9338B7F61A15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DED6D3D7-1596-45CF-A861-9338B7F61A15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DED6D3D7-1596-45CF-A861-9338B7F61A15}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2877651A-F233-4D77-804C-31ECFCBCA7EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2877651A-F233-4D77-804C-31ECFCBCA7EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2877651A-F233-4D77-804C-31ECFCBCA7EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2877651A-F233-4D77-804C-31ECFCBCA7EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
