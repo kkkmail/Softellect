@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Softellect.Migrations.Common;
@@ -19,6 +20,13 @@ public class WorkerNodeDbContext : CommonDbContext<WorkerNodeDbContext>, IHasSer
 
     public DbSet<DeliveryType> DeliveryTypes { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
+
+    public DbSet<NotificationType> NotificationTypes { get; set; } = null!;
+    public DbSet<RunQueueStatus> RunQueueStatuses { get; set; } = null!;
+    public DbSet<Solver> Solvers { get; set; } = null!;
+    public DbSet<RunQueue> RunQueues { get; set; } = null!;
+    public DbSet<ModelData> ModelDatas { get; set; } = null!;
+    public DbSet<Setting> Settings { get; set; } = null!;
 }
 
 [Table("NotificationType")]
@@ -57,6 +65,7 @@ public class Solver
 {
     [Key]
     [Column("solverId")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid SolverId { get; set; }
 
     [Column("solverOrder")]
@@ -76,9 +85,11 @@ public class Solver
     public byte[]? SolverData { get; set; }
 
     [Column("createdOn")]
+    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 
     [Column("isDeployed")]
+    [DefaultValue("(0)")]
     public bool IsDeployed { get; set; }
 }
 
@@ -87,6 +98,7 @@ public class RunQueue
 {
     [Key]
     [Column("runQueueId")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public Guid RunQueueId { get; set; }
 
     [Column("runQueueOrder")]
@@ -99,6 +111,7 @@ public class RunQueue
 
     [Column("runQueueStatusId")]
     [ForeignKey("RunQueueStatus")]
+    [DefaultValue("(0)")]
     public int RunQueueStatusId { get; set; }
 
     [Column("processId")]
@@ -106,42 +119,52 @@ public class RunQueue
 
     [Column("notificationTypeId")]
     [ForeignKey("NotificationType")]
+    [DefaultValue("(0)")]
     public int NotificationTypeId { get; set; }
 
     [Column("errorMessage")]
+    [MaxLength]
     public string? ErrorMessage { get; set; }
 
     [Column("lastErrorOn")]
     public DateTime? LastErrorOn { get; set; }
 
     [Column("retryCount")]
+    [DefaultValue("(0)")]
     public int RetryCount { get; set; }
 
     [Column("maxRetries")]
+    [DefaultValue("(0)")]
     public int MaxRetries { get; set; }
 
     [Column("progress")]
+    [DefaultValue("(0)")]
     public decimal Progress { get; set; }
 
     [Column("progressData")]
     public string? ProgressData { get; set; }
 
     [Column("callCount")]
+    [DefaultValue("(0)")]
     public long CallCount { get; set; }
 
     [Column("evolutionTime")]
+    [DefaultValue("(0)")]
     public decimal EvolutionTime { get; set; }
 
     [Column("relativeInvariant")]
+    [DefaultValue("(1)")]
     public float RelativeInvariant { get; set; }
 
     [Column("createdOn")]
+    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 
     [Column("startedOn")]
     public DateTime? StartedOn { get; set; }
 
     [Column("modifiedOn")]
+    [DefaultValue("(getdate())")]
     public DateTime ModifiedOn { get; set; }
 }
 
@@ -149,6 +172,7 @@ public class RunQueue
 public class ModelData
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     [Column("runQueueId")]
     [ForeignKey("RunQueue")]
     public Guid RunQueueId { get; set; }
@@ -177,11 +201,13 @@ public class Setting
     public long? SettingLong { get; set; }
 
     [Column("settingText")]
+    [MaxLength]
     public string? SettingText { get; set; }
 
     [Column("settingBinary")]
     public byte[]? SettingBinary { get; set; }
 
     [Column("createdOn")]
+    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 }
