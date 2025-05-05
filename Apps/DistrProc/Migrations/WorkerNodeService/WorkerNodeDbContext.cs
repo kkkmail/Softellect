@@ -85,11 +85,9 @@ public class Solver
     public byte[]? SolverData { get; set; }
 
     [Column("createdOn")]
-    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 
     [Column("isDeployed")]
-    [DefaultValue("(0)")]
     public bool IsDeployed { get; set; }
 }
 
@@ -111,7 +109,6 @@ public class RunQueue
 
     [Column("runQueueStatusId")]
     [ForeignKey("RunQueueStatus")]
-    [DefaultValue("(0)")]
     public int RunQueueStatusId { get; set; }
 
     [Column("processId")]
@@ -119,7 +116,6 @@ public class RunQueue
 
     [Column("notificationTypeId")]
     [ForeignKey("NotificationType")]
-    [DefaultValue("(0)")]
     public int NotificationTypeId { get; set; }
 
     [Column("errorMessage")]
@@ -130,41 +126,33 @@ public class RunQueue
     public DateTime? LastErrorOn { get; set; }
 
     [Column("retryCount")]
-    [DefaultValue("(0)")]
     public int RetryCount { get; set; }
 
     [Column("maxRetries")]
-    [DefaultValue("(0)")]
     public int MaxRetries { get; set; }
 
     [Column("progress")]
-    [DefaultValue("(0)")]
     public decimal Progress { get; set; }
 
     [Column("progressData")]
     public string? ProgressData { get; set; }
 
     [Column("callCount")]
-    [DefaultValue("(0)")]
     public long CallCount { get; set; }
 
     [Column("evolutionTime")]
-    [DefaultValue("(0)")]
     public decimal EvolutionTime { get; set; }
 
     [Column("relativeInvariant")]
-    [DefaultValue("(1)")]
     public float RelativeInvariant { get; set; }
 
     [Column("createdOn")]
-    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 
     [Column("startedOn")]
     public DateTime? StartedOn { get; set; }
 
     [Column("modifiedOn")]
-    [DefaultValue("(getdate())")]
     public DateTime ModifiedOn { get; set; }
 }
 
@@ -208,6 +196,5 @@ public class Setting
     public byte[]? SettingBinary { get; set; }
 
     [Column("createdOn")]
-    [DefaultValue("(getdate())")]
     public DateTime CreatedOn { get; set; }
 }
