@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Softellect.Migrations.Common;
 
@@ -307,13 +307,12 @@ public class Setting
 }
 
 [Table("WorkerNodeSolver")]
+[PrimaryKey(nameof(WorkerNodeId), nameof(SolverId))]
 public class WorkerNodeSolver
 {
-    [Key]
     [Column("workerNodeId")]
     public Guid WorkerNodeId { get; set; }
 
-    [Key]
     [Column("solverId")]
     public Guid SolverId { get; set; }
 
