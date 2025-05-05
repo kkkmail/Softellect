@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Softellect.Migrations.Common;
@@ -27,6 +26,16 @@ public class WorkerNodeDbContext : CommonDbContext<WorkerNodeDbContext>, IHasSer
     public DbSet<RunQueue> RunQueues { get; set; } = null!;
     public DbSet<ModelData> ModelDatas { get; set; } = null!;
     public DbSet<Setting> Settings { get; set; } = null!;
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        // Set decimal precision scale decimal(38, 16) as a default
+        configurationBuilder
+            .Properties<decimal>()
+            .HavePrecision(38, 16);
+    }
 }
 
 [Table("NotificationType")]
@@ -42,6 +51,8 @@ public class NotificationType
     [Column("notificationTypeName")]
     [StringLength(50)]
     public string NotificationTypeName { get; set; } = null!;
+
+    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("RunQueueStatus")]
@@ -57,6 +68,8 @@ public class RunQueueStatus
     [Column("runQueueStatusName")]
     [StringLength(50)]
     public string RunQueueStatusName { get; set; } = null!;
+
+    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("Solver")]
@@ -89,6 +102,8 @@ public class Solver
 
     [Column("isDeployed")]
     public bool IsDeployed { get; set; }
+
+    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("RunQueue")]
@@ -103,19 +118,20 @@ public class RunQueue
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public long RunQueueOrder { get; set; }
 
+    /// <summary>
+    /// A solver id to determine which solver should run the model.
+    /// This is needed because the modelData is stored in a zipped binary format.
+    /// </summary>
     [Column("solverId")]
-    [ForeignKey("Solver")]
     public Guid SolverId { get; set; }
 
     [Column("runQueueStatusId")]
-    [ForeignKey("RunQueueStatus")]
     public int RunQueueStatusId { get; set; }
 
     [Column("processId")]
     public int? ProcessId { get; set; }
 
     [Column("notificationTypeId")]
-    [ForeignKey("NotificationType")]
     public int NotificationTypeId { get; set; }
 
     [Column("errorMessage")]
@@ -134,6 +150,10 @@ public class RunQueue
     [Column("progress")]
     public decimal Progress { get; set; }
 
+    /// <summary>
+    /// Additional progress data (if any) used for further analysis and / or for earlier termination.
+    /// We want to store the progress data in JSON rather than zipped binary, so that to be able to write some queries when needed.
+    /// </summary>
     [Column("progressData")]
     public string? ProgressData { get; set; }
 
@@ -143,6 +163,9 @@ public class RunQueue
     [Column("evolutionTime")]
     public decimal EvolutionTime { get; set; }
 
+    /// <summary>
+    /// Should be close to 1.0 all the time. Substantial deviation is a sign of errors. If not needed, then set to 1.0.
+    /// </summary>
     [Column("relativeInvariant")]
     public float RelativeInvariant { get; set; }
 
@@ -154,6 +177,18 @@ public class RunQueue
 
     [Column("modifiedOn")]
     public DateTime ModifiedOn { get; set; }
+
+    // Navigation properties
+    [ForeignKey("SolverId")]
+    public Solver Solver { get; set; } = null!;
+
+    [ForeignKey("RunQueueStatusId")]
+    public RunQueueStatus RunQueueStatus { get; set; } = null!;
+
+    [ForeignKey("NotificationTypeId")]
+    public NotificationType NotificationType { get; set; } = null!;
+
+    public ModelData? ModelData { get; set; }
 }
 
 [Table("ModelData")]
@@ -162,12 +197,18 @@ public class ModelData
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
     [Column("runQueueId")]
-    [ForeignKey("RunQueue")]
     public Guid RunQueueId { get; set; }
 
+    /// <summary>
+    /// All the initial data that is needed to run the calculation.
+    /// It is designed to be huge, and so zipped binary format is used.
+    /// </summary>
     [Required]
     [Column("modelData")]
     public byte[] ModelDataBytes { get; set; } = null!;
+
+    [ForeignKey("RunQueueId")]
+    public RunQueue RunQueue { get; set; } = null!;
 }
 
 [Table("Setting")]
