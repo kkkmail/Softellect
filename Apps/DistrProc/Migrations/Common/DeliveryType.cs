@@ -7,6 +7,7 @@ namespace Softellect.Migrations.Common;
 public class DeliveryType
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     [Column("deliveryTypeId")]
     public int DeliveryTypeId { get; set; }
 

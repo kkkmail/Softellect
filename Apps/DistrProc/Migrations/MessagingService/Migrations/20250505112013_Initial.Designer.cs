@@ -12,7 +12,7 @@ using Softellect.Migrations.MessagingService;
 namespace Softellect.Migrations.MessagingService.Migrations
 {
     [DbContext(typeof(MessagingDbContext))]
-    [Migration("20250504221211_Initial")]
+    [Migration("20250505112013_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -28,11 +28,8 @@ namespace Softellect.Migrations.MessagingService.Migrations
             modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Property<int>("DeliveryTypeId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("deliveryTypeId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DeliveryTypeId"));
 
                     b.Property<string>("DeliveryTypeName")
                         .IsRequired()
