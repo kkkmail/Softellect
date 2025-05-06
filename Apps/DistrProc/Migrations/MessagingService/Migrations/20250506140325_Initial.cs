@@ -59,7 +59,7 @@ namespace Softellect.Migrations.MessagingService.Migrations
                 table: "Message",
                 column: "deliveryTypeId");
 
-            migrationBuilder.UpManual();
+            migrationBuilder.UpInitial();
         }
 
         /// <inheritdoc />

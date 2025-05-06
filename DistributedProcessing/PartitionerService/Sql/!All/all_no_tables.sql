@@ -11,41 +11,6 @@ drop function if exists dbo.getAvailableWorkerNode
 go
 
 
---create function dbo.getAvailableWorkerNode(@lastAllowedNodeErrInMinutes int)
---returns table
---as
---return
---(
---	with a as
---	(
---	select
---		workerNodeId
---		,nodePriority
---		,cast(
---			case
---				when numberOfCores <= 0 then 1
---				else (select count(1) as runningModels from RunQueue where workerNodeId = w.workerNodeId and runQueueStatusId in (2, 5, 7)) / (cast(numberOfCores as money))
---			end as money) as workLoad
---		,case when lastErrorOn is null or dateadd(minute, @lastAllowedNodeErrInMinutes, lastErrorOn) < getdate() then 0 else 1 end as noErr
---	from WorkerNode w
---	where isInactive = 0
---	),
---	b as
---	(
---		select
---			a.*, 
---			c.new_id
---			from a
---			cross apply (select new_id from vw_newid) c
---	)
---	select top 1
---	workerNodeId
---	from b
---	where noErr = 0 and workLoad < 1
---	order by nodePriority desc, workLoad, new_id
---)
-go
-
 drop function if exists dbo.RunQueueStatus_NotStarted
 go
 create function dbo.RunQueueStatus_NotStarted() returns int as begin return 0 end
@@ -129,9 +94,6 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
---declare @runQueueId uniqueidentifier
---set @runQueueId = newid()
 
 create procedure dbo.deleteRunQueue @runQueueId uniqueidentifier
 as
@@ -485,62 +447,6 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-
---create procedure saveMessage (
---					@messageId uniqueidentifier,
---					@senderId uniqueidentifier,
---					@recipientId uniqueidentifier,
---					@dataVersion int,
---					@deliveryTypeId int,
---					@messageData varbinary(max))
---as
---begin
---	declare @rowCount int
---	set nocount on;
-
---	insert into Message (messageId, senderId, recipientId, dataVersion, deliveryTypeId, messageData, createdOn)
---	select @messageId, @senderId, @recipientId, @dataVersion, @deliveryTypeId, @messageData, getdate()
---	where not exists (select 1 from Message where messageId = @messageId)
-
---	set @rowCount = @@rowcount
---	select @rowCount as [RowCount]
---end
---go
-
---CREATE PROCEDURE saveMessage (
---    @messageId uniqueidentifier,
---    @senderId uniqueidentifier,
---    @recipientId uniqueidentifier,
---    @dataVersion int,
---    @deliveryTypeId int,
---    @messageData varbinary(max)
---)
---AS
---BEGIN
---    DECLARE @rowCount int
---    SET NOCOUNT ON;
-
---    BEGIN TRY
---        -- Attempt to insert the row if it doesn’t already exist
---        INSERT INTO Message (messageId, senderId, recipientId, dataVersion, deliveryTypeId, messageData, createdOn)
---        SELECT @messageId, @senderId, @recipientId, @dataVersion, @deliveryTypeId, @messageData, GETDATE()
---        WHERE NOT EXISTS (SELECT 1 FROM Message WHERE messageId = @messageId)
-
---        -- Capture the row count after insertion
---        SET @rowCount = @@ROWCOUNT
---        SELECT @rowCount AS [RowCount]
---    END TRY
---    BEGIN CATCH
---        -- Capture and return error details if any
---        DECLARE @ErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
---        DECLARE @ErrorSeverity INT = ERROR_SEVERITY();
---        DECLARE @ErrorState INT = ERROR_STATE();
---        RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
---        RETURN -1  -- Optional: indicate error with a negative row count
---    END CATCH
---END
---GO
-
 CREATE PROCEDURE saveMessage (
     @messageId uniqueidentifier,
     @senderId uniqueidentifier,
@@ -653,5 +559,3 @@ from valTbl
 left outer join DeliveryType on valTbl.deliveryTypeId = DeliveryType.deliveryTypeId
 where DeliveryType.deliveryTypeId is null
 go
-
-

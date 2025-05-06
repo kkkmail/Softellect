@@ -222,7 +222,7 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                 column: "solverName",
                 unique: true);
 
-            migrationBuilder.UpManual();
+            migrationBuilder.UpInitial();
         }
 
         /// <inheritdoc />

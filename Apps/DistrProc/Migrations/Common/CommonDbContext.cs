@@ -31,10 +31,6 @@ public abstract class CommonDbContext<TContext> : DbContext where TContext : DbC
         configurationBuilder
             .Properties<decimal>()
             .HavePrecision(38, 16);
-
-        configurationBuilder
-            .Properties<DateTime>()
-            .HaveColumnType("datetime2");
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -300,7 +300,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                 table: "WorkerNodeSolver",
                 column: "solverId");
 
-            migrationBuilder.UpManual();
+            migrationBuilder.UpInitial();
         }
 
         /// <inheritdoc />

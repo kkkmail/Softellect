@@ -4,7 +4,7 @@ namespace Softellect.Migrations.MessagingService;
 
 public static class MigrationExt
 {
-    public static void UpManual(this MigrationBuilder migrationBuilder)
+    public static void UpInitial(this MigrationBuilder migrationBuilder)
     {
         migrationBuilder.Sql(
             """
