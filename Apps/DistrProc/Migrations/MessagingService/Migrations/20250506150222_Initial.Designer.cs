@@ -12,7 +12,7 @@ using Softellect.Migrations.MessagingService;
 namespace Softellect.Migrations.MessagingService.Migrations
 {
     [DbContext(typeof(MessagingDbContext))]
-    [Migration("20250506140325_Initial")]
+    [Migration("20250506150222_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
