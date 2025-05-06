@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Softellect.Migrations.PartitionerService;
+using Softellect.Migrations.WorkerNodeService;
 
 #nullable disable
 
-namespace Softellect.Migrations.PartitionerService.Migrations
+namespace Softellect.Migrations.WorkerNodeService.Migrations
 {
-    [DbContext(typeof(PartitionerDbContext))]
-    partial class PartitionerDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(WorkerNodeDbContext))]
+    [Migration("20250506111315_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -167,7 +170,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.ToTable("Setting");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.ModelData", b =>
+            modelBuilder.Entity("Softellect.Migrations.WorkerNodeService.ModelData", b =>
                 {
                     b.Property<Guid>("RunQueueId")
                         .HasColumnType("uniqueidentifier")
@@ -183,7 +186,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.ToTable("ModelData");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
+            modelBuilder.Entity("Softellect.Migrations.WorkerNodeService.RunQueue", b =>
                 {
                     b.Property<Guid>("RunQueueId")
                         .HasColumnType("uniqueidentifier")
@@ -262,10 +265,6 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("startedOn");
 
-                    b.Property<Guid?>("WorkerNodeId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("workerNodeId");
-
                     b.HasKey("RunQueueId");
 
                     b.HasIndex("NotificationTypeId");
@@ -274,12 +273,10 @@ namespace Softellect.Migrations.PartitionerService.Migrations
 
                     b.HasIndex("SolverId");
 
-                    b.HasIndex("WorkerNodeId");
-
                     b.ToTable("RunQueue");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.Solver", b =>
+            modelBuilder.Entity("Softellect.Migrations.WorkerNodeService.Solver", b =>
                 {
                     b.Property<Guid>("SolverId")
                         .HasColumnType("uniqueidentifier")
@@ -294,19 +291,13 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         .HasColumnType("nvarchar(2000)")
                         .HasColumnName("description");
 
-                    b.Property<bool>("IsInactive")
+                    b.Property<bool>("IsDeployed")
                         .HasColumnType("bit")
-                        .HasColumnName("isInactive");
+                        .HasColumnName("isDeployed");
 
                     b.Property<byte[]>("SolverData")
                         .HasColumnType("varbinary(max)")
                         .HasColumnName("solverData");
-
-                    b.Property<string>("SolverHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
-                        .HasColumnName("solverHash");
 
                     b.Property<string>("SolverName")
                         .IsRequired()
@@ -329,94 +320,6 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.ToTable("Solver");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.WorkerNode", b =>
-                {
-                    b.Property<Guid>("WorkerNodeId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("workerNodeId");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("createdOn");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsInactive")
-                        .HasColumnType("bit")
-                        .HasColumnName("isInactive");
-
-                    b.Property<DateTime>("ModifiedOn")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("modifiedOn");
-
-                    b.Property<int>("NodePriority")
-                        .HasColumnType("int")
-                        .HasColumnName("nodePriority");
-
-                    b.Property<int>("NumberOfCores")
-                        .HasColumnType("int")
-                        .HasColumnName("numberOfCores");
-
-                    b.Property<string>("WorkerNodeName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("workerNodeName");
-
-                    b.Property<long>("WorkerNodeOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("workerNodeOrder");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("WorkerNodeOrder"));
-
-                    b.Property<byte[]>("WorkerNodePublicKey")
-                        .HasColumnType("varbinary(max)")
-                        .HasColumnName("workerNodePublicKey");
-
-                    b.HasKey("WorkerNodeId");
-
-                    b.HasIndex("WorkerNodeName")
-                        .IsUnique();
-
-                    b.HasIndex("WorkerNodeOrder")
-                        .IsUnique();
-
-                    b.ToTable("WorkerNode");
-                });
-
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.WorkerNodeSolver", b =>
-                {
-                    b.Property<Guid>("WorkerNodeId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("workerNodeId");
-
-                    b.Property<Guid>("SolverId")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("solverId");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("createdOn");
-
-                    b.Property<string>("DeploymentError")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("deploymentError");
-
-                    b.Property<bool>("IsDeployed")
-                        .HasColumnType("bit")
-                        .HasColumnName("isDeployed");
-
-                    b.HasKey("WorkerNodeId", "SolverId");
-
-                    b.HasIndex("SolverId");
-
-                    b.ToTable("WorkerNodeSolver");
-                });
-
             modelBuilder.Entity("Softellect.Migrations.Common.Message", b =>
                 {
                     b.HasOne("Softellect.Migrations.Common.DeliveryType", "DeliveryType")
@@ -428,9 +331,9 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.Navigation("DeliveryType");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.ModelData", b =>
+            modelBuilder.Entity("Softellect.Migrations.WorkerNodeService.ModelData", b =>
                 {
-                    b.HasOne("Softellect.Migrations.PartitionerService.RunQueue", "RunQueue")
+                    b.HasOne("Softellect.Migrations.WorkerNodeService.RunQueue", "RunQueue")
                         .WithMany()
                         .HasForeignKey("RunQueueId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -439,7 +342,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.Navigation("RunQueue");
                 });
 
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
+            modelBuilder.Entity("Softellect.Migrations.WorkerNodeService.RunQueue", b =>
                 {
                     b.HasOne("Softellect.Migrations.Common.NotificationType", "NotificationType")
                         .WithMany()
@@ -453,43 +356,17 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Softellect.Migrations.PartitionerService.Solver", "Solver")
+                    b.HasOne("Softellect.Migrations.WorkerNodeService.Solver", "Solver")
                         .WithMany()
                         .HasForeignKey("SolverId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("Softellect.Migrations.PartitionerService.WorkerNode", "WorkerNode")
-                        .WithMany()
-                        .HasForeignKey("WorkerNodeId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("NotificationType");
 
                     b.Navigation("RunQueueStatus");
 
                     b.Navigation("Solver");
-
-                    b.Navigation("WorkerNode");
-                });
-
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.WorkerNodeSolver", b =>
-                {
-                    b.HasOne("Softellect.Migrations.PartitionerService.Solver", "Solver")
-                        .WithMany()
-                        .HasForeignKey("SolverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Softellect.Migrations.PartitionerService.WorkerNode", "WorkerNode")
-                        .WithMany()
-                        .HasForeignKey("WorkerNodeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Solver");
-
-                    b.Navigation("WorkerNode");
                 });
 #pragma warning restore 612, 618
         }

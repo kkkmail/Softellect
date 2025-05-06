@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Softellect.Migrations.Common;
 
 [Table("DeliveryType")]
+[Index(nameof(DeliveryTypeName), IsUnique = true)]
 public class DeliveryType
 {
     [Key]
@@ -15,6 +17,4 @@ public class DeliveryType
     [MaxLength(50)]
     [Column("deliveryTypeName")]
     public string DeliveryTypeName { get; set; } = null!;
-
-    public ICollection<Message> Messages { get; set; } = new List<Message>();
 }
