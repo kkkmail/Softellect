@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Softellect.Migrations.WorkerNodeService.Migrations
+namespace Softellect.Migrations.PartitionerService.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -74,12 +74,34 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                     solverName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     solverData = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
+                    solverHash = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
                     createdOn = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    isDeployed = table.Column<bool>(type: "bit", nullable: false)
+                    isInactive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Solver", x => x.solverId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkerNode",
+                columns: table => new
+                {
+                    workerNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    workerNodeOrder = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    workerNodeName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    nodePriority = table.Column<int>(type: "int", nullable: false),
+                    numberOfCores = table.Column<int>(type: "int", nullable: false),
+                    description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    isInactive = table.Column<bool>(type: "bit", nullable: false),
+                    workerNodePublicKey = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
+                    createdOn = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    modifiedOn = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkerNode", x => x.workerNodeId);
                 });
 
             migrationBuilder.CreateTable(
@@ -126,10 +148,11 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                     progressData = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     callCount = table.Column<long>(type: "bigint", nullable: false),
                     evolutionTime = table.Column<decimal>(type: "decimal(38,16)", precision: 38, scale: 16, nullable: false),
-                    relativeInvariant = table.Column<float>(type: "real", nullable: false),
+                    relativeInvariant = table.Column<double>(type: "float", nullable: false),
                     createdOn = table.Column<DateTime>(type: "datetime2", nullable: false),
                     startedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    modifiedOn = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    modifiedOn = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    workerNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -151,6 +174,39 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                         column: x => x.solverId,
                         principalTable: "Solver",
                         principalColumn: "solverId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RunQueue_WorkerNode_workerNodeId",
+                        column: x => x.workerNodeId,
+                        principalTable: "WorkerNode",
+                        principalColumn: "workerNodeId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkerNodeSolver",
+                columns: table => new
+                {
+                    workerNodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    solverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    createdOn = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    isDeployed = table.Column<bool>(type: "bit", nullable: false),
+                    deploymentError = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkerNodeSolver", x => new { x.workerNodeId, x.solverId });
+                    table.ForeignKey(
+                        name: "FK_WorkerNodeSolver_Solver_solverId",
+                        column: x => x.solverId,
+                        principalTable: "Solver",
+                        principalColumn: "solverId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkerNodeSolver_WorkerNode_workerNodeId",
+                        column: x => x.workerNodeId,
+                        principalTable: "WorkerNode",
+                        principalColumn: "workerNodeId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -205,6 +261,11 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                 column: "solverId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RunQueue_workerNodeId",
+                table: "RunQueue",
+                column: "workerNodeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RunQueueStatus_runQueueStatusName",
                 table: "RunQueueStatus",
                 column: "runQueueStatusName",
@@ -222,6 +283,23 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                 column: "solverName",
                 unique: true);
 
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkerNode_workerNodeName",
+                table: "WorkerNode",
+                column: "workerNodeName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkerNode_workerNodeOrder",
+                table: "WorkerNode",
+                column: "workerNodeOrder",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkerNodeSolver_solverId",
+                table: "WorkerNodeSolver",
+                column: "solverId");
+
             migrationBuilder.UpInitial();
         }
 
@@ -238,6 +316,9 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
                 name: "Setting");
 
             migrationBuilder.DropTable(
+                name: "WorkerNodeSolver");
+
+            migrationBuilder.DropTable(
                 name: "DeliveryType");
 
             migrationBuilder.DropTable(
@@ -251,6 +332,9 @@ namespace Softellect.Migrations.WorkerNodeService.Migrations
 
             migrationBuilder.DropTable(
                 name: "Solver");
+
+            migrationBuilder.DropTable(
+                name: "WorkerNode");
         }
     }
 }

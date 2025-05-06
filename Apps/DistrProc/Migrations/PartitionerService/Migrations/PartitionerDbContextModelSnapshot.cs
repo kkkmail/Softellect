@@ -235,8 +235,8 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("progressData");
 
-                    b.Property<float>("RelativeInvariant")
-                        .HasColumnType("real")
+                    b.Property<double>("RelativeInvariant")
+                        .HasColumnType("float")
                         .HasColumnName("relativeInvariant");
 
                     b.Property<int>("RetryCount")
