@@ -52,7 +52,7 @@ public class NotificationType
     [StringLength(50)]
     public string NotificationTypeName { get; set; } = null!;
 
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("RunQueueStatus")]
@@ -69,7 +69,7 @@ public class RunQueueStatus
     [StringLength(50)]
     public string RunQueueStatusName { get; set; } = null!;
 
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("Solver")]
@@ -103,7 +103,7 @@ public class Solver
     [Column("isDeployed")]
     public bool IsDeployed { get; set; }
 
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("RunQueue")]
@@ -188,7 +188,7 @@ public class RunQueue
     [ForeignKey("NotificationTypeId")]
     public NotificationType NotificationType { get; set; } = null!;
 
-    public ModelData? ModelData { get; set; }
+    // public ModelData? ModelData { get; set; }
 }
 
 [Table("ModelData")]
@@ -209,33 +209,4 @@ public class ModelData
 
     [ForeignKey("RunQueueId")]
     public RunQueue RunQueue { get; set; } = null!;
-}
-
-[Table("Setting")]
-[Index(nameof(SettingName), IsUnique = true)]
-public class Setting
-{
-    [Key]
-    [Column("settingName")]
-    [StringLength(100)]
-    public string SettingName { get; set; } = null!;
-
-    [Column("settingBool")]
-    public bool? SettingBool { get; set; }
-
-    [Column("settingGuid")]
-    public Guid? SettingGuid { get; set; }
-
-    [Column("settingLong")]
-    public long? SettingLong { get; set; }
-
-    [Column("settingText")]
-    [MaxLength]
-    public string? SettingText { get; set; }
-
-    [Column("settingBinary")]
-    public byte[]? SettingBinary { get; set; }
-
-    [Column("createdOn")]
-    public DateTime CreatedOn { get; set; }
 }

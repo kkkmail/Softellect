@@ -53,8 +53,8 @@ public class NotificationType
     [StringLength(50)]
     public string NotificationTypeName { get; set; } = null!;
 
-    // Navigation property
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // // Navigation property
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("RunQueueStatus")]
@@ -71,8 +71,8 @@ public class RunQueueStatus
     [StringLength(50)]
     public string RunQueueStatusName { get; set; } = null!;
 
-    // Navigation property
-    public virtual ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // // Navigation property
+    // public virtual ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }
 
 [Table("Solver")]
@@ -111,9 +111,9 @@ public class Solver
     [Column("isInactive")]
     public bool IsInactive { get; set; }
 
-    // Navigation properties
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
-    public ICollection<WorkerNodeSolver> WorkerNodeSolvers { get; set; } = new List<WorkerNodeSolver>();
+    // // Navigation properties
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // public ICollection<WorkerNodeSolver> WorkerNodeSolvers { get; set; } = new List<WorkerNodeSolver>();
 }
 
 [Table("WorkerNode")]
@@ -157,9 +157,9 @@ public class WorkerNode
     [Column("modifiedOn")]
     public DateTime ModifiedOn { get; set; }
 
-    // Navigation properties
-    public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
-    public virtual ICollection<WorkerNodeSolver> WorkerNodeSolvers { get; set; } = new List<WorkerNodeSolver>();
+    // // Navigation properties
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+    // public ICollection<WorkerNodeSolver> WorkerNodeSolvers { get; set; } = new List<WorkerNodeSolver>();
 }
 
 [Table("RunQueue")]
@@ -235,7 +235,7 @@ public class RunQueue
     public DateTime ModifiedOn { get; set; }
 
     /// <summary>
-    /// Partitioner has extra column to account for the worker node running the calculation.
+    /// Partitioner has an extra column to account for the worker node running the calculation.
     /// </summary>
     [Column("workerNodeId")]
     public Guid? WorkerNodeId { get; set; }
@@ -253,7 +253,7 @@ public class RunQueue
     [ForeignKey(nameof(WorkerNodeId))]
     public WorkerNode? WorkerNode { get; set; }
 
-    public ModelData? ModelData { get; set; }
+    // public ModelData? ModelData { get; set; }
 }
 
 [Table("ModelData")]
@@ -275,35 +275,6 @@ public class ModelData
     // Navigation property
     [ForeignKey(nameof(RunQueueId))]
     public RunQueue RunQueue { get; set; } = null!;
-}
-
-[Table("Setting")]
-[Index(nameof(SettingName), IsUnique = true)]
-public class Setting
-{
-    [Key]
-    [Column("settingName")]
-    [StringLength(100)]
-    public string SettingName { get; set; } = null!;
-
-    [Column("settingBool")]
-    public bool? SettingBool { get; set; }
-
-    [Column("settingGuid")]
-    public Guid? SettingGuid { get; set; }
-
-    [Column("settingLong")]
-    public long? SettingLong { get; set; }
-
-    [Column("settingText")]
-    [MaxLength]
-    public string? SettingText { get; set; }
-
-    [Column("settingBinary")]
-    public byte[]? SettingBinary { get; set; }
-
-    [Column("createdOn")]
-    public DateTime CreatedOn { get; set; }
 }
 
 [Table("WorkerNodeSolver")]
