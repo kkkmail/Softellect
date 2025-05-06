@@ -65,7 +65,7 @@ public class RunQueue
     /// Should be close to 1.0 all the time. Substantial deviations is a sign of errors. If not needed, then set to 1.0.
     /// </summary>
     [Column("relativeInvariant")]
-    public float RelativeInvariant { get; set; }
+    public double RelativeInvariant { get; set; }
 
     [Column("createdOn")]
     public DateTime CreatedOn { get; set; }
