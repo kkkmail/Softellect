@@ -12,7 +12,7 @@ using Softellect.Migrations.PartitionerService;
 namespace Softellect.Migrations.PartitionerService.Migrations
 {
     [DbContext(typeof(PartitionerDbContext))]
-    [Migration("20250506101852_Initial")]
+    [Migration("20250506103708_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -431,8 +431,8 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.ModelData", b =>
                 {
                     b.HasOne("Softellect.Migrations.PartitionerService.RunQueue", "RunQueue")
-                        .WithMany()
-                        .HasForeignKey("RunQueueId")
+                        .WithOne("ModelData")
+                        .HasForeignKey("Softellect.Migrations.PartitionerService.ModelData", "RunQueueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -494,6 +494,11 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
+                {
+                    b.Navigation("ModelData");
                 });
 #pragma warning restore 612, 618
         }

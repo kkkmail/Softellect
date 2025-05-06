@@ -253,7 +253,7 @@ public class RunQueue
     [ForeignKey(nameof(WorkerNodeId))]
     public WorkerNode? WorkerNode { get; set; }
 
-    // public ModelData? ModelData { get; set; }
+    public ModelData? ModelData { get; set; }
 }
 
 [Table("ModelData")]

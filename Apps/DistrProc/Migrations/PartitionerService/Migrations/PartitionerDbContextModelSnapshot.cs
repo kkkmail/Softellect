@@ -428,8 +428,8 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.ModelData", b =>
                 {
                     b.HasOne("Softellect.Migrations.PartitionerService.RunQueue", "RunQueue")
-                        .WithMany()
-                        .HasForeignKey("RunQueueId")
+                        .WithOne("ModelData")
+                        .HasForeignKey("Softellect.Migrations.PartitionerService.ModelData", "RunQueueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -491,6 +491,11 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
+                {
+                    b.Navigation("ModelData");
                 });
 #pragma warning restore 612, 618
         }
