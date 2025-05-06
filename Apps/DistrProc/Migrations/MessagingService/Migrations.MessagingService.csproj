@@ -47,8 +47,4 @@
     <ProjectReference Include="..\Common\Migrations.Common.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
-
 </Project>

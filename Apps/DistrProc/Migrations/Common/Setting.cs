@@ -32,3 +32,37 @@ public class Setting
     [Column("createdOn")]
     public DateTime CreatedOn { get; set; }
 }
+
+[Table("NotificationType")]
+[Index(nameof(NotificationTypeName), IsUnique = true)]
+public class NotificationType
+{
+    [Key]
+    [Column("notificationTypeId")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public int NotificationTypeId { get; set; }
+
+    [Required]
+    [Column("notificationTypeName")]
+    [StringLength(50)]
+    public string NotificationTypeName { get; set; } = null!;
+
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+}
+
+[Table("RunQueueStatus")]
+[Index(nameof(RunQueueStatusName), IsUnique = true)]
+public class RunQueueStatus
+{
+    [Key]
+    [Column("runQueueStatusId")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public int RunQueueStatusId { get; set; }
+
+    [Required]
+    [Column("runQueueStatusName")]
+    [StringLength(50)]
+    public string RunQueueStatusName { get; set; } = null!;
+
+    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+}

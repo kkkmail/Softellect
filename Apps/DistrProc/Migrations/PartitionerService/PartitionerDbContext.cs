@@ -27,53 +27,43 @@ public class PartitionerDbContext : CommonDbContext<PartitionerDbContext>, IHasS
     public DbSet<ModelData> ModelDatas { get; set; } = null!;
     public DbSet<Setting> Settings { get; set; } = null!;
     public DbSet<WorkerNodeSolver> WorkerNodeSolvers { get; set; } = null!;
-
-    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-    {
-        base.ConfigureConventions(configurationBuilder);
-
-        // Set decimal precision scale decimal(38, 16) as a default
-        configurationBuilder
-            .Properties<decimal>()
-            .HavePrecision(38, 16);
-    }
 }
 
-[Table("NotificationType")]
-[Index(nameof(NotificationTypeName), IsUnique = true)]
-public class NotificationType
-{
-    [Key]
-    [Column("notificationTypeId")]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public int NotificationTypeId { get; set; }
-
-    [Required]
-    [Column("notificationTypeName")]
-    [StringLength(50)]
-    public string NotificationTypeName { get; set; } = null!;
-
-    // // Navigation property
-    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
-}
-
-[Table("RunQueueStatus")]
-[Index(nameof(RunQueueStatusName), IsUnique = true)]
-public class RunQueueStatus
-{
-    [Key]
-    [Column("runQueueStatusId")]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public int RunQueueStatusId { get; set; }
-
-    [Required]
-    [Column("runQueueStatusName")]
-    [StringLength(50)]
-    public string RunQueueStatusName { get; set; } = null!;
-
-    // // Navigation property
-    // public virtual ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
-}
+// [Table("NotificationType")]
+// [Index(nameof(NotificationTypeName), IsUnique = true)]
+// public class NotificationType
+// {
+//     [Key]
+//     [Column("notificationTypeId")]
+//     [DatabaseGenerated(DatabaseGeneratedOption.None)]
+//     public int NotificationTypeId { get; set; }
+//
+//     [Required]
+//     [Column("notificationTypeName")]
+//     [StringLength(50)]
+//     public string NotificationTypeName { get; set; } = null!;
+//
+//     // // Navigation property
+//     // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+// }
+//
+// [Table("RunQueueStatus")]
+// [Index(nameof(RunQueueStatusName), IsUnique = true)]
+// public class RunQueueStatus
+// {
+//     [Key]
+//     [Column("runQueueStatusId")]
+//     [DatabaseGenerated(DatabaseGeneratedOption.None)]
+//     public int RunQueueStatusId { get; set; }
+//
+//     [Required]
+//     [Column("runQueueStatusName")]
+//     [StringLength(50)]
+//     public string RunQueueStatusName { get; set; } = null!;
+//
+//     // // Navigation property
+//     // public virtual ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
+// }
 
 [Table("Solver")]
 [Index(nameof(SolverName), IsUnique = true)]
@@ -253,7 +243,7 @@ public class RunQueue
     [ForeignKey(nameof(WorkerNodeId))]
     public WorkerNode? WorkerNode { get; set; }
 
-    public ModelData? ModelData { get; set; }
+    // public ModelData? ModelData { get; set; }
 }
 
 [Table("ModelData")]

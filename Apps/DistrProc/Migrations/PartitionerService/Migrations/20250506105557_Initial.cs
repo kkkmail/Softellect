@@ -126,7 +126,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         column: x => x.deliveryTypeId,
                         principalTable: "DeliveryType",
                         principalColumn: "deliveryTypeId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -162,24 +162,25 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         column: x => x.notificationTypeId,
                         principalTable: "NotificationType",
                         principalColumn: "notificationTypeId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RunQueue_RunQueueStatus_runQueueStatusId",
                         column: x => x.runQueueStatusId,
                         principalTable: "RunQueueStatus",
                         principalColumn: "runQueueStatusId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RunQueue_Solver_solverId",
                         column: x => x.solverId,
                         principalTable: "Solver",
                         principalColumn: "solverId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RunQueue_WorkerNode_workerNodeId",
                         column: x => x.workerNodeId,
                         principalTable: "WorkerNode",
-                        principalColumn: "workerNodeId");
+                        principalColumn: "workerNodeId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -200,13 +201,13 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         column: x => x.solverId,
                         principalTable: "Solver",
                         principalColumn: "solverId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_WorkerNodeSolver_WorkerNode_workerNodeId",
                         column: x => x.workerNodeId,
                         principalTable: "WorkerNode",
                         principalColumn: "workerNodeId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -224,7 +225,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                         column: x => x.runQueueId,
                         principalTable: "RunQueue",
                         principalColumn: "runQueueId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(

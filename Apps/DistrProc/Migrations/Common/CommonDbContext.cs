@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Softellect.Migrations.Common;
 
-public abstract class CommonDbContext<TContext> : DbContext where TContext: DbContext, IHasServiceName
+public abstract class CommonDbContext<TContext> : DbContext where TContext : DbContext, IHasServiceName
 {
     protected CommonDbContext() : base(GetDesignTimeOptions())
     {
@@ -22,5 +22,30 @@ public abstract class CommonDbContext<TContext> : DbContext where TContext: DbCo
         var connectionString = appSettings["connectionStrings"]![TContext.GetServiceName()]!.ToString();
         optionsBuilder.UseSqlServer(connectionString);
         return optionsBuilder.Options;
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        configurationBuilder
+            .Properties<decimal>()
+            .HavePrecision(38, 16);
+
+        configurationBuilder
+            .Properties<DateTime>()
+            .HaveColumnType("datetime2");
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Disable cascade delete for all relationships
+        foreach (var relationship in modelBuilder.Model.GetEntityTypes()
+                     .SelectMany(e => e.GetForeignKeys()))
+        {
+            relationship.DeleteBehavior = DeleteBehavior.Restrict;
+        }
     }
 }

@@ -85,6 +85,46 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.ToTable("Message");
                 });
 
+            modelBuilder.Entity("Softellect.Migrations.Common.NotificationType", b =>
+                {
+                    b.Property<int>("NotificationTypeId")
+                        .HasColumnType("int")
+                        .HasColumnName("notificationTypeId");
+
+                    b.Property<string>("NotificationTypeName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("notificationTypeName");
+
+                    b.HasKey("NotificationTypeId");
+
+                    b.HasIndex("NotificationTypeName")
+                        .IsUnique();
+
+                    b.ToTable("NotificationType");
+                });
+
+            modelBuilder.Entity("Softellect.Migrations.Common.RunQueueStatus", b =>
+                {
+                    b.Property<int>("RunQueueStatusId")
+                        .HasColumnType("int")
+                        .HasColumnName("runQueueStatusId");
+
+                    b.Property<string>("RunQueueStatusName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("runQueueStatusName");
+
+                    b.HasKey("RunQueueStatusId");
+
+                    b.HasIndex("RunQueueStatusName")
+                        .IsUnique();
+
+                    b.ToTable("RunQueueStatus");
+                });
+
             modelBuilder.Entity("Softellect.Migrations.Common.Setting", b =>
                 {
                     b.Property<string>("SettingName")
@@ -138,26 +178,6 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.HasKey("RunQueueId");
 
                     b.ToTable("ModelData");
-                });
-
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.NotificationType", b =>
-                {
-                    b.Property<int>("NotificationTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("notificationTypeId");
-
-                    b.Property<string>("NotificationTypeName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("notificationTypeName");
-
-                    b.HasKey("NotificationTypeId");
-
-                    b.HasIndex("NotificationTypeName")
-                        .IsUnique();
-
-                    b.ToTable("NotificationType");
                 });
 
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
@@ -254,26 +274,6 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.HasIndex("WorkerNodeId");
 
                     b.ToTable("RunQueue");
-                });
-
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueueStatus", b =>
-                {
-                    b.Property<int>("RunQueueStatusId")
-                        .HasColumnType("int")
-                        .HasColumnName("runQueueStatusId");
-
-                    b.Property<string>("RunQueueStatusName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("runQueueStatusName");
-
-                    b.HasKey("RunQueueStatusId");
-
-                    b.HasIndex("RunQueueStatusName")
-                        .IsUnique();
-
-                    b.ToTable("RunQueueStatus");
                 });
 
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.Solver", b =>
@@ -419,7 +419,7 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.HasOne("Softellect.Migrations.Common.DeliveryType", "DeliveryType")
                         .WithMany("Messages")
                         .HasForeignKey("DeliveryTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("DeliveryType");
@@ -428,9 +428,9 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.ModelData", b =>
                 {
                     b.HasOne("Softellect.Migrations.PartitionerService.RunQueue", "RunQueue")
-                        .WithOne("ModelData")
-                        .HasForeignKey("Softellect.Migrations.PartitionerService.ModelData", "RunQueueId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithMany()
+                        .HasForeignKey("RunQueueId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("RunQueue");
@@ -438,27 +438,28 @@ namespace Softellect.Migrations.PartitionerService.Migrations
 
             modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
                 {
-                    b.HasOne("Softellect.Migrations.PartitionerService.NotificationType", "NotificationType")
+                    b.HasOne("Softellect.Migrations.Common.NotificationType", "NotificationType")
                         .WithMany()
                         .HasForeignKey("NotificationTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Softellect.Migrations.PartitionerService.RunQueueStatus", "RunQueueStatus")
+                    b.HasOne("Softellect.Migrations.Common.RunQueueStatus", "RunQueueStatus")
                         .WithMany()
                         .HasForeignKey("RunQueueStatusId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Softellect.Migrations.PartitionerService.Solver", "Solver")
                         .WithMany()
                         .HasForeignKey("SolverId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Softellect.Migrations.PartitionerService.WorkerNode", "WorkerNode")
                         .WithMany()
-                        .HasForeignKey("WorkerNodeId");
+                        .HasForeignKey("WorkerNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("NotificationType");
 
@@ -474,13 +475,13 @@ namespace Softellect.Migrations.PartitionerService.Migrations
                     b.HasOne("Softellect.Migrations.PartitionerService.Solver", "Solver")
                         .WithMany()
                         .HasForeignKey("SolverId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Softellect.Migrations.PartitionerService.WorkerNode", "WorkerNode")
                         .WithMany()
                         .HasForeignKey("WorkerNodeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Solver");
@@ -491,11 +492,6 @@ namespace Softellect.Migrations.PartitionerService.Migrations
             modelBuilder.Entity("Softellect.Migrations.Common.DeliveryType", b =>
                 {
                     b.Navigation("Messages");
-                });
-
-            modelBuilder.Entity("Softellect.Migrations.PartitionerService.RunQueue", b =>
-                {
-                    b.Navigation("ModelData");
                 });
 #pragma warning restore 612, 618
         }
