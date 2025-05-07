@@ -4,5 +4,5 @@ namespace Softellect.Migrations.MessagingService;
 
 public class Program
 {
-    public static void Main(string[] _) => ProgramBase<MessagingDbContext>.MainImpl();
+    public static void Main(string[] argv) => ProgramBase<MessagingDbContext>.MainImpl(argv);
 }

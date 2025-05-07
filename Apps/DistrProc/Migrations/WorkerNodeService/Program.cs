@@ -4,5 +4,5 @@ namespace Softellect.Migrations.WorkerNodeService;
 
 public class Program
 {
-    public static void Main(string[] _) => ProgramBase<WorkerNodeDbContext>.MainImpl();
+    public static void Main(string[] argv) => ProgramBase<WorkerNodeDbContext>.MainImpl(argv);
 }

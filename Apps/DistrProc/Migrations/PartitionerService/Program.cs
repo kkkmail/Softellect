@@ -4,5 +4,5 @@ namespace Softellect.Migrations.PartitionerService;
 
 public class Program
 {
-    public static void Main(string[] _) => ProgramBase<PartitionerDbContext>.MainImpl();
+    public static void Main(string[] argv) => ProgramBase<PartitionerDbContext>.MainImpl(argv);
 }

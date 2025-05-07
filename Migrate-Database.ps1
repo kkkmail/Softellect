@@ -106,7 +106,7 @@ function Invoke-Migration {
         Write-Log -Message "Running database migration DOWN"
         # For running migrations down, we'll use '/down' as the parameter
         # This is a common convention, but can be adjusted based on your specific exe
-        $arguments = @("/down")
+        $arguments = @("down")
     } else {
         Write-Log -Message "Running database migration UP"
         # For running migrations up, we don't pass any parameters
