@@ -4,7 +4,7 @@ param (
     [string]$InstallationFolder,
 
     [Parameter(Mandatory = $false)]
-    [string]$SubFolder = "Migration",
+    [string]$SubFolder = "Migrations",
 
     [Parameter(Mandatory = $false)]
     [string]$ExeName = "",

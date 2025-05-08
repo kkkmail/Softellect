@@ -485,6 +485,7 @@ module WorkerNodeService =
                     s.SolverName <- solver.solverName.value
                     s.Description <- solver.description
                     s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
+                    s.CreatedOn <- DateTime.Now
 
 #if PARTITIONER || PARTITIONER_ADM
                     // Partitioner has separate solverHash and isInactive columns.
@@ -633,16 +634,18 @@ module WorkerNodeService =
     let private addRunQueueRow (ctx : DbContext) (r : RunQueue) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.runQueueId.value,
+                            SolverId = r.solverId.value,
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
                             ProcessId = (r.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)),
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
                             RetryCount = r.retryCount,
                             MaxRetries = r.maxRetries,
-                            EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             Progress = r.progressData.progressInfo.progress,
                             CallCount = r.progressData.progressInfo.callCount,
+                            EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             RelativeInvariant = r.progressData.progressInfo.relativeInvariant.value,
+                            CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -1017,9 +1020,9 @@ module WorkerNodeService =
         {
             workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
             workerNodeName = r.WorkerNodeName |> WorkerNodeName
+            nodePriority = r.NodePriority |> WorkerNodePriority
             noOfCores = r.NumberOfCores
             partitionerId = p.partitionerId
-            nodePriority = r.NodePriority |> WorkerNodePriority
             isInactive = r.IsInactive
             solverEncryptionType = p.solverEncryptionType
         }
@@ -1061,8 +1064,10 @@ module WorkerNodeService =
         let row = ctx.Dbo.WorkerNode.Create(
                             WorkerNodeId = w.workerNodeId.value.value,
                             WorkerNodeName = w.workerNodeName.value,
-                            NumberOfCores = w.noOfCores,
                             NodePriority = w.nodePriority.value,
+                            NumberOfCores = w.noOfCores,
+                            IsInactive = false,
+                            CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -1095,23 +1100,12 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    // let upsertWorkerNodeErr p i =
-    //     let elevate e = e |> UpsertWorkerNodeErrErr
-    //     //let toError e = e |> elevate |> Error
-    //     let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
-    //
-    //     let g() =
-    //         match loadWorkerNodeInfo p i with
-    //         | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
-    //         | Error e -> Error e
-    //
-    //     tryDbFun fromDbError g
-
-
     let private addWorkerNodeSolverRow (ctx : DbContext) (w : WorkerNodeId) (s : SolverId) =
         let row = ctx.Dbo.WorkerNodeSolver.Create(
                             WorkerNodeId = w.value.value,
-                            SolverId = s.value)
+                            SolverId = s.value,
+                            CreatedOn = DateTime.Now,
+                            IsDeployed = false)
 
         row
 

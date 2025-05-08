@@ -39,6 +39,9 @@
         <None Include="..\..\..\Migrate-Database.ps1" Link="Migrate-Database.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\..\..\Migrate-WorkerNodeService.ps1" Link="Migrate-WorkerNodeService.ps1">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\Reinstall-WindowsService.ps1" Link="Reinstall-WindowsService.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

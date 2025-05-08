@@ -1,1 +1,1 @@
-.\Reinstall-WindowsService.ps1 -ServiceFolder "C:\WorkerNode\WNS" -InstallationFolder "C:\WorkerNode\Solvers\WorkerNodeService"
+.\Reinstall-WindowsService.ps1 -ServiceFolder "C:\WorkerNode\WNS" -InstallationFolder "C:\WorkerNode\Solvers\WorkerNodeService" -PerformMigration $true
