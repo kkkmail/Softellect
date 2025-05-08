@@ -65,10 +65,7 @@ module CoreTests =
                 let path2 = Path.Combine(dir2, file.TrimStart(Path.DirectorySeparatorChar))
                 File.ReadAllText(path1) = File.ReadAllText(path2))
 
-
-    // Test method to zip, unzip, and verify content
-    [<Fact>]
-    let zippingAndUnzippingFolderShouldPreserveContents () : unit =
+    let private zippingAndUnzippingShouldPreserveContents zip compare : unit =
         let inputFolder = FolderName "C:\\Temp\\Input"
         let outputFolder = FolderName "C:\\Temp\\Output"
 
@@ -80,7 +77,7 @@ module CoreTests =
         createTestFolderStructure inputFolder
 
         // Zip the Input folder
-        let zipResult = zipFolder inputFolder
+        let zipResult = zip inputFolder
 
         match zipResult with
         | Ok zipBytes ->
@@ -90,11 +87,24 @@ module CoreTests =
             match unzipResult with
             | Ok () ->
                 // Verify that the unzipped contents match the original Input folder
-                Assert.True(compareDirectories inputFolder outputFolder, "Unzipped folder content does not match original.")
+                Assert.True(compare inputFolder outputFolder, "Unzipped folder content does not match original.")
             | Error err ->
                 Assert.True(false, $"Unzipping failed: {err}")
         | Error err ->
             Assert.True(false, $"Zipping failed: {err}")
+
+
+
+    // Test method to zip, unzip, and verify content
+    [<Fact>]
+    let zippingAndUnzippingFolderShouldPreserveContents () : unit =
+        zippingAndUnzippingShouldPreserveContents zipFolder compareDirectories
+
+
+    [<Fact>]
+    let zipFolderWithAdditionalMappingsAndUnzippingFolderShouldPreserveContents () : unit =
+        let zip f = zipFolderWithAdditionalMappings f []
+        zippingAndUnzippingShouldPreserveContents zip compareDirectories
 
 
     [<Fact>]

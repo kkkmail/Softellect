@@ -116,6 +116,13 @@ module Primitives =
         static member defaultSolverOutputLocation = FolderName "C:\\Temp"
 
 
+    type FolderMapping =
+        {
+            FolderPath: FolderName
+            ArchiveSubfolder: string
+        }
+
+
     /// File extensions used in the system.
     type FileExtension =
         | FileExtension of string

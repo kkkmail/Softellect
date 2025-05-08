@@ -17,6 +17,9 @@ open Softellect.Sys.WindowsApi
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
 
+    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
+
+
     let toVariableName (s : string) =
         match s.Length with
         | 0 -> s
@@ -59,7 +62,7 @@ module Core =
             else
                 use memoryStream = new MemoryStream()
 
-                // archive must be disposed of before we can access the memoryStream.ToArray()
+                // The archive must be disposed of before we can access the memoryStream.ToArray()
                 // So, we wrap it into a function with use archive inside.
                 let archiveFolder() =
                     use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
@@ -85,6 +88,65 @@ module Core =
 
                 let resultBytes = memoryStream.ToArray()
                 Ok resultBytes
+        with
+        | ex -> Error ex.Message
+
+
+    /// Zips the contents of the specified folder and all subfolders, with optional additional folders mapped to specific archive subfolders.
+    let zipFolderWithAdditionalMappings (mainFolderPath : FolderName) (additionalFolders: FolderMapping list) =
+        try
+            if not (Directory.Exists(mainFolderPath.value)) then Error $"%A{mainFolderPath} does not exist."
+            else
+                // Validate all additional folders exist
+                let nonExistentFolders =
+                    additionalFolders
+                    |> List.filter (fun mapping -> not (Directory.Exists(mapping.FolderPath.value)))
+                    |> List.map _.FolderPath.value
+
+                if not (List.isEmpty nonExistentFolders) then
+                    let errFolders = nonExistentFolders |> joinStrings ", "
+                    Error $"The following folders do not exist: {errFolders}"
+                else
+                    use memoryStream = new MemoryStream()
+
+                    // The archive must be disposed of before we can access the memoryStream.ToArray()
+                    let archiveFolder() =
+                        use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
+
+                        // Local function to add a file to the archive
+                        let addFileToArchive (filePath: string) (entryPath: string) =
+                            let fileInfo = FileInfo(filePath)
+                            let entry = archive.CreateEntry(entryPath, CompressionLevel.Optimal)
+                            entry.LastWriteTime <- fileInfo.LastWriteTime
+                            use entryStream = entry.Open()
+                            use fileStream = fileInfo.OpenRead()
+                            fileStream.CopyTo(entryStream)
+
+                        // Local function to process files in a directory and its subdirectories
+                        let rec processDirectory (FolderName directoryPath) (archiveBasePath: string) =
+                            let directory = DirectoryInfo(directoryPath)
+
+                            // Add all files in the current directory
+                            for file in directory.GetFiles() |> Array.sortBy _.Name do
+                                let entryName = Path.Combine(archiveBasePath, file.Name)
+                                addFileToArchive file.FullName entryName
+
+                            // Process all subdirectories
+                            for subfolder in directory.GetDirectories() |> Array.sortBy _.Name do
+                                let subfolderArchivePath = Path.Combine(archiveBasePath, subfolder.Name)
+                                processDirectory (FolderName subfolder.FullName) subfolderArchivePath
+
+                        // Process main folder with empty base path
+                        processDirectory mainFolderPath String.Empty
+
+                        // Process each additional folder with its specified archive subfolder as base path
+                        for mapping in (additionalFolders |> List.sort) do
+                            processDirectory mapping.FolderPath mapping.ArchiveSubfolder
+
+                    archiveFolder()
+
+                    let resultBytes = memoryStream.ToArray()
+                    Ok resultBytes
         with
         | ex -> Error ex.Message
 
@@ -160,10 +222,6 @@ module Core =
     //let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
     //let jsonSerialize t = jsonSerializer.PickleToString t
     //let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
-
-
-    // let joinStrings (s : string) (v : string[]) = String.Join(s, v)
-    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
 
 
     // TODO kk:20240824 - Does not work. Delete in 180 days if not fixed.

@@ -55,13 +55,14 @@ module CommandLine =
         AddWorkerNodeServiceArgs =
             | [<Mandatory>] [<Unique>] [<AltCommandLine("-s")>] Folder of string
             |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+            |               [<Unique>] [<AltCommandLine("-m")>] MigrationFolder of string
 
             interface IArgParserTemplate with
                 member this.Usage =
                     match this with
                     | Folder _ -> "worker node service folder."
                     | Force _ -> "pass true to force updating worker node service with the same hash."
-
+                    | MigrationFolder _ -> "optional database migration folder."
 
         and
             [<CliPrefix(CliPrefix.Dash)>]

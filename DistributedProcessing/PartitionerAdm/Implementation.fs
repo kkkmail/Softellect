@@ -94,6 +94,7 @@ module Implementation =
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
             loadAllActiveSolverIds : unit -> DistributedProcessingResult<List<SolverId>>
             loadAllActiveWorkerNodeIds : unit -> DistributedProcessingResult<List<WorkerNodeId>>
+            tryCopyMigration : FolderName -> FolderName -> DistributedProcessingUnitResult
         }
 
         static member create (i : PartitionerInfo) =
@@ -115,6 +116,7 @@ module Implementation =
                 tryResetRunQueue = tryResetRunQueue
                 loadAllActiveSolverIds = loadAllActiveSolverIds
                 loadAllActiveWorkerNodeIds = loadAllActiveWorkerNodeIds
+                tryCopyMigration = failwith ""
             }
 
 
@@ -261,31 +263,42 @@ module Implementation =
 
 
     let addWorkerNodeService (ctx : PartitionerAdmContext) (x : list<AddWorkerNodeServiceArgs>) =
-        // Map the worker node service args to solver args
-        let solverArgs =
-            [
-                // Use the predefined worker node service ID
-                AddSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
+        // Map the folder parameter
+        match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
+        | Some folder ->
+            match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.MigrationFolder migrationFolder -> Some migrationFolder | _ -> None) with
+            | Some migrationFolder ->
+                match ctx.partitionerAdmProxy.tryCopyMigration (FolderName folder) (FolderName migrationFolder) with
+                | Ok () -> ()
+                | Error e ->
+                    let err = $"Error copying migration folder '{migrationFolder}' into '{folder}', error: '{e}'."
+                    Logger.logError err
+                    failwith err
+            | None -> ()
 
-                // Use the predefined worker node service name
-                AddSolverArgs.Name(SolverName.workerNodeServiceName.value)
+            // Map the worker node service args to solver args
+            let solverArgs =
+                [
+                    // Use the predefined worker node service ID
+                    AddSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
 
-                // Map the folder parameter
-                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
-                | Some folder -> AddSolverArgs.Folder(folder)
-                | None -> failwith "Folder parameter is required for adding worker node service."
+                    // Use the predefined worker node service name
+                    AddSolverArgs.Name(SolverName.workerNodeServiceName.value)
 
-                // Map the force parameter if it exists
-                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
-                | Some force -> AddSolverArgs.Force(force)
-                | None -> AddSolverArgs.Force(false) // Default to false if not provided
-            ]
+                    AddSolverArgs.Folder(folder)
 
-        // Log that we're adding a worker node service
-        Logger.logInfo $"""Adding worker node service from folder '{solverArgs |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder f -> Some f | _ -> None) |> Option.defaultValue "unknown"}'"""
+                    // Map the force parameter if it exists
+                    match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
+                    | Some force -> AddSolverArgs.Force(force)
+                    | None -> AddSolverArgs.Force(false) // Default to false if not provided
+                ]
 
-        // Call the existing addSolver function with our mapped parameters
-        addSolver ctx solverArgs
+            // Log that we're adding a worker node service
+            Logger.logInfo $"""Adding worker node service from folder '{solverArgs |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder f -> Some f | _ -> None) |> Option.defaultValue "unknown"}'"""
+
+            // Call the existing addSolver function with our mapped parameters
+            addSolver ctx solverArgs
+        | None -> failwith "Folder parameter is required for adding worker node service."
 
 
     let sendWorkerNodeService (ctx : PartitionerAdmContext) (x : list<SendWorkerNodeServiceArgs>) =
