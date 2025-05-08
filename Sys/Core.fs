@@ -71,6 +71,7 @@ module Core =
                         let directory = DirectoryInfo(folderPath)
 
                         for file in directory.GetFiles() |> Array.sortBy _.Name do
+                            Logger.logTrace $"Adding file: '%A{file.FullName}' to archive folder: '{archiveFolder}'."
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
                             entry.LastWriteTime <- file.LastWriteTime
@@ -128,6 +129,7 @@ module Core =
 
                             // Add all files in the current directory
                             for file in directory.GetFiles() |> Array.sortBy _.Name do
+                                Logger.logTrace $"Adding file: '%A{file.FullName}' to archive folder: '{archiveBasePath}'."
                                 let entryName = Path.Combine(archiveBasePath, file.Name)
                                 addFileToArchive file.FullName entryName
 

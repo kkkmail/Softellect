@@ -85,6 +85,4 @@ public class RunQueue
 
     [ForeignKey("NotificationTypeId")]
     public NotificationType NotificationType { get; set; } = null!;
-
-    // public ModelData? ModelData { get; set; }
 }

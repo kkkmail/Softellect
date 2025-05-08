@@ -34,6 +34,4 @@ public class Solver
 
     [Column("isDeployed")]
     public bool IsDeployed { get; set; }
-
-    // public ICollection<RunQueue> RunQueues { get; set; } = new List<RunQueue>();
 }

@@ -94,7 +94,6 @@ module Implementation =
             tryResetRunQueue : RunQueueId -> DistributedProcessingUnitResult
             loadAllActiveSolverIds : unit -> DistributedProcessingResult<List<SolverId>>
             loadAllActiveWorkerNodeIds : unit -> DistributedProcessingResult<List<WorkerNodeId>>
-            tryCopyMigration : FolderName -> FolderName -> DistributedProcessingUnitResult
         }
 
         static member create (i : PartitionerInfo) =
@@ -116,7 +115,6 @@ module Implementation =
                 tryResetRunQueue = tryResetRunQueue
                 loadAllActiveSolverIds = loadAllActiveSolverIds
                 loadAllActiveWorkerNodeIds = loadAllActiveWorkerNodeIds
-                tryCopyMigration = failwith ""
             }
 
 
@@ -145,9 +143,14 @@ module Implementation =
         let de = x |> List.tryPick (fun e -> match e with | Description description -> description |> Some | _ -> None)
         let force = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
 
+        let af =
+            x
+            |> List.choose (fun e -> match e with | AddSolverArgs.AdditionalFolder(folder, defaultFolder) -> Some (folder, defaultFolder) | _ -> None)
+            |> List.map (fun (a, b) -> { FolderPath = FolderName a; ArchiveSubfolder = b })
+
         match (so, no, fo) with
         | Some s, Some n, Some f ->
-            match zipFolder f with
+            match zipFolderWithAdditionalMappings f af with
             | Ok d ->
                 let hash = calculateSha256Hash d
 
@@ -266,15 +269,10 @@ module Implementation =
         // Map the folder parameter
         match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
         | Some folder ->
-            match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.MigrationFolder migrationFolder -> Some migrationFolder | _ -> None) with
-            | Some migrationFolder ->
-                match ctx.partitionerAdmProxy.tryCopyMigration (FolderName folder) (FolderName migrationFolder) with
-                | Ok () -> ()
-                | Error e ->
-                    let err = $"Error copying migration folder '{migrationFolder}' into '{folder}', error: '{e}'."
-                    Logger.logError err
-                    failwith err
-            | None -> ()
+            let migration =
+                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.MigrationFolder migrationFolder -> Some migrationFolder | _ -> None) with
+                | Some migrationFolder -> [ AddSolverArgs.AdditionalFolder(migrationFolder, defaultMigrationsFolder) ]
+                | None -> []
 
             // Map the worker node service args to solver args
             let solverArgs =
@@ -292,6 +290,8 @@ module Implementation =
                     | Some force -> AddSolverArgs.Force(force)
                     | None -> AddSolverArgs.Force(false) // Default to false if not provided
                 ]
+                @
+                migration
 
             // Log that we're adding a worker node service
             Logger.logInfo $"""Adding worker node service from folder '{solverArgs |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder f -> Some f | _ -> None) |> Option.defaultValue "unknown"}'"""

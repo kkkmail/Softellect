@@ -461,6 +461,12 @@ module WorkerNodeService =
                             SolverId = s.solverId.value,
                             SolverName = s.solverName.value,
                             Description = s.description,
+#if PARTITIONER || PARTITIONER_ADM
+                            // Partitioner has separate solverHash and isInactive columns.
+                            SolverHash = s.solverHash.value,
+                            IsInactive = false,
+#endif
+                            CreatedOn = DateTime.Now,
                             SolverData = (s.solverData |> Option.map (fun e -> e.value)))
 
         row
@@ -481,8 +487,9 @@ module WorkerNodeService =
                     s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
 
 #if PARTITIONER || PARTITIONER_ADM
-                    // Partitioner has a separate solverHash column.
+                    // Partitioner has separate solverHash and isInactive columns.
                     s.SolverHash <- solver.solverHash.value
+                    s.IsInactive <- false
 #endif
 
 #if WORKER_NODE
