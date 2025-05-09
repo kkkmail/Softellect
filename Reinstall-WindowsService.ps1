@@ -13,7 +13,7 @@ param (
     [string]$UninstallScriptName = "Uninstall-WorkerNodeService.ps1",
 
     [Parameter(Mandatory = $false)]
-    [string]$MigrateScriptName = "Migrate-WorkerNodeService.ps1",
+    [string]$MigrateScriptName = "Migrate-Database.ps1",
 
     [Parameter(Mandatory = $false)]
     [bool]$PerformMigration = $false,
@@ -253,9 +253,9 @@ function Invoke-DatabaseMigration {
 
         try {
             $output = if ($Down) {
-                & $migrateScript -Down $true 2>&1
+                & $migrateScript -InstallationFolder $InstallationFolder -Down $true 2>&1
             } else {
-                & $migrateScript 2>&1
+                & $migrateScript -InstallationFolder $InstallationFolder 2>&1
             }
 
             # If the script ran without throwing, check its output for error messages
