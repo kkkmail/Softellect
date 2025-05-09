@@ -10,7 +10,10 @@ param (
     [string]$ExeName = "",
 
     [Parameter(Mandatory = $false)]
-    [bool]$Down = $false
+    [bool]$Down = $false,
+
+    [Parameter(Mandatory = $false)]
+    [string]$MigrationFile = "Migration.txt"
 )
 
 # Function to handle logging
@@ -74,6 +77,18 @@ function Test-Prerequisites {
         # If we got here, exactly one migration exe was found, which is good
     }
 
+    # Check that the migration file exists and verify it.
+    $migrationFilePath = Join-Path -Path $migrationFolderPath -ChildPath $MigrationFile
+    if (-not (Test-Path -Path $migrationFilePath -PathType Leaf)) {
+        Write-Log -Level Error -Message "Migration file '$MigrationFile' not found in the migration folder."
+        return $false
+    }
+
+    # Verify the migration in the file
+    if (-not (Invoke-MigrationVerification)) {
+        return $false
+    }
+
     return $true
 }
 
@@ -92,24 +107,100 @@ function Get-MigrationExecutable {
     }
 }
 
+# Function to verify the migration in the file
+function Invoke-MigrationVerification {
+    [CmdletBinding()]
+    param()
+
+    $exePath = Get-MigrationExecutable
+    $migrationFolderPath = Join-Path -Path $InstallationFolder -ChildPath $SubFolder
+    $migrationFilePath = Join-Path -Path $migrationFolderPath -ChildPath $MigrationFile
+
+    Write-Log -Message "Verifying migration in file: $migrationFilePath"
+
+    try {
+        # Save current location
+        $currentLocation = Get-Location
+
+        # Change to migration folder for proper relative path resolution
+        Set-Location -Path $migrationFolderPath
+
+        # Read the migration name from the file
+        $migrationName = Get-Content -Path $migrationFilePath -Raw
+        $migrationName = $migrationName.Trim()
+
+        Write-Log -Message "Verifying migration: $migrationName"
+
+        # Create a process object for verification
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $exePath
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        $psi.Arguments = "verifyFile:$MigrationFile"
+
+        # Start the process
+        $process = [System.Diagnostics.Process]::Start($psi)
+
+        # Capture output
+        $output = $process.StandardOutput.ReadToEnd()
+        $errorOutput = $process.StandardError.ReadToEnd()
+
+        # Wait for the process to exit
+        $process.WaitForExit()
+
+        # Get the exit code
+        $exitCode = $process.ExitCode
+
+        # Restore original location
+        Set-Location -Path $currentLocation
+
+        # Output the verification results
+        if (-not [string]::IsNullOrEmpty($output)) {
+            Write-Log -Message "Verification output: $output"
+        }
+
+        if (-not [string]::IsNullOrEmpty($errorOutput)) {
+            Write-Log -Level Error -Message "Verification error output: $errorOutput"
+        }
+
+        # Check the exit code
+        if ($exitCode -ne 0) {
+            Write-Log -Level Error -Message "Migration verification failed with exit code: $exitCode"
+            return $false
+        }
+
+        Write-Log -Message "Migration verification completed successfully"
+        return $true
+    }
+    catch {
+        # Restore original location in case of error
+        Set-Location -Path $currentLocation
+
+        Write-Log -Level Error -Message "Failed to verify migration: $_"
+        return $false
+    }
+}
+
 # Function to run the migration executable
 function Invoke-Migration {
     [CmdletBinding()]
     param()
 
     $exePath = Get-MigrationExecutable
+    $migrationFolderPath = Join-Path -Path $InstallationFolder -ChildPath $SubFolder
+
     Write-Log -Message "Using migration executable: $exePath"
 
-    # Prepare arguments based on migration direction
-    $arguments = @()
+    # Prepare command based on migration direction
+    $command = ""
     if ($Down) {
         Write-Log -Message "Running database migration DOWN"
-        # For running migrations down, we'll use '/down' as the parameter
-        # This is a common convention, but can be adjusted based on your specific exe
-        $arguments = @("down")
+        $command = "downFile:$MigrationFile"
     } else {
         Write-Log -Message "Running database migration UP"
-        # For running migrations up, we don't pass any parameters
+        $command = "up"
     }
 
     try {
@@ -117,10 +208,9 @@ function Invoke-Migration {
         $currentLocation = Get-Location
 
         # Change to migration folder for proper relative path resolution
-        $migrationFolderPath = Join-Path -Path $InstallationFolder -ChildPath $SubFolder
         Set-Location -Path $migrationFolderPath
 
-        Write-Log -Message "Starting migration process..."
+        Write-Log -Message "Starting migration process with command: $command"
 
         # Create a process object
         $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -129,11 +219,7 @@ function Invoke-Migration {
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
         $psi.CreateNoWindow = $true
-
-        # Add arguments if any
-        if ($arguments.Count -gt 0) {
-            $psi.Arguments = $arguments -join " "
-        }
+        $psi.Arguments = $command
 
         # Start the process
         $process = [System.Diagnostics.Process]::Start($psi)

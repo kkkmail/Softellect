@@ -1,5 +1,6 @@
 ﻿namespace Softellect.DistributedProcessing.PartitionerAdm
 
+open System.IO
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Primitives.PartitionerAdm
@@ -265,13 +266,41 @@ module Implementation =
         | Error e1, Error e2 -> e1 + e2 |> Error
 
 
+    /// Extracts the current migration state into a Migration.txt file in the specified folder
+    let extractMigration (migrationFolder: string) =
+        if not (Directory.Exists migrationFolder) then failwith $"Migration folder '{migrationFolder}' does not exist"
+
+        // Find all files matching migrationExePattern
+        let migrationExes =
+            Directory.GetFiles(migrationFolder, migrationExePattern)
+            |> Array.toList
+
+        match migrationExes with
+        | [] -> failwith $"No migration executable found in folder '{migrationFolder}'. Expected a file matching '{migrationExePattern}'."
+        | [exe] ->
+            let outputFilePath = Path.Combine(migrationFolder, migrationFile)
+            let commandLine = $"extract:{outputFilePath}"
+            Logger.logInfo $"Extracting current migration state using '{exe}' to '{outputFilePath}'"
+
+            match tryExecuteFile (FileName exe) commandLine with
+            | Ok exitCode ->
+                if exitCode = 0 then
+                    if File.Exists outputFilePath then Logger.logInfo $"Successfully extracted migration state to '{outputFilePath}'."
+                    else failwith $"Migration executable ran successfully but output file '{outputFilePath}' was not created."
+                else failwith $"Migration extraction failed with exit code {exitCode}."
+            | Error e -> failwith $"Failed to execute migration executable: %A{e}."
+        | _ -> failwith $"Multiple files matching '{migrationExePattern}' found in '{migrationFolder}'. Expected exactly one."
+
+
     let addWorkerNodeService (ctx : PartitionerAdmContext) (x : list<AddWorkerNodeServiceArgs>) =
         // Map the folder parameter
         match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
         | Some folder ->
             let migration =
                 match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.MigrationFolder migrationFolder -> Some migrationFolder | _ -> None) with
-                | Some migrationFolder -> [ AddSolverArgs.AdditionalFolder(migrationFolder, defaultMigrationsFolder) ]
+                | Some migrationFolder ->
+                    extractMigration migrationFolder
+                    [ AddSolverArgs.AdditionalFolder(migrationFolder, defaultMigrationsFolder) ]
                 | None -> []
 
             // Map the worker node service args to solver args
