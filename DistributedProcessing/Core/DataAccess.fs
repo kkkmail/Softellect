@@ -357,15 +357,19 @@ module WorkerNodeService =
                     exactlyOneOrDefault
                 }
 
+            let settingBinary = encryptionKey |> fromKey |> zip |> Some
+
             match existingKey with
             | Some setting ->
                 // Update the existing key
-                setting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+                setting.SettingBinary <- settingBinary
+                setting.CreatedOn <- DateTime.Now
             | None ->
                 // Insert a new key
                 let newSetting = ctx.Dbo.Setting.Create()
                 newSetting.SettingName <- keyName
-                newSetting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+                newSetting.SettingBinary <- settingBinary
+                newSetting.CreatedOn <- DateTime.Now
 
             // Save changes to the database
             ctx.SubmitUpdates()
