@@ -200,7 +200,7 @@ function Invoke-MigrationVerification {
     Write-Log -Message "Verifying migration: $migrationName"
 
     # Execute verification command
-    return Invoke-MigrationExecutable -Command "verifyFile:$MigrationFile" -OperationName "Migration verification"
+    return Invoke-MigrationExecutable -Command "verifyFile:$migrationFilePath" -OperationName "Migration verification"
 }
 
 # Function to run the migration executable
