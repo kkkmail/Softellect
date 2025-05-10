@@ -52,7 +52,7 @@ module Program =
 
         let saveSettings() =
             // let result = updateMessagingServiceAccessInfo data.messagingServiceAccessInfo
-            // Logger.logTrace $"saveSettings - result: '%A{result}'."
+            // Logger.logTrace (fun () -> $"saveSettings - result: '%A{result}'.")
             Logger.logCrit $"saveSettings - is not implemented yet."
             failwith "saveSettings - is not implemented yet."
 
@@ -63,7 +63,7 @@ module Program =
         let projectName = getProjectName() |> Some
 
         let postBuildHandler _ _ =
-            Logger.logTrace $"partitionerMain - argv: %A{argv}."
+            Logger.logTrace (fun () -> $"partitionerMain - argv: %A{argv}.")
             Logger.logInfo $"partitionerMain - partitionerServiceInfo: %A{partitionerServiceInfo}."
 
         let programData =

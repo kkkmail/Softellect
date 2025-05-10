@@ -150,7 +150,7 @@ module WorkerNodeService =
     ///     https://docs.microsoft.com/en-us/dotnet/core/porting/windows-compat-pack
     ///     https://stackoverflow.com/questions/33635852/how-do-i-convert-a-weakly-typed-icollection-into-an-f-list
     let checkRunning (r : CheckRunningRequest) : CheckRunningResult =
-        Logger.logTrace $"r: %A{r}"
+        Logger.logTrace (fun () -> $"r: %A{r}")
         try
             let wmiQuery = $"select Handle, CommandLine from Win32_Process where Caption = '{SolverRunnerName}'"
             let searcher = new ManagementObjectSearcher(wmiQuery)
@@ -166,7 +166,7 @@ module WorkerNodeService =
 
             match r with
             | AnyRunning f ->
-                Logger.logTrace $"f: %A{f}, processes: %A{processes}."
+                Logger.logTrace (fun () -> $"f: %A{f}, processes: %A{processes}.")
                 let v = $"{f.value}".ToLower()
 
                 let p =
@@ -180,7 +180,7 @@ module WorkerNodeService =
             | RunQueueRunning (no, q) ->
                 let v = $"{q.value}".ToLower()
                 let pid = ProcessId.getCurrentProcessId()
-                Logger.logTrace $"q: %A{q}, no: %A{no}, processes: %A{processes}."
+                Logger.logTrace (fun () -> $"q: %A{q}, no: %A{no}, processes: %A{processes}.")
 
                 let run() =
                     let p =
@@ -249,21 +249,21 @@ module WorkerNodeService =
 
 
     let private onFailedSolver (proxy : FailedSolverProxy) (q : RunQueueId) e=
-        Logger.logTrace $"onFailedSolver: %A{q}, error: '%A{e}'."
+        Logger.logTrace (fun () -> $"onFailedSolver: %A{q}, error: '%A{e}'.")
 
         let failRunQueue s =
-            Logger.logTrace $"Sending a message about failed to start: %A{q}."
+            Logger.logTrace (fun () -> $"Sending a message about failed to start: %A{q}.")
 
             let r =
                 (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
                 |> proxy.createMessage
                 |> proxy.saveMessage
 
-            Logger.logTrace $"Message sent with result: %A{r}."
+            Logger.logTrace (fun () -> $"Message sent with result: %A{r}.")
 
             match r with
             | Ok() ->
-                Logger.logTrace $"Deleting failed: %A{r}."
+                Logger.logTrace (fun () -> $"Deleting failed: %A{r}.")
                 proxy.deleteRunQueue q
             | Error e1 ->
                 Logger.logError $"Failed to delete %A{q} with: '%A{e1}', outer error: '%A{e}'."
@@ -273,7 +273,7 @@ module WorkerNodeService =
         | Ok r ->
             match r with
             | CanRetry ->
-                Logger.logTrace $"onFailedSolver: can retry for %A{q}."
+                Logger.logTrace (fun () -> $"onFailedSolver: can retry for %A{q}.")
                 Ok()
             | ExceededRetryCount v ->
                 let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
@@ -303,13 +303,13 @@ module WorkerNodeService =
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
     let tryRunSolverProcess o (p : TryRunSolverProcessProxy) n (q : RunQueueId) =
-        Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
+        Logger.logTrace (fun () -> $"tryRunSolverProcess: n = {n}, q = '%A{q}'.")
 
         let elevate f = f |> TryRunSolverProcessErr
         let toError e = e |> elevate |> Error
 
         let onFailedSolverStart result =
-            Logger.logTrace $"onFailedSolverStart: %A{q}, result: '%A{result}'."
+            Logger.logTrace (fun () -> $"onFailedSolverStart: %A{q}, result: '%A{result}'.")
 
             match result with
             | Ok r -> Ok r
@@ -319,7 +319,7 @@ module WorkerNodeService =
 
         match p.tryGetSolverLocation q with
         | Ok (Some folderName) ->
-            Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
+            Logger.logTrace (fun () -> $"tryRunSolverProcess: folderName = '{folderName}'.")
             match tryGetSolverFullName folderName with
             | fileName, Ok e ->
                 let run() =
@@ -336,7 +336,7 @@ module WorkerNodeService =
 
                     match ea with
                     | Ok (exeName, args) ->
-                        Logger.logTrace $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                        Logger.logTrace (fun () -> $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'.")
 
                         try
                             // Uncomment temporarily when testing failed solver start.
@@ -362,7 +362,7 @@ module WorkerNodeService =
                             then
                                 p.PriorityClass <- ProcessPriorityClass.Idle
                                 let processId = p.Id |> ProcessId
-                                Logger.logTrace $"Started: {p.ProcessName} with pid: {processId}."
+                                Logger.logTrace (fun () -> $"Started: {p.ProcessName} with pid: {processId}.")
                                 Ok processId
                             else
                                 Logger.logError $"Failed to start process: {fileName}."
@@ -377,7 +377,7 @@ module WorkerNodeService =
                 match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
                 | CanRun ->
                     let r = run()
-                    Logger.logTrace $"About to call onFailedSolverStart '%A{r}'."
+                    Logger.logTrace (fun () -> $"About to call onFailedSolverStart '%A{r}'.")
                     onFailedSolverStart r
                 | e ->
                     Logger.logWarn $"Can't run %A{q}: %A{e}."
@@ -440,7 +440,7 @@ module WorkerNodeService =
     let private deleteSolverFolder solverFolder =
         match deleteFolderRecursive solverFolder with
         | Ok () ->
-            Logger.logTrace $"deleteSolverFolder: deleted '%A{solverFolder}'."
+            Logger.logTrace (fun () -> $"deleteSolverFolder: deleted '%A{solverFolder}'.")
             Ok()
         | Error e ->
             Logger.logError $"deleteSolverFolder: failed to delete '%A{solverFolder}' with error: '%A{e}'."

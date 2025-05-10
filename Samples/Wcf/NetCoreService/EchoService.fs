@@ -29,9 +29,9 @@ module EchoService =
             with
 
             member _.echo text =
-                Logger.logTrace $"Received %s{text} from client!"
+                Logger.logTrace (fun () -> $"Received %s{text} from client!")
                 text
 
             member _.complexEcho text =
-                Logger.logTrace $"Received %s{text.text} from client!"
+                Logger.logTrace (fun () -> $"Received %s{text.text} from client!")
                 text.text

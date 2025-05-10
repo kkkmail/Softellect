@@ -71,7 +71,7 @@ module Core =
                         let directory = DirectoryInfo(folderPath)
 
                         for file in directory.GetFiles() |> Array.sortBy _.Name do
-                            Logger.logTrace $"Adding file: '%A{file.FullName}' to archive folder: '{archiveFolder}'."
+                            Logger.logTrace (fun () -> $"Adding file: '%A{file.FullName}' to archive folder: '{archiveFolder}'.")
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
                             entry.LastWriteTime <- file.LastWriteTime
@@ -129,7 +129,7 @@ module Core =
 
                             // Add all files in the current directory
                             for file in directory.GetFiles() |> Array.sortBy _.Name do
-                                Logger.logTrace $"Adding file: '%A{file.FullName}' to archive folder: '{archiveBasePath}'."
+                                Logger.logTrace (fun () -> $"Adding file: '%A{file.FullName}' to archive folder: '{archiveBasePath}'.")
                                 let entryName = Path.Combine(archiveBasePath, file.Name)
                                 addFileToArchive file.FullName entryName
 
@@ -216,7 +216,7 @@ module Core =
         JsonSerializerSettings(
             Formatting = Formatting.Indented,
             ContractResolver = CamelCasePropertyNamesContractResolver(),
-            Converters = [| new Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
+            Converters = [| Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
 
     let jsonSerialize t = JsonConvert.SerializeObject(t, jsonSettings)
     let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T>(s, jsonSettings)
@@ -274,7 +274,7 @@ module Core =
             Ok b
         with
         | e ->
-            Logger.logTrace $"trySerialize: Exception: '%A{e}'."
+            Logger.logTrace (fun () -> $"trySerialize: Exception: '%A{e}'.")
             e |> SerializationExn |> Error
 
 
@@ -327,7 +327,7 @@ module Core =
 
 
     /// http://www.fssnip.net/iW/title/Oneliner-generic-timing-function
-    let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
+    let time f a = Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
 
 
     let timedImplementation<'A> b name (f : unit -> 'A) =
@@ -593,7 +593,7 @@ module Core =
                             then Path.Combine(folder, fileName)
                             else Path.Combine(assemblyLocation, folder, fileName)
 
-                Logger.logTrace $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                Logger.logTrace (fun () -> $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'.")
                 FileName fullPath |> Ok
             with
             | e ->

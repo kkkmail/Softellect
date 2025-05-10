@@ -292,7 +292,7 @@ module AppSettings =
         member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
 
         member _.trySave() =
-            Logger.logTrace $"AppSettingsProvider.trySave - fileName: '%A{fileName}'."
+            Logger.logTrace (fun () -> $"AppSettingsProvider.trySave - fileName: '%A{fileName}'.")
             trySaveJson fileName jsonObj
 
         member _.trySaveAs newFileName = trySaveJson newFileName jsonObj

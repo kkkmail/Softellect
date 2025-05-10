@@ -245,7 +245,7 @@ module Crypto =
 
     /// Encrypts and signs the data.
     let tryEncryptAndSign (e : EncryptionType) data senderPrivateKey recipientPublicKey =
-        Logger.logTrace $"tryEncryptAndSign: Using %A{e}"
+        Logger.logTrace (fun () -> $"tryEncryptAndSign: Using %A{e}")
         let tryEncrypt = e.encryptor
 
         match signData data senderPrivateKey with
@@ -255,7 +255,7 @@ module Crypto =
 
     /// Decrypts and verifies the signed data.
     let tryDecryptAndVerify (e : EncryptionType) encryptedData recipientPrivateKey (senderPublicKey : PublicKey) =
-        Logger.logTrace $"tryDecryptAndVerify: Using %A{e}"
+        Logger.logTrace (fun () -> $"tryDecryptAndVerify: Using %A{e}")
         let tryDecrypt = e.decryptor
 
         match tryDecrypt encryptedData recipientPrivateKey with
@@ -275,7 +275,7 @@ module Crypto =
     /// Calculates SHA256 hash checksum of a byte array.
     let calculateSha256Hash (s: byte[]) =
         let byteSum = s |> Array.sumBy int64
-        Logger.logTrace $"Length: {s.Length}, byteSum: {byteSum}."
+        Logger.logTrace (fun () -> $"Length: {s.Length}, byteSum: {byteSum}.")
         use sha256 = SHA256.Create()
         let hash = sha256.ComputeHash(s)
         hash |> Array.map _.ToString("x2") |> String.concat "" |> Sha256Hash

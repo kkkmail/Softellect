@@ -470,6 +470,11 @@ module WorkerNodeService =
                             SolverHash = s.solverHash.value,
                             IsInactive = false,
 #endif
+
+#if WORKER_NODE
+                            // Worker Node has a separate isDeployed flag.
+                            IsDeployed = false,
+#endif
                             CreatedOn = DateTime.Now,
                             SolverData = (s.solverData |> Option.map (fun e -> e.value)))
 
@@ -899,7 +904,7 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalResultInfo (d : LocationInfo) (i : ResultInfo) =
-        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
+        Logger.logTrace (fun () -> $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'.")
         let location = { locationInfo = d; optionalFolder = i.optionalFolder }
 
         try
@@ -910,7 +915,7 @@ module WorkerNodeService =
                 | Ok fn ->
                     let folder = Path.GetDirectoryName fn.value
                     Directory.CreateDirectory(folder) |> ignore
-                    Logger.logTrace $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'."
+                    Logger.logTrace (fun () -> $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'.")
 
                     match c with
                     | TextResult h -> File.WriteAllText(fn.value, h.textContent)
@@ -1183,7 +1188,7 @@ module WorkerNodeService =
             let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryUndeploySolver.Invoke(``@solverId`` = solverId.value)
             let m = r.ResultSet |> mapIntScalar
-            Logger.logTrace $"Updated {m} row(s) for solverId: '{solverId}'."
+            Logger.logTrace (fun () -> $"Updated {m} row(s) for solverId: '{solverId}'.")
             // r.ResultSet |> bindIntScalar x solverId
             Ok() // Ignore the result as we don't care about it here.
 
@@ -1381,7 +1386,7 @@ module WorkerNodeService =
         let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
         let g() =
-            Logger.logTrace $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
+            Logger.logTrace (fun () -> $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}.")
             let ctx = getDbContext getConnectionString
             let p = pd.toProgressData()
 

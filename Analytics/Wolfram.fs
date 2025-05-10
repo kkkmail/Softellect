@@ -278,44 +278,44 @@ module Wolfram =
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon' -linklaunch -linkprotocol tcp"
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon -logfile C:\\Temp\\mathkernel_{logId}.log' -linklaunch"
 
-                    Logger.logTrace $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
+                    Logger.logTrace (fun () -> $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'.")
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
-                    Logger.logTrace $"tryRunMathematicaScript - link created."
+                    Logger.logTrace (fun () -> $"tryRunMathematicaScript - link created.")
 
                     try
                         // Discard the initial kernel output.
                         link.WaitAndDiscardAnswer()
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.WaitAndDiscardAnswer() completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.WaitAndDiscardAnswer() completed.")
 
                         // Load the .m or .wl file as a script and run it.
                         // Wolfram wants "\\\\" for each "\\" in the path. Don't ask why.
                         let scriptCommand = $"<< \"%s{i.toWolframNotation()}\"" // Use "<< file.m" to load the script.
-                        Logger.logTrace $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'.")
                         link.Evaluate(scriptCommand)
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.Evaluate(scriptCommand) completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Evaluate(scriptCommand) completed.")
 
                         // Wait for the result of the evaluation.
                         link.WaitForAnswer() |> ignore
-                        Logger.logTrace "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
+                        Logger.logTrace (fun () -> "tryRunMathematicaScript - call to link.WaitForAnswer() completed.")
 
                         // Check for the output file in the output folder.
                         if File.Exists(o) then
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
                             link.Close() // Close the link when done.
-                            Logger.logTrace $"tryRunMathematicaScript: Completed successfully. Loaded {fileBytes.Length} bytes."
+                            Logger.logTrace (fun () -> $"tryRunMathematicaScript: Completed successfully. Loaded {fileBytes.Length} bytes.")
                             Ok fileBytes
                         else
                             // If the output file is not found, return an error.
                             link.Close()
-                            Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                            Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Close() completed.")
                             let message = $"Output file '{o}' is not found."
                             Logger.logError message
                             Error message
                     with
                     | ex ->
                         link.Close()
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Close() completed.")
                         let message = $"An error occurred during Wolfram evaluation: {ex.Message}"
                         Logger.logError message
                         Error message

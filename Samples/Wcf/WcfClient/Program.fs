@@ -4,7 +4,6 @@ open System
 open System.Threading
 
 open Softellect.Sys.Logging
-open Softellect.Wcf.Common
 open Softellect.Samples.Wcf.ServiceInfo.EchoWcfServiceInfo
 open Softellect.Samples.Wcf.Client.EchoWcfClient
 
@@ -29,11 +28,11 @@ module Program =
 
         while true do
             try
-                Logger.logTrace $"Connecting using: %s{url}"
+                Logger.logTrace (fun () -> $"Connecting using: %s{url}")
                 let result = "Abcd" |> service.echo
-                Logger.logTrace $"%A{result}"
+                Logger.logTrace (fun () -> $"%A{result}")
                 let result1 = createEchoMessage() |> service.complexEcho
-                Logger.logTrace $"%A{result1}"
+                Logger.logTrace (fun () -> $"%A{result1}")
             with
             | e -> Logger.logError $"Exception: %A{e}"
 

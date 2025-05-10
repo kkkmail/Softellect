@@ -128,7 +128,7 @@ module DataAccess =
 
 
     let saveMessage<'D> (v: MessagingDataVersion) (m: Message<'D>) =
-        Logger.logTrace $"saveMessage: %A{m.messageDataInfo}"
+        Logger.logTrace (fun () -> $"saveMessage: %A{m.messageDataInfo}")
         let elevate e = e |> SaveMessageErr
         let toError e = e |> CannotSaveMessageErr |> elevate
         let fromDbError e = e |> SaveMessageDbErr |> elevate
@@ -162,7 +162,7 @@ module DataAccess =
 
                 try
                     ctx.SubmitUpdates()
-                    Logger.logTrace $"saveMessage: messageId %A{m.messageDataInfo.messageId} inserted."
+                    Logger.logTrace (fun () -> $"saveMessage: messageId %A{m.messageDataInfo.messageId} inserted.")
                     Ok()
                 with
                 | ex ->
@@ -170,12 +170,12 @@ module DataAccess =
                     Error <| elevate (SaveMessageDbErr (DbExn ex))
 
         let result = tryDbFun fromDbError g
-        Logger.logTrace $"saveMessage: %A{m.messageDataInfo}, result: %A{result}."
+        Logger.logTrace (fun () -> $"saveMessage: %A{m.messageDataInfo}, result: %A{result}.")
         result
 
 
     let deleteMessage (messageId : MessageId) =
-        Logger.logTrace $"deleteMessage: %A{messageId}"
+        Logger.logTrace (fun () -> $"deleteMessage: %A{messageId}")
         let elevate e = e |> DeleteMessageErr
         let toError e = e |> CannotDeleteMessageErr |> elevate
         let fromDbError e = e |> DeleteMessageDbErr |> elevate
@@ -186,7 +186,7 @@ module DataAccess =
             r.ResultSet |> bindIntScalar toError messageId
 
         let result = tryDbFun fromDbError g
-        Logger.logTrace $"deleteMessage: %A{messageId}, result: %A{result}."
+        Logger.logTrace (fun () -> $"deleteMessage: %A{messageId}, result: %A{result}.")
         result
 
 

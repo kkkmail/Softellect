@@ -97,7 +97,7 @@ module Program =
 
 
     let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        Logger.logTrace $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
+        Logger.logTrace (fun () -> $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'.")
 
         let charts =
             match c |> List.tryHead with
@@ -149,7 +149,7 @@ module Program =
                     }
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>
-                Logger.logTrace "Calling solverRunnerMain..."
+                Logger.logTrace (fun () -> "Calling solverRunnerMain...")
                 solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->

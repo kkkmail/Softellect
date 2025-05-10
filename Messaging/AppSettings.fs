@@ -41,11 +41,11 @@ module AppSettings =
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             let s = m.serviceAccessInfo
-            Logger.logTrace $"updateMessagingSettings - s: '{s}'."
+            Logger.logTrace (fun () -> $"updateMessagingSettings - s: '{s}'.")
             let v = s.serialize()
-            Logger.logTrace $"updateMessagingSettings - v: '{v}'."
+            Logger.logTrace (fun () -> $"updateMessagingSettings - v: '{v}'.")
             let result = provider.trySet messagingServiceAccessInfoKey v
-            Logger.logTrace $"updateMessagingSettings - result: '%A{result}'."
+            Logger.logTrace (fun () -> $"updateMessagingSettings - result: '%A{result}'.")
             provider.trySet expirationTimeInMinutesKey (int m.expirationTime.TotalMinutes) |> ignore
             provider.trySave() |> Rop.bindError toErr
         | Error e ->

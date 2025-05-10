@@ -38,26 +38,26 @@ module WorkerNode =
         let currentBuildNumber = BuildNumber.currentBuildNumber
         let proxy = i.workerNodeProxy
         let solverLocation = getSolverLocation i.workerNodeServiceInfo.workerNodeLocalInto s.solverName
-        Logger.logTrace $"tryDeploySolver: %A{s.solverId}, %A{s.solverName}, solverLocation: '{solverLocation.value}'."
+        Logger.logTrace (fun () -> $"tryDeploySolver: %A{s.solverId}, %A{s.solverName}, solverLocation: '{solverLocation.value}'.")
         let toError e = e |> TryDeploySolverErr |> Error
 
         let install() =
             match proxy.reinstallWorkerNodeService solverLocation (getAssemblyLocation()) with
             | Ok() ->
-                Logger.logTrace $"Worker node service reinstalled from location: '{solverLocation.value}'."
+                Logger.logTrace (fun () -> $"Worker node service reinstalled from location: '{solverLocation.value}'.")
                 Ok()
             | Error e -> Error e
 
         let deploy install =
             match proxy.deleteSolverFolder solverLocation with
             | Ok () ->
-                Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' folder deleted."
+                Logger.logTrace (fun () -> $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' folder deleted.")
                 match proxy.unpackSolver solverLocation s with
                 | Ok () ->
-                    Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' unpacked."
+                    Logger.logTrace (fun () -> $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' unpacked.")
                     match proxy.copyAppSettings solverLocation with
                     | Ok() ->
-                        Logger.logTrace $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied."
+                        Logger.logTrace (fun () -> $"Solver %A{s.solverId}, solverLocation: '{solverLocation.value}' appsettings copied.")
                         match proxy.setSolverDeployed s.solverId with
                         | Ok() -> install()
                         | Error e -> Error e
@@ -71,7 +71,7 @@ module WorkerNode =
             let result =
                 match proxy.checkSolverRunning s.solverName with
                 | CanRun ->
-                    Logger.logTrace $"Solver %A{s.solverId} is not running. Proceeding with deployment."
+                    Logger.logTrace (fun () -> $"Solver %A{s.solverId} is not running. Proceeding with deployment.")
                     deploy (fun () -> Ok())
                 | TooManyRunning n ->
                     Logger.logWarn $"Cannot deploy because there are {n} solvers %A{s.solverName} running."
@@ -90,19 +90,19 @@ module WorkerNode =
 
             match deploy install with
             | Ok () ->
-                Logger.logTrace $"Checking build number..."
+                Logger.logTrace (fun () -> $"Checking build number...")
 
                 match proxy.tryGetWorkerNodeReinstallationInfo() with
                 | Ok (Some r) ->
                     match r = currentBuildNumber with
                     | true ->
-                        Logger.logTrace $"Worker node service already reinstalled. Build number: %A{r}. Notifying Partitioner."
+                        Logger.logTrace (fun () -> $"Worker node service already reinstalled. Build number: %A{r}. Notifying Partitioner.")
                         Ok() |> notify // Already installed current build number.
                     | false ->
-                        Logger.logTrace $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}."
+                        Logger.logTrace (fun () -> $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}.")
                         Ok() // Do not notify as reinstallation has not been performed yet.
                 | Ok None ->
-                    Logger.logTrace $"Worker node service does not have registered build number, current build number %A{currentBuildNumber}."
+                    Logger.logTrace (fun () -> $"Worker node service does not have registered build number, current build number %A{currentBuildNumber}.")
                     Ok() // Do not notify as reinstallation has not been performed yet.
                 | Error e ->
                     Logger.logError $"Error getting worker node reinstallation info: %A{e}."
@@ -117,20 +117,20 @@ module WorkerNode =
         let proxy = i.workerNodeProxy
 
         let notify result =
-            Logger.logTrace $"notifyOfReinstallation: %A{currentBuildNumber}, result: %A{result}."
+            Logger.logTrace (fun () -> $"notifyOfReinstallation: %A{currentBuildNumber}, result: %A{result}.")
             notifyOfSolverDeployment i SolverId.workerNodeServiceId result
 
         let update() =
-            Logger.logTrace $"notifyOfReinstallation: saving build number %A{currentBuildNumber}."
+            Logger.logTrace (fun () -> $"notifyOfReinstallation: saving build number %A{currentBuildNumber}.")
             proxy.trySaveWorkerNodeReinstallationInfo currentBuildNumber
 
         match proxy.tryGetWorkerNodeReinstallationInfo() with
         | Ok (Some r) ->
-            Logger.logTrace $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}."
+            Logger.logTrace (fun () -> $"Worker node service registered build number: %A{r}, current build number %A{currentBuildNumber}.")
 
             match r = currentBuildNumber with
             | true ->
-                Logger.logTrace $"Worker node service already reinstalled. Build number: %A{r}."
+                Logger.logTrace (fun () -> $"Worker node service already reinstalled. Build number: %A{r}.")
                 Ok() // Already reinstalled and notified.
             | false -> update() |> notify
         | Ok None -> update() |> notify
@@ -153,10 +153,10 @@ module WorkerNode =
 
 
     let startSolvers (i : WorkerNodeRunnerContext) numberOfCores =
-        Logger.logTrace "startSolvers: Starting."
+        Logger.logTrace (fun () -> "startSolvers: Starting.")
         match i.workerNodeProxy.loadAllNotStartedRunQueueId i.workerNodeServiceInfo.workerNodeLocalInto.lastErrMinAgo with
         | Ok m ->
-            Logger.logTrace $"startSolvers: m = '%A{m}'."
+            Logger.logTrace (fun () -> $"startSolvers: m = '%A{m}'.")
             m
             |> List.map (i.workerNodeProxy.tryRunSolverProcess i.workerNodeProxy.tryRunSolverProcessProxy numberOfCores)
             |> List.map (fun e -> match e with | Ok _ -> Ok() | Error e -> Error e) // The solvers will store their PIDs in the database.
@@ -184,32 +184,32 @@ module WorkerNode =
 
 
     let onProcessMessage (i : WorkerNodeRunnerContext) (m : DistributedProcessingMessage) =
-        Logger.logTrace $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}, info: '{m.messageData.getInfo()}'."
+        Logger.logTrace (fun () -> $"onProcessMessage: Starting. messageId: {m.messageDataInfo.messageId}, info: '{m.messageData.getInfo()}'.")
         let proxy = i.workerNodeProxy
 
         match m.messageData with
         | UserMsg (WorkerNodeMsg x) ->
             match x with
             | RunModelWrkMsg (r, s, d) ->
-                Logger.logTrace $"    onProcessMessage: runQueueId: '{r}'."
+                Logger.logTrace (fun () -> $"    onProcessMessage: runQueueId: '{r}'.")
 
                 match proxy.saveModelData r s d with
                 | Ok() ->
-                    Logger.logTrace $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK."
+                    Logger.logTrace (fun () -> $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '%A{r}' - OK.")
                     Ok()
                 | Error e ->
-                    Logger.logError $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}."
+                    Logger.logError (fun () -> $"    onProcessMessage: saveWorkerNodeRunModelData with runQueueId: '{r}' ERROR: %A{e}.")
                     let e1 = OnProcessMessageErr (CannotSaveModelDataErr (m.messageDataInfo.messageId, r))
                     e1 + e |> Error
             | CancelRunWrkMsg q ->
-                Logger.logTrace $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}'."
+                Logger.logTrace (fun () -> $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}'.")
                 let result = q ||> proxy.requestCancellation
                 Logger.logInfo $"    onProcessMessage: CancelRunWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
                 result
             | RequestResultsWrkMsg q ->
-                Logger.logTrace $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}'."
+                Logger.logTrace (fun () -> $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}'.")
                 let result = q ||> proxy.notifyOfResults
-                Logger.logTrace $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'."
+                Logger.logTrace (fun () -> $"    onProcessMessage: RequestResultsWrkMsg with runQueueId: '%A{q}' - result: '%A{result}'.")
                 result
             | UpdateSolverWrkMsg e ->
                 match proxy.tryDecryptSolver e (m.messageDataInfo.sender |> PartitionerId) with

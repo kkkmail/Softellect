@@ -360,7 +360,7 @@ module Implementation =
         let addError = addError TryCancelRunQueueRunnerErr
         let toError = toError TryCancelRunQueueRunnerErr
 
-        Logger.logTrace $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
+        Logger.logTrace (fun () -> $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'.")
 
         match ctx.partitionerAdmProxy.tryLoadRunQueue q with
         | Ok (Some r) ->

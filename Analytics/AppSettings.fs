@@ -46,9 +46,9 @@ module AppSettings =
             let w = appSettingsProvider.getWolframParams()
 
             if save then
-                Logger.logTrace $"loadWolframParams - w = %A{w}."
+                Logger.logTrace (fun () -> $"loadWolframParams - w = %A{w}.")
                 match appSettingsProvider.trySave() with
-                | Ok () -> Logger.logTrace $"loadWolframParams - saved."
+                | Ok () -> Logger.logTrace (fun () -> $"loadWolframParams - saved.")
                 | Error e -> Logger.logError $"loadWolframParams - error: %A{e}."
             w
         | Error e ->

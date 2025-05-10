@@ -27,7 +27,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        Logger.logTrace (sprintf "%s" ("http Echo(\"Hello\") => " + channel.echo("Hello")))
+        Logger.logTrace (fun () -> $"""http Echo("Hello") => {channel.echo "Hello"}""")
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -35,7 +35,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        Logger.logTrace (sprintf "%s" ("net.tcp Echo(\"Hello\") => " + channel.echo("Hello")))
+        Logger.logTrace (fun () -> $"""net.tcp Echo("Hello") => {channel.echo "Hello"}""")
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -44,7 +44,7 @@ module Program =
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
-        Logger.logTrace (sprintf "%s" ("http EchoMessage(\"Complex Hello\") => " + channel.complexEcho(createEchoMessage())))
+        Logger.logTrace (fun() -> $"""http EchoMessage("Complex Hello") => {channel.complexEcho (createEchoMessage())}""")
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
@@ -75,7 +75,7 @@ module Program =
         let bodyContentBytes = utf8Encoder.GetBytes(soapEnvelopeContent)
 
          //Create the web request.
-        let webRequest = System.Net.WebRequest.Create(new Uri(basicHttpEndPointAddress))
+        let webRequest = System.Net.WebRequest.Create(Uri(basicHttpEndPointAddress))
         do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
         webRequest.ContentType <- "text/xml"
         webRequest.Method <- "POST"
@@ -89,7 +89,7 @@ module Program =
         use responseStream = webRequest.GetResponse().GetResponseStream()
         use responseReader = new StreamReader(responseStream)
         let soapResponse = responseReader.ReadToEnd()
-        Logger.logTrace (sprintf "%s" ("Http SOAP Response: " + soapResponse))
+        Logger.logTrace (fun () -> $"""Http SOAP Response: {soapResponse}""")
         ()
 
 

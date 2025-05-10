@@ -120,7 +120,7 @@ module Client =
 
 
     let private tryTransmitMessages transmitter =
-        // Logger.logTrace "tryTransmitMessages: starting..."
+        // Logger.logTrace (fun () -> "tryTransmitMessages: starting...")
         let rec doTryTransmit x c =
             match x with
             | [] -> Ok()
@@ -165,18 +165,18 @@ module Client =
 
 
     let private trySendSingleMessage (proxy : TrySendSingleMessageProxy<'D, 'E>) =
-        Logger.logTrace "trySendSingleMessage: starting..."
+        Logger.logTrace (fun () -> "trySendSingleMessage: starting...")
         match proxy.tryPickOutgoingMessage() with
         | Ok None ->
-            Logger.logTrace "trySendSingleMessage: No messages to send."
+            Logger.logTrace (fun () -> "trySendSingleMessage: No messages to send.")
             Ok None
         | Ok (Some m) ->
-            Logger.logTrace $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'."
+            Logger.logTrace (fun () -> $"trySendSingleMessage: Sending message: '%A{m.messageDataInfo}'.")
             match proxy.sendMessage m with
             | Ok() ->
                 match proxy.tryDeleteMessage m.messageDataInfo.messageId with
                 | Ok() ->
-                    Logger.logTrace $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent."
+                    Logger.logTrace (fun () -> $"trySendSingleMessage: Message: '%A{m.messageDataInfo}' sent.")
                     m.messageData |> proxy.getMessageSize |> Some |> Ok
                 | Error e ->
                     Logger.logError $"trySendSingleMessage: Failed to delete message: '%A{m.messageDataInfo}'."
@@ -323,7 +323,7 @@ module Client =
 
         // Tries to process a single (first) message (if any) using a given message processor f.
         let onTryProcessMessage (f : Message<'D> -> Result<unit, MessagingError>) =
-            Logger.logTrace $"onTryProcessMessage - starting, callCount = {callCount}."
+            Logger.logTrace (fun () -> $"onTryProcessMessage - starting, callCount = {callCount}.")
 
             let retVal =
                 if incrementCount() = 0
@@ -331,7 +331,7 @@ module Client =
                     match proxy.tryPickIncomingMessage() with
                     | Ok (Some m) ->
                         try
-                            Logger.logTrace $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}."
+                            Logger.logTrace (fun () -> $"onTryProcessMessage - Processing message: %A{m.messageDataInfo}.")
                             let r = f m
 
                             match proxy.tryDeleteMessage m.messageDataInfo.messageId with
@@ -352,12 +352,12 @@ module Client =
             | Some e, true -> Logger.logError $"%A{e}"
             | _ -> ()
 
-            Logger.logTrace $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}."
+            Logger.logTrace (fun () -> $"onTryProcessMessage - callCount = {callCount}, retVal = %A{retVal}.")
             retVal
 
         // Tries to process all incoming messages but no more than max number of messages (w.maxMessages) in one batch.
         let onProcessMessages (f : Message<'D> -> MessagingUnitResult) : MessagingUnitResult =
-            Logger.logTrace "onProcessMessages - Starting..."
+            Logger.logTrace (fun () -> "onProcessMessages - Starting...")
             let elevate e = e |> OnGetMessagesErr
             let addError f e = ((elevate f) + e) |> Error
             let toError e = e |> elevate |> Error
@@ -375,7 +375,7 @@ module Client =
                     | BusyProcessing -> toError BusyProcessingErr
 
             let result = doFold [for _ in 1..maxNumberOfMessages -> ()] (Ok())
-            Logger.logTrace $"onProcessMessages - result = %A{result}."
+            Logger.logTrace (fun () -> $"onProcessMessages - result = %A{result}.")
             result
 
         interface IMessageProcessor<'D> with

@@ -19,11 +19,11 @@ module EchoWcfService =
             }
 
         let echoImpl (m : string) : UnitResult =
-            Logger.logTrace $"Simple message: %A{m}"
+            Logger.logTrace (fun () -> $"Simple message: %A{m}")
             Ok()
 
         let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
-            Logger.logTrace $"Complex message: %A{m}"
+            Logger.logTrace (fun () -> $"Complex message: %A{m}")
             m |> getReply |> Ok
 
         interface IEchoService with
