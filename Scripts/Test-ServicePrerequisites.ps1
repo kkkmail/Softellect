@@ -18,7 +18,16 @@ function Test-ServicePrerequisites {
         [string]$MigrateScriptName = "Migrate-Database.ps1",
 
         [Parameter(Mandatory = $false)]
-        [bool]$PerformMigration = $false
+        [bool]$PerformMigration = $false,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SubFolder = "Migrations",
+
+        [Parameter(Mandatory = $false)]
+        [string]$MigrationFile = "Migration.txt",
+
+        [Parameter(Mandatory = $false)]
+        [string]$ExeName = ""
     )
 
     $prerequisites = $true
@@ -54,9 +63,18 @@ function Test-ServicePrerequisites {
     }
 
     # Check if migrate script exists in installation folder when PerformMigration is true
-    if ($PerformMigration -and -not (Test-Path -Path (Join-Path -Path $InstallationFolder -ChildPath $MigrateScriptName))) {
-        Write-ServiceLog -Level Error -Message "Migrate script '$MigrateScriptName' not found in installation folder."
-        $prerequisites = $false
+    if ($PerformMigration) {
+        # Check migrate script
+        if (-not (Test-Path -Path (Join-Path -Path $InstallationFolder -ChildPath $MigrateScriptName))) {
+            Write-ServiceLog -Level Error -Message "Migrate script '$MigrateScriptName' not found in installation folder."
+            $prerequisites = $false
+        }
+
+        # Run migration prereqs check including verification
+        if (-not (Test-MigrationPrerequisites -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
+            Write-ServiceLog -Level Error -Message "Migration prerequisites check failed."
+            $prerequisites = $false
+        }
     }
 
     return $prerequisites

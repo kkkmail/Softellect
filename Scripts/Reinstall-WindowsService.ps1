@@ -19,7 +19,16 @@ param (
     [bool]$PerformMigration = $false,
 
     [Parameter(Mandatory = $false)]
-    [string[]]$FilesToKeep = @("appsettings.json")
+    [string[]]$FilesToKeep = @("appsettings.json"),
+
+    [Parameter(Mandatory = $false)]
+    [string]$SubFolder = "Migrations",
+
+    [Parameter(Mandatory = $false)]
+    [string]$MigrationFile = "Migration.txt",
+
+    [Parameter(Mandatory = $false)]
+    [string]$ExeName = ""
 )
 
 # Get the script directory
@@ -65,7 +74,7 @@ try {
 
     # Check prerequisites
     Write-ServiceLog -Message "Checking prerequisites..."
-    if (-not (Test-ServicePrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -InstallScriptName $InstallScriptName -UninstallScriptName $UninstallScriptName -MigrateScriptName $MigrateScriptName -PerformMigration $PerformMigration)) {
+    if (-not (Test-ServicePrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -InstallScriptName $InstallScriptName -UninstallScriptName $UninstallScriptName -MigrateScriptName $MigrateScriptName -PerformMigration $PerformMigration -SubFolder $SubFolder -MigrationFile $MigrationFile -ExeName $ExeName)) {
         Write-ServiceLog -Level Error -Message "Prerequisites check failed. Terminating."
         Exit 1
     }
@@ -94,7 +103,7 @@ try {
     # Migrate database if PerformMigration is true
     if ($PerformMigration) {
         Write-ServiceLog -Message "Performing database migration..."
-        $migrateResult = Invoke-DatabaseMigration -InstallationFolder $InstallationFolder
+        $migrateResult = Invoke-DatabaseMigration -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
 
         if (-not $migrateResult) {
             Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to migrate database." -InstallationFolder $InstallationFolder -MigrationPerformed $false -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
