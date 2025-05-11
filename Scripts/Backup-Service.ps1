@@ -1,3 +1,4 @@
+# Function to create backup of service
 function Backup-Service {
     [CmdletBinding()]
     param(

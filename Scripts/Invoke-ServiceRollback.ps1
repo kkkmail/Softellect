@@ -1,24 +1,25 @@
+# Function to perform rollback in case of failure
 function Invoke-ServiceRollback {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$BackupFolder,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
 
         [Parameter(Mandatory = $true)]
         [string]$FailureReason,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [bool]$MigrationPerformed = $false,
-        
+
         [Parameter(Mandatory = $false)]
         [bool]$PerformMigration = $false,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$InstallScriptName = "Install-WorkerNodeService.ps1"
     )

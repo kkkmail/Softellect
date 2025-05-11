@@ -1,9 +1,10 @@
+# Restore files from backup
 function Restore-ServiceFromBackup {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$BackupFolder,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder
     )

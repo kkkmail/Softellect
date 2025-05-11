@@ -1,18 +1,19 @@
+# Function to migrate database
 function Invoke-DatabaseMigration {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$SubFolder = "Migrations",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ExeName = "",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$MigrationFile = "Migration.txt",
-        
+
         [Parameter(Mandatory = $false)]
         [bool]$Down = $false
     )

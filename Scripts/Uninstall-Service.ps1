@@ -1,9 +1,10 @@
+# Function to stop and uninstall service
 function Uninstall-Service {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$UninstallScriptName = "Uninstall-WorkerNodeService.ps1"
     )

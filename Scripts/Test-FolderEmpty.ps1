@@ -1,3 +1,4 @@
+# Function to verify service folder is empty
 function Test-FolderEmpty {
     [CmdletBinding()]
     param(

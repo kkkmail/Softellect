@@ -1,15 +1,16 @@
+# Function to verify the migration in the file
 function Invoke-MigrationVerification {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$SubFolder = "Migrations",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ExeName = "",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$MigrationFile = "Migration.txt"
     )

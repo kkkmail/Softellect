@@ -1,3 +1,4 @@
+# Function to validate input folders and scripts
 function Test-ServicePrerequisites {
     [CmdletBinding()]
     param(

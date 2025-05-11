@@ -1,7 +1,8 @@
+# Checks that we have the necessary permissions to run the script.
 function Test-AdminRights {
     [CmdletBinding()]
     param()
-    
+
     # Check if we have the necessary permissions
     $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
     $hasAdminRights = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)

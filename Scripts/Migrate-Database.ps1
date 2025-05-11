@@ -1,3 +1,4 @@
+# Perform database migration
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
@@ -44,7 +45,7 @@ try {
     # Verify the migration
     Write-ServiceLog -Message "Verifying migration file..."
     $verificationResult = Invoke-MigrationVerification -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
-    
+
     if (-not $verificationResult) {
         Write-ServiceLog -Level Error -Message "Migration verification failed. Terminating."
         Exit 1

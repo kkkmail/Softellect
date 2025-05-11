@@ -1,9 +1,10 @@
+# Function to install service
 function Install-Service {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$InstallScriptName = "Install-WorkerNodeService.ps1"
     )

@@ -1,12 +1,13 @@
+# Function to copy files to keep from backup to service folder
 function Copy-FilesToKeep {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$BackupFolder,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string[]]$FilesToKeep = @("appsettings.json")
     )

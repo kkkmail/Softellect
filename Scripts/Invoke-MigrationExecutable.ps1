@@ -1,3 +1,4 @@
+# Function to execute migration executable with given command
 function Invoke-MigrationExecutable {
     [CmdletBinding()]
     param (
@@ -6,13 +7,13 @@ function Invoke-MigrationExecutable {
 
         [Parameter(Mandatory = $true)]
         [string]$OperationName,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$SubFolder = "Migrations",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ExeName = ""
     )

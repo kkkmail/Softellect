@@ -1,3 +1,4 @@
+# Function to clean up temporary backup folder
 function Remove-BackupFolder {
     [CmdletBinding()]
     param(

@@ -1,12 +1,13 @@
+# Function to find the migration executable
 function Get-MigrationExecutable {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $false)]
         [string]$SubFolder = "Migrations",
-        
+
         [Parameter(Mandatory = $false)]
         [string]$ExeName = ""
     )

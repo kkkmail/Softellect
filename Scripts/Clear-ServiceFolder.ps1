@@ -1,3 +1,4 @@
+# Function to clear service folder
 function Clear-ServiceFolder {
     [CmdletBinding()]
     param(
@@ -37,7 +38,7 @@ function Clear-ServiceFolder {
 
             # Now get all folders (from deepest to root)
             $folders = Get-ChildItem -Path $ServiceFolder -Recurse -Directory |
-                        Sort-Object -Property FullName -Descending
+                    Sort-Object -Property FullName -Descending
 
             # Delete each folder individually (from deepest to shallowest)
             foreach ($folder in $folders) {

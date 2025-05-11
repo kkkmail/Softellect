@@ -1,9 +1,10 @@
+# Function to copy files from installation folder to service folder
 function Copy-InstallationToService {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
-        
+
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder
     )

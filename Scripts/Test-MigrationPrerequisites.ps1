@@ -1,3 +1,4 @@
+# Function to verify migration prerequisites
 function Test-MigrationPrerequisites {
     [CmdletBinding()]
     param(
@@ -52,6 +53,11 @@ function Test-MigrationPrerequisites {
     $migrationFilePath = Join-Path -Path $migrationFolderPath -ChildPath $MigrationFile
     if (-not (Test-Path -Path $migrationFilePath -PathType Leaf)) {
         Write-ServiceLog -Level Error -Message "Migration file '$MigrationFile' not found in the migration folder."
+        return $false
+    }
+
+    # Verify the migration in the file
+    if (-not (Invoke-MigrationVerification -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
         return $false
     }
 
