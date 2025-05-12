@@ -26,8 +26,48 @@ try {
     Set-Acl $serviceConfigManagerKey $acl
     Write-Host "Successfully granted LOCAL SERVICE access to service configuration"
 
-    # Grant SCM permissions through group membership
-    Write-Host "Granting service control manager permissions through group membership"
+    # Grant SCM permissions using sc.exe
+    $sid = (New-Object System.Security.Principal.NTAccount($localServiceName)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    
+    # Get current SCM permissions
+    $currentSddl = (& sc.exe sdshow scmanager).Trim()
+    
+    if ($currentSddl) {
+        # Check if LOCAL SERVICE already has permissions
+        if ($currentSddl -notlike "*$sid*") {
+            # Add LOCAL SERVICE permissions to SCM
+            # This SDDL grants all service management permissions:
+            # CC = Connect to Service Control Manager
+            # LC = Enumerate services
+            # SW = Enumerate dependent services
+            # LO = Query service's lock status
+            # RP = Start service
+            # WP = Stop service
+            # DT = Pause/continue service
+            # CR = Create service
+            # SD = Delete service
+            # RC = Query service's configuration
+            # WO = Change service's configuration
+            $newAce = "(A;;CCLCSWLORPWPDTCRSDRCWDWO;;;$sid)"
+            
+            # Insert LOCAL SERVICE permissions
+            if ($currentSddl -match "D:") {
+                $newSddl = $currentSddl -replace "D:", "D:$newAce"
+            } else {
+                $newSddl = "D:$newAce" + $currentSddl
+            }
+            
+            # Apply new SCM permissions
+            $result = & sc.exe sdset scmanager $newSddl
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "Successfully granted service control manager permissions to LOCAL SERVICE"
+            } else {
+                Write-Warning "Failed to set SCM permissions. Exit code: $LASTEXITCODE"
+            }
+        } else {
+            Write-Host "LOCAL SERVICE already has SCM permissions"
+        }
+    }
 
 } catch {
     Write-Warning "Failed to grant access to service configuration: $_"
@@ -55,7 +95,7 @@ if (Test-Path -Path $FolderPath) {
     Write-Error "Folder path does not exist: $FolderPath"
 }
 
-# Check if the group exists before trying to add the account to it
+# Add LOCAL SERVICE to important groups
 $groups = @("Performance Log Users", "Performance Monitor Users", "Administrators")
 foreach ($groupName in $groups) {
     try {
@@ -89,7 +129,7 @@ foreach ($groupName in $groups) {
     }
 }
 
-# Simplified approach to grant service logon right
+# Grant service logon right using secedit
 try {
     # Create a minimal policy file with just the service logon right
     $tempInf = [System.IO.Path]::GetTempFileName() + ".inf"

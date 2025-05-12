@@ -1,4 +1,8 @@
 param([string] $messagingDataVersion = "")
 
-. ./WorkerNodeFunctions.ps1
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
+
+. "$scriptDirectory\WorkerNodeFunctions.ps1"
+
 StopWorkerNodeService -messagingDataVersion $messagingDataVersion

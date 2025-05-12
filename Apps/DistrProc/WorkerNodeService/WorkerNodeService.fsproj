@@ -24,72 +24,11 @@
     <ItemGroup>
         <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="..\..\..\Scripts\Backup-Service.ps1" Link="Backup-Service.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Clear-ServiceFolder.ps1" Link="Clear-ServiceFolder.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Copy-FilesToKeep.ps1" Link="Copy-FilesToKeep.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Copy-InstallationToService.ps1" Link="Copy-InstallationToService.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Get-MigrationExecutable.ps1" Link="Get-MigrationExecutable.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Install-Service.ps1" Link="Install-Service.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Invoke-DatabaseMigration.ps1" Link="Invoke-DatabaseMigration.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Invoke-MigrationExecutable.ps1" Link="Invoke-MigrationExecutable.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Invoke-MigrationVerification.ps1" Link="Invoke-MigrationVerification.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Invoke-ServiceRollback.ps1" Link="Invoke-ServiceRollback.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Migrate-Database.ps1" Link="Migrate-Database.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Reinstall-WindowsService.ps1" Link="Reinstall-WindowsService.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Remove-BackupFolder.ps1" Link="Remove-BackupFolder.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Restore-ServiceFromBackup.ps1" Link="Restore-ServiceFromBackup.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Test-AdminRights.ps1" Link="Test-AdminRights.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Test-FolderEmpty.ps1" Link="Test-FolderEmpty.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Test-MigrationPrerequisites.ps1" Link="Test-MigrationPrerequisites.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Test-ServicePrerequisites.ps1" Link="Test-ServicePrerequisites.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Uninstall-Service.ps1" Link="Uninstall-Service.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Scripts\Write-ServiceLog.ps1" Link="Write-ServiceLog.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
+
+        <None Include="..\..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\..\Grant-LocalServicePermissions.ps1" Link="Grant-LocalServicePermissions.ps1">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
+
         <None Include="..\..\..\Grant-WorkerNodeServicePermissions.ps1" Link="Grant-WorkerNodeServicePermissions.ps1">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

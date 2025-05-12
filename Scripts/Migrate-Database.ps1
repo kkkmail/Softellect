@@ -18,7 +18,7 @@ param (
 )
 
 # Get the script directory
-$scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$scriptDirectory = $PSScriptRoot
 
 # Dot-source required functions
 . "$scriptDirectory\Write-ServiceLog.ps1"

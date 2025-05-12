@@ -32,7 +32,9 @@ function Invoke-DatabaseMigration {
     $operationName = ""
     if ($Down) {
         $operationName = "Database migration DOWN"
-        $command = "downFile:$MigrationFile"
+        $migrationFolderPath = Join-Path -Path $InstallationFolder -ChildPath $SubFolder
+        $migrationFilePath = Join-Path -Path $migrationFolderPath -ChildPath $MigrationFile
+        $command = "downFile:$migrationFilePath"
         Write-ServiceLog -Message "Running database migration DOWN"
     } else {
         $operationName = "Database migration UP"
