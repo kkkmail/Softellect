@@ -1,4 +1,8 @@
-param([string] $messagingDataVersion = "", [string] $versionNumber = "")
+param([string] $Login = "NT AUTHORITY\LOCAL SERVICE", [string] $Password = "")
 
-. ./PartitionerFunctions.ps1
-InstallPartitionerService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
+
+. "$scriptDirectory\PartitionerFunctions.ps1"
+
+InstallPartitionerService -Login $Login -Password $Password

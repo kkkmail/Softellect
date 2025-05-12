@@ -1,4 +1,7 @@
 param([string] $messagingDataVersion = "")
 
-. ./PartitionerFunctions.ps1
-UninstallPartitionergService -messagingDataVersion $messagingDataVersion
+$scriptDirectory = $PSScriptRoot
+
+. "$scriptDirectory\PartitionerFunctions.ps1"
+
+UninstallPartitionerService -messagingDataVersion $messagingDataVersion

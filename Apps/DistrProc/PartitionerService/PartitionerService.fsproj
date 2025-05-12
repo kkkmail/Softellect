@@ -25,16 +25,49 @@
         <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
 
+        <None Include="..\..\..\Scripts\Get-BinaryPathName.ps1" Link="Get-BinaryPathName.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Get-Description.ps1" Link="Get-Description.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Get-ServiceName.ps1" Link="Get-ServiceName.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Get-ValueOrDefault.ps1" Link="Get-ValueOrDefault.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\Scripts\Install-DistributedService.ps1" Link="Install-DistributedService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\..\Scripts\Uninstall-DistributedService.ps1" Link="Uninstall-DistributedService.ps1">
+        <None Include="..\..\..\Scripts\Reinstall-WindowsService.ps1" Link="Reinstall-WindowsService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="..\..\..\Scripts\Start-DistributedService.ps1" Link="Start-DistributedService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\..\..\Scripts\Start-WindowsService.ps1" Link="Start-WindowsService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\..\Scripts\Stop-DistributedService.ps1" Link="Stop-DistributedService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Stop-WindowsService.ps1" Link="Stop-WindowsService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Uninstall-DistributedService.ps1" Link="Uninstall-DistributedService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Uninstall-ServiceWithScExe.ps1" Link="Uninstall-ServiceWithScExe.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Uninstall-ServiceWithWMI.ps1" Link="Uninstall-ServiceWithWMI.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Uninstall-ServiceWithDotNet.ps1" Link="Uninstall-ServiceWithDotNet.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Uninstall-WindowsService.ps1" Link="Uninstall-WindowsService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="..\..\..\Scripts\Write-ServiceLog.ps1" Link="Write-ServiceLog.ps1">

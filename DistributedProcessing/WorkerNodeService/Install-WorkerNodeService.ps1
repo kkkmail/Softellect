@@ -1,8 +1,8 @@
-param([string] $login = "NT AUTHORITY\LOCAL SERVICE", [string] $password = "")
+param([string] $Login = "NT AUTHORITY\LOCAL SERVICE", [string] $Password = "")
 
 # Get the directory of this script
 $scriptDirectory = $PSScriptRoot
 
 . "$scriptDirectory\WorkerNodeFunctions.ps1"
 
-InstallWorkerNodeService -login $login -password $password
+InstallWorkerNodeService -Login $Login -Password $Password

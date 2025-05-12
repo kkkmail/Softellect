@@ -12,6 +12,8 @@ function Uninstall-WindowsService {
     . "$scriptDirectory\Uninstall-ServiceWithWMI.ps1"
     . "$scriptDirectory\Uninstall-ServiceWithDotNet.ps1"
 
+    Write-ServiceLog -Message "Starting uninstallatiopn of service: $ServiceName..."
+
     Write-ServiceLog -Message "Attempting to stop service: $ServiceName..."
     $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
 
