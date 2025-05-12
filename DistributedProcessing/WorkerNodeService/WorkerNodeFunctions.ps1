@@ -12,15 +12,13 @@ $scriptDirectory = $PSScriptRoot
 . "$scriptDirectory\Stop-DistributedService.ps1"
 . "$scriptDirectory\Write-ServiceLog.ps1"
 
+$MessagingDataVersion = $global:messagingDataVersion
+$VersionNumber = $global:messagingDataVersion
+$ServiceName = $global:workerNodeServiceName
+
 function InstallWorkerNodeService {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = "",
-
-        [Parameter(Mandatory = $false)]
-        [string]$VersionNumber = "",
-
         [Parameter(Mandatory = $false)]
         [string]$Login = "NT AUTHORITY\LOCAL SERVICE",
 
@@ -31,12 +29,11 @@ function InstallWorkerNodeService {
     # Log function parameters
     Write-ServiceLog -Message "InstallWorkerNodeService - Parameters:" -Level "Info"
     Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
+    Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
     Write-ServiceLog -Message "  MessagingDataVersion = '$MessagingDataVersion'" -Level "Info"
     Write-ServiceLog -Message "  VersionNumber = '$VersionNumber'" -Level "Info"
-    Write-ServiceLog -Message "  global:workerNodeServiceName = '$global:workerNodeServiceName'" -Level "Info"
-    Write-ServiceLog -Message "  global:messagingDataVersion = '$global:messagingDataVersion'" -Level "Info"
 
-    Install-DistributedService -ServiceName $global:workerNodeServiceName -MessagingDataVersion $MessagingDataVersion -VersionNumber $VersionNumber -Login $Login -Password $Password
+    Install-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion -VersionNumber $VersionNumber -Login $Login -Password $Password
 }
 
 function UninstallWorkerNodeService {
@@ -46,7 +43,7 @@ function UninstallWorkerNodeService {
         [string]$MessagingDataVersion = ""
     )
 
-    Uninstall-DistributedService -ServiceName $global:workerNodeServiceName -MessagingDataVersion $MessagingDataVersion
+    Uninstall-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StartWorkerNodeService {
@@ -56,7 +53,7 @@ function StartWorkerNodeService {
         [string]$MessagingDataVersion = ""
     )
 
-    Start-DistributedService -ServiceName $global:workerNodeServiceName -MessagingDataVersion $MessagingDataVersion
+    Start-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StopWorkerNodeService {
@@ -66,5 +63,5 @@ function StopWorkerNodeService {
         [string]$MessagingDataVersion = ""
     )
 
-    Stop-DistributedService -ServiceName $global:workerNodeServiceName -MessagingDataVersion $MessagingDataVersion
+    Stop-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
