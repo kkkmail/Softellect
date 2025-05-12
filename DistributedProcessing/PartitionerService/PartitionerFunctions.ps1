@@ -1,5 +1,3 @@
-# We need partitionerServiceName but messagingDataVersion here.
-
 # Get the directory of this script
 $scriptDirectory = $PSScriptRoot
 
@@ -37,32 +35,24 @@ function InstallPartitionerService {
     Install-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion -VersionNumber $VersionNumber -Login $Login -Password $Password
 }
 
+
 function UninstallPartitionerService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Uninstall-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StartPartitionerService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Start-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StopPartitionerService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Stop-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }

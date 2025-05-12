@@ -38,30 +38,21 @@ function InstallWorkerNodeService {
 
 function UninstallWorkerNodeService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Uninstall-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StartWorkerNodeService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Start-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
 function StopWorkerNodeService {
     [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
-    )
+    param ()
 
     Stop-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
