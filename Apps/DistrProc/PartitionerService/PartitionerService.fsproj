@@ -24,9 +24,23 @@
     <ItemGroup>
         <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
         <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
+
+        <None Include="..\..\..\Scripts\Install-DistributedService.ps1" Link="Install-DistributedService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="..\..\..\Scripts\Uninstall-DistributedService.ps1" Link="Uninstall-DistributedService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Start-DistributedService.ps1" Link="Start-DistributedService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Stop-DistributedService.ps1" Link="Stop-DistributedService.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\..\..\Scripts\Write-ServiceLog.ps1" Link="Write-ServiceLog.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+
         <None Include="..\..\..\DistributedProcessing\PartitionerService\Install-PartitionerService.ps1" Link="Install-PartitionerService.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

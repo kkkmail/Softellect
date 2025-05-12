@@ -1,24 +1,68 @@
-. ./Functions.ps1
-. ./PartitionerVersionInfo.ps1
-. ./PartitionerServiceName.ps1
+# We need partitionerServiceName but messagingDataVersion here.
 
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
 
-function InstallPartitionerService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
-{
-    InstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+# Load individual function files using absolute paths
+. "$scriptDirectory\PartitionerVersionInfo.ps1"
+. "$scriptDirectory\PartitionerServiceName.ps1"
+
+. "$scriptDirectory\Install-DistributedService.ps1"
+. "$scriptDirectory\Uninstall-DistributedService.ps1"
+. "$scriptDirectory\Start-DistributedService.ps1"
+. "$scriptDirectory\Stop-DistributedService.ps1"
+. "$scriptDirectory\Write-ServiceLog.ps1"
+
+$MessagingDataVersion = $global:messagingDataVersion
+$VersionNumber = $global:messagingDataVersion
+$ServiceName = $global:partitionerServiceName
+
+function InstallPartitionerService {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$Login = "NT AUTHORITY\LOCAL SERVICE",
+
+        [Parameter(Mandatory = $false)]
+        [string]$Password = ""
+    )
+
+    # Log function parameters
+    Write-ServiceLog -Message "InstallPartitionerService - Parameters:" -Level "Info"
+    Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
+    Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
+    Write-ServiceLog -Message "  MessagingDataVersion = '$MessagingDataVersion'" -Level "Info"
+    Write-ServiceLog -Message "  VersionNumber = '$VersionNumber'" -Level "Info"
+
+    Install-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion -VersionNumber $VersionNumber -Login $Login -Password $Password
 }
 
-function UninstallPartitionergService([string] $messagingDataVersion = "")
-{
-    UninstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function UninstallPartitionerService {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$MessagingDataVersion = ""
+    )
+
+    Uninstall-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
-function StartPartitionerService([string] $messagingDataVersion = "")
-{
-    StartSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function StartPartitionerService {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$MessagingDataVersion = ""
+    )
+
+    Start-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }
 
-function StopPartitionerService([string] $messagingDataVersion = "")
-{
-    StopSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function StopPartitionerService {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$MessagingDataVersion = ""
+    )
+
+    Stop-DistributedService -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
 }

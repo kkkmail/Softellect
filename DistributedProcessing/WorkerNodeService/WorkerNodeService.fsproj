@@ -32,16 +32,12 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
+
+    <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="WorkerNodeVersionInfo.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="WorkerNodeServiceName.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="WorkerNodeFunctions.ps1" Pack="true" PackagePath="\">
+
+    <None Include="..\..\Grant-WorkerNodeServicePermissions.ps1" Link="Grant-WorkerNodeServicePermissions.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Install-WorkerNodeService.ps1" Pack="true" PackagePath="\">
@@ -54,6 +50,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Uninstall-WorkerNodeService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="WorkerNodeFunctions.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="WorkerNodeServiceName.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="WorkerNodeVersionInfo.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="appsettings.json">
