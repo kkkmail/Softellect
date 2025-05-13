@@ -2,20 +2,17 @@ function Get-Description {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName,
-
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = "",
-
-        [Parameter(Mandatory = $false)]
-        [string]$VersionNumber = ""
+        [string]$ServiceName
     )
 
     # Get the script directory and load dependencies
     $scriptDirectory = $PSScriptRoot
-    . "$scriptDirectory\Get-ValueOrDefault.ps1"
+    . "$scriptDirectory\BuildInfo.ps1"
+    . "$scriptDirectory\MessagingVersionInfo.ps1"
 
-    $MessagingDataVersion = Get-ValueOrDefault -Value $MessagingDataVersion -DefaultValue $global:messagingDataVersion
-    [string]$description = "$ServiceName, version $VersionNumber.$MessagingDataVersion"
+    $MessagingDataVersion = $global:messagingDataVersion
+    $VersionNumber = $global:buildNumber
+
+    [string]$description = "$ServiceName, version: $VersionNumber, messaging data version: $MessagingDataVersion."
     return $description
 }

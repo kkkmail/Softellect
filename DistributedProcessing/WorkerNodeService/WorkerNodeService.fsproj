@@ -32,6 +32,10 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    
+    <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
 
     <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -41,6 +45,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Install-WorkerNodeService.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Start-WorkerNodeService.ps1" Pack="true" PackagePath="\">
@@ -56,9 +63,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="WorkerNodeServiceName.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="WorkerNodeVersionInfo.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="appsettings.json">

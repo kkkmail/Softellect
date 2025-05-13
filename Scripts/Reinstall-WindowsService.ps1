@@ -48,6 +48,7 @@ function Reinstall-WindowsService {
         # Stop and uninstall the service if it exists
         Stop-WindowsService -ServiceName $ServiceName
         Uninstall-WindowsService -ServiceName $ServiceName
+        Write-ServiceLog -Message "Service: $ServiceName successfully stopped and uninstalled."
 
         # If password is empty, create a dummy one to allow having credentials for system accounts:
         #     NT AUTHORITY\LOCAL SERVICE
@@ -59,7 +60,10 @@ function Reinstall-WindowsService {
             $secpassword = ConvertTo-SecureString $Password -AsPlainText -Force
         }
 
+        Write-ServiceLog -Message "Password created for service: $ServiceName."
+
         $mycreds = New-Object System.Management.Automation.PSCredential ($Login, $secpassword)
+        Write-ServiceLog -Message "Credentials created for service: $ServiceName."
 
         # Creating Windows Service using all provided parameters.
         Write-ServiceLog -Message "Installing service: $ServiceName with user name: '$Login'..."

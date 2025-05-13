@@ -2,10 +2,7 @@ function Start-DistributedService {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName,
-
-        [Parameter(Mandatory = $false)]
-        [string]$MessagingDataVersion = ""
+        [string]$ServiceName
     )
 
     # Get the script directory and load dependencies
@@ -13,6 +10,6 @@ function Start-DistributedService {
     . "$scriptDirectory\Get-ServiceName.ps1"
     . "$scriptDirectory\Start-WindowsService.ps1"
 
-    [string] $windowsServiceName = Get-ServiceName -ServiceName $ServiceName -MessagingDataVersion $MessagingDataVersion
+    [string] $windowsServiceName = Get-ServiceName -ServiceName $ServiceName
     Start-WindowsService -ServiceName $windowsServiceName
 }

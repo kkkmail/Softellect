@@ -33,6 +33,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
+    <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+
     <None Include="..\..\Scripts\Get-BinaryPathName.ps1" Link="Get-BinaryPathName.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -40,9 +44,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\Scripts\Get-ServiceName.ps1" Link="Get-ServiceName.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Get-ValueOrDefault.ps1" Link="Get-ValueOrDefault.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\Scripts\Install-DistributedService.ps1" Link="Install-DistributedService.ps1">
@@ -82,6 +83,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
+    <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Install-PartitionerService.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -89,9 +93,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="PartitionerServiceName.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PartitionerVersionInfo.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Start-PartitionerService.ps1" Pack="true" PackagePath="\">
