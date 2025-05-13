@@ -32,22 +32,25 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    
-    <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+
+    <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
+    <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
 
-    <None Include="..\..\Grant-WorkerNodeServicePermissions.ps1" Link="Grant-WorkerNodeServicePermissions.ps1">
+    <None Include="Grant-WorkerNodeServicePermissions.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Install-WorkerNodeService.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+    <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Reinstall-WorkerNodeService.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Start-WorkerNodeService.ps1" Pack="true" PackagePath="\">
@@ -65,7 +68,7 @@
     <None Include="WorkerNodeServiceName.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Content Include="appsettings.json">
+    <Content Include="appsettings.json" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="..\..\log4net.config" Link="log4net.config">
