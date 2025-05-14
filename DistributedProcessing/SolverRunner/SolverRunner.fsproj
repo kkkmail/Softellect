@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.202.25</Version>
-    <PackageVersion>9.0.202.25</PackageVersion>
+    <Version>9.0.202.26</Version>
+    <PackageVersion>9.0.202.26</PackageVersion>
     <Description>Softellect Solver Runner ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>

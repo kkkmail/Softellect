@@ -35,6 +35,9 @@ let scriptDir = __SOURCE_DIRECTORY__
 // Path to the BuildInfo.fs file (relative to script location)
 let buildInfoPath = Path.Combine(scriptDir, "BuildInfo.fs")
 
+// Path to the BuildInfo.ps1 file (relative to script location)
+let buildInfoPsPath = Path.Combine(scriptDir, "BuildInfo.ps1")
+
 // Path to a lock file to prevent infinite loops
 let lockFilePath = Path.Combine(scriptDir, ".version-update-lock")
 
@@ -198,26 +201,58 @@ let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
 
                 if skipUpdate then
                     printfn $"Version in %s{projectFilePath} already up to date, no changes needed"
-                    true
+                    true, None
                 else
+                    // Update all version elements
+                    for element in versionElements do
+                        element.Value <- newVersion
 
-                // Update all version elements
-                for element in versionElements do
-                    element.Value <- newVersion
-
-                // Save changes
-                projectXml.Save(projectFilePath)
-                printfn $"Updated Version/PackageVersion to %s{newVersion} in %s{projectFilePath}"
-                true
+                    // Save changes
+                    projectXml.Save(projectFilePath)
+                    printfn $"Updated Version/PackageVersion to %s{newVersion} in %s{projectFilePath}"
+                    true, Some newVersion
             else
                 printfn $"Warning: Could not find Version or PackageVersion elements in %s{projectFilePath}"
-                false
+                false, None
         else
             printfn $"Warning: Project file %s{projectFilePath} not found"
-            false
+            false, None
     with
     | ex ->
         printfn $"Error updating project version in %s{projectFilePath}: %s{ex.Message}"
+        false, None
+
+/// Updates the BuildInfo.ps1 file with the version from Sys.fsproj
+let updatePowerShellBuildInfo (version: string) =
+    try
+        if File.Exists(buildInfoPsPath) then
+            // Read current content
+            let content = File.ReadAllText(buildInfoPsPath)
+
+            // Define regex pattern for the version string
+            let pattern = @"\[string\]\s+\$global:buildNumber\s+=\s+""([^""]+)"""
+            let regex = Regex(pattern)
+
+            // Find and update the version
+            let match' = regex.Match(content)
+            if match'.Success then
+                // Replace with the new version
+                let newContent = regex.Replace(content, $"[string] $$global:buildNumber = \"{version}\"")
+
+                // Write the updated content
+                File.WriteAllText(buildInfoPsPath, newContent)
+
+                printfn $"Updated BuildInfo.ps1 with version {version}"
+                true
+            else
+                printfn $"Error: Could not find version pattern in file {buildInfoPsPath}"
+                false
+        else
+            printfn $"Warning: BuildInfo.ps1 file not found at {buildInfoPsPath}"
+            false
+    with
+    | ex ->
+        printfn $"Error updating BuildInfo.ps1: {ex.Message}"
         false
 
 // Main execution
@@ -232,16 +267,34 @@ try
     // Increment build number once
     match incrementBuildNumber() with
     | Some newBuildNumber ->
+        // Keep track of Sys project version for PS1 update
+        let mutable sysProjectVersion = None
+
         // Update all project versions
         for (projectName, projectFileRelPath) in projectsToUpdate do
             printfn $"Processing project: %s{projectName}"
             let projectFilePath = Path.Combine(scriptDir, projectFileRelPath)
-            let success = updateProjectVersion projectFilePath newBuildNumber
+            let success, version = updateProjectVersion projectFilePath newBuildNumber
+
+            // Save Sys project version for PS1 update
+            if success && projectName = "Sys" && version.IsSome then
+                sysProjectVersion <- version
 
             if success then
                 printfn $"Successfully updated %s{projectName}"
             else
                 printfn $"Failed to update project version for %s{projectName}"
+
+        // Update the PowerShell BuildInfo file if we have a Sys version
+        match sysProjectVersion with
+        | Some version ->
+            let psUpdateSuccess = updatePowerShellBuildInfo version
+            if psUpdateSuccess then
+                printfn "Successfully updated BuildInfo.ps1"
+            else
+                printfn "Failed to update BuildInfo.ps1"
+        | None ->
+            printfn "Warning: Could not determine Sys project version, skipping BuildInfo.ps1 update"
 
     | None ->
         printfn "Failed to increment build number, skipping project updates"

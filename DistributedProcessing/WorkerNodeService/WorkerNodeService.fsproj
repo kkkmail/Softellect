@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.202.25</Version>
-    <PackageVersion>9.0.202.25</PackageVersion>
+    <Version>9.0.202.26</Version>
+    <PackageVersion>9.0.202.26</PackageVersion>
     <Description>Softellect WorkerNode Service ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -32,15 +32,12 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
     <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
     <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
     <None Include="Grant-WorkerNodeServicePermissions.ps1" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
