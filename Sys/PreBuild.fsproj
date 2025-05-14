@@ -24,7 +24,7 @@
     <None Include="IncrementBuildNumber.fsx" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="9.0.202" />
+    <PackageReference Update="FSharp.Core" Version="9.0.300" />
   </ItemGroup>
   <Target Name="IncrementBuildNumber" BeforeTargets="CoreCompile">
     <Exec Command="dotnet fsi $(ProjectDir)IncrementBuildNumber.fsx" />

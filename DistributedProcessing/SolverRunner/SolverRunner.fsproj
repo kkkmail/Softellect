@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.202.26</Version>
-    <PackageVersion>9.0.202.26</PackageVersion>
+    <Version>9.0.300.27</Version>
+    <PackageVersion>9.0.300.27</PackageVersion>
     <Description>Softellect Solver Runner ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -52,9 +52,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="alglib.net" Version="3.19.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
     <PackageReference Include="Softellect.OdePackInterop" Version="9.0.100.5" />
-    <PackageReference Update="FSharp.Core" Version="9.0.202" />
+    <PackageReference Update="FSharp.Core" Version="9.0.300" />
   </ItemGroup>
 </Project>
