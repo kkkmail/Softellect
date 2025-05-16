@@ -1,4 +1,5 @@
-param([string] $messagingDataVersion = "")
+$scriptDirectory = $PSScriptRoot
 
-. ./WorkerNodeFunctions.ps1
-StartWorkerNodeService -messagingDataVersion $messagingDataVersion
+. "$scriptDirectory\WorkerNodeFunctions.ps1"
+
+StartWorkerNodeService

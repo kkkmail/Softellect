@@ -22,48 +22,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
-        <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Install-WorkerNodeService.ps1" Link="Install-WorkerNodeService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Start-WorkerNodeService.ps1" Link="Start-WorkerNodeService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Stop-WorkerNodeService.ps1" Link="Stop-WorkerNodeService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\Uninstall-WorkerNodeService.ps1" Link="Uninstall-WorkerNodeService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeFunctions.ps1" Link="WorkerNodeFunctions.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeServiceName.ps1" Link="WorkerNodeServiceName.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeVersionInfo.ps1" Link="WorkerNodeVersionInfo.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Content Include="..\..\..\DistributedProcessing\WorkerNodeService\appsettings.json" Link="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
+        <PackageReference Update="FSharp.Core" Version="9.0.300" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
         <ProjectReference Include="..\..\..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj" />
-        <ProjectReference Include="..\..\..\MessagingService\MessagingService.fsproj" />
+        <ProjectReference Include="..\WorkerNodeAdm\WorkerNodeAdm.fsproj" />
     </ItemGroup>
 
 </Project>

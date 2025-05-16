@@ -41,7 +41,7 @@ module DataAccess =
                 defaultValue
             |> ConnectionString
 
-        // Logger.logTrace $"getConnectionString: r = %A{r}."
+        // Logger.logTrace (fun () -> $"getConnectionString: r = %A{r}.")
         r
 
 
@@ -94,7 +94,7 @@ module DataAccess =
     /// This function is mostly used to get the number of updated rows.
     let mapIntScalar (r : Common.SqlEntity[]) =
         r
-        |> Array.map(fun e -> Logger.logTrace $"mapIntScalar: '%A{e.ColumnValues}'.")
+        |> Array.map(fun e -> Logger.logTrace (fun () -> $"mapIntScalar: '%A{e.ColumnValues}'."))
         |> ignore
 
         let result =
@@ -105,7 +105,7 @@ module DataAccess =
             |> Array.tryHead
             |> Option.bind id
 
-        Logger.logTrace $"mapIntScalar: result = %A{result}."
+        Logger.logTrace (fun () -> $"mapIntScalar: result = %A{result}.")
         result
 
 

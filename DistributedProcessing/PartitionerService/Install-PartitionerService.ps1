@@ -1,4 +1,5 @@
-param([string] $messagingDataVersion = "", [string] $versionNumber = "")
+$scriptDirectory = $PSScriptRoot
 
-. ./PartitionerFunctions.ps1
-InstallPartitionerService -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+. "$scriptDirectory\PartitionerFunctions.ps1"
+
+InstallPartitionerService

@@ -41,9 +41,9 @@ module EchoMsgServiceInfo =
 
 
     let private tryDelete (source : MutableList<'T>) finder =
-        Logger.logTrace $"tryDelete: source had %A{source.Count} elements."
+        Logger.logTrace (fun () -> $"tryDelete: source had %A{source.Count} elements.")
         source.RemoveAll(fun e -> finder e) |> ignore
-        Logger.logTrace $"tryDelete: source now has %A{source.Count} elements."
+        Logger.logTrace (fun () -> $"tryDelete: source now has %A{source.Count} elements.")
         Ok()
 
 
@@ -53,7 +53,7 @@ module EchoMsgServiceInfo =
 
     let private save (source : MutableList<'T>) finder e =
         tryDelete source finder |> ignore
-        Logger.logTrace $"save: adding element %A{e} to source."
+        Logger.logTrace (fun () -> $"save: adding element %A{e} to source.")
         source.Add e
         Ok()
 
@@ -144,7 +144,7 @@ module EchoMsgServiceInfo =
         match messageProcessor.tryStart() with
         | Ok() ->
             while true do
-                Logger.logTrace $"Sending message to: %A{recipient}."
+                Logger.logTrace (fun () -> $"Sending message to: %A{recipient}.")
 
                 let m =
                     {
@@ -158,18 +158,18 @@ module EchoMsgServiceInfo =
                     }
 
                 let sendResult = messageProcessor.sendMessage m
-                Logger.logTrace $"Sent with: %A{sendResult}."
+                Logger.logTrace (fun () -> $"Sent with: %A{sendResult}.")
 
-                Logger.logTrace "Checking messages."
+                Logger.logTrace (fun () -> "Checking messages.")
 
                 let checkMessage() =
                     match messageProcessor.tryProcessMessage (fun _ -> Ok()) with
-                    | ProcessedSuccessfully -> Logger.logTrace $"    Received message: %A{m}."
-                    | ProcessedWithError e -> Logger.logError $"    Received message: %A{m} with error e: %A{e}."
+                    | ProcessedSuccessfully -> Logger.logTrace (fun () -> $"    Received message: %A{m}.")
+                    | ProcessedWithError e -> Logger.logError (fun () -> $"    Received message: %A{m} with error e: %A{e}.")
                     | ProcessedWithFailedToRemove e -> Logger.logError $"    Received message: %A{m} with error: %A{e}."
                     | FailedToProcess e -> Logger.logError $"    Error e: %A{e}"
-                    | NothingToDo -> Logger.logTrace "    Nothing to do..."
-                    | BusyProcessing -> Logger.logTrace "    Busy processing..."
+                    | NothingToDo -> Logger.logTrace (fun () -> "    Nothing to do...")
+                    | BusyProcessing -> Logger.logTrace (fun () -> "    Busy processing...")
 
                 let _ = [for _ in 1..5 -> ()] |> List.map checkMessage
 

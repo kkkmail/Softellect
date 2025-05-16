@@ -1,24 +1,46 @@
-. ./Functions.ps1
-. ./PartitionerVersionInfo.ps1
-. ./PartitionerServiceName.ps1
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
 
+# Load individual function files using absolute paths
+. "$scriptDirectory\PartitionerServiceName.ps1"
 
-function InstallPartitionerService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
-{
-    InstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+. "$scriptDirectory\Install-DistributedService.ps1"
+. "$scriptDirectory\Uninstall-DistributedService.ps1"
+. "$scriptDirectory\Start-DistributedService.ps1"
+. "$scriptDirectory\Stop-DistributedService.ps1"
+. "$scriptDirectory\Write-ServiceLog.ps1"
+
+$ServiceName = $global:partitionerServiceName
+
+function InstallPartitionerService {
+    [CmdletBinding()]
+    param ()
+
+    # Log function parameters
+    Write-ServiceLog -Message "InstallPartitionerService - Parameters:" -Level "Info"
+    Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
+    Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
+
+    Install-DistributedService -ServiceName $ServiceName
 }
 
-function UninstallPartitionergService([string] $messagingDataVersion = "")
-{
-    UninstallSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function UninstallPartitionerService {
+    [CmdletBinding()]
+    param ()
+
+    Uninstall-DistributedService -ServiceName $ServiceName
 }
 
-function StartPartitionerService([string] $messagingDataVersion = "")
-{
-    StartSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function StartPartitionerService {
+    [CmdletBinding()]
+    param ()
+
+    Start-DistributedService -ServiceName $ServiceName
 }
 
-function StopPartitionerService([string] $messagingDataVersion = "")
-{
-    StopSvc -serviceName $global:partitionerServiceName -messagingDataVersion $messagingDataVersion
+function StopPartitionerService {
+    [CmdletBinding()]
+    param ()
+
+    Stop-DistributedService -ServiceName $ServiceName
 }

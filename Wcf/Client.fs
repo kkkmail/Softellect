@@ -75,10 +75,10 @@ module Client =
     /// Tries getting a Wcf Client.
     let tryGetWcfService<'T> t url =
         try
-            Logger.logTrace $"tryGetWcfService - t: '%A{t}', url: '%A{url}'."
+            Logger.logTrace (fun () -> $"tryGetWcfService - t: '%A{t}', url: '%A{url}'.")
             let binding = getBinding t
             let address = EndpointAddress(url)
-            Logger.logTrace $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'."
+            Logger.logTrace (fun () -> $"tryGetWcfService - binding: '%A{binding}', address: '%A{address}'.")
 
             let channelFactory =
                 match binding with
@@ -97,13 +97,13 @@ module Client =
             match t() with
             | Ok (service, factoryCloser) ->
                 try
-                    Logger.logTrace "tryCommunicate: Checking channel state..."
+                    Logger.logTrace (fun () -> "tryCommunicate: Checking channel state...")
                     let channel = (box service) :?> IClientChannel
-                    Logger.logTrace $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'."
+                    Logger.logTrace (fun () -> $"tryCommunicate: Channel State: '%A{channel.State}', Via: '%A{channel.Via}', RemoteAddress: '%A{channel.RemoteAddress}'.")
 
                     match trySerialize wcfSerializationFormat a with
                     | Ok b ->
-                        Logger.logTrace $"tryCommunicate: Calling service at %A{DateTime.Now}..."
+                        Logger.logTrace (fun () -> $"tryCommunicate: Calling service at %A{DateTime.Now}...")
                         let d = c service b
                         channel.Close()
                         factoryCloser()

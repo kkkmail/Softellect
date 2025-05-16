@@ -126,7 +126,7 @@ module Partitioner =
 
 
     let private updateProgress (proxy : PartitionerProxy) (i : ProgressUpdateInfo) =
-        Logger.logTrace $"updateProgress: i = %A{i}"
+        Logger.logTrace (fun () -> $"updateProgress: i = %A{i}")
         let addError = addError UpdateProgressRunnerErr
         let toError = toError UpdateProgressRunnerErr
 
@@ -135,7 +135,7 @@ module Partitioner =
             let q1 = { q with progressData = i.progressData }
 
             let upsert q2 =
-                Logger.logTrace $"updateProgress.upsert: Upserting %A{i} into %A{q2}."
+                Logger.logTrace (fun () -> $"updateProgress.upsert: Upserting %A{i} into %A{q2}.")
 
                 match proxy.upsertRunQueue q2 with
                 | Ok() -> Ok()
@@ -224,7 +224,7 @@ module Partitioner =
 
 
     let onProcessMessage (proxy : PartitionerProxy) (m : DistributedProcessingMessage) =
-        Logger.logTrace $"onProcessMessage: Starting. messageId: '{m.messageDataInfo.messageId}', info: '{(m.messageData.getInfo())}'."
+        Logger.logTrace (fun () -> $"onProcessMessage: Starting. messageId: '{m.messageDataInfo.messageId}', info: '{(m.messageData.getInfo())}'.")
 
         match m.messageData with
         | UserMsg (PartitionerMsg x) ->

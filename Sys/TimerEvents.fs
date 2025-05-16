@@ -103,7 +103,7 @@ module TimerEvents =
         let g() =
             try
                 match i.timerProxy.eventHandler() with
-                | Ok() -> Logger.logTrace $"TimerEventHandler: %A{i.timerEventInfo} - succeeded."
+                | Ok() -> Logger.logTrace (fun () -> $"TimerEventHandler: %A{i.timerEventInfo} - succeeded.")
                 | Error e -> Logger.logError $"%A{i.timerEventInfo} - FAILED, error: %A{e}"
             with
             | e ->

@@ -26,13 +26,13 @@ module Service =
 
     type MessagingService<'D> (d : MessagingServiceData<'D>) =
         let count = Interlocked.Increment(&messagingServiceCount)
-        do Logger.logTrace $"MessagingService: count = {count}."
+        do Logger.logTrace (fun () -> $"MessagingService: count = {count}.")
         let proxy = d.messagingServiceProxy
         let mutable started = false
         let mutable eventHandler = None
 
         let removeExpiredMessagesImpl () =
-            //Logger.logTrace "removeExpiredMessages was called."
+            //Logger.logTrace (fun () -> "removeExpiredMessages was called.")
             proxy.deleteExpiredMessages d.messagingServiceAccessInfo.expirationTime
 
         let createEventHandlers () =
@@ -78,23 +78,23 @@ module Service =
 
         interface IMessagingService<'D> with
             member _.getVersion() =
-                Logger.logTrace "getVersion was called."
+                Logger.logTrace (fun () -> "getVersion was called.")
                 Ok d.messagingServiceAccessInfo.messagingDataVersion
 
             member _.sendMessage m =
-                Logger.logTrace $"sendMessage was called with message: %A{m}."
+                Logger.logTrace (fun () -> $"sendMessage was called with message: %A{m}.")
                 let result = proxy.saveMessage m
-                Logger.logTrace $"sendMessage - result: %A{result}."
+                Logger.logTrace (fun () -> $"sendMessage - result: %A{result}.")
                 result
 
             member _.tryPickMessage n =
-                Logger.logTrace $"tryPeekMessage was called with MessagingClientId: %A{n}."
+                Logger.logTrace (fun () -> $"tryPeekMessage was called with MessagingClientId: %A{n}.")
                 let result = proxy.tryPickMessage n
-                Logger.logTrace $"tryPickMessage - result: %A{result}."
+                Logger.logTrace (fun () -> $"tryPickMessage - result: %A{result}.")
                 result
 
             member _.tryDeleteFromServer (_, m) =
-                //Logger.logTrace "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m
+                //Logger.logTrace (fun () -> "tryDeleteFromServer was called with MessagingClientId: %A, MessageId: %A." n m)
                 proxy.deleteMessage m
 
         interface IHostedService with
@@ -123,7 +123,7 @@ module Service =
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type MessagingWcfService<'D> (m : IMessagingService<'D>) =
         let count = Interlocked.Increment(&serviceCount)
-        do Logger.logTrace $"MessagingWcfService: count = {count}."
+        do Logger.logTrace (fun () -> $"MessagingWcfService: count = {count}.")
 
         let toGetVersionError f = f |> GetVersionSvcWcfErr |> GetVersionSvcErr
         let toSendMessageError f = f |> MsgWcfErr |> MessageDeliveryErr

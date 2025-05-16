@@ -40,13 +40,16 @@ module Errors =
 
 
     type FileError =
+        | ExecuteFileExn of exn
         | GeneralFileExn of exn
         | GetFolderNameExn of exn
         | GetFileNameExn of exn
         | FileNotFoundErr of FileName
         | ReadFileExn of exn
         | WriteFileExn of exn
-        | DeleteFileExn of exn
+        | DeleteFileExn of FileName * exn
+        | DeleteFolderExn of FolderName * exn
+        | DeleteFolderErr of FolderName
         | GetObjectIdsExn of exn
         | TryEnsureFolderExistsExn of exn
         | TryGetFullFileNameExn of exn
@@ -99,7 +102,13 @@ module Errors =
         | WindowsApiDisallowedOperationErr of string
 
 
+    type FFMpegError =
+        | FFMpegExn of exn
+        | FFMpegCallErr of int
+
+
     type SysError =
+        | AggregateErr of List<SysError>
         | JsonParseErr of JsonParseError
         | SerializationErr of SerializationError
         | ServiceInstallerErr of ServiceInstallerError
@@ -108,3 +117,14 @@ module Errors =
         | TimerEventErr of TimerEventError
         | CryptoErr of CryptoError
         | WindowsApiErr of WindowsApiError
+        | FFMpegErr of FFMpegError
+
+        static member addError a b =
+            match a, b with
+            | AggregateErr x, AggregateErr y -> AggregateErr (x @ y)
+            | AggregateErr x, _ -> AggregateErr (x @ [ b ])
+            | _, AggregateErr y -> AggregateErr ([ a ] @ y)
+            | _ -> AggregateErr [ a; b ]
+
+        static member (+) (a, b) = SysError.addError a b
+        member a.add b = a + b

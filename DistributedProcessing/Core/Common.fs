@@ -26,6 +26,18 @@ module Common =
     let defaultMaxRetries = 3
 
 
+    /// Default database migration subfolder.
+    let defaultMigrationsFolder = "Migrations"
+
+
+    /// Migration executable name pattern.
+    let migrationExePattern = "*Migrations*.exe"
+
+
+    /// A file to contain the migration information.
+    let migrationFile = "Migration.txt"
+
+
     /// The model data can be huge (100+ MB in JSON / XML), so we compress it before storing it in the database.
     /// Zipped binary carries about 100X compression ratio over not compressed JSON / XML.
     let private serializationFormat = BinaryZippedFormat
@@ -210,12 +222,18 @@ module Common =
 
         member this.value = let (SolverId v) = this in v
 
+        /// A special solver id for the worker node service.
+        static member workerNodeServiceId = Guid("28B87A76-ECC0-4C9B-B73A-50EAC06B46E3") |> SolverId
+
 
     type SolverName =
         | SolverName of string
 
         member this.value = let (SolverName v) = this in v
         member this.folderName = this.value |> FolderName
+
+        /// A special solver name for the worker node service.
+        static member workerNodeServiceName = "WorkerNodeService" |> SolverName
 
 
     type SolverData =
@@ -410,9 +428,9 @@ module Common =
 
 
     type SolverType =
-        | OdeSolver
-        | FredholmSolver
-        | UserDefinedSolver
+        | OdeSolverType
+        | FredholmSolverType
+        | UserDefinedSolverType
 
 
     type ProgressUpdateInfo<'P> =
@@ -541,3 +559,21 @@ module Common =
     type RetryState =
         | CanRetry
         | ExceededRetryCount of RetryInto
+
+
+    type SettingName =
+        | SettingName of string
+
+        member this.value = let (SettingName v) = this in v
+
+
+    type Setting =
+        {
+            settingName : SettingName
+            settingBool : bool option
+            settingGuid : Guid option
+            settingLong : int64 option
+            settingText : string option
+            settingBinary : byte[] option
+            createdOn : DateTime
+        }

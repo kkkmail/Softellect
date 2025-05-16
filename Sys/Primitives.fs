@@ -42,6 +42,13 @@ module Primitives =
     let minutesPerHour = 60<minute/hour>
 
 
+    type BuildNumber =
+        | BuildNumber of int
+
+        member this.value = let (BuildNumber v) = this in v
+        static member currentBuildNumber = BuildNumber BuildInfo.BuildNumber
+
+
     /// IPAddress cannot be serialized by FsPickler.
     /// Extend when needed.
     type IpAddress =
@@ -109,6 +116,13 @@ module Primitives =
         static member defaultSolverOutputLocation = FolderName "C:\\Temp"
 
 
+    type FolderMapping =
+        {
+            FolderPath: FolderName
+            ArchiveSubfolder: string
+        }
+
+
     /// File extensions used in the system.
     type FileExtension =
         | FileExtension of string
@@ -153,6 +167,13 @@ module Primitives =
             | e ->
                 Logger.logError $"FileName.tryGetExtension - Exception: %A{e}."
                 None
+
+
+    /// An encapsulation of a file suffix used to construct a file name.
+    type FileSuffix =
+        | FileSuffix of string
+
+        member this.value = let (FileSuffix v) = this in v
 
 
     type VersionNumber =

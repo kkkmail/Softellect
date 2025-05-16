@@ -110,11 +110,13 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || MODEL_GENERATOR || SOLVER_RUNNER || WORKERNODE_ADM || WORKER_NODE
 
-    let private partitionerPublicKeySetting = "395A5869D3104C2D9FD87421B501D622"
-    let private partitionerPrivateKeySetting = "EC25A0A61B4749938BC80B833BBA351D"
+    let private partitionerPublicKeySettingName = SettingName "395A5869D3104C2D9FD87421B501D622"
+    let private partitionerPrivateKeySettingName = SettingName "EC25A0A61B4749938BC80B833BBA351D"
 
-    let private workerNodePublicKeySetting = "BD95B603BBFB4C5BB8C74A4C36783EB3"
-    let private workerNodePrivateKeySetting = "A895B4BDC0354D6EB776D26DD30BA943"
+    let private workerNodePublicKeySettingName = SettingName "BD95B603BBFB4C5BB8C74A4C36783EB3"
+    let private workerNodePrivateKeySettingName = SettingName "A895B4BDC0354D6EB776D26DD30BA943"
+
+    let private workerNodeReinstallationSettingName = SettingName "54A1D285-7F93-4242-9E07-E99F90CBF898"
 
 #endif
 
@@ -165,6 +167,7 @@ module WorkerNodeService =
     type private RunQueueEntity = DbContext.``dbo.RunQueueEntity``
     type private MessageEntity = DbContext.``dbo.MessageEntity``
     type private ModelDataEntity = DbContext.``dbo.ModelDataEntity``
+    type private SettingEntity = DbContext.``dbo.SettingEntity``
 
 #endif
 
@@ -221,8 +224,102 @@ module WorkerNodeService =
 
 #if PARTITIONER || PARTITIONER_ADM || WORKERNODE_ADM || WORKER_NODE
 
+    let tryLoadSetting (SettingName keyName) =
+        let elevate e = e |> TryLoadSettingErr
+        let fromDbError e = e |> TryLoadSettingDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let x =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match x with
+            | Some v ->
+                {
+                    settingName = v.SettingName |> SettingName
+                    settingBool = v.SettingBool
+                    settingGuid = v.SettingGuid
+                    settingLong = v.SettingLong
+                    settingText = v.SettingText
+                    settingBinary = v.SettingBinary
+                    createdOn = v.CreatedOn
+                }
+                |> Some
+                |> Ok
+            | None -> Ok None
+
+        tryDbFun fromDbError g
+
+
+    /// TODO kk:20250422 - Mysterious error when trying to save an setting.
+    ///     Implicit conversion from data type nvarchar to varbinary(max) is not allowed. Use the CONVERT function to run this query.
+    let trySaveSetting (setting : Setting) =
+        let elevate e = e |> TrySaveSettingErr
+        let fromDbError e = e |> TrySaveSettingDbErr |> elevate
+
+        let update (existing : bool) (s : SettingEntity) =
+            if not existing then s.SettingName <- setting.settingName.value
+            s.SettingBool <- setting.settingBool
+            s.SettingGuid <- setting.settingGuid
+            s.SettingLong <- setting.settingLong
+            s.SettingText <- setting.settingText
+            s.SettingBinary <- setting.settingBinary
+            s.CreatedOn <- DateTime.Now
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let eso =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = setting.settingName.value)
+                    select (Some s)
+                    exactlyOneOrDefault
+                }
+
+            match eso with
+            | Some existingSetting -> update true existingSetting
+            | None -> ctx.Dbo.Setting.Create() |> update false
+
+            ctx.SubmitUpdates()
+            Ok ()
+
+        tryDbFun fromDbError g
+
+
+    let tryDeleteSetting (SettingName keyName) =
+        let elevate e = e |> TryDeleteSettingErr
+        let fromDbError e = e |> TryDeleteSettingDbErr |> elevate
+
+        let g() =
+            let ctx = getDbContext getConnectionString
+
+            let settingToDelete =
+                query {
+                    for s in ctx.Dbo.Setting do
+                    where (s.SettingName = keyName)
+                    select s
+                    exactlyOneOrDefault
+                }
+
+            match settingToDelete with
+            | null -> Ok false  // Setting not found, nothing to delete
+            | setting ->
+                setting.Delete()
+                ctx.SubmitUpdates()
+                Ok true  // Successfully deleted
+
+        tryDbFun fromDbError g
+
+
     /// Tries loading a public or private key out of setting using a given key name.
-    let private tryLoadEncryptionKey toKey keyName =
+    let private tryLoadEncryptionKey toKey (SettingName keyName) =
         let elevate e = e |> TryLoadEncryptionKeyErr
         let fromDbError e = e |> TryLoadEncryptionKeyDbErr |> elevate
 
@@ -244,7 +341,7 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let private trySaveEncryptionKey fromKey keyName encryptionKey =
+    let private trySaveEncryptionKey fromKey (SettingName keyName) encryptionKey =
         let elevate e = e |> TrySaveEncryptionKeyErr
         let fromDbError e = e |> TrySaveEncryptionKeyDbErr |> elevate
 
@@ -260,16 +357,19 @@ module WorkerNodeService =
                     exactlyOneOrDefault
                 }
 
+            let settingBinary = encryptionKey |> fromKey |> zip |> Some
+
             match existingKey with
             | Some setting ->
                 // Update the existing key
-                setting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
+                setting.SettingBinary <- settingBinary
+                setting.CreatedOn <- DateTime.Now
             | None ->
                 // Insert a new key
                 let newSetting = ctx.Dbo.Setting.Create()
                 newSetting.SettingName <- keyName
-                newSetting.SettingBinary <- encryptionKey |> fromKey |> zip |> Some
-                //ctx.Dbo.Setting.Add(newSetting) |> ignore
+                newSetting.SettingBinary <- settingBinary
+                newSetting.CreatedOn <- DateTime.Now
 
             // Save changes to the database
             ctx.SubmitUpdates()
@@ -365,6 +465,17 @@ module WorkerNodeService =
                             SolverId = s.solverId.value,
                             SolverName = s.solverName.value,
                             Description = s.description,
+#if PARTITIONER || PARTITIONER_ADM
+                            // Partitioner has separate solverHash and isInactive columns.
+                            SolverHash = s.solverHash.value,
+                            IsInactive = false,
+#endif
+
+#if WORKER_NODE
+                            // Worker Node has a separate isDeployed flag.
+                            IsDeployed = false,
+#endif
+                            CreatedOn = DateTime.Now,
                             SolverData = (s.solverData |> Option.map (fun e -> e.value)))
 
         row
@@ -383,10 +494,12 @@ module WorkerNodeService =
                     s.SolverName <- solver.solverName.value
                     s.Description <- solver.description
                     s.SolverData <- (solver.solverData |> Option.map (fun e -> e.value))
+                    s.CreatedOn <- DateTime.Now
 
 #if PARTITIONER || PARTITIONER_ADM
-                    // Partitioner has a separate solverHash column.
+                    // Partitioner has separate solverHash and isInactive columns.
                     s.SolverHash <- solver.solverHash.value
+                    s.IsInactive <- false
 #endif
 
 #if WORKER_NODE
@@ -530,16 +643,18 @@ module WorkerNodeService =
     let private addRunQueueRow (ctx : DbContext) (r : RunQueue) =
         let row = ctx.Dbo.RunQueue.Create(
                             RunQueueId = r.runQueueId.value,
+                            SolverId = r.solverId.value,
                             WorkerNodeId = (r.workerNodeIdOpt |> Option.bind (fun e -> Some e.value.value)),
                             RunQueueStatusId = r.runQueueStatus.value,
                             ProcessId = (r.progressData.progressInfo.processId |> Option.bind (fun e -> Some e.value)),
                             ErrorMessage = (r.progressData.progressInfo.errorMessageOpt |> Option.bind (fun e -> Some e.value)),
                             RetryCount = r.retryCount,
                             MaxRetries = r.maxRetries,
-                            EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             Progress = r.progressData.progressInfo.progress,
                             CallCount = r.progressData.progressInfo.callCount,
+                            EvolutionTime = r.progressData.progressInfo.evolutionTime.value,
                             RelativeInvariant = r.progressData.progressInfo.relativeInvariant.value,
+                            CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -713,24 +828,24 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySetting
-    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
+    let tryLoadPartitionerPrivateKey () = tryLoadEncryptionKey PrivateKey partitionerPrivateKeySettingName
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySettingName
 
-    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySetting privateKey
-    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+    let trySavePartitionerPrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id partitionerPrivateKeySettingName privateKey
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySettingName publicKey
 
 #endif
 
 #if WORKERNODE_ADM || WORKER_NODE
 
-    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySetting
-    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySetting
+    let tryLoadWorkerNodePublicKey () = tryLoadEncryptionKey PublicKey workerNodePublicKeySettingName
+    let tryLoadWorkerNodePrivateKey () = tryLoadEncryptionKey PrivateKey workerNodePrivateKeySettingName
 
-    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySetting publicKey
-    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySetting privateKey
+    let trySaveWorkerNodePublicKey (PublicKey publicKey) = trySaveEncryptionKey id workerNodePublicKeySettingName publicKey
+    let trySaveWorkerNodePrivateKey (PrivateKey privateKey) = trySaveEncryptionKey id workerNodePrivateKeySettingName privateKey
 
-    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySetting
-    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySetting publicKey
+    let tryLoadPartitionerPublicKey () = tryLoadEncryptionKey PublicKey partitionerPublicKeySettingName
+    let trySavePartitionerPublicKey (PublicKey publicKey) = trySaveEncryptionKey id partitionerPublicKeySettingName publicKey
 
 #endif
 
@@ -752,7 +867,7 @@ module WorkerNodeService =
         (row, md)
 
 
-    /// Saves a new model data into a database fur further processing.
+    /// Saves new model data into a database fur further processing.
     let saveModelData (r : RunQueueId) (s : SolverId) (w : ModelBinaryData) =
         let elevate e = e |> SaveRunQueueErr
         //let toError e = e |> elevate |> Error
@@ -789,7 +904,7 @@ module WorkerNodeService =
 #if PARTITIONER
 
     let saveLocalResultInfo (d : LocationInfo) (i : ResultInfo) =
-        Logger.logTrace $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'."
+        Logger.logTrace (fun () -> $"saveLocalResultInfo - d: '%A{d}', '%A{i.info}'.")
         let location = { locationInfo = d; optionalFolder = i.optionalFolder }
 
         try
@@ -800,7 +915,7 @@ module WorkerNodeService =
                 | Ok fn ->
                     let folder = Path.GetDirectoryName fn.value
                     Directory.CreateDirectory(folder) |> ignore
-                    Logger.logTrace $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'."
+                    Logger.logTrace (fun () -> $"saveLocalResultInfo - saveResult - fn: '%A{fn}', c: '%A{c.info}'.")
 
                     match c with
                     | TextResult h -> File.WriteAllText(fn.value, h.textContent)
@@ -914,9 +1029,9 @@ module WorkerNodeService =
         {
             workerNodeId = r.WorkerNodeId |> MessagingClientId |> WorkerNodeId
             workerNodeName = r.WorkerNodeName |> WorkerNodeName
+            nodePriority = r.NodePriority |> WorkerNodePriority
             noOfCores = r.NumberOfCores
             partitionerId = p.partitionerId
-            nodePriority = r.NodePriority |> WorkerNodePriority
             isInactive = r.IsInactive
             solverEncryptionType = p.solverEncryptionType
         }
@@ -958,8 +1073,10 @@ module WorkerNodeService =
         let row = ctx.Dbo.WorkerNode.Create(
                             WorkerNodeId = w.workerNodeId.value.value,
                             WorkerNodeName = w.workerNodeName.value,
-                            NumberOfCores = w.noOfCores,
                             NodePriority = w.nodePriority.value,
+                            NumberOfCores = w.noOfCores,
+                            IsInactive = false,
+                            CreatedOn = DateTime.Now,
                             ModifiedOn = DateTime.Now)
 
         row
@@ -992,23 +1109,12 @@ module WorkerNodeService =
         tryDbFun fromDbError g
 
 
-    // let upsertWorkerNodeErr p i =
-    //     let elevate e = e |> UpsertWorkerNodeErrErr
-    //     //let toError e = e |> elevate |> Error
-    //     let fromDbError e = e |> UpsertWorkerNodeErrDbErr |> elevate
-    //
-    //     let g() =
-    //         match loadWorkerNodeInfo p i with
-    //         | Ok w -> upsertWorkerNodeInfo { w with lastErrorDateOpt = Some DateTime.Now }
-    //         | Error e -> Error e
-    //
-    //     tryDbFun fromDbError g
-
-
     let private addWorkerNodeSolverRow (ctx : DbContext) (w : WorkerNodeId) (s : SolverId) =
         let row = ctx.Dbo.WorkerNodeSolver.Create(
                             WorkerNodeId = w.value.value,
-                            SolverId = s.value)
+                            SolverId = s.value,
+                            CreatedOn = DateTime.Now,
+                            IsDeployed = false)
 
         row
 
@@ -1082,7 +1188,7 @@ module WorkerNodeService =
             let ctx = getDbContext getConnectionString
             let r = ctx.Procedures.TryUndeploySolver.Invoke(``@solverId`` = solverId.value)
             let m = r.ResultSet |> mapIntScalar
-            Logger.logTrace $"Updated {m} row(s) for solverId: '{solverId}'."
+            Logger.logTrace (fun () -> $"Updated {m} row(s) for solverId: '{solverId}'.")
             // r.ResultSet |> bindIntScalar x solverId
             Ok() // Ignore the result as we don't care about it here.
 
@@ -1280,7 +1386,7 @@ module WorkerNodeService =
         let fromDbError e = e |> TryUpdateProgressDbErr |> elevate
 
         let g() =
-            Logger.logTrace $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}."
+            Logger.logTrace (fun () -> $"tryUpdateProgress: RunQueueId: {q}, progress data: %A{pd}.")
             let ctx = getDbContext getConnectionString
             let p = pd.toProgressData()
 
@@ -1602,5 +1708,38 @@ module WorkerNodeService =
                 (fun _ -> Error (q |> TryUpdateFailedSolverNoRunQueueErr |> TryUpdateFailedSolverErr))
 
         tryDbFun fromDbError g
+
+
+    let tryGetWorkerNodeReinstallationInfo() =
+        match tryLoadSetting workerNodeReinstallationSettingName with
+        | Ok (Some s) ->
+            match s.settingLong with
+            | Some v -> int v |> BuildNumber |> Some |> Ok
+            | None -> Ok None
+        | Ok None -> Ok None
+        | Error e -> Error e
+
+
+    let tryDeleteWorkerNodeReinstallationInfo() =
+        match tryDeleteSetting workerNodeReinstallationSettingName with
+        | Ok _ -> Ok()
+        | Error e -> Error e
+
+
+    let trySaveWorkerNodeReinstallationInfo (BuildNumber buildNumber) =
+        let s =
+            {
+                settingName = workerNodeReinstallationSettingName
+                settingBool = None
+                settingGuid = None
+                settingLong = Some (int64 buildNumber)
+                settingText = None
+                settingBinary = None
+                createdOn = DateTime.Now
+            }
+
+        match tryDeleteWorkerNodeReinstallationInfo() with
+        | Ok _ -> trySaveSetting s
+        | Error e -> Error e
 
 #endif

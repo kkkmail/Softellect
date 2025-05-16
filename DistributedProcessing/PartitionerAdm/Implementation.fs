@@ -1,5 +1,6 @@
 ﻿namespace Softellect.DistributedProcessing.PartitionerAdm
 
+open System.IO
 open Softellect.DistributedProcessing.PartitionerAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.Primitives.PartitionerAdm
@@ -139,13 +140,18 @@ module Implementation =
     let addSolver (ctx : PartitionerAdmContext) (x : list<AddSolverArgs>) =
         let so = x |> List.tryPick (fun e -> match e with | AddSolverArgs.SolverId id -> SolverId id |> Some | _ -> None)
         let no = x |> List.tryPick (fun e -> match e with | Name name -> SolverName name |> Some | _ -> None)
-        let fo = x |> List.tryPick (fun e -> match e with | Folder folder -> FolderName folder |> Some | _ -> None)
+        let fo = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder folder -> FolderName folder |> Some | _ -> None)
         let de = x |> List.tryPick (fun e -> match e with | Description description -> description |> Some | _ -> None)
         let force = x |> List.tryPick (fun e -> match e with | AddSolverArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
 
+        let af =
+            x
+            |> List.choose (fun e -> match e with | AddSolverArgs.AdditionalFolder(folder, defaultFolder) -> Some (folder, defaultFolder) | _ -> None)
+            |> List.map (fun (a, b) -> { FolderPath = FolderName a; ArchiveSubfolder = b })
+
         match (so, no, fo) with
         | Some s, Some n, Some f ->
-            match zipFolder f with
+            match zipFolderWithAdditionalMappings f af with
             | Ok d ->
                 let hash = calculateSha256Hash d
 
@@ -159,7 +165,7 @@ module Implementation =
                             description = de
                         }
 
-                    Logger.logInfo $"Solver with id '{s}', name '{n}', and folder '{f}' was added. Solver size: {(solver.solverData |> Option.map _.value.Length |> Option.defaultValue 0):N0}"
+                    Logger.logInfo $"Solver with id '{s}', name '{n}', folder '{f}', and hash '{hash}' was added. Solver size: {(solver.solverData |> Option.map _.value.Length |> Option.defaultValue 0):N0}"
                     let r1 = ctx.partitionerAdmProxy.saveSolver solver
                     let r2 = ctx.partitionerAdmProxy.tryUndeploySolver solver.solverId
                     let r = combineUnitResults r1 r2
@@ -260,11 +266,101 @@ module Implementation =
         | Error e1, Error e2 -> e1 + e2 |> Error
 
 
+    /// Extracts the current migration state into a Migration.txt file in the specified folder
+    let extractMigration (migrationFolder: string) =
+        if not (Directory.Exists migrationFolder) then failwith $"Migration folder '{migrationFolder}' does not exist"
+
+        // Find all files matching migrationExePattern
+        let migrationExes =
+            Directory.GetFiles(migrationFolder, migrationExePattern)
+            |> Array.toList
+
+        match migrationExes with
+        | [] -> failwith $"No migration executable found in folder '{migrationFolder}'. Expected a file matching '{migrationExePattern}'."
+        | [exe] ->
+            let outputFilePath = Path.Combine(migrationFolder, migrationFile)
+            let commandLine = $"extract:{outputFilePath}"
+            Logger.logInfo $"Extracting current migration state using '{exe}' to '{outputFilePath}'"
+
+            match tryExecuteFile (FileName exe) commandLine with
+            | Ok exitCode ->
+                if exitCode = 0 then
+                    if File.Exists outputFilePath then Logger.logInfo $"Successfully extracted migration state to '{outputFilePath}'."
+                    else failwith $"Migration executable ran successfully but output file '{outputFilePath}' was not created."
+                else failwith $"Migration extraction failed with exit code {exitCode}."
+            | Error e -> failwith $"Failed to execute migration executable: %A{e}."
+        | _ -> failwith $"Multiple files matching '{migrationExePattern}' found in '{migrationFolder}'. Expected exactly one."
+
+
+    let addWorkerNodeService (ctx : PartitionerAdmContext) (x : list<AddWorkerNodeServiceArgs>) =
+        // Map the folder parameter
+        match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Folder folder -> Some folder | _ -> None) with
+        | Some folder ->
+            let migration =
+                match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.MigrationFolder migrationFolder -> Some migrationFolder | _ -> None) with
+                | Some migrationFolder ->
+                    extractMigration migrationFolder
+                    [ AddSolverArgs.AdditionalFolder(migrationFolder, defaultMigrationsFolder) ]
+                | None -> []
+
+            // Map the worker node service args to solver args
+            let solverArgs =
+                [
+                    // Use the predefined worker node service ID
+                    AddSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
+
+                    // Use the predefined worker node service name
+                    AddSolverArgs.Name(SolverName.workerNodeServiceName.value)
+
+                    AddSolverArgs.Folder(folder)
+
+                    // Map the force parameter if it exists
+                    match x |> List.tryPick (fun e -> match e with | AddWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
+                    | Some force -> AddSolverArgs.Force(force)
+                    | None -> AddSolverArgs.Force(false) // Default to false if not provided
+                ]
+                @
+                migration
+
+            // Log that we're adding a worker node service
+            Logger.logInfo $"""Adding worker node service from folder '{solverArgs |> List.tryPick (fun e -> match e with | AddSolverArgs.Folder f -> Some f | _ -> None) |> Option.defaultValue "unknown"}'"""
+
+            // Call the existing addSolver function with our mapped parameters
+            addSolver ctx solverArgs
+        | None -> failwith "Folder parameter is required for adding worker node service."
+
+
+    let sendWorkerNodeService (ctx : PartitionerAdmContext) (x : list<SendWorkerNodeServiceArgs>) =
+        // Map the worker node service args to solver args
+        let solverArgs =
+            [
+                // Use the predefined worker node service ID
+                SendSolverArgs.SolverId(SolverId.workerNodeServiceId.value)
+
+                // Map the worker node ID parameter
+                match x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.WorkerNodeId id -> Some id | _ -> None) with
+                | Some id -> SendSolverArgs.WorkerNodeId(id)
+                | None -> failwith "WorkerNodeId parameter is required for sending worker node service."
+
+                // Map the force parameter if it exists
+                match x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.Force force -> Some force | _ -> None) with
+                | Some force -> SendSolverArgs.Force(force)
+                | None -> SendSolverArgs.Force(false) // Default to false if not provided
+            ]
+
+        // Log that we're sending a worker node service
+        let workerNodeId = x |> List.tryPick (fun e -> match e with | SendWorkerNodeServiceArgs.WorkerNodeId id -> Some id | _ -> None)
+        Logger.logInfo $"Sending worker node service to worker node with ID: %A{workerNodeId}"
+
+        // Call the existing sendSolver function with our mapped parameters
+        sendSolver ctx solverArgs
+
+
     let tryCancelRunQueue (ctx : PartitionerAdmContext) q c =
         let addError = addError TryCancelRunQueueRunnerErr
         let toError = toError TryCancelRunQueueRunnerErr
 
-        Logger.logTrace $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'."
+        Logger.logTrace (fun () -> $"tryCancelRunQueue: runQueueId: '%A{q}', c: '%A{c}'.")
 
         match ctx.partitionerAdmProxy.tryLoadRunQueue q with
         | Ok (Some r) ->

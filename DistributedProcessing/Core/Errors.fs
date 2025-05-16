@@ -324,6 +324,18 @@ module Errors =
         | TrySaveEncryptionKeyDbErr of DbError
 
 
+    type TryLoadSettingError =
+        | TryLoadSettingDbErr of DbError
+
+
+    type TrySaveSettingError =
+        | TrySaveSettingDbErr of DbError
+
+
+    type TryDeleteSettingError =
+        | TryDeleteSettingDbErr of DbError
+
+
     type TryLoadPartitionerPublicKeyError =
         | TryLoadPartitionerPublicKeyDbErr of DbError
         | NoPartitionerPublicKeyErr
@@ -368,6 +380,7 @@ module Errors =
         | CanNotDeployDueToRunningSolversErr of int
         | TryDeploySolverExn of exn
         | TryDeploySolverCriticalErr of string
+        | CannotDeleteOldSolverErr of SysError
 
 
     type CopyAppSettingsError =
@@ -387,6 +400,12 @@ module Errors =
 
     type LoadAllActiveWorkerNodeIdsError =
         | LoadAllActiveWorkerNodeIdsDbErr of DbError
+
+
+    type ReinstallWorkerNodeServiceError =
+        | ReinstallWorkerNodeServiceExn of exn
+        | FailedToStartReinstallProcess
+        | FailedToCreateReinstallTempFolder of FolderName * FileError
 
 
     type DistributedProcessingError =
@@ -474,6 +493,9 @@ module Errors =
         | TryDecryptSolverErr of TryDecryptSolverError
         | TryLoadEncryptionKeyErr of TryLoadEncryptionKeyError
         | TrySaveEncryptionKeyErr of TrySaveEncryptionKeyError
+        | TryLoadSettingErr of TryLoadSettingError
+        | TrySaveSettingErr of TrySaveSettingError
+        | TryDeleteSettingErr of TryDeleteSettingError
         | TryLoadPartitionerPrivateKeyErr of TryLoadPartitionerPrivateKeyError
         | TryLoadWorkerNodePublicKeyErr of TryLoadWorkerNodePublicKeyError
         | TryUpdateWorkerNodePublicKeyErr of TryUpdateWorkerNodePublicKeyError
@@ -485,6 +507,7 @@ module Errors =
         | GetLocationErr of GetLocationError
         | LoadAllActiveSolverIdsErr of LoadAllActiveSolverIdsError
         | LoadAllActiveWorkerNodeIdsErr of LoadAllActiveWorkerNodeIdsError
+        | ReinstallWorkerNodeServiceErr of ReinstallWorkerNodeServiceError
 
         static member addError a b =
             match a, b with

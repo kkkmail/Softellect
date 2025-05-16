@@ -22,48 +22,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\MessagingService\MessagingServiceName.ps1" Link="MessagingServiceName.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingServiceName.PS1')" />
-        <None Include="..\MessagingService\MessagingVersionInfo.ps1" Link="MessagingVersionInfo.ps1" CopyToOutputDirectory="Always" Condition="Exists('MessagingVersionInfo.PS1')" />
-        <None Include="..\..\..\Functions.ps1" Link="Functions.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\Install-PartitionerService.ps1" Link="Install-PartitionerService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerFunctions.ps1" Link="PartitionerFunctions.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerServiceName.ps1" Link="PartitionerServiceName.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerVersionInfo.ps1" Link="PartitionerVersionInfo.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\Start-PartitionerService.ps1" Link="Start-PartitionerService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\Stop-PartitionerService.ps1" Link="Stop-PartitionerService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Include="..\..\..\DistributedProcessing\PartitionerService\Uninstall-PartitionerService.ps1" Link="Uninstall-PartitionerService.ps1">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Content Include="..\..\..\DistributedProcessing\PartitionerService\appsettings.json" Link="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup />
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
+        <PackageReference Update="FSharp.Core" Version="9.0.300" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\DistributedProcessing\PartitionerService\PartitionerService.fsproj" />
+        <ProjectReference Include="..\PartitionerAdm\PartitionerAdm.fsproj" />
     </ItemGroup>
 
 </Project>

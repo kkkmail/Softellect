@@ -2,8 +2,6 @@ namespace Softellect.DistributedProcessing.PartitionerAdm
 
 open Argu
 open System
-open Softellect.Sys.Primitives
-open Softellect.DistributedProcessing.Primitives.Common
 
 module CommandLine =
 
@@ -15,6 +13,7 @@ module CommandLine =
         | [<Mandatory>] [<Unique>] [<AltCommandLine("-s")>] Folder of string
         |               [<Unique>] [<AltCommandLine("-d")>] Description of string
         |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+        |                          [<AltCommandLine("-a")>] AdditionalFolder of string * string
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -24,6 +23,7 @@ module CommandLine =
                 | Folder _ -> "solver folder."
                 | Description _ -> "solver description."
                 | Force _ -> "pass true to force updating solver with the same hash."
+                | AdditionalFolder _ -> "optional additional folder name and relative path inside archive."
 
 
     and
@@ -50,6 +50,33 @@ module CommandLine =
             member this.Usage =
                 match this with
                 | Force _ -> "pass true to force re-sending all solvers to all worker nodes."
+
+
+    and
+        [<CliPrefix(CliPrefix.Dash)>]
+        AddWorkerNodeServiceArgs =
+            | [<Mandatory>] [<Unique>] [<AltCommandLine("-s")>] Folder of string
+            |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+            |               [<Unique>] [<AltCommandLine("-m")>] MigrationFolder of string
+
+            interface IArgParserTemplate with
+                member this.Usage =
+                    match this with
+                    | Folder _ -> "worker node service folder."
+                    | Force _ -> "pass true to force updating worker node service with the same hash."
+                    | MigrationFolder _ -> "optional database migration folder."
+
+        and
+            [<CliPrefix(CliPrefix.Dash)>]
+            SendWorkerNodeServiceArgs =
+            | [<Mandatory>] [<Unique>] [<AltCommandLine("-w")>] WorkerNodeId of Guid
+            |               [<Unique>] [<AltCommandLine("-f")>] Force of bool
+
+            interface IArgParserTemplate with
+                member this.Usage =
+                    match this with
+                    | WorkerNodeId _ -> "worker node id."
+                    | Force _ -> "pass true to force sending already deployed worker node service."
 
 
     and
@@ -113,6 +140,8 @@ module CommandLine =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ImportPublicKey of ParseResults<ImportPublicKeyArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] AddWorkerNodeService of ParseResults<AddWorkerNodeServiceArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] SendWorkerNodeService of ParseResults<SendWorkerNodeServiceArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -124,3 +153,5 @@ module CommandLine =
                 | GenerateKeys _ -> "generates encryption keys."
                 | ExportPublicKey _ -> "exports partitioner public key."
                 | ImportPublicKey _ -> "import worker node public key."
+                | AddWorkerNodeService _ -> "add worker node service."
+                | SendWorkerNodeService _ -> "send worker node service to a worker node."

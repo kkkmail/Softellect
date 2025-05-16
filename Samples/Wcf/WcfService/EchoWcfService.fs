@@ -21,11 +21,11 @@ module EchoWcfService =
             }
 
         let echoImpl (m : string) : UnitResult =
-            Logger.logTrace $"Simple message: %A{m}"
+            Logger.logTrace (fun () -> $"Simple message: %A{m}")
             Ok()
 
         let complexEchoImpl (m : EchoMessage) : EchoWcfResult<EchoReply> =
-            Logger.logTrace $"Complex message: %A{m}"
+            Logger.logTrace (fun () -> $"Complex message: %A{m}")
             m |> getReply |> Ok
 
         interface IEchoService with
@@ -39,7 +39,7 @@ module EchoWcfService =
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type EchoWcfService private (data : EchoServiceData) =
         let count = Interlocked.Increment(&serviceCount)
-        do Logger.logTrace $"EchoWcfService: count = {count}."
+        do Logger.logTrace (fun () -> $"EchoWcfService: count = {count}.")
 
         static let getData() = EchoServiceData.create()
         let service = EchoService(data) :> IEchoService

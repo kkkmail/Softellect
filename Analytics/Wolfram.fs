@@ -4,6 +4,7 @@ open System
 open Microsoft.FSharp.Reflection
 open System.Text
 open Softellect.Analytics.Primitives
+open Softellect.Math.Primitives
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
@@ -15,7 +16,7 @@ open Softellect.Analytics.AppSettings
 /// A collection of functions to convert F# objects to Wolfram Language notation.
 module Wolfram =
 
-    ///. An encapsulation of Wolfram code file content.
+    /// An encapsulation of Wolfram code file content.
     type WolframCode =
         | WolframCode of string
 
@@ -30,6 +31,16 @@ module Wolfram =
 
         static member defaultValue = PlotRange.All
 
+        member this.value =
+            match this with
+            | All -> "All"
+            | Full -> "Full"
+            | Automatic -> "Automatic"
+            | UserDefinedPlotRange v -> v
+
+    let getPlotRange (x : PlotRange option) =
+        x |> Option.map (fun r -> ", PlotRange -> " + r.value) |> Option.defaultValue EmptyString
+
 
     type GridLines =
         | Automatic
@@ -37,6 +48,16 @@ module Wolfram =
         | UserDefinedGridLines of string // You are on your own here.
 
         static member defaultValue = GridLines.Automatic
+
+        member this.value =
+            match this with
+            | Automatic -> "Automatic"
+            // | None -> "None"
+            | UserDefinedGridLines v -> v
+
+
+    let getGridLines (x : GridLines option) =
+         x |> Option.map (fun g -> ", GridLines -> " + g.value) |> Option.defaultValue EmptyString
 
 
     type ImageSize =
@@ -49,6 +70,18 @@ module Wolfram =
 
         static member defaultValue = ImageSize.Large
 
+        member this.value =
+            match this with
+            | Tiny -> "Tiny"
+            | Small -> "Small"
+            | Medium -> "Medium"
+            | Large -> "Large"
+            | Full -> "Full"
+            | UserDefinedImageSize v -> v
+
+
+    let getImageSize (x : ImageSize option) =
+        x |> Option.map (fun i -> ", ImageSize -> " + i.value) |> Option.defaultValue EmptyString
 
     type LabelStyle =
         | LabelStyle of string
@@ -56,6 +89,10 @@ module Wolfram =
         member this.value = let (LabelStyle v) = this in v
 
         static member defaultValue = LabelStyle "{FontSize -> 16, Bold, Black}"
+
+
+    let getLabelStyle (x : LabelStyle option) =
+        x |> Option.map (fun i -> ", LabelStyle -> " + i.value) |> Option.defaultValue EmptyString
 
 
     let private baseIndent = "  "
@@ -241,44 +278,44 @@ module Wolfram =
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon' -linklaunch -linkprotocol tcp"
                     // let linkArgs = $"-linkname '{kernelName.value} -mathlink -noprompt -noicon -logfile C:\\Temp\\mathkernel_{logId}.log' -linklaunch"
 
-                    Logger.logTrace $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'."
+                    Logger.logTrace (fun () -> $"tryRunMathematicaScript - linkArgs: '%A{linkArgs}'.")
                     let link = MathLinkFactory.CreateKernelLink(linkArgs)
-                    Logger.logTrace $"tryRunMathematicaScript - link created."
+                    Logger.logTrace (fun () -> $"tryRunMathematicaScript - link created.")
 
                     try
                         // Discard the initial kernel output.
                         link.WaitAndDiscardAnswer()
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.WaitAndDiscardAnswer() completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.WaitAndDiscardAnswer() completed.")
 
                         // Load the .m or .wl file as a script and run it.
                         // Wolfram wants "\\\\" for each "\\" in the path. Don't ask why.
                         let scriptCommand = $"<< \"%s{i.toWolframNotation()}\"" // Use "<< file.m" to load the script.
-                        Logger.logTrace $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - scriptCommand: '%A{scriptCommand}'.")
                         link.Evaluate(scriptCommand)
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.Evaluate(scriptCommand) completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Evaluate(scriptCommand) completed.")
 
                         // Wait for the result of the evaluation.
                         link.WaitForAnswer() |> ignore
-                        Logger.logTrace "tryRunMathematicaScript - call to link.WaitForAnswer() completed."
+                        Logger.logTrace (fun () -> "tryRunMathematicaScript - call to link.WaitForAnswer() completed.")
 
                         // Check for the output file in the output folder.
                         if File.Exists(o) then
                             // If the output file is found, read it as a byte array and return it as Ok.
                             let fileBytes = File.ReadAllBytes(o)
                             link.Close() // Close the link when done.
-                            Logger.logTrace $"tryRunMathematicaScript: Completed successfully. Loaded {fileBytes.Length} bytes."
+                            Logger.logTrace (fun () -> $"tryRunMathematicaScript: Completed successfully. Loaded {fileBytes.Length} bytes.")
                             Ok fileBytes
                         else
                             // If the output file is not found, return an error.
                             link.Close()
-                            Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                            Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Close() completed.")
                             let message = $"Output file '{o}' is not found."
                             Logger.logError message
                             Error message
                     with
                     | ex ->
                         link.Close()
-                        Logger.logTrace $"tryRunMathematicaScript - call to link.Close() completed."
+                        Logger.logTrace (fun () -> $"tryRunMathematicaScript - call to link.Close() completed.")
                         let message = $"An error occurred during Wolfram evaluation: {ex.Message}"
                         Logger.logError message
                         Error message
@@ -307,6 +344,15 @@ module Wolfram =
             extraParams : string option // Any additional parameters that you want to pass to ListLinePlot. The string will be passed as is.
         }
 
+        member p.options =
+            [
+                getPlotRange p.plotRange
+                getGridLines p.gridLines
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+            ]
+            |> joinStrings EmptyString
+
         static member defaultValue =
             {
                 frame = true
@@ -318,17 +364,13 @@ module Wolfram =
             }
 
 
-    let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D array) =
-        let legends = d |> Array.map _.dataLabel.value
-        let xyData = d |> Array.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
-        let xyVar = d |> Array.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
+    let getListLinePlotData (o : FileName) (p : ListLineParams) (d : DataSeries2D list) =
+        let legends = d |> List.map _.dataLabel.value
+        let xyData = d |> List.mapi (fun i s -> $"xy{i} = {{" + (s.dataPoints |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y} }}") |> joinStrings ", ") + $"}};") |> joinStrings Nl
+        let xyVar = d |> List.mapi (fun i _ -> $"xy{i}") |> joinStrings ", "
         let frame = if p.frame then ", Frame -> True" else EmptyString
 
-        // If the plot size, grid lines, image size are user defined, then send them as is. Otherwise, use %A to get a full name.
-        let plotRange = p.plotRange |> Option.map (fun r -> ", PlotRange -> " + (match r with | UserDefinedPlotRange v -> v | _ -> $"%A{r}")) |> Option.defaultValue EmptyString
-        let gridLines = p.gridLines |> Option.map (fun g -> ", GridLines -> " + (match g with | UserDefinedGridLines v -> v | _ -> $"%A{g}")) |> Option.defaultValue EmptyString
-        let imageSize = p.imageSize |> Option.map (fun i -> ", ImageSize -> " + (match i with | UserDefinedImageSize v -> v | _ -> $"%A{i}")) |> Option.defaultValue EmptyString
-        let labelStyle = p.labelStyle |> Option.map (fun l -> $", LabelStyle -> {l.value}") |> Option.defaultValue ""
+        let options = p.options
         let plotLegends = ", PlotLegends -> legends"
         let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
 
@@ -337,15 +379,13 @@ module Wolfram =
                 xyData
                 $"legends = {(toWolframNotation legends)};"
                 $"outputFile = \"{o.toWolframNotation()}\";"
-                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{plotRange}{gridLines}{imageSize}{labelStyle}{plotLegends}{extra}], \"PNG\"];"
+                $"Export[outputFile, ListLinePlot[{{{xyVar}}}{frame}{options}{plotLegends}{extra}], \"PNG\"];"
             ]
             |> joinStrings Nl
         data |> WolframCode
 
 
-    let getListLinePlot i o p d =
-        let data = getListLinePlotData o p d
-
+    let private exportPlot i o data =
         let request =
             {
                 wolframCode = data
@@ -357,10 +397,137 @@ module Wolfram =
         | Ok v ->
             {
                 binaryContent = v
-                fileName = o
+                fileName = request.outputFileName
             }
             |> BinaryResult
             |> Some
         | Error e ->
-            Logger.logError $"getListLinePlot - Error: %A{e}."
+            Logger.logError $"Cannot export Mathematica plot from %A{request.inputFileName} into %A{request.outputFileName} - Error: %A{e}."
             None
+
+
+    let getListLinePlot i o p d =
+        getListLinePlotData o p d |> exportPlot i o
+
+
+    type PlotTheme =
+        | ClassicPlotTheme
+
+        member p.value =
+            match p with
+            | ClassicPlotTheme -> "{\"Classic\", \"ClassicLights\"}"
+
+        static member defaultValue = ClassicPlotTheme
+
+    let getPlotTheme (x : PlotTheme option) =
+        x |> Option.map (fun p -> ", PlotTheme -> " + p.value) |> Option.defaultValue EmptyString
+
+
+    type ImagePadding =
+        | XyPadding of double * double
+        | UserDefinedPadding of string // You are on your own here.
+
+        static member defaultValue = XyPadding(70.05, 20.45)
+
+        member ip.value =
+            match ip with
+            | XyPadding (x, y) -> $"{{{{{x}, 0}}, {{{y}, 0}}}}"
+            | UserDefinedPadding v -> v
+
+    let getImagePadding (x : ImagePadding option) =
+        x |> Option.map (fun i -> ", ImagePadding -> " + i.value) |> Option.defaultValue EmptyString
+
+
+    let getAxesLabel3D (x : DataLabel3D option) =
+        x |> Option.map (fun a -> $", AxesLabel -> {{{a.xLabel}, {a.yLabel}, {a.zLabel}}}") |> Option.defaultValue EmptyString
+
+
+    type ListPlot3DParams =
+        {
+            plotRange : PlotRange option
+            plotTheme : PlotTheme option
+            imageSize : ImageSize option
+            labelStyle : LabelStyle option
+            axesLabel : DataLabel3D option
+            imagePadding : ImagePadding option
+            threshold : double option // If provided, then values smaller than that will be colored white.
+            meshPoints : int
+            extraParams : string option // Any additional parameters that you want to pass to ListPlot3D. The string will be passed as is.
+        }
+
+        member p.options =
+            [
+                getPlotRange p.plotRange
+                getPlotTheme p.plotTheme
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+                getAxesLabel3D p.axesLabel
+                getImagePadding p.imagePadding
+            ]
+            |> joinStrings EmptyString
+
+        member p.optionsWhite =
+            [
+                getPlotRange p.plotRange
+                getImageSize p.imageSize
+                getLabelStyle p.labelStyle
+                getAxesLabel3D p.axesLabel
+                getImagePadding p.imagePadding
+                ", BoundaryStyle -> None"
+            ]
+            |> joinStrings EmptyString
+
+        static member defaultValue =
+            {
+                plotRange = Some PlotRange.defaultValue
+                plotTheme = Some PlotTheme.defaultValue
+                imageSize = Some ImageSize.defaultValue
+                labelStyle = Some LabelStyle.defaultValue
+                axesLabel = Some DataLabel3D.defaultValue
+                imagePadding = Some ImagePadding.defaultValue
+                threshold = Some 1.0e-10
+                meshPoints = 20
+                extraParams = None
+            }
+
+
+    let getListLinePlot3DData (o : FileName) (p : ListPlot3DParams) (d : DataPoint3D list) =
+        let extra = p.extraParams |> Option.map (fun e -> ", " + e) |> Option.defaultValue EmptyString
+        let data = d |> List.map (fun p -> $"{{ {toWolframNotation p.x}, {toWolframNotation p.y}, {toWolframNotation p.z} }}") |> joinStrings ", "
+
+        let mesh() =
+            let x = d |> List.map _.x |> List.distinct
+            let y = d |> List.map _.y |> List.distinct
+            let xRange = { minValue = List.min x; maxValue = List.max x }
+            let yRange = { minValue = List.min y; maxValue = List.max y }
+            $", Mesh -> {{Subdivide[{toWolframNotation xRange.minValue}, {toWolframNotation xRange.maxValue}, {p.meshPoints}], Subdivide[{toWolframNotation yRange.minValue}, {toWolframNotation yRange.maxValue}, {p.meshPoints}]}}"
+
+        let regionFunction (v : double) (above : bool) =
+            let comparison = if above then ">" else "<="
+            $", RegionFunction -> Function[{{x, y, z}}, z {comparison} {toWolframNotation v}]"
+
+        let data =
+            [
+                $"data = {{ {data} }};"
+                $"outputFile = \"{o.toWolframNotation()}\";"
+            ]
+            @
+            match p.threshold with
+            | None ->
+                [
+                    $"Export[outputFile, ListPlot3D[data{p.options}{extra}], \"PNG\"];"
+                ]
+            | Some v ->
+                [
+                    $"c1 = ListPlot3D[data{getPlotTheme p.plotTheme}{p.optionsWhite}{regionFunction v true}{mesh()}{extra}];"
+                    $"c2 = ListPlot3D[data, Lighting -> \"Neutral\", PlotStyle -> White{getPlotTheme p.plotTheme}{p.optionsWhite}{regionFunction v false}{mesh()}{extra}];"
+                    $"Export[outputFile, Show[c1, c2, PlotRange -> All], \"PNG\"];"
+
+                ]
+            |> joinStrings Nl
+
+        data |> WolframCode
+
+
+    let getListPlot3D (i : FileName) (o : FileName) (p : ListPlot3DParams) (d : DataPoint3D list) =
+        getListLinePlot3DData o p d |> exportPlot i o

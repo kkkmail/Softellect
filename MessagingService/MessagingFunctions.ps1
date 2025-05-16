@@ -1,24 +1,48 @@
-. ./Functions.ps1
-. ./MessagingVersionInfo.ps1
-. ./MessagingServiceName.ps1
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
 
+# Load individual function files using absolute paths
+. "$scriptDirectory\MessagingServiceName.ps1"
 
-function InstallMessagingService([string] $messagingDataVersion = "",  [string] $versionNumber = "")
-{
-    InstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber
+. "$scriptDirectory\Install-DistributedService.ps1"
+. "$scriptDirectory\Uninstall-DistributedService.ps1"
+. "$scriptDirectory\Start-DistributedService.ps1"
+. "$scriptDirectory\Stop-DistributedService.ps1"
+. "$scriptDirectory\Write-ServiceLog.ps1"
+
+$MessagingDataVersion = $global:messagingDataVersion
+$VersionNumber = $global:messagingDataVersion
+$ServiceName = $global:messagingServiceName
+
+function InstallMessagingService {
+    [CmdletBinding()]
+    param ()
+
+    # Log function parameters
+    Write-ServiceLog -Message "InstallMessagingService - Parameters:" -Level "Info"
+    Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
+    Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
+
+    Install-DistributedService -ServiceName $ServiceName
 }
 
-function UninstallMessagingService([string] $messagingDataVersion = "")
-{
-    UninstallSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+function UninstallMessagingService {
+    [CmdletBinding()]
+    param ()
+
+    Uninstall-DistributedService -ServiceName $ServiceName
 }
 
-function StartMessagingService([string] $messagingDataVersion = "")
-{
-    StartSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+function StartMessagingService {
+    [CmdletBinding()]
+    param ()
+
+    Start-DistributedService -ServiceName $ServiceName
 }
 
-function StopMessagingService([string] $messagingDataVersion = "")
-{
-    StopSvc -serviceName $global:messagingServiceName -messagingDataVersion $messagingDataVersion
+function StopMessagingService {
+    [CmdletBinding()]
+    param ()
+
+    Stop-DistributedService -ServiceName $ServiceName
 }

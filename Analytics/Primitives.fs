@@ -17,6 +17,21 @@ module Primitives =
         }
 
 
+    type DataLabel3D =
+        {
+            xLabel : string
+            yLabel : string
+            zLabel : string
+        }
+
+        static member defaultValue =
+            {
+                xLabel = "x"
+                yLabel = "y"
+                zLabel = "z"
+            }
+
+
     type DataLabel =
         | DataLabel of string
 

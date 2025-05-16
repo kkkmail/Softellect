@@ -21,7 +21,7 @@ module Runner =
         | false, _ ->
             let pid = ProcessId.getCurrentProcessId()
             let ncbd = NeedsCallBackData.defaultValue (Some pid)
-            Logger.logTrace $"ncbd: %A{ncbd}."
+            Logger.logTrace (fun () -> $"ncbd: %A{ncbd}.")
             ncbd
 
 
@@ -186,7 +186,7 @@ module Runner =
 
 
     let private notifyProgress s cb pd =
-        Logger.logTrace $"notifyProgress: cb = %A{cb}, pd = %A{pd}."
+        Logger.logTrace (fun () -> $"notifyProgress: cb = %A{cb}, pd = %A{pd}.")
         s.callBackProxy.progressCallBack.invoke cb pd
 
 
@@ -212,10 +212,10 @@ module Runner =
         let modelData = ctx.runnerData.modelData.modelData
         match u.resultGenerator.generateDetailedResults ctx.runnerData.runnerData.runQueueId modelData t x with
         | Some c ->
-            Logger.logTrace $"notifyResultsDetailed: c.Length = %A{c.Length}"
+            Logger.logTrace (fun () -> $"notifyResultsDetailed: c.Length = %A{c.Length}")
             s.callBackProxy.resultCallBack.invoke c
         | None ->
-            Logger.logTrace $"notifyResultsDetailed: No results to generate."
+            Logger.logTrace (fun () -> $"notifyResultsDetailed: No results to generate.")
             ()
 
 
@@ -227,7 +227,7 @@ module Runner =
 
 
     let private notifyResults ctx t =
-        Logger.logTrace $"notifyResults: t = %A{t}"
+        Logger.logTrace (fun () -> $"notifyResults: t = %A{t}")
 
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -246,7 +246,7 @@ module Runner =
 
     /// Sends "on-request" results to the user.
     let private notifyRequestedResults ctx =
-        Logger.logTrace $"notifyRequestedResults: Starting."
+        Logger.logTrace (fun () -> $"notifyRequestedResults: Starting.")
         let s = ctx.systemProxy
         let runQueueId = ctx.runnerData.runnerData.runQueueId
 
@@ -259,12 +259,12 @@ module Runner =
             Logger.logInfo $"notifyRequestedResults: r1 = %A{r1}, r2 = %A{r2}"
             Ok()
         | None ->
-            Logger.logTrace $"notifyRequestedResults: No notification to process."
+            Logger.logTrace (fun () -> $"notifyRequestedResults: No notification to process.")
             Ok()
 
 
     let private tryCallBack ctx (ncbd : NeedsCallBackData) (t : EvolutionTime) x =
-        // Logger.logTrace $"tryCallBack: t = %A{t}, x = %A{x}"
+        // Logger.logTrace (fun () -> $"tryCallBack: t = %A{t}, x = %A{x}")
         let d = ctx.runnerData
         let u = ctx.userProxy
         let s = ctx.systemProxy
@@ -314,7 +314,7 @@ module Runner =
                     updateResults ctx t x
                 | AllNotification -> notifyAll ctx RegularCallBack pd t x
 
-            Logger.logTrace $"ncbd3: %A{ncbd3}."
+            Logger.logTrace (fun () -> $"ncbd3: %A{ncbd3}.")
             ncbd3
 
 
@@ -361,15 +361,15 @@ module Runner =
         try
             try
                 // Run the computation from the initial data till the end and report progress on the way.
-                Logger.logTrace "runSolver: Calling solverRunner.invoke"
+                Logger.logTrace (fun () -> "runSolver: Calling solverRunner.invoke")
                 let tEnd, xEnd = u.solverRunner.invoke (t0, x0) tryCallBack
-                Logger.logTrace "runSolver: Call to solverRunner.invoke has completed."
+                Logger.logTrace (fun () -> "runSolver: Call to solverRunner.invoke has completed.")
 
                 // Calculate final progress, including additional progress data, and notify about completion of computation.
                 let pd = getProgressData tEnd xEnd
                 notifyAll ctx (FinalCallBack CompletedCalculation) pd tEnd xEnd
                 notifyResults ctx RegularResultGeneration
-                Logger.logTrace "runSolver: Final results have been sent."
+                Logger.logTrace (fun () -> "runSolver: Final results have been sent.")
             with
             | :? ComputationAbortedException<'P> as ex ->
                 Logger.logInfo $"runSolver: ComputationAbortedException: %A{ex}."
@@ -389,5 +389,5 @@ module Runner =
                 let pd = { progressInfo = { ncbd.progressData.progressInfo with errorMessageOpt = ErrorMessage $"%A{ex}" |> Some }; progressDetailed = None }
                 notifyProgress s (Some $"%A{ex}" |> AbortCalculation |> CancelledCalculation |> FinalCallBack) pd
         finally
-            Logger.logTrace $"runSolver: Stopping timers."
+            Logger.logTrace (fun () -> $"runSolver: Stopping timers.")
             h.stop()

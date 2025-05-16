@@ -26,7 +26,7 @@ module Primitives =
     /// https://en.wikipedia.org/wiki/Lorenz_system
     /// Interesting values: sigma = 10, rho = 28, beta = 8/3
     let lorenzSystem (sigma: double) (rho: double) (beta: double) (t: double) (x: double[]) (i: int): double =
-        Logger.logTrace $"lorenzSystem: t = {t}."
+        Logger.logTrace (fun () -> $"lorenzSystem: t = {t}.")
         // Thread.Sleep(1_000_000) // Frees the derivative like forever.
 
         match i with
@@ -65,13 +65,13 @@ module Primitives =
                     let g t x i =
                         if i = 0
                         then
-                            Logger.logTrace $"Sleeping for {e} ms..."
+                            Logger.logTrace (fun () -> $"Sleeping for {e} ms...")
                             Thread.Sleep(e)
                         f t x i
                     OneByOne g
                 | FullArray f ->
                     let g t x =
-                        Logger.logTrace $"Sleeping for {e} ms..."
+                        Logger.logTrace (fun () -> $"Sleeping for {e} ms...")
                         Thread.Sleep(e)
                         f t x
                     FullArray g

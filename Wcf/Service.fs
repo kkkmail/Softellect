@@ -31,7 +31,7 @@ module Service =
     /// Service reply.
     let tryReply p f a =
 //        let count = Interlocked.Increment(&serviceCount)
-//        Logger.logTrace $"tryReply - {count}: Starting..."
+//        Logger.logTrace (fun () -> $"tryReply - {count}: Starting...")
 
         let reply =
             match tryDeserialize wcfSerializationFormat a with
@@ -47,7 +47,7 @@ module Service =
                 Logger.logError $"tryReply - Error: '{e}'."
                 [||]
 
-        // Logger.logTrace $"tryReply - retVal.Length = {retVal.Length}."
+        // Logger.logTrace (fun () -> $"tryReply - retVal.Length = {retVal.Length}.")
         retVal
 
 

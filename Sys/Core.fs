@@ -1,6 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
+open System.Diagnostics
 open System.Threading.Tasks
 open System.IO
 open System.IO.Compression
@@ -15,6 +16,9 @@ open Softellect.Sys.WindowsApi
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
+
+    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
+
 
     let toVariableName (s : string) =
         match s.Length with
@@ -51,20 +55,14 @@ module Core =
     let unZip (b : byte[]) = b |> unZipBytes |> fromByteArray
 
 
-    let private getCurrentYearStart() : DateTimeOffset =
-        DateTimeOffset(DateTime(DateTime.Now.Year, 1, 1, 0, 0, 0), TimeSpan.Zero)
-
-
     /// Zips the contents of the specified folder and all subfolders.
     let zipFolder (FolderName folderPath) =
-        let dt = getCurrentYearStart()
-
         try
             if not (Directory.Exists(folderPath)) then Error $"Folder {folderPath} does not exist."
             else
                 use memoryStream = new MemoryStream()
 
-                // archive must be disposed of before we can access the memoryStream.ToArray()
+                // The archive must be disposed of before we can access the memoryStream.ToArray()
                 // So, we wrap it into a function with use archive inside.
                 let archiveFolder() =
                     use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
@@ -73,9 +71,10 @@ module Core =
                         let directory = DirectoryInfo(folderPath)
 
                         for file in directory.GetFiles() |> Array.sortBy _.Name do
+                            Logger.logTrace (fun () -> $"Adding file: '%A{file.FullName}' to archive folder: '{archiveFolder}'.")
                             let entryName = Path.Combine(archiveFolder, file.Name)
                             let entry = archive.CreateEntry(entryName, CompressionLevel.Optimal)
-                            entry.LastWriteTime <- dt // Must use that for a deterministic archive. It will force an update once a year.
+                            entry.LastWriteTime <- file.LastWriteTime
                             use entryStream = entry.Open()
                             use fileStream = file.OpenRead()
                             fileStream.CopyTo(entryStream)
@@ -90,6 +89,66 @@ module Core =
 
                 let resultBytes = memoryStream.ToArray()
                 Ok resultBytes
+        with
+        | ex -> Error ex.Message
+
+
+    /// Zips the contents of the specified folder and all subfolders, with optional additional folders mapped to specific archive subfolders.
+    let zipFolderWithAdditionalMappings (mainFolderPath : FolderName) (additionalFolders: FolderMapping list) =
+        try
+            if not (Directory.Exists(mainFolderPath.value)) then Error $"%A{mainFolderPath} does not exist."
+            else
+                // Validate all additional folders exist
+                let nonExistentFolders =
+                    additionalFolders
+                    |> List.filter (fun mapping -> not (Directory.Exists(mapping.FolderPath.value)))
+                    |> List.map _.FolderPath.value
+
+                if not (List.isEmpty nonExistentFolders) then
+                    let errFolders = nonExistentFolders |> joinStrings ", "
+                    Error $"The following folders do not exist: {errFolders}"
+                else
+                    use memoryStream = new MemoryStream()
+
+                    // The archive must be disposed of before we can access the memoryStream.ToArray()
+                    let archiveFolder() =
+                        use archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true)
+
+                        // Local function to add a file to the archive
+                        let addFileToArchive (filePath: string) (entryPath: string) =
+                            let fileInfo = FileInfo(filePath)
+                            let entry = archive.CreateEntry(entryPath, CompressionLevel.Optimal)
+                            entry.LastWriteTime <- fileInfo.LastWriteTime
+                            use entryStream = entry.Open()
+                            use fileStream = fileInfo.OpenRead()
+                            fileStream.CopyTo(entryStream)
+
+                        // Local function to process files in a directory and its subdirectories
+                        let rec processDirectory (FolderName directoryPath) (archiveBasePath: string) =
+                            let directory = DirectoryInfo(directoryPath)
+
+                            // Add all files in the current directory
+                            for file in directory.GetFiles() |> Array.sortBy _.Name do
+                                Logger.logTrace (fun () -> $"Adding file: '%A{file.FullName}' to archive folder: '{archiveBasePath}'.")
+                                let entryName = Path.Combine(archiveBasePath, file.Name)
+                                addFileToArchive file.FullName entryName
+
+                            // Process all subdirectories
+                            for subfolder in directory.GetDirectories() |> Array.sortBy _.Name do
+                                let subfolderArchivePath = Path.Combine(archiveBasePath, subfolder.Name)
+                                processDirectory (FolderName subfolder.FullName) subfolderArchivePath
+
+                        // Process main folder with empty base path
+                        processDirectory mainFolderPath String.Empty
+
+                        // Process each additional folder with its specified archive subfolder as base path
+                        for mapping in (additionalFolders |> List.sort) do
+                            processDirectory mapping.FolderPath mapping.ArchiveSubfolder
+
+                    archiveFolder()
+
+                    let resultBytes = memoryStream.ToArray()
+                    Ok resultBytes
         with
         | ex -> Error ex.Message
 
@@ -157,7 +216,7 @@ module Core =
         JsonSerializerSettings(
             Formatting = Formatting.Indented,
             ContractResolver = CamelCasePropertyNamesContractResolver(),
-            Converters = [| new Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
+            Converters = [| Newtonsoft.Json.Converters.StringEnumConverter() :> JsonConverter |])
 
     let jsonSerialize t = JsonConvert.SerializeObject(t, jsonSettings)
     let jsonDeserialize<'T> s = JsonConvert.DeserializeObject<'T>(s, jsonSettings)
@@ -165,10 +224,6 @@ module Core =
     //let jsonSerializer = FsPickler.CreateJsonSerializer(indent = true)
     //let jsonSerialize t = jsonSerializer.PickleToString t
     //let jsonDeserialize<'T> s = jsonSerializer.UnPickleOfString<'T> s
-
-
-    // let joinStrings (s : string) (v : string[]) = String.Join(s, v)
-    let joinStrings j (s : #seq<'T>) = String.Join(j, s |> Seq.map (fun e -> $"{e}"))
 
 
     // TODO kk:20240824 - Does not work. Delete in 180 days if not fixed.
@@ -219,7 +274,7 @@ module Core =
             Ok b
         with
         | e ->
-            Logger.logTrace $"trySerialize: Exception: '%A{e}'."
+            Logger.logTrace (fun () -> $"trySerialize: Exception: '%A{e}'.")
             e |> SerializationExn |> Error
 
 
@@ -272,7 +327,7 @@ module Core =
 
 
     /// http://www.fssnip.net/iW/title/Oneliner-generic-timing-function
-    let time f a = System.Diagnostics.Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
+    let time f a = Stopwatch.StartNew() |> (fun sw -> (f a, sw.Elapsed))
 
 
     let timedImplementation<'A> b name (f : unit -> 'A) =
@@ -519,9 +574,9 @@ module Core =
     type FileName
         with
 
-        /// Gets the full file name located in the folder where the assembly normally resides on disk or the install directory
-        /// unless the file name is already a name with a full path.
-        /// Optional folder name allow specifying a subfolder unless it is a fullly qualified folder name.
+        /// Gets the full file name located in the folder where the assembly normally resides on disk or
+        /// the installation directory unless the file name is already a name with a full path.
+        /// Optional folder name allow specifying a subfolder unless it is a fully qualified folder name.
         member f.tryGetFullFileName(fo : FolderName option) =
             try
                 let fileName = f.value
@@ -538,7 +593,7 @@ module Core =
                             then Path.Combine(folder, fileName)
                             else Path.Combine(assemblyLocation, folder, fileName)
 
-                Logger.logTrace $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'."
+                Logger.logTrace (fun () -> $"tryGetFullFileName: fileName = '%A{fileName}', fullPath = '%A{fullPath}'.")
                 FileName fullPath |> Ok
             with
             | e ->
@@ -583,3 +638,106 @@ module Core =
         | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
 
         ()
+
+
+    /// Tries to execute a given file with given command line parameters and wait for exit.
+    let tryExecuteFile (FileName fileName) (commandLine: string) =
+        try
+            let startInfo = ProcessStartInfo()
+            startInfo.FileName <- fileName
+            startInfo.Arguments <- commandLine
+            startInfo.UseShellExecute <- false
+
+            use p = Process.Start(startInfo)
+            p.WaitForExit()
+            Ok p.ExitCode
+        with
+        | e -> ExecuteFileExn e |> Error
+
+
+    /// Well-known Windows top-level folders we must never delete
+    let private wellKnownTopFolders =
+        [
+            Path.GetPathRoot(Environment.SystemDirectory)          // e.g. "C:\"
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows)
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+            Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Users")
+        ]
+        |> List.map _.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+
+
+    /// Check if the folder is dangerous (one of the system folders).
+    let private isWellKnownTopFolder (FolderName folderPath) =
+        let normalized = folderPath.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+        wellKnownTopFolders |> List.exists (fun top -> normalized = top)
+
+
+    /// Tries to delete a file safely.
+    let private tryDeleteFile (path : FileName) =
+        try
+            if File.Exists(path.value) then File.Delete(path.value)
+            Ok ()
+        with ex -> (path, ex) |> DeleteFileExn |> Error
+
+
+    /// Tries to delete an empty directory safely.
+    let private tryDeleteEmptyFolder (path : FolderName) =
+        try
+            if Directory.Exists(path.value) then Directory.Delete(path.value)
+            Ok ()
+        with ex -> (path, ex) |> DeleteFolderExn |> Error
+
+
+    let private elevateIfErr result =
+        match result with
+        | Ok () -> Ok ()
+        | Error e ->
+            match e with
+            | [] -> Ok()
+            | [ e1 ] -> e1 |> FileErr |> Error
+            | _ -> e |> List.map FileErr |> AggregateErr |> Error
+
+
+    let private alreadyDeleted (folderPath: FolderName) =
+        try
+            not (Directory.Exists(folderPath.value)) |> Ok
+        with e -> folderPath |> DeleteFolderErr |> Error
+
+
+    let rec private delete (folderPath: FolderName) =
+        match alreadyDeleted folderPath with
+        | Ok true -> Ok()
+        | Ok false ->
+            let mutable errors = []
+
+            try
+                // Delete all files
+                for file in Directory.GetFiles(folderPath.value, "*", SearchOption.TopDirectoryOnly) do
+                    match tryDeleteFile (FileName file) with
+                    | Ok () -> ()
+                    | Error err -> errors <- err :: errors
+
+                // Recursively process subfolders
+                for subfolder in Directory.GetDirectories(folderPath.value, "*", SearchOption.TopDirectoryOnly) do
+                    match delete (FolderName subfolder) with
+                    | Ok () -> ()
+                    | Error errs -> errors <- errs @ errors
+
+                // Delete the folder itself
+                match tryDeleteEmptyFolder folderPath with
+                | Ok () -> ()
+                | Error err -> errors <- err :: errors
+            with e -> errors <- (DeleteFolderExn (folderPath, e)) :: errors
+
+            match errors with
+            | [] -> Ok()
+            | _ -> Error errors
+        | Error e -> Error [e]
+
+
+    /// Recursively delete contents of a directory, then the directory itself.
+    let deleteFolderRecursive (folderPath: FolderName) =
+        match isWellKnownTopFolder folderPath with
+        | true -> folderPath |> DeleteFolderErr |> FileErr |> Error
+        | false -> delete folderPath |> elevateIfErr

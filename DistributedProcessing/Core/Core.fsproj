@@ -1,61 +1,55 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <AssemblyName>Softellect.DistributedProcessing.Core</AssemblyName>
-        <Platforms>x64</Platforms>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <Authors>Konstantin Konstantinov</Authors>
-        <Company>Softellect Systems, Inc.</Company>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>9.0.100.4</Version>
-        <PackageVersion>9.0.100.4</PackageVersion>
-        <Description>Softellect WorkerNode ...</Description>
-        <PackageTags>messaging;client;server;framework</PackageTags>
-        <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNode</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <DefineConstants>DEBUG</DefineConstants>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <PlatformTarget>x64</PlatformTarget>
-        <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
-        <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <Compile Include="VersionInfo.fs" />
-        <Compile Include="Common.fs" />
-        <Compile Include="Errors.fs" />
-        <Compile Include="Messages.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\Sys\Sys.fsproj" />
-        <ProjectReference Include="..\..\Wcf\Wcf.fsproj" />
-        <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="SQLProvider" Version="1.4.2" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
-        <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-        <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
-        <PackageReference Include="System.Data.Common" Version="4.3.0" />
-        <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
-        <PackageReference Include="Microsoft.Windows.Compatibility" Version="9.0.0" />
-    </ItemGroup>
-
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>Softellect.DistributedProcessing.Core</AssemblyName>
+    <Platforms>x64</Platforms>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>9.0.300.27</Version>
+    <PackageVersion>9.0.300.27</PackageVersion>
+    <Description>Softellect WorkerNode ...</Description>
+    <PackageTags>messaging;client;server;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/WorkerNode</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="VersionInfo.fs" />
+    <Compile Include="Common.fs" />
+    <Compile Include="Errors.fs" />
+    <Compile Include="Messages.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\..\Wcf\Wcf.fsproj" />
+    <ProjectReference Include="..\..\Messaging\Messaging.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SQLProvider" Version="1.5.7" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.5" />
+    <PackageReference Include="System.Data.Common" Version="4.3.0" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Update="FSharp.Core" Version="9.0.300" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="9.0.5" />
+  </ItemGroup>
 </Project>

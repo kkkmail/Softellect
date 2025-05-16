@@ -92,7 +92,7 @@ module Primitives =
     type ResultGenerator<'D, 'X, 'C> =
         {
             /// A function to call in order to generate a result data point.
-            /// This is to collect "lightweight" reslut data points at some predetermined intervals.
+            /// This is to collect "lightweight" result data points at some predetermined intervals.
             getResultData : 'D -> EvolutionTime -> 'X -> 'C
 
             /// A function to call to generate all lightweight ("evolution") results.

@@ -29,10 +29,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
         <ProjectReference Include="..\..\..\DistributedProcessing\PartitionerAdm\PartitionerAdm.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="9.0.100" />
+        <PackageReference Update="FSharp.Core" Version="9.0.300" />
     </ItemGroup>
 
 </Project>

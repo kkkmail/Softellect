@@ -62,7 +62,7 @@ module OdeSolver =
 
     /// F# wrapper around various ODE solvers.
     let createOdeSolver p n =
-        Logger.logTrace $"p: %A{p}, n: %A{n}."
+        Logger.logTrace (fun () -> $"p: %A{p}, n: %A{n}.")
         let startTime = double p.startTime.value
         let endTime = double p.endTime.value
 
@@ -70,7 +70,7 @@ module OdeSolver =
         // c
         match n.odeSolverType with
         | AlgLib CashCarp ->
-            Logger.logTrace "nSolve: Using Cash - Carp Alglib solver."
+            Logger.logTrace (fun () -> "nSolve: Using Cash - Carp Alglib solver.")
 
             let solve (_, x0) (c : TryCallBack<double[]>) =
                 let nt = 2
@@ -87,13 +87,13 @@ module OdeSolver =
                 let xEnd = yTbl[nt - 1, *]
                 //notifyAll n (FinalCallBack CompletedCalculation) { progressData = needsCallBackData.progressData; t = p.endTime; x = xEnd }
 
-                Logger.logTrace $"t = %A{p.endTime}"
+                Logger.logTrace (fun () -> $"t = %A{p.endTime}")
                 (p.endTime, xEnd)
 
             SolverRunner solve
 
         | OdePack (m, i, nc) ->
-            Logger.logTrace $"nSolve: Using {m} / {i} / {nc} DLSODE solver."
+            Logger.logTrace (fun () -> $"nSolve: Using {m} / {i} / {nc} DLSODE solver.")
             let mapResults (r : SolverResult) _ = (decimal r.EndTime |> EvolutionTime, r.X)
 
             let solve (_, x0) (c : TryCallBack<double[]>) =
@@ -122,7 +122,7 @@ module OdeSolver =
                                 n.absoluteTolerance.value)
 
                 //notifyAll n (FinalCallBack CompletedCalculation) result
-                Logger.logTrace $"t = %A{(fst result)}"
+                Logger.logTrace (fun () -> $"t = %A{(fst result)}")
                 result
 
             SolverRunner solve

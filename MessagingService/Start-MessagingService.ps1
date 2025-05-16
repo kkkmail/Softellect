@@ -1,4 +1,5 @@
-param([string] $messagingDataVersion = "")
+$scriptDirectory = $PSScriptRoot
 
-. ./MessagingFunctions.ps1
-StartMessagingService -messagingDataVersion $messagingDataVersion
+. "$scriptDirectory\MessagingFunctions.ps1"
+
+StartMessagingService

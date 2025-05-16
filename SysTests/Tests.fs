@@ -65,10 +65,7 @@ module CoreTests =
                 let path2 = Path.Combine(dir2, file.TrimStart(Path.DirectorySeparatorChar))
                 File.ReadAllText(path1) = File.ReadAllText(path2))
 
-
-    // Test method to zip, unzip, and verify content
-    [<Fact>]
-    let zippingAndUnzippingFolderShouldPreserveContents () : unit =
+    let private zippingAndUnzippingShouldPreserveContents zip compare : unit =
         let inputFolder = FolderName "C:\\Temp\\Input"
         let outputFolder = FolderName "C:\\Temp\\Output"
 
@@ -80,7 +77,7 @@ module CoreTests =
         createTestFolderStructure inputFolder
 
         // Zip the Input folder
-        let zipResult = zipFolder inputFolder
+        let zipResult = zip inputFolder
 
         match zipResult with
         | Ok zipBytes ->
@@ -90,11 +87,141 @@ module CoreTests =
             match unzipResult with
             | Ok () ->
                 // Verify that the unzipped contents match the original Input folder
-                Assert.True(compareDirectories inputFolder outputFolder, "Unzipped folder content does not match original.")
+                Assert.True(compare inputFolder outputFolder, "Unzipped folder content does not match original.")
             | Error err ->
                 Assert.True(false, $"Unzipping failed: {err}")
         | Error err ->
             Assert.True(false, $"Zipping failed: {err}")
+
+
+    // New helper function to create a test folder structure with specific content
+    let private createTestFolderWithContent (FolderName folder) (files: (string * string) list) =
+        // Create the main folder if it doesn't exist
+        if not (Directory.Exists(folder)) then
+            Directory.CreateDirectory(folder) |> ignore
+
+        // Create files and subdirectories as needed
+        for (path, content) in files do
+            let fullPath = Path.Combine(folder, path)
+            let directory = Path.GetDirectoryName(fullPath)
+
+            // Create directory if it doesn't exist
+            if not (Directory.Exists(directory)) then
+                Directory.CreateDirectory(directory) |> ignore
+
+            // Write content to file
+            File.WriteAllText(fullPath, content)
+
+    // Enhanced directory comparison function that checks expected file paths and contents
+    let private compareDirectoryWithExpectedContent (FolderName folder) (expectedFiles: (string * string) list) =
+        try
+            let allChecks =
+                expectedFiles
+                |> List.map (fun (relativePath, expectedContent) ->
+                    let fullPath = Path.Combine(folder, relativePath)
+
+                    // Check if file exists
+                    if not (File.Exists(fullPath)) then
+                        printfn $"File not found: {fullPath}"
+                        false
+                    else
+                        // Check file content
+                        let actualContent = File.ReadAllText(fullPath)
+                        if actualContent <> expectedContent then
+                            printfn $"Content mismatch for {fullPath}"
+                            printfn $"Expected: {expectedContent}"
+                            printfn $"Actual: {actualContent}"
+                            false
+                        else
+                            true
+                )
+
+            // Check if all files match expectations
+            allChecks |> List.forall (fun result -> result)
+        with
+        | ex ->
+            printfn $"Error during comparison: {ex.Message}"
+            false
+
+
+    // Test method to zip, unzip, and verify content
+    [<Fact>]
+    let zippingAndUnzippingFolderShouldPreserveContents () : unit =
+        zippingAndUnzippingShouldPreserveContents zipFolder compareDirectories
+
+
+    [<Fact>]
+    let zipFolderWithAdditionalMappingsAndUnzippingFolderShouldPreserveContents () : unit =
+        let zip f = zipFolderWithAdditionalMappings f []
+        zippingAndUnzippingShouldPreserveContents zip compareDirectories
+
+
+    [<Fact>]
+    let ``zipFolderWithAdditionalMappings should include mappings in correct structure`` () =
+        // Set up test folders
+        let mainFolder = FolderName "C:\\Temp\\MainFolder"
+        let additionalFolder1 = FolderName "C:\\Temp\\AdditionalFolder1"
+        let additionalFolder2 = FolderName "C:\\Temp\\AdditionalFolder2"
+        let outputFolder = FolderName "C:\\Temp\\MappingOutput"
+
+        // Ensure all folders are empty
+        [mainFolder; additionalFolder1; additionalFolder2; outputFolder]
+        |> List.iter (fun folder ->
+            Assert.True(ensureFolderIsEmpty folder, $"Failed to clear/create folder: {folder}"))
+
+        // Create content in main folder
+        createTestFolderWithContent mainFolder [
+            "main.txt", "Main folder content"
+            "subfolder\\main-sub.txt", "Main subfolder content"
+        ]
+
+        // Create content in additional folder 1
+        createTestFolderWithContent additionalFolder1 [
+            "add1.txt", "Additional folder 1 content"
+            "nested\\add1-nested.txt", "Additional folder 1 nested content"
+        ]
+
+        // Create content in additional folder 2
+        createTestFolderWithContent additionalFolder2 [
+            "add2.txt", "Additional folder 2 content"
+            "deep\\deeper\\add2-deep.txt", "Additional folder 2 deep content"
+        ]
+
+        let mappings = [
+            { FolderPath = additionalFolder1; ArchiveSubfolder = "Extra1" }
+            { FolderPath = additionalFolder2; ArchiveSubfolder = "Extra2\\Data" }
+        ]
+
+        // Zip everything
+        let zipResult = zipFolderWithAdditionalMappings mainFolder mappings
+
+        match zipResult with
+        | Error err -> Assert.True(false, $"Zipping failed: {err}")
+        | Ok zipBytes ->
+            // Unzip to output folder
+            let unzipResult = unzipToFolder zipBytes outputFolder true
+
+            match unzipResult with
+            | Error err -> Assert.True(false, $"Unzipping failed: {err}")
+            | Ok () ->
+                // Define expected file structure after unzipping
+                let expectedFiles = [
+                    // Main folder contents
+                    "main.txt", "Main folder content"
+                    "subfolder\\main-sub.txt", "Main subfolder content"
+
+                    // Additional folder 1 contents (in Extra1)
+                    "Extra1\\add1.txt", "Additional folder 1 content"
+                    "Extra1\\nested\\add1-nested.txt", "Additional folder 1 nested content"
+
+                    // Additional folder 2 contents (in Extra2\Data)
+                    "Extra2\\Data\\add2.txt", "Additional folder 2 content"
+                    "Extra2\\Data\\deep\\deeper\\add2-deep.txt", "Additional folder 2 deep content"
+                ]
+
+                // Verify output structure matches expectations
+                let result = compareDirectoryWithExpectedContent outputFolder expectedFiles
+                Assert.True(result, "Unzipped folder content does not match expected structure")
 
 
     [<Fact>]
@@ -141,3 +268,17 @@ module CoreTests =
         match tryDecryptAndVerify RSA encryptedData recipientPrivateKey senderPublicKey with
         | Ok decryptedData -> decryptedData.Should().BeEquivalentTo(data) |> ignore
         | Error e -> failwith $"Error: %A{e}"
+
+    [<Fact>]
+    let ``Array comparison should be by value not by reference`` () =
+        // Arrange
+        let a1 = [|1; 2; 3|]
+        let a2 = [|1; 2; 3|]  // Different instance, same values
+
+        // Act - the arrays should be different references but equal values
+        let sameReference = Object.ReferenceEquals(a1, a2)
+        let equalValues = (a1 = a2)
+
+        // Assert
+        sameReference.Should().BeFalse("arrays should be different instances") |> ignore
+        equalValues.Should().BeTrue("arrays with same values should be equal") |> ignore

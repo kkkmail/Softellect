@@ -150,7 +150,7 @@ module WorkerNodeService =
     ///     https://docs.microsoft.com/en-us/dotnet/core/porting/windows-compat-pack
     ///     https://stackoverflow.com/questions/33635852/how-do-i-convert-a-weakly-typed-icollection-into-an-f-list
     let checkRunning (r : CheckRunningRequest) : CheckRunningResult =
-        Logger.logTrace $"r: %A{r}"
+        Logger.logTrace (fun () -> $"r: %A{r}")
         try
             let wmiQuery = $"select Handle, CommandLine from Win32_Process where Caption = '{SolverRunnerName}'"
             let searcher = new ManagementObjectSearcher(wmiQuery)
@@ -166,7 +166,7 @@ module WorkerNodeService =
 
             match r with
             | AnyRunning f ->
-                Logger.logTrace $"f: %A{f}, processes: %A{processes}."
+                Logger.logTrace (fun () -> $"f: %A{f}, processes: %A{processes}.")
                 let v = $"{f.value}".ToLower()
 
                 let p =
@@ -180,7 +180,7 @@ module WorkerNodeService =
             | RunQueueRunning (no, q) ->
                 let v = $"{q.value}".ToLower()
                 let pid = ProcessId.getCurrentProcessId()
-                Logger.logTrace $"q: %A{q}, no: %A{no}, processes: %A{processes}."
+                Logger.logTrace (fun () -> $"q: %A{q}, no: %A{no}, processes: %A{processes}.")
 
                 let run() =
                     let p =
@@ -249,21 +249,21 @@ module WorkerNodeService =
 
 
     let private onFailedSolver (proxy : FailedSolverProxy) (q : RunQueueId) e=
-        Logger.logTrace $"onFailedSolver: %A{q}, error: '%A{e}'."
+        Logger.logTrace (fun () -> $"onFailedSolver: %A{q}, error: '%A{e}'.")
 
         let failRunQueue s =
-            Logger.logTrace $"Sending a message about failed to start: %A{q}."
+            Logger.logTrace (fun () -> $"Sending a message about failed to start: %A{q}.")
 
             let r =
                 (proxy.getFailedSolverMessageInfo q s).getMessageInfo()
                 |> proxy.createMessage
                 |> proxy.saveMessage
 
-            Logger.logTrace $"Message sent with result: %A{r}."
+            Logger.logTrace (fun () -> $"Message sent with result: %A{r}.")
 
             match r with
             | Ok() ->
-                Logger.logTrace $"Deleting failed: %A{r}."
+                Logger.logTrace (fun () -> $"Deleting failed: %A{r}.")
                 proxy.deleteRunQueue q
             | Error e1 ->
                 Logger.logError $"Failed to delete %A{q} with: '%A{e1}', outer error: '%A{e}'."
@@ -273,7 +273,7 @@ module WorkerNodeService =
         | Ok r ->
             match r with
             | CanRetry ->
-                Logger.logTrace $"onFailedSolver: can retry for %A{q}."
+                Logger.logTrace (fun () -> $"onFailedSolver: can retry for %A{q}.")
                 Ok()
             | ExceededRetryCount v ->
                 let m = $"%A{q} exceeded retry count {v.retryCount}. Current count: {v.maxRetries}. Error %A{e}."
@@ -303,13 +303,13 @@ module WorkerNodeService =
     /// Tries to run a solver with a given RunQueueId if it is not already running and if the number
     /// of running solvers is less than a given allowed max value.
     let tryRunSolverProcess o (p : TryRunSolverProcessProxy) n (q : RunQueueId) =
-        Logger.logTrace $"tryRunSolverProcess: n = {n}, q = '%A{q}'."
+        Logger.logTrace (fun () -> $"tryRunSolverProcess: n = {n}, q = '%A{q}'.")
 
         let elevate f = f |> TryRunSolverProcessErr
         let toError e = e |> elevate |> Error
 
         let onFailedSolverStart result =
-            Logger.logTrace $"onFailedSolverStart: %A{q}, result: '%A{result}'."
+            Logger.logTrace (fun () -> $"onFailedSolverStart: %A{q}, result: '%A{result}'.")
 
             match result with
             | Ok r -> Ok r
@@ -319,7 +319,7 @@ module WorkerNodeService =
 
         match p.tryGetSolverLocation q with
         | Ok (Some folderName) ->
-            Logger.logTrace $"tryRunSolverProcess: folderName = '{folderName}'."
+            Logger.logTrace (fun () -> $"tryRunSolverProcess: folderName = '{folderName}'.")
             match tryGetSolverFullName folderName with
             | fileName, Ok e ->
                 let run() =
@@ -336,7 +336,7 @@ module WorkerNodeService =
 
                     match ea with
                     | Ok (exeName, args) ->
-                        Logger.logTrace $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'."
+                        Logger.logTrace (fun () -> $"tryRunSolverProcess: exeName = '{exeName}', args: '{args}'.")
 
                         try
                             // Uncomment temporarily when testing failed solver start.
@@ -362,7 +362,7 @@ module WorkerNodeService =
                             then
                                 p.PriorityClass <- ProcessPriorityClass.Idle
                                 let processId = p.Id |> ProcessId
-                                Logger.logTrace $"Started: {p.ProcessName} with pid: {processId}."
+                                Logger.logTrace (fun () -> $"Started: {p.ProcessName} with pid: {processId}.")
                                 Ok processId
                             else
                                 Logger.logError $"Failed to start process: {fileName}."
@@ -377,7 +377,7 @@ module WorkerNodeService =
                 match checkRunning (RunQueueRunning ((Some (n - 1)), q)) with
                 | CanRun ->
                     let r = run()
-                    Logger.logTrace $"About to call onFailedSolverStart '%A{r}'."
+                    Logger.logTrace (fun () -> $"About to call onFailedSolverStart '%A{r}'.")
                     onFailedSolverStart r
                 | e ->
                     Logger.logWarn $"Can't run %A{q}: %A{e}."
@@ -437,6 +437,58 @@ module WorkerNodeService =
         | e -> e |> CopyAppSettingsExn |> toError
 
 
+    let private deleteSolverFolder solverFolder =
+        match deleteFolderRecursive solverFolder with
+        | Ok () ->
+            Logger.logTrace (fun () -> $"deleteSolverFolder: deleted '%A{solverFolder}'.")
+            Ok()
+        | Error e ->
+            Logger.logError $"deleteSolverFolder: failed to delete '%A{solverFolder}' with error: '%A{e}'."
+            e |> CannotDeleteOldSolverErr |> TryDeploySolverErr |> Error
+
+
+    let private reinstallWorkerNodeService (tempFolder : FolderName) (installationFolder : FolderName) (workerNodeServiceFolder : FolderName) : DistributedProcessingUnitResult =
+        Logger.logInfo $"Reinstalling worker node service from '{installationFolder}' to '{workerNodeServiceFolder}'"
+
+        try
+            let outputFile = FileName($"""worker_node_reinstall_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.txt""").combine tempFolder
+
+            match tempFolder.tryEnsureFolderExists() with
+            | Ok() ->
+                let scriptName = "Reinstall-WorkerNodeService.ps1"
+                let psArgs = $"-ExecutionPolicy Bypass -File \"{scriptName}\" -ServiceFolder \"{workerNodeServiceFolder.value}\" -InstallationFolder \"{installationFolder.value}\""
+                let cmdArgs = $"/c powershell.exe {psArgs} > {outputFile.value} 2>&1 3>&1 4>&1 5>&1 6>&1"
+
+                let procStartInfo =
+                    ProcessStartInfo(
+                        RedirectStandardOutput = false,
+                        RedirectStandardError = false,
+                        UseShellExecute = true,
+                        FileName = "cmd.exe",
+                        Arguments = cmdArgs,
+                        WindowStyle = ProcessWindowStyle.Normal
+                    )
+
+                procStartInfo.WorkingDirectory <- installationFolder.value
+
+                let proc = new Process(StartInfo = procStartInfo)
+                let started = proc.Start()
+
+                if started then
+                    Logger.logInfo $"Started worker node service reinstallation process. Output will be captured in: {outputFile.value}"
+                    Ok ()
+                else
+                    Logger.logError $"Failed to start process for reinstalling worker node service"
+                    FailedToStartReinstallProcess |> ReinstallWorkerNodeServiceErr |> Error
+            | Error e ->
+                Logger.logError $"Failed to create output folder: %A{tempFolder}, error: '{e}'."
+                (tempFolder, e) |> FailedToCreateReinstallTempFolder |> ReinstallWorkerNodeServiceErr |> Error
+        with
+        | ex ->
+            Logger.logError $"Exception during worker node service reinstallation: '%A{ex}'."
+            ex |> ReinstallWorkerNodeServiceExn |> ReinstallWorkerNodeServiceErr |> Error
+
+
     type WorkerNodeProxy =
         {
             saveModelData : RunQueueId -> SolverId -> ModelBinaryData -> DistributedProcessingUnitResult
@@ -448,6 +500,7 @@ module WorkerNodeService =
             tryRunSolverProcess : TryRunSolverProcessProxy -> int -> RunQueueId -> DistributedProcessingResult<ProcessId>
             saveSolver : Solver -> DistributedProcessingUnitResult
             tryDecryptSolver : EncryptedSolver -> PartitionerId -> DistributedProcessingResult<Solver>
+            deleteSolverFolder : FolderName -> DistributedProcessingUnitResult
             unpackSolver : FolderName -> Solver -> DistributedProcessingUnitResult
             copyAppSettings : FolderName -> DistributedProcessingUnitResult
             checkSolverRunning : SolverName -> CheckRunningResult
@@ -459,6 +512,10 @@ module WorkerNodeService =
             tryUpdateFailedSolver : RunQueueId -> DistributedProcessingError -> DistributedProcessingResult<RetryState>
             getFailedSolverMessageInfo : RunQueueId -> string -> PartitionerMessageInfo
             deleteRunQueue : RunQueueId -> DistributedProcessingUnitResult
+            reinstallWorkerNodeService : FolderName -> FolderName -> DistributedProcessingUnitResult
+            tryGetWorkerNodeReinstallationInfo : unit -> DistributedProcessingResult<BuildNumber option>
+            trySaveWorkerNodeReinstallationInfo : BuildNumber -> DistributedProcessingUnitResult
+            tryDeleteWorkerNodeReinstallationInfo : unit -> DistributedProcessingUnitResult
         }
 
         member p.tryRunSolverProcessProxy =
@@ -485,6 +542,7 @@ module WorkerNodeService =
                 tryRunSolverProcess = tryRunSolverProcess (Some i.workerNodeLocalInto.solverOutputLocation)
                 saveSolver = saveSolver
                 tryDecryptSolver = tryDecryptSolver i.workerNodeInfo
+                deleteSolverFolder = deleteSolverFolder
                 unpackSolver = unpackSolver
                 copyAppSettings = copyAppSettings
                 checkSolverRunning = checkSolverRunning i.workerNodeLocalInto
@@ -496,6 +554,10 @@ module WorkerNodeService =
                 tryUpdateFailedSolver = tryUpdateFailedSolver
                 getFailedSolverMessageInfo = getFailedSolverMessageInfo i.workerNodeInfo.partitionerId
                 deleteRunQueue = deleteRunQueue
+                reinstallWorkerNodeService = reinstallWorkerNodeService i.workerNodeLocalInto.solverOutputLocation
+                tryGetWorkerNodeReinstallationInfo = tryGetWorkerNodeReinstallationInfo
+                trySaveWorkerNodeReinstallationInfo = trySaveWorkerNodeReinstallationInfo
+                tryDeleteWorkerNodeReinstallationInfo = tryDeleteWorkerNodeReinstallationInfo
             }
 
 

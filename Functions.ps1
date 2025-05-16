@@ -84,13 +84,154 @@ function TryStopService([string] $serviceName)
     }
 }
 
-function UninstallService([string] $serviceName)
+function UninstallService_Old([string] $serviceName)
 {
     Write-Host "Attempting to uninstall service: $serviceName..."
     if (Get-Service $serviceName -ErrorAction SilentlyContinue)
     {
         Remove-Service -Name $serviceName
         Write-Host "    Uninstalled service: $serviceName."
+    }
+    else
+    {
+        Write-Host "    Service: $serviceName is not found."
+    }
+}
+
+function Uninstall-Service-ScExe([string] $serviceName)
+{
+    try {
+        $output = & sc.exe delete $serviceName 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    Uninstalled service: $serviceName via sc.exe."
+            return $true
+        }
+        else {
+            Write-Host "    sc.exe delete failed with exit code: $LASTEXITCODE. Output: $output"
+            return $false
+        }
+    }
+    catch {
+        Write-Host "    sc.exe delete failed with exception: $_"
+        return $false
+    }
+}
+
+function Uninstall-Service-WMI([string] $serviceName)
+{
+    try {
+        $wmiService = Get-WmiObject -Class Win32_Service -Filter "Name='$serviceName'"
+        if ($wmiService) {
+            $result = $wmiService.Delete()
+            if ($result.ReturnValue -eq 0) {
+                Write-Host "    Uninstalled service: $serviceName via WMI."
+                return $true
+            }
+            else {
+                Write-Host "    WMI delete failed with return value: $($result.ReturnValue)."
+                return $false
+            }
+        }
+        else {
+            Write-Host "    WMI service not found."
+            return $false
+        }
+    }
+    catch {
+        Write-Host "    WMI delete failed with exception: $_"
+        return $false
+    }
+}
+
+function Uninstall-Service-DotNet([string] $serviceName)
+{
+    try {
+        Add-Type -TypeDefinition @"
+            using System;
+            using System.ServiceProcess;
+            using System.Configuration.Install;
+            
+            public class ServiceUninstaller {
+                public static bool Uninstall(string serviceName) {
+                    try {
+                        ServiceInstaller installer = new ServiceInstaller();
+                        installer.ServiceName = serviceName;
+                        installer.Context = new InstallContext();
+                        installer.Uninstall(null);
+                        return true;
+                    }
+                    catch {
+                        return false;
+                    }
+                }
+            }
+"@
+        
+        $result = [ServiceUninstaller]::Uninstall($serviceName)
+        if ($result) {
+            Write-Host "    Uninstalled service: $serviceName via .NET ServiceInstaller."
+            return $true
+        }
+        else {
+            Write-Host "    .NET ServiceInstaller failed."
+            return $false
+        }
+    }
+    catch {
+        Write-Host "    .NET ServiceInstaller failed with exception: $_"
+        return $false
+    }
+}
+
+function UninstallService([string] $serviceName)
+{
+    Write-Host "Attempting to stop service: $serviceName..."
+    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    
+    if($service)
+    {
+        if ($service.Status -eq 'Running')
+        {
+            Write-Host "    Stopping service: $serviceName."
+            Stop-Service -Name $serviceName -Force -ErrorAction Stop
+            Write-Host "    Stopped service: $serviceName."
+        }
+        else
+        {
+            Write-Host "    Service: $serviceName is not running."
+        }
+        
+        Write-Host "Attempting to uninstall service: $serviceName..."
+        
+        # Check if Remove-Service cmdlet is available (PS 6+)
+        if (Get-Command Remove-Service -ErrorAction SilentlyContinue) {
+            try {
+                Remove-Service -Name $serviceName -ErrorAction Stop
+                Write-Host "    Uninstalled service: $serviceName via Remove-Service cmdlet."
+                return
+            }
+            catch {
+                Write-Host "    Remove-Service cmdlet failed: $_. Trying alternative methods..."
+            }
+        }
+        
+        # Try sc.exe method
+        if (Uninstall-Service-ScExe $serviceName) {
+            return
+        }
+        
+        # Try WMI method
+        if (Uninstall-Service-WMI $serviceName) {
+            return
+        }
+        
+        # Try .NET ServiceInstaller method
+        if (Uninstall-Service-DotNet $serviceName) {
+            return
+        }
+        
+        # If all methods fail, throw an error
+        throw "Failed to uninstall service: $serviceName. All methods failed."
     }
     else
     {

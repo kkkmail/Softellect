@@ -21,6 +21,7 @@ open Softellect.DistributedProcessing.AppSettings.SolverRunner
 open Softellect.DistributedProcessing.VersionInfo
 open Softellect.DistributedProcessing.Messages
 open Softellect.Analytics.AppSettings
+open Softellect.Analytics.Wolfram
 
 module Implementation =
 
@@ -44,7 +45,7 @@ module Implementation =
     let private tryStartRunQueue q =
         let pid = ProcessId.getCurrentProcessId()
         let result = tryStartRunQueue q pid
-        Logger.logTrace $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}."
+        Logger.logTrace (fun () -> $"tryStartRunQueue: runQueueId = %A{q}, result = %A{result}.")
         result
 
 
@@ -61,7 +62,7 @@ module Implementation =
                 optionalFolder = data.optionalFolder
             }
 
-        Logger.logTrace $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}."
+        Logger.logTrace (fun () -> $"onSaveResults: Sending results with runQueueId = %A{data.runQueueId}, c.Length = %A{c.Length}.")
 
         let result =
             {
@@ -109,7 +110,7 @@ module Implementation =
                 progressData = pd
             }
 
-        Logger.logTrace $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}."
+        Logger.logTrace (fun () -> $"onUpdateProgress: runQueueId = %A{p.runQueueId}, updatedRunQueueStatus = %A{p.updatedRunQueueStatus}, progress = %A{p.progressData}.")
         let t, completed = toDeliveryType p
         let r0 = tryUpdateProgress<'P> p.runQueueId p.progressData
 
@@ -133,7 +134,7 @@ module Implementation =
                 foldUnitResults DistributedProcessingError.addError [ r0; r1; r2 ]
             else foldUnitResults DistributedProcessingError.addError [ r0; r1 ]
 
-        Logger.logTrace $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}."
+        Logger.logTrace (fun () -> $"    onUpdateProgress: runQueueId = %A{p.runQueueId}, t = %A{t}, result = %A{result}.")
         result
 
 
@@ -205,6 +206,26 @@ module Implementation =
         | Error e ->
             Logger.logError $"Error gettint solver name for '%A{s}', e: '%A{e}'."
             w
+
+
+    let tryGetWolframFileNames solverId (fullName : string) (FileSuffix fileSuffix) =
+        let w = getSolverWolframParams solverId
+
+        let i = (FileName $"{fullName}__{fileSuffix}.m").tryGetFullFileName (Some w.wolframInputFolder)
+        let o = (FileName $"{fullName}__{fileSuffix}.png").tryGetFullFileName (Some w.wolframOutputFolder)
+
+        (i, o)
+
+
+    let getWolframChart solverId d fullName c fileSuffix getData =
+        match tryGetWolframFileNames solverId fullName fileSuffix with
+        | Ok i, Ok o ->
+            let c1 = c |> List.rev
+            let t = c1 |> List.map(fun e -> double e.t)
+            getData d c1 t |> Option.map (getListLinePlot i o ListLineParams.defaultValue)
+        | _ ->
+            Logger.logError $"getWolframChart - Cannot get data for: %A{fullName}."
+            None
 
 
     type SolverRunnerSystemProxy<'P, 'X, 'C>

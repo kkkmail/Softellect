@@ -85,7 +85,8 @@ module Program =
 
             let d =
                 c1.Head.resultData.x
-                |> Array.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
+                |> List.ofArray
+                |> List.mapi (fun i  _ -> { dataLabel = legends[i] |> DataLabel; dataPoints = c1 |> List.mapi (fun j e -> { x = t[j]; y = e.resultData.x[i] }) })
 
             let p = { ListLineParams.defaultValue with imageSize = UserDefinedImageSize "1000" |> Some}
 
@@ -96,7 +97,7 @@ module Program =
 
 
     let getCharts (q : RunQueueId) (d : TestSolverData) (c : list<ResultSliceData<TestChartData>>) =
-        Logger.logTrace $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'."
+        Logger.logTrace (fun () -> $"getChart - q: '%A{q}', c.Length: '%A{c.Length}'.")
 
         let charts =
             match c |> List.tryHead with
@@ -148,7 +149,7 @@ module Program =
                     }
 
                 // Call solverRunnerMain<'D, 'P, 'X, 'C>
-                Logger.logTrace "Calling solverRunnerMain..."
+                Logger.logTrace (fun () -> "Calling solverRunnerMain...")
                 solverRunnerMain<TestSolverData, TestProgressData, double[], TestChartData> solverId getUserProxy argv
             with
             | e ->

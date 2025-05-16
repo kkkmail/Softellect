@@ -1,9 +1,6 @@
 namespace Softellect.DistributedProcessing.WorkerNodeAdm
 
 open Argu
-open System
-open Softellect.Sys.Primitives
-open Softellect.DistributedProcessing.Primitives.Common
 
 module CommandLine =
 

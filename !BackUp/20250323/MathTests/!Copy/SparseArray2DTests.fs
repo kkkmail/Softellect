@@ -1,0 +1,840 @@
+namespace Softellect.Tests.MathTests
+
+open System.Diagnostics
+open FluentAssertions.Execution
+open Softellect.Math.FredholmKernel
+open Xunit
+open FluentAssertions
+open Softellect.Math.Primitives
+open Softellect.Math
+open Softellect.Math.Sparse2D
+open Softellect.Math.Sparse4D
+
+/// Helper functions for testing
+module TestHelpers =
+    /// Convert a Matrix<'T> to a 2D array for comparison
+    let matrixToArray2D (matrix: Matrix<int64>) : int64[,] =
+        let rows = matrix.value.Length
+        let cols = if rows > 0 then matrix.value[0].Length else 0
+        let result = Array2D.zeroCreate rows cols
+        for i in 0..rows-1 do
+            for j in 0..cols-1 do
+                result[i, j] <- matrix.value[i][j]
+        result
+
+    let convertArray2DToJagged (arr: 'T[,]) =
+        [| for i in 0 .. Array2D.length1 arr - 1 ->
+             [| for j in 0 .. Array2D.length2 arr - 1 -> arr[i, j] |] |]
+
+
+    /// Convert a SparseArray2D<'T> to a 2D array for comparison
+    let sparseToArray2D (sparse: SparseArray2D<int64>) (rows: int) (cols: int) : int64[,] =
+        let result = Array2D.zeroCreate rows cols
+        for value in sparse.getValues() do
+            if value.i < rows && value.j < cols then
+                result[value.i, value.j] <- value.value2D
+        result
+
+    /// Create a SparseArray2D from a 2D array
+    let createSparseFrom2DArray (array: int64[,]) : SparseArray2D<int64> =
+        let rows = array.GetLength(0)
+        let cols = array.GetLength(1)
+        let sparseValues =
+            [|
+                for i in 0..rows-1 do
+                    for j in 0..cols-1 do
+                        let value = array[i, j]
+                        if value <> 0L then
+                            yield { i = i; j = j; value2D = value }
+            |]
+        SparseArray2D.create sparseValues
+
+    /// Create a Matrix from a 2D array
+    let createMatrixFrom2DArray (array: int64[,]) : Matrix<int64> =
+        let rows = array.GetLength(0)
+        let cols = array.GetLength(1)
+        let matrixArray =
+            [|
+                for i in 0..rows-1 do
+                    [|
+                        for j in 0..cols-1 do
+                            array[i, j]
+                    |]
+            |]
+        Matrix matrixArray
+
+    /// Assert that a SparseArray2D and a Matrix have the same values
+    let assertEqualSparseAndMatrix (sparse: SparseArray2D<int64>) (matrix: Matrix<int64>) =
+        let rows = matrix.value.Length
+        let cols = if rows > 0 then matrix.value[0].Length else 0
+        let sparseArray = sparseToArray2D sparse rows cols
+        let matrixArray = matrixToArray2D matrix
+
+        for i in 0..rows-1 do
+            for j in 0..cols-1 do
+                sparseArray[i, j].Should().Be(matrixArray[i, j], $"at position [{i}, {j}]") |> ignore
+
+    // Helper function to create a sparse array from a list of (i, j, value) tuples
+    let createSparseArray (elements: list<int * int * 'T>) =
+        let values =
+            elements
+            |> List.map (fun (i, j, v) -> { i = i; j = j; value2D = v })
+            |> Array.ofList
+            |> InseparableSparseArray2D.create
+
+        values |> InseparableSparseArr2D
+
+    // Helper function to create a matrix from a list of (i, j, value) tuples
+    let createMatrix (rows: int) (cols: int) (elements: list<int * int * 'T>) =
+        let matrix = Array2D.zeroCreate rows cols
+        for i, j, v in elements do matrix[i, j] <- v
+        matrix |> convertArray2DToJagged |> Matrix
+
+
+open TestHelpers
+
+/// Tests for SparseArray2D operators
+type SparseArray2DOperatorTests() =
+
+    // Test data
+    let testData1 = array2D [
+        [1L; 0L; 3L; 0L]
+        [0L; 5L; 0L; 0L]
+        [7L; 0L; 9L; 0L]
+    ]
+
+    let testData2 = array2D [
+        [2L; 0L; 0L; 4L]
+        [0L; 6L; 0L; 0L]
+        [0L; 0L; 8L; 10L]
+    ]
+
+// // ===================
+//
+//     [<Fact>]
+//     let ``Addition operator should combine values from both arrays`` () =
+//         // Arrange
+//         let sparse1 = TestHelpers.createSparseFrom2DArray testData1
+//         let sparse2 = TestHelpers.createSparseFrom2DArray testData2
+//         let matrix1 = TestHelpers.createMatrixFrom2DArray testData1
+//         let matrix2 = TestHelpers.createMatrixFrom2DArray testData2
+//
+//         // Act
+//         let sparseResult = sparse1 + sparse2
+//         let matrixResult = matrix1 + matrix2
+//
+//         // Assert
+//         TestHelpers.assertEqualSparseAndMatrix sparseResult matrixResult
+//
+//     [<Fact>]
+//     let ``Subtraction operator should correctly subtract corresponding elements`` () =
+//         // Arrange
+//         let sparse1 = TestHelpers.createSparseFrom2DArray testData1
+//         let sparse2 = TestHelpers.createSparseFrom2DArray testData2
+//         let matrix1 = TestHelpers.createMatrixFrom2DArray testData1
+//         let matrix2 = TestHelpers.createMatrixFrom2DArray testData2
+//
+//         // Act
+//         let sparseResult = sparse1 - sparse2
+//         let matrixResult = matrix1 - matrix2
+//
+//         // Assert
+//         TestHelpers.assertEqualSparseAndMatrix sparseResult matrixResult
+//
+//     [<Fact>]
+//     let ``Multiplication operator should multiply corresponding elements`` () =
+//         // Arrange
+//         let sparse1 = TestHelpers.createSparseFrom2DArray testData1
+//         let sparse2 = TestHelpers.createSparseFrom2DArray testData2
+//         let matrix1 = TestHelpers.createMatrixFrom2DArray testData1
+//         let matrix2 = TestHelpers.createMatrixFrom2DArray testData2
+//
+//         // Act
+//         let sparseResult = sparse1 * sparse2
+//         let matrixResult = matrix1 * matrix2  // Assuming Matrix implements element-wise multiplication
+//
+//         // Assert
+//         TestHelpers.assertEqualSparseAndMatrix sparseResult matrixResult
+//
+//     [<Fact>]
+//     let ``Operations with zero elements should not affect results`` () =
+//         // Arrange
+//         let denseData = array2D [
+//             [1L; 2L; 3L]
+//             [4L; 5L; 6L]
+//             [7L; 8L; 9L]
+//         ]
+//
+//         let sparseData = array2D [
+//             [0L; 2L; 0L]
+//             [4L; 0L; 6L]
+//             [0L; 8L; 0L]
+//         ]
+//
+//         let denseSparse = TestHelpers.createSparseFrom2DArray denseData
+//         let sparseSparse = TestHelpers.createSparseFrom2DArray sparseData
+//         let denseMatrix = TestHelpers.createMatrixFrom2DArray denseData
+//         let sparseMatrix = TestHelpers.createMatrixFrom2DArray sparseData
+//
+//         // Act
+//         let additionResult = denseSparse + sparseSparse
+//         let subtractionResult = denseSparse - sparseSparse
+//         let multiplicationResult = denseSparse * sparseSparse
+//
+//         let matrixAddResult = denseMatrix + sparseMatrix
+//         let matrixSubResult = denseMatrix - sparseMatrix
+//         let matrixMulResult = denseMatrix * sparseMatrix
+//
+//         // Assert
+//         TestHelpers.assertEqualSparseAndMatrix additionResult matrixAddResult
+//         TestHelpers.assertEqualSparseAndMatrix subtractionResult matrixSubResult
+//         TestHelpers.assertEqualSparseAndMatrix multiplicationResult matrixMulResult
+//
+//     [<Fact>]
+//     let ``Empty sparse arrays should be handled correctly`` () : unit =
+//         // Arrange
+//         let emptyData = array2D [
+//             [0L; 0L; 0L]
+//             [0L; 0L; 0L]
+//             [0L; 0L; 0L]
+//         ]
+//
+//         let normalData = array2D [
+//             [1L; 2L; 3L]
+//             [4L; 5L; 6L]
+//             [7L; 8L; 9L]
+//         ]
+//
+//         let emptySparse = TestHelpers.createSparseFrom2DArray emptyData
+//         let normalSparse = TestHelpers.createSparseFrom2DArray normalData
+//         let emptyMatrix = TestHelpers.createMatrixFrom2DArray emptyData
+//         let normalMatrix = TestHelpers.createMatrixFrom2DArray normalData
+//
+//         // Act
+//         let additionResult = emptySparse + normalSparse
+//         let subtractionResult = normalSparse - emptySparse
+//         let multiplicationResult = emptySparse * normalSparse
+//
+//         let matrixAddResult = emptyMatrix + normalMatrix
+//         let matrixSubResult = normalMatrix - emptyMatrix
+//         let matrixMulResult = emptyMatrix * normalMatrix
+//
+//         // Assert
+//         TestHelpers.assertEqualSparseAndMatrix additionResult matrixAddResult
+//         TestHelpers.assertEqualSparseAndMatrix subtractionResult matrixSubResult
+//         TestHelpers.assertEqualSparseAndMatrix multiplicationResult matrixMulResult
+//
+//         additionResult.value().Should().BeEquivalentTo(normalSparse.value()) |> ignore
+//
+//         // Multiplication with empty should be empty
+//         multiplicationResult.value().Should().BeEmpty() |> ignore
+
+
+    // =========================================================
+
+// // =========================================================
+//
+//     // Additional tests for the SparseArray2D type with separable functionality
+//     // Add these to your existing SparseArray2DOperatorTests class
+//
+//     [<Fact>]
+//     let ``Separable arrays should be created and accessed correctly`` () =
+//         // Arrange
+//         let xValues = [|
+//             { i = 0; value1D = 2L }
+//             { i = 2; value1D = 3L }
+//         |]
+//
+//         let yValues = [|
+//             { i = 1; value1D = 4L }
+//             { i = 3; value1D = 5L }
+//         |]
+//
+//         // Act
+//         let separableSparseArray = SparseArray2D.create (xValues, yValues)
+//
+//         // Assert
+//         // Test accessing some values
+//         (separableSparseArray.tryFind 0 1).Value.Should().Be(8L) |> ignore // 2 * 4
+//         (separableSparseArray.tryFind 0 3).Value.Should().Be(10L) |> ignore // 2 * 5
+//         (separableSparseArray.tryFind 2 1).Value.Should().Be(12L) |> ignore // 3 * 4
+//         (separableSparseArray.tryFind 2 3).Value.Should().Be(15L) |> ignore // 3 * 5
+//
+//         // Test accessing non-existent values
+//         (separableSparseArray.tryFind 1 1).Should().BeNull() |> ignore
+//         (separableSparseArray.tryFind 0 0).Should().BeNull() |> ignore
+//
+//     [<Fact>]
+//     let ``Separable array multiplication should remain separable`` () =
+//         // Arrange
+//         let xValues1 = [| { i = 0; value1D = 2L }; { i = 1; value1D = 3L } |]
+//         let yValues1 = [| { i = 0; value1D = 4L }; { i = 1; value1D = 5L } |]
+//         let separable1 = SparseArray2D.create (xValues1, yValues1)
+//
+//         let xValues2 = [| { i = 0; value1D = 6L }; { i = 1; value1D = 7L } |]
+//         let yValues2 = [| { i = 0; value1D = 8L }; { i = 1; value1D = 9L } |]
+//         let separable2 = SparseArray2D.create (xValues2, yValues2)
+//
+//         // Act
+//         let result = separable1 * separable2
+//
+//         // Assert
+//         // Check the result is still separable
+//         match result with
+//         | SparseArray2D.SeparableSparseArr2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
+//         | _ -> false.Should().BeTrue("Result should not be inseparable") |> ignore
+//
+//         // Verify some values
+//         (result.tryFind 0 0).Value.Should().Be(2L * 6L * 4L * 8L) |> ignore // 384
+//         (result.tryFind 0 1).Value.Should().Be(2L * 6L * 5L * 9L) |> ignore // 540
+//         (result.tryFind 1 0).Value.Should().Be(3L * 7L * 4L * 8L) |> ignore // 672
+//         (result.tryFind 1 1).Value.Should().Be(3L * 7L * 5L * 9L) |> ignore // 945
+//
+//     [<Fact>]
+//     let ``Separable array addition should produce inseparable result`` () =
+//         // Arrange
+//         let xValues1 = [| { i = 0; value1D = 2L }; { i = 1; value1D = 3L } |]
+//         let yValues1 = [| { i = 0; value1D = 4L }; { i = 1; value1D = 5L } |]
+//         let separable1 = SparseArray2D.create (xValues1, yValues1)
+//
+//         let xValues2 = [| { i = 0; value1D = 6L }; { i = 1; value1D = 7L } |]
+//         let yValues2 = [| { i = 0; value1D = 8L }; { i = 1; value1D = 9L } |]
+//         let separable2 = SparseArray2D.create (xValues2, yValues2)
+//
+//         // Act
+//         let result = separable1 + separable2
+//
+//         // Assert
+//         // Check the result is inseparable
+//         match result with
+//         | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+//         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
+//
+//         // Verify some values
+//         (result.tryFind 0 0).Value.Should().Be(2L * 4L + 6L * 8L) |> ignore // 8 + 48 = 56
+//         (result.tryFind 0 1).Value.Should().Be(2L * 5L + 6L * 9L) |> ignore // 10 + 54 = 64
+//         (result.tryFind 1 0).Value.Should().Be(3L * 4L + 7L * 8L) |> ignore // 12 + 56 = 68
+//         (result.tryFind 1 1).Value.Should().Be(3L * 5L + 7L * 9L) |> ignore // 15 + 63 = 78
+//
+//     [<Fact>]
+//     let ``Inseparable and separable array multiplication works correctly`` () =
+//         // Arrange
+//         let xValues = [| { i = 0; value1D = 2L }; { i = 1; value1D = 3L } |]
+//         let yValues = [| { i = 0; value1D = 4L }; { i = 1; value1D = 5L } |]
+//         let separable = SparseArray2D.create (xValues, yValues)
+//
+//         let inseparableValues = [|
+//             { i = 0; j = 0; value2D = 10L }
+//             { i = 0; j = 1; value2D = 20L }
+//             { i = 1; j = 0; value2D = 30L }
+//             { i = 1; j = 1; value2D = 40L }
+//         |]
+//         let inseparable = SparseArray2D.create inseparableValues
+//
+//         // Act
+//         let result1 = separable * inseparable
+//         let result2 = inseparable * separable
+//
+//         // Assert
+//         // Check both results are inseparable
+//         match result1 with
+//         | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+//         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
+//
+//         match result2 with
+//         | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable") |> ignore
+//         | _ -> false.Should().BeTrue("Result should not be separable") |> ignore
+//
+//         // Verify some values in result1 (separable * inseparable)
+//         (result1.tryFind 0 0).Value.Should().Be(2L * 4L * 10L) |> ignore // 80
+//         (result1.tryFind 0 1).Value.Should().Be(2L * 5L * 20L) |> ignore // 200
+//         (result1.tryFind 1 0).Value.Should().Be(3L * 4L * 30L) |> ignore // 360
+//         (result1.tryFind 1 1).Value.Should().Be(3L * 5L * 40L) |> ignore // 600
+//
+//         // Verify the same values in result2 (inseparable * separable)
+//         (result2.tryFind 0 0).Value.Should().Be(10L * 2L * 4L) |> ignore // 80
+//         (result2.tryFind 0 1).Value.Should().Be(20L * 2L * 5L) |> ignore // 200
+//         (result2.tryFind 1 0).Value.Should().Be(30L * 3L * 4L) |> ignore // 360
+//         (result2.tryFind 1 1).Value.Should().Be(40L * 3L * 5L) |> ignore // 600
+//
+//     [<Fact>]
+//     let ``Inseparable and separable array subtraction works correctly`` () =
+//         // Arrange
+//         let xValues = [| { i = 0; value1D = 2L }; { i = 1; value1D = 3L } |]
+//         let yValues = [| { i = 0; value1D = 4L }; { i = 1; value1D = 5L } |]
+//         let separable = SparseArray2D.create (xValues, yValues)
+//
+//         let inseparableValues = [|
+//             { i = 0; j = 0; value2D = 10L }
+//             { i = 0; j = 1; value2D = 20L }
+//             { i = 1; j = 0; value2D = 30L }
+//             { i = 1; j = 1; value2D = 40L }
+//         |]
+//         let inseparable = SparseArray2D.create inseparableValues
+//
+//         // Act
+//         let result1 = separable - inseparable
+//         let result2 = inseparable - separable
+//
+//         // Assert
+//         // Check both results are inseparable
+//         match result1 with
+//         | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable")
+//         | _ -> false.Should().BeTrue("Result should not be separable")
+//         |> ignore
+//
+//         match result2 with
+//         | SparseArray2D.InseparableSparseArr2D _ -> true.Should().BeTrue("Result should be inseparable")
+//         | _ -> false.Should().BeTrue("Result should not be separable")
+//         |> ignore
+//
+//         // Verify some values in result1 (separable - inseparable)
+//         (result1.tryFind 0 0).Value.Should().Be(2L * 4L - 10L) |> ignore // 8 - 10 = -2
+//         (result1.tryFind 0 1).Value.Should().Be(2L * 5L - 20L) |> ignore // 10 - 20 = -10
+//         (result1.tryFind 1 0).Value.Should().Be(3L * 4L - 30L) |> ignore // 12 - 30 = -18
+//         (result1.tryFind 1 1).Value.Should().Be(3L * 5L - 40L) |> ignore // 15 - 40 = -25
+//
+//         // Verify the same values in result2 (inseparable - separable)
+//         (result2.tryFind 0 0).Value.Should().Be(10L - 2L * 4L) |> ignore // 10 - 8 = 2
+//         (result2.tryFind 0 1).Value.Should().Be(20L - 2L * 5L) |> ignore // 20 - 10 = 10
+//         (result2.tryFind 1 0).Value.Should().Be(30L - 3L * 4L) |> ignore // 30 - 12 = 18
+//         (result2.tryFind 1 1).Value.Should().Be(40L - 3L * 5L) |> ignore // 40 - 15 = 25
+//
+//     [<Fact>]
+//     let ``value() function works for both separable and inseparable arrays`` () =
+//         // Arrange
+//         // Create a separable array
+//         let xValues = [| { i = 0; value1D = 2L }; { i = 1; value1D = 3L } |]
+//         let yValues = [| { i = 0; value1D = 4L }; { i = 1; value1D = 5L } |]
+//         let separable = SparseArray2D.create (xValues, yValues)
+//
+//         // Create an inseparable array
+//         let inseparableValues = [|
+//             { i = 0; j = 0; value2D = 10L }
+//             { i = 0; j = 1; value2D = 20L }
+//             { i = 1; j = 0; value2D = 30L }
+//             { i = 1; j = 1; value2D = 40L }
+//         |]
+//         let inseparable = SparseArray2D.create inseparableValues
+//
+//         // Act
+//         let separableValues = separable.value()
+//         let inseparableValues = inseparable.value()
+//
+//         // Assert
+//         // For separable, we expect the on-the-fly calculation to produce all combinations
+//         separableValues.Length.Should().Be(4) |> ignore
+//
+//         // Check for specific values in the array
+//         let hasValue (i, j, v) =
+//             separableValues |> Array.exists (fun x -> x.i = i && x.j = j && x.value2D = v)
+//
+//         hasValue(0, 0, 8L).Should().BeTrue() |> ignore
+//         hasValue(0, 1, 10L).Should().BeTrue() |> ignore
+//         hasValue(1, 0, 12L).Should().BeTrue() |> ignore
+//         hasValue(1, 1, 15L).Should().BeTrue() |> ignore
+//
+//         // For inseparable, we just get the raw values
+//         inseparableValues.Length.Should().Be(4) |> ignore
+//
+//         // Check that all inseparable values are present
+//         let insepHasValue (i, j, v) =
+//             inseparableValues |> Array.exists (fun x -> x.i = i && x.j = j && x.value2D = v)
+//
+//         insepHasValue(0, 0, 10L).Should().BeTrue() |> ignore
+//         insepHasValue(0, 1, 20L).Should().BeTrue() |> ignore
+//         insepHasValue(1, 0, 30L).Should().BeTrue() |> ignore
+//         insepHasValue(1, 1, 40L).Should().BeTrue() |> ignore
+//
+//     [<Fact>]
+//     let ``Separable arrays with complex patterns should multiply correctly`` () =
+//         // Arrange - create arrays with more interesting patterns
+//         let xValues1 = [|
+//             { i = 0; value1D = 2L }
+//             { i = 2; value1D = 3L }
+//             { i = 5; value1D = 4L }
+//         |]
+//
+//         let yValues1 = [|
+//             { i = 1; value1D = 5L }
+//             { i = 3; value1D = 6L }
+//             { i = 7; value1D = 7L }
+//         |]
+//
+//         let xValues2 = [|
+//             { i = 0; value1D = 8L }
+//             { i = 2; value1D = 9L }
+//             { i = 6; value1D = 10L }
+//         |]
+//
+//         let yValues2 = [|
+//             { i = 1; value1D = 11L }
+//             { i = 4; value1D = 12L }
+//             { i = 7; value1D = 13L }
+//         |]
+//
+//         let separable1 = SparseArray2D.create (xValues1, yValues1)
+//         let separable2 = SparseArray2D.create (xValues2, yValues2)
+//
+//         // Act
+//         let result = separable1 * separable2
+//
+//         // Assert
+//         // Check that result is separable
+//         match result with
+//         | SparseArray2D.SeparableSparseArr2D _ -> true.Should().BeTrue("Result should be separable") |> ignore
+//         | _ -> false.Should().BeTrue("Result should not be inseparable") |> ignore
+//
+//         // Check that only values with matching indices exist in the result
+//         (result.tryFind 0 1).Value.Should().Be(2L * 8L * 5L * 11L) |> ignore // 880
+//         (result.tryFind 0 7).Value.Should().Be(2L * 8L * 7L * 13L) |> ignore // 1456
+//         (result.tryFind 2 1).Value.Should().Be(3L * 9L * 5L * 11L) |> ignore // 1485
+//         (result.tryFind 2 7).Value.Should().Be(3L * 9L * 7L * 13L) |> ignore // 2457
+//
+//         // These shouldn't exist because the indices don't match in both arrays
+//         (result.tryFind 0 3).Should().BeNull() |> ignore
+//         (result.tryFind 0 4).Should().BeNull() |> ignore
+//         (result.tryFind 5 1).Should().BeNull() |> ignore
+//         (result.tryFind 6 7).Should().BeNull() |> ignore
+//
+//
+//     [<Fact>]
+//     let ``Empty sparse arrays should be handled correctly 2`` () =
+//         // Arrange
+//         let emptyData = array2D [
+//             [0L; 0L; 0L]
+//             [0L; 0L; 0L]
+//             [0L; 0L; 0L]
+//         ]
+//
+//         let normalData = array2D [
+//             [1L; 2L; 3L]
+//             [4L; 5L; 6L]
+//             [7L; 8L; 9L]
+//         ]
+//
+//         let emptySparse = TestHelpers.createSparseFrom2DArray emptyData
+//         let normalSparse = TestHelpers.createSparseFrom2DArray normalData
+//
+//         // Act
+//         let additionResult = emptySparse + normalSparse
+//         let subtractionResult = normalSparse - emptySparse
+//         let multiplicationResult = emptySparse * normalSparse
+//
+//         // Assert
+//         // Addition with empty should equal the normal array
+//         // Compare values of each position that should exist in normalSparse
+//         let normalValues = normalSparse.value()
+//         for v in normalValues do
+//             (additionResult.tryFind v.i v.j).Value.Should().Be(v.value2D) |> ignore
+//
+//         // Multiplication with empty should be empty
+//         multiplicationResult.value().Length.Should().Be(0) |> ignore
+
+
+    // Helper function to compare two sparse value arrays.
+    let compareSparseArrays (tolerance: double) (arr1: SparseValue4D<double>[]) (arr2: SparseValue4D<double>[]) (label: string) =
+        arr1.Length.Should().Be(arr2.Length, $"Both implementations should have the same number of elements in {label}") |> ignore
+
+        use _ = new AssertionScope()
+
+        for i in 0 .. arr1.Length - 1 do
+            let sv1 = arr1[i]
+            let sv2 = arr2[i]
+            sv1.i.Should().Be(sv2.i, $"Index 'i' at position {i} in {label} should match") |> ignore
+            sv1.j.Should().Be(sv2.j, $"Index 'j' at position {i} in {label} should match") |> ignore
+            sv1.i1.Should().Be(sv2.i1, $"Index 'i1' at position {i} in {label} should match") |> ignore
+            sv1.j1.Should().Be(sv2.j1, $"Index 'j1' at position {i} in {label} should match") |> ignore
+            sv1.value4D.Should().BeApproximately(sv2.value4D, tolerance, $"Value at position {i} in {label} should be approximately equal") |> ignore
+
+
+    // Define tolerance for float comparison.
+    let tolerance = 1e-8
+
+
+    // // Run time for "Convert result *" tests is about 6.5 - 6.9 seconds for result1 and 4.3 - 4.6 seconds for result2.
+    // let epsX = Eps0 0.03
+    // let epsY = Eps0 0.05
+    // let xDomainIntervals = DomainIntervals 100
+    // let yDomainIntervals = DomainIntervals 100
+
+
+    // Run time for "Convert result *" tests is about 13.3 - 14.6 seconds for result1 and 8.3 - 9.2 seconds for result2.
+    let epsX = Eps0 0.01
+    let epsY = Eps0 0.015
+    let xDomainIntervals = DomainIntervals 200
+    let yDomainIntervals = DomainIntervals 200
+
+
+    // // Run time for "Convert result *" tests is about ___ - ___ seconds for result1 and 20.6 minutes for result2.
+    // let epsX = Eps0 0.0048
+    // let epsY = Eps0 0.0052
+    // let xDomainIntervals = DomainIntervals 1000
+    // let yDomainIntervals = DomainIntervals 1000
+
+
+    // // Run time for "Convert result *" tests is about 1.8 minutes for result1 and 58-60 seconds for result2.
+    // let epsX = Eps0 0.0048
+    // let epsY = Eps0 0.0052
+    // let xDomainIntervals = DomainIntervals 500
+    // let yDomainIntervals = DomainIntervals 500
+
+
+    let data1 =
+        {
+            xMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = xDomainIntervals
+                            domainRange = { minValue = -1.0; maxValue = 1.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = ScalarEps epsX
+                }
+            yMutationProbabilityParams =
+                {
+                    domainParams =
+                        {
+                            domainIntervals = yDomainIntervals
+                            domainRange = { minValue = 0.0; maxValue = 5.0  }
+                        }
+                    zeroThreshold = ZeroThreshold.defaultValue
+                    epsFuncValue = ScalarEps epsY
+                }
+            sparseArrayType = StaticSparseArrayType
+        }
+
+
+    let data2 = { data1 with sparseArrayType = DynamicSparseArrayType }
+
+    let result1 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data1)
+    let result2 = Lazy<MutationProbability4D>(fun () -> MutationProbability4D.create DiscreteEvolution data2)
+
+
+    /// Compare the x1y1_xy fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match x1y1_xy`` () =
+        let sparseValues1 = result1.Value.x1y1_xy.toSparseValueArray()
+        let sparseValues2 = result2.Value.x1y1_xy.toSparseValueArray()
+        compareSparseArrays tolerance sparseValues1 sparseValues2 "x1y1_xy"
+
+
+    /// Compare the xy_x1y1 fields.
+    [<Fact>]
+    let ``MutationProbability4D implementations should match xy_x1y1`` () =
+        let sparseValues3 = result1.Value.xy_x1y1.toSparseValueArray()
+        let sparseValues4 = result2.Value.xy_x1y1.toSparseValueArray()
+        compareSparseArrays tolerance sparseValues3 sparseValues4 "xy_x1y1"
+
+
+    [<Fact>]
+    let ``Convert result1 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.x1y1_xy should succeed") |> ignore
+
+
+    /// Took 20 minutes for 1000 / 0.005
+    [<Fact>]
+    let ``Convert result2 x1y1_xy to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.x1y1_xy.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.x1y1_xy should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result1 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result1.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result1.xy_x1y1 should succeed") |> ignore
+
+
+    [<Fact>]
+    let ``Convert result2 xy_x1y1 to SparseValueArray`` () =
+        let sparseValueArray = result2.Value.xy_x1y1.toSparseValueArray()
+        sparseValueArray.Should().NotBeNull($"Conversion of result2.xy_x1y1 should succeed") |> ignore
+
+
+    // Performance tests:
+    // Compare conversion times for each field using a constant allowedFactor.
+    // If result2's conversion takes more than allowedFactor times longer than result1's, the test fails.
+
+    [<Fact>]
+    let ``x1y1_xy conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.x1y1_xy.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.x1y1_xy.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"x1y1_xy conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    [<Fact>]
+    let ``xy_x1y1 conversion performance should be acceptable`` () =
+        let allowedFactor = 1.5
+
+        // Measure conversion time for result1
+        let sw1 = Stopwatch.StartNew()
+        let _ = result1.Value.xy_x1y1.toSparseValueArray()
+        sw1.Stop()
+        let time1 = sw1.Elapsed.TotalMilliseconds
+
+        // Measure conversion time for result2
+        let sw2 = Stopwatch.StartNew()
+        let _ = result2.Value.xy_x1y1.toSparseValueArray()
+        sw2.Stop()
+        let time2 = sw2.Elapsed.TotalMilliseconds
+
+        time2.Should().BeLessThanOrEqualTo(time1 * allowedFactor,
+            $"xy_x1y1 conversion for result2 (took {time2} ms) should be at most {allowedFactor} times slower than result1 (took {time1} ms)") |> ignore
+
+
+    // Helper functions to check the discriminated union cases.
+    let isStatic (s: SparseArray4D<double>) =
+        match s with
+        | StaticSparseArr4D _ -> true
+        | DynamicSparseArr4D _ -> false
+
+
+    let isDynamic (s: SparseArray4D<double>) =
+        match s with
+        | DynamicSparseArr4D _ -> true
+        | StaticSparseArr4D _ -> false
+
+
+    [<Fact>]
+    let ``result1 sparse arrays should be StaticSparseArr4D`` () =
+        (result1.Value.x1y1_xy |> isStatic).Should().BeTrue($"result1.x1y1_xy should be StaticSparseArr4D") |> ignore
+        (result1.Value.xy_x1y1 |> isStatic).Should().BeTrue($"result1.xy_x1y1 should be StaticSparseArr4D") |> ignore
+
+
+    [<Fact>]
+    let ``result2 sparse arrays should be DynamicSparseArr4D`` () =
+        (result2.Value.x1y1_xy |> isDynamic).Should().BeTrue($"result2.x1y1_xy should be DynamicSparseArr4D") |> ignore
+        (result2.Value.xy_x1y1 |> isDynamic).Should().BeTrue($"result2.xy_x1y1 should be DynamicSparseArr4D") |> ignore
+
+
+    [<Fact>]
+    let ``Sum of sparse arrays should match sum of matrices`` () =
+        // Create test data with different shapes
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let sparseArray2 = createSparseArray [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (2, 0, 8L); (2, 2, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 3 [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let matrix2 = createMatrix 3 3 [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let matrix3 = createMatrix 3 3 [(0, 0, 3L); (2, 0, 8L); (2, 2, 5L)]
+
+        // Calculate sums
+        let sparseSum = sumSparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixSum = matrix1 + matrix2 + matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseSum matrixSum
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays should match multiplication of matrices`` () =
+        // Create test data with different shapes
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let sparseArray2 = createSparseArray [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (0, 1, 2L); (2, 2, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 3 [(0, 0, 5L); (0, 1, 10L); (1, 1, 15L)]
+        let matrix2 = createMatrix 3 3 [(0, 1, 7L); (1, 0, 12L); (2, 2, 20L)]
+        let matrix3 = createMatrix 3 3 [(0, 0, 3L); (0, 1, 2L); (2, 2, 5L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseProduct matrixProduct
+
+    [<Fact>]
+    let ``Sum of sparse arrays with no overlapping elements should work correctly`` () =
+        // Create test data with different shapes and no overlapping elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L)]
+        let sparseArray2 = createSparseArray [(1, 0, 7L); (1, 1, 12L)]
+        let sparseArray3 = createSparseArray [(2, 0, 3L); (2, 1, 8L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 2 [(0, 0, 5L); (0, 1, 10L)]
+        let matrix2 = createMatrix 3 2 [(1, 0, 7L); (1, 1, 12L)]
+        let matrix3 = createMatrix 3 2 [(2, 0, 3L); (2, 1, 8L)]
+
+        // Calculate sums
+        let sparseSum = sumSparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixSum = matrix1 + matrix2 + matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseSum matrixSum
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays with no common elements should result in empty array`` () =
+        // Create test data with different shapes and no common elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (0, 1, 10L)]
+        let sparseArray2 = createSparseArray [(1, 0, 7L); (1, 1, 12L)]
+        let sparseArray3 = createSparseArray [(2, 0, 3L); (2, 1, 8L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 3 2 [(0, 0, 5L); (0, 1, 10L)]
+        let matrix2 = createMatrix 3 2 [(1, 0, 7L); (1, 1, 12L)]
+        let matrix3 = createMatrix 3 2 [(2, 0, 3L); (2, 1, 8L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // The result should be an empty sparse array (or a matrix with all zeros)
+        sparseProduct.getValues().Should().BeEmpty() |> ignore
+
+        // Check that matrix is all zeros too
+        for i in 0 .. matrixProduct.value.Length - 1 do
+            for j in 0 .. matrixProduct.value[0].Length - 1 do
+                (matrixProduct.value[i][j]).Should().Be(0L, because = $"All elements in the product should be zero") |> ignore
+
+    [<Fact>]
+    let ``Multiplication of sparse arrays with partially overlapping elements`` () =
+        // Create test data with different shapes and some overlapping elements
+        let sparseArray1 = createSparseArray [(0, 0, 5L); (1, 1, 10L); (2, 2, 15L)]
+        let sparseArray2 = createSparseArray [(0, 0, 7L); (1, 1, 12L); (3, 3, 20L)]
+        let sparseArray3 = createSparseArray [(0, 0, 3L); (2, 2, 8L); (4, 4, 5L)]
+
+        // Create corresponding matrices
+        let matrix1 = createMatrix 5 5 [(0, 0, 5L); (1, 1, 10L); (2, 2, 15L)]
+        let matrix2 = createMatrix 5 5 [(0, 0, 7L); (1, 1, 12L); (3, 3, 20L)]
+        let matrix3 = createMatrix 5 5 [(0, 0, 3L); (2, 2, 8L); (4, 4, 5L)]
+
+        // Calculate products
+        let sparseProduct = multiplySparseArrays [sparseArray1; sparseArray2; sparseArray3]
+        let matrixProduct = matrix1 * matrix2 * matrix3
+
+        // Verify equality
+        assertEqualSparseAndMatrix sparseProduct matrixProduct
+
+        // Additional specific checks
+        // Only (0,0) should have non-zero values in the result
+        let sparseValues = sparseProduct.getValues() |> Seq.toList
+        sparseValues.Length.Should().Be(1, because = "Only one position should have non-zero values") |> ignore
+
+        // Check that these values are at (0,0)
+        let positionSet = sparseValues
+                        |> List.map (fun v -> (v.i, v.j))
+                        |> Set.ofList
+
+        positionSet.Should().Equal(Set.ofList [(0, 0)]) |> ignore
+
+        // Check the values themselves
+        let value00 = sparseValues |> List.find (fun v -> v.i = 0 && v.j = 0)
+
+        value00.value2D.Should().Be(5L * 7L * 3L, because = "Value at (0,0) should be 5*7*3=105") |> ignore

@@ -1,26 +1,46 @@
-# We need workerNodeServiceName but messagingDataVersion here.
+# Get the directory of this script
+$scriptDirectory = $PSScriptRoot
 
-. ./Functions.ps1
-. ./WorkerNodeVersionInfo.ps1
-. ./WorkerNodeServiceName.ps1
+# Load individual function files using absolute paths
+. "$scriptDirectory\WorkerNodeServiceName.ps1"
 
+. "$scriptDirectory\Install-DistributedService.ps1"
+. "$scriptDirectory\Uninstall-DistributedService.ps1"
+. "$scriptDirectory\Start-DistributedService.ps1"
+. "$scriptDirectory\Stop-DistributedService.ps1"
+. "$scriptDirectory\Write-ServiceLog.ps1"
 
-function InstallWorkerNodeService([string] $messagingDataVersion = "",  [string] $versionNumber = "", [string] $login = "NT AUTHORITY\LOCAL SERVICE", [string] $password = "")
-{
-    InstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion -versionNumber $versionNumber -login $login -password $password
+$ServiceName = $global:workerNodeServiceName
+
+function InstallWorkerNodeService {
+    [CmdletBinding()]
+    param ()
+
+    # Log function parameters
+    Write-ServiceLog -Message "InstallWorkerNodeService - Parameters:" -Level "Info"
+    Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
+    Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
+
+    Install-DistributedService -ServiceName $ServiceName
 }
 
-function UninstallWorkerNodeService([string] $messagingDataVersion = "")
-{
-    UninstallSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
+function UninstallWorkerNodeService {
+    [CmdletBinding()]
+    param ()
+
+    Uninstall-DistributedService -ServiceName $ServiceName
 }
 
-function StartWorkerNodeService([string] $messagingDataVersion = "")
-{
-    StartSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
+function StartWorkerNodeService {
+    [CmdletBinding()]
+    param ()
+
+    Start-DistributedService -ServiceName $ServiceName
 }
 
-function StopWorkerNodeService([string] $messagingDataVersion = "")
-{
-    StopSvc -serviceName $global:workerNodeServiceName -messagingDataVersion $messagingDataVersion
+function StopWorkerNodeService {
+    [CmdletBinding()]
+    param ()
+
+    Stop-DistributedService -ServiceName $ServiceName
 }
