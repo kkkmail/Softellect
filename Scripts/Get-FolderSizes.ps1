@@ -8,7 +8,7 @@ function Get-FolderSizes {
       [string]$FileMask = "*.*",
       
       [Parameter(Mandatory = $false)]
-      [string[]]$TextFileTypes = @('cs', 'fs', 'vb', 'txt', 'ps1', 'psm1', 'psd1', 'js', 'ts', 'tsx', 'jsx', 'cpp', 'hpp', 'c', 'h', 'py', 'java', 'kt', 'scala', 'rb', 'php', 'go', 'rs', 'swift', 'sql', 'xml', 'html', 'htm', 'css', 'scss', 'sass', 'less', 'json', 'yaml', 'yml', 'md', 'sh', 'bat', 'cmd', 'pl', 'r', 'lua', 'dart', 'vue', 'svelte', 'asm', 's', 'pas', 'dpr', 'inc', 'config', 'ini', 'cfg', 'conf', 'log')
+      [string[]]$TextFileTypes = @('asm', 'bat', 'c', 'cfg', 'cmd', 'conf', 'config', 'cpp', 'cs', 'csproj', 'css', 'dart', 'dpr', 'fs', 'fsproj', 'go', 'h', 'hpp', 'htm', 'html', 'inc', 'ini', 'java', 'js', 'json', 'jsonc', 'jsx', 'kt', 'less', 'log', 'lua', 'md', 'pas', 'php', 'pl', 'props', 'ps1', 'psd1', 'psm1', 'py', 'r', 'rb', 'rs', 'ruleset', 's', 'sass', 'scala', 'scss', 'settings', 'sh', 'sln', 'sql', 'svg', 'svelte', 'swift', 'targets', 'toml', 'ts', 'tsx', 'txt', 'vb', 'vbproj', 'vcxproj', 'vue', 'xml', 'xsd', 'xsl', 'xslt', 'yaml', 'yml')
   )
 
   # Get the script directory and load dependencies
