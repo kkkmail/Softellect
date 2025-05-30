@@ -1,2 +1,2 @@
-. ./Scripts/Functions.ps1
+. ./Scripts/Clean-All.ps1
 Clean-All

@@ -36,6 +36,10 @@
     <Compile Include="Common.fs" />
     <Compile Include="Errors.fs" />
     <Compile Include="Messages.fs" />
+    <None Include="Proxy.fs" />
+    <None Include="DataAccess.fs" />
+    <None Include="Primitives.fs" />
+    <None Include="AppSettings.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />

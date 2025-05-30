@@ -32,68 +32,11 @@
     <None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Include="MessagingServiceName.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\Scripts\Get-BinaryPathName.ps1" Link="Get-BinaryPathName.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Get-Description.ps1" Link="Get-Description.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Get-ServiceName.ps1" Link="Get-ServiceName.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Install-DistributedService.ps1" Link="Install-DistributedService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Reinstall-WindowsService.ps1" Link="Reinstall-WindowsService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Start-DistributedService.ps1" Link="Start-DistributedService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Start-WindowsService.ps1" Link="Start-WindowsService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Stop-DistributedService.ps1" Link="Stop-DistributedService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Stop-WindowsService.ps1" Link="Stop-WindowsService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Uninstall-DistributedService.ps1" Link="Uninstall-DistributedService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Uninstall-ServiceWithScExe.ps1" Link="Uninstall-ServiceWithScExe.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Uninstall-ServiceWithWMI.ps1" Link="Uninstall-ServiceWithWMI.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Uninstall-ServiceWithDotNet.ps1" Link="Uninstall-ServiceWithDotNet.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Uninstall-WindowsService.ps1" Link="Uninstall-WindowsService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Scripts\Write-ServiceLog.ps1" Link="Write-ServiceLog.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\MessagingService\Install-MessagingService.ps1" Link="Install-MessagingService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\MessagingService\MessagingFunctions.ps1" Link="MessagingFunctions.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\MessagingService\Start-MessagingService.ps1" Link="Start-MessagingService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\MessagingService\Stop-MessagingService.ps1" Link="Stop-MessagingService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\MessagingService\Uninstall-MessagingService.ps1" Link="Uninstall-MessagingService.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <None Include="MessagingVersionInfo.ps1" Pack="true" PackagePath="\">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Content Include="appsettings.json">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

@@ -2,6 +2,11 @@ function Clean-All {
     [CmdletBinding()]
     param()
 
+ 
+   # Get the script directory and load dependencies
+   $scriptDirectory = $PSScriptRoot
+    . "$scriptDirectory\Write-ServiceLog.ps1"
+
     Clear-Host
     
     Write-ServiceLog "Terminating known orphaned VB / Rider processes..."

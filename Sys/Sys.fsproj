@@ -35,12 +35,6 @@
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\VersionInfo.ps1" Link="VersionInfo.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\Functions.ps1" Link="Functions.ps1" Pack="true" PackagePath="\">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <Compile Include="NamingConventions.fs" />
     <Compile Include="BuildInfo.fs" />
     <Compile Include="VersionInfo.fs" />
