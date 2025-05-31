@@ -2,6 +2,9 @@
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $true)]
+    [string]$ServiceFolder,
+
+    [Parameter(Mandatory = $true)]
     [string]$InstallationFolder,
 
     [Parameter(Mandatory = $false)]
@@ -37,23 +40,14 @@ try {
 
     # Check prerequisites
     Write-ServiceLog -Message "Checking prerequisites..."
-    if (-not (Test-MigrationPrerequisites -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
+    if (-not (Test-MigrationPrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
         Write-ServiceLog -Level Error -Message "Prerequisites check failed. Terminating."
-        Exit 1
-    }
-
-    # Verify the migration
-    Write-ServiceLog -Message "Verifying migration file..."
-    $verificationResult = Invoke-MigrationVerification -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
-
-    if (-not $verificationResult) {
-        Write-ServiceLog -Level Error -Message "Migration verification failed. Terminating."
         Exit 1
     }
 
     # Run the migration
     Write-ServiceLog -Message "Running database migration..."
-    $result = Invoke-DatabaseMigration -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile -Down $Down
+    $result = Invoke-DatabaseMigration -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile -Down $Down
 
     if (-not $result) {
         Write-ServiceLog -Level Error -Message "Database migration failed. Terminating."

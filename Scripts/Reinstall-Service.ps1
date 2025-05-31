@@ -53,6 +53,7 @@ $scriptDirectory = $PSScriptRoot
 . "$scriptDirectory\Invoke-MigrationVerification.ps1"
 . "$scriptDirectory\Invoke-DatabaseMigration.ps1"
 . "$scriptDirectory\Invoke-ServiceRollback.ps1"
+. "$scriptDirectory\Invoke-ExtractMigrationState.ps1"
 
 # Output PowerShell version for diagnostics
 Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
@@ -71,6 +72,12 @@ try {
     # Resolve paths to absolute paths
     $ServiceFolder = Resolve-Path -Path $ServiceFolder -ErrorAction Stop
     $InstallationFolder = Resolve-Path -Path $InstallationFolder -ErrorAction Stop
+
+    # Extract current migration state if migration is requested
+    if ($PerformMigration) {
+        Write-ServiceLog -Message "Extracting database migration state..."
+        Invoke-ExtractMigrationState -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
+    }
 
     # Check prerequisites
     Write-ServiceLog -Message "Checking prerequisites..."
@@ -103,7 +110,7 @@ try {
     # Migrate database if PerformMigration is true
     if ($PerformMigration) {
         Write-ServiceLog -Message "Performing database migration..."
-        $migrateResult = Invoke-DatabaseMigration -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
+        $migrateResult = Invoke-DatabaseMigration -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
 
         if (-not $migrateResult) {
             Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to migrate database." -InstallationFolder $InstallationFolder -MigrationPerformed $false -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
