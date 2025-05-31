@@ -54,36 +54,68 @@ $scriptDirectory = $PSScriptRoot
 . "$scriptDirectory\Invoke-DatabaseMigration.ps1"
 . "$scriptDirectory\Invoke-ServiceRollback.ps1"
 . "$scriptDirectory\Invoke-ExtractMigrationState.ps1"
+. "$scriptDirectory\ServiceReinstallErrorCodes.ps1"
+. "$scriptDirectory\Get-StateFilePath.ps1"
+. "$scriptDirectory\Update-ReinstallStateFile.ps1"
+. "$scriptDirectory\Get-ReinstallStateFile.ps1"
+. "$scriptDirectory\Clear-ReinstallStateFile.ps1"
 
 # Output PowerShell version for diagnostics
 Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
 Write-Host "PowerShell Edition: $($PSVersionTable.PSEdition)"
 
+# Function to update state and exit
+function Update-StateAndExit {
+    param(
+        [int]$ErrorCode,
+        [string]$ErrorMessage = "",
+        [string]$AdditionalInfo = ""
+    )
+
+    Update-ReinstallStateFile -ServiceFolder $ServiceFolder -ErrorCode $ErrorCode -ErrorMessage $ErrorMessage -AdditionalInfo $AdditionalInfo
+    Exit $ErrorCode
+}
+
 # Main execution block
 try {
     Write-ServiceLog -Message "Starting Windows service reinstallation..."
 
+    # Clear any existing state file at the beginning
+    Clear-ReinstallStateFile -ServiceFolder $ServiceFolder
+
     # Check admin rights
     if (-not (Test-AdminRights)) {
         Write-ServiceLog -Level Error -Message "Admin rights check failed. Terminating."
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_ADMIN_RIGHTS_REQUIRED -ErrorMessage "Administrator rights are required to perform service reinstallation."
     }
 
     # Resolve paths to absolute paths
-    $ServiceFolder = Resolve-Path -Path $ServiceFolder -ErrorAction Stop
-    $InstallationFolder = Resolve-Path -Path $InstallationFolder -ErrorAction Stop
+    try {
+        $ServiceFolder = Resolve-Path -Path $ServiceFolder -ErrorAction Stop
+        $InstallationFolder = Resolve-Path -Path $InstallationFolder -ErrorAction Stop
+    }
+    catch {
+        if ($ServiceFolder -and -not (Test-Path -Path $ServiceFolder)) {
+            Update-StateAndExit -ErrorCode $global:ERROR_SERVICE_FOLDER_INVALID -ErrorMessage "Service folder path is invalid: $ServiceFolder" -AdditionalInfo $_.Exception.Message
+        }
+        else {
+            Update-StateAndExit -ErrorCode $global:ERROR_INSTALLATION_FOLDER_INVALID -ErrorMessage "Installation folder path is invalid: $InstallationFolder" -AdditionalInfo $_.Exception.Message
+        }
+    }
 
     # Extract current migration state if migration is requested
     if ($PerformMigration) {
         Write-ServiceLog -Message "Extracting database migration state..."
-        Invoke-ExtractMigrationState -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile
+        if (-not (Invoke-ExtractMigrationState -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
+            Update-StateAndExit -ErrorCode $global:ERROR_MIGRATION_EXTRACT_FAILED -ErrorMessage "Failed to extract database migration state."
+        }
     }
 
     # Check prerequisites
     Write-ServiceLog -Message "Checking prerequisites..."
     if (-not (Test-ServicePrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -InstallScriptName $InstallScriptName -UninstallScriptName $UninstallScriptName -MigrateScriptName $MigrateScriptName -PerformMigration $PerformMigration -SubFolder $SubFolder -MigrationFile $MigrationFile -ExeName $ExeName)) {
         Write-ServiceLog -Level Error -Message "Prerequisites check failed. Terminating."
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_PREREQUISITES_FAILED -ErrorMessage "Prerequisites check failed."
     }
 
     # Create backup
@@ -92,7 +124,7 @@ try {
 
     if (-not $backupFolder) {
         Write-ServiceLog -Level Error -Message "Failed to create backup. Terminating."
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_BACKUP_FAILED -ErrorMessage "Failed to create backup of the service."
     }
 
     # Variable to track migration status
@@ -104,7 +136,7 @@ try {
 
     if (-not $uninstallResult) {
         Write-ServiceLog -Level Error -Message "Failed to uninstall service. Terminating."
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_UNINSTALL_FAILED -ErrorMessage "Failed to uninstall the service."
     }
 
     # Migrate database if PerformMigration is true
@@ -114,7 +146,7 @@ try {
 
         if (-not $migrateResult) {
             Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to migrate database." -InstallationFolder $InstallationFolder -MigrationPerformed $false -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-            Exit 1
+            Update-StateAndExit -ErrorCode $global:ERROR_MIGRATION_UP_FAILED -ErrorMessage "Failed to perform database migration (UP)." -AdditionalInfo "Service has been rolled back to previous state."
         }
 
         $migrationPerformed = $true
@@ -135,13 +167,13 @@ try {
         }
 
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to clear service folder." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_CLEAR_FOLDER_FAILED -ErrorMessage "Failed to clear service folder." -AdditionalInfo "Service has been rolled back to previous state."
     }
 
     # Double check that service folder is empty
     if (-not (Test-FolderEmpty -FolderPath $ServiceFolder)) {
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Service folder is not empty after cleanup." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_FOLDER_NOT_EMPTY -ErrorMessage "Service folder is not empty after cleanup." -AdditionalInfo "Service has been rolled back to previous state."
     }
 
     # Copy files from installation folder to service folder
@@ -155,7 +187,7 @@ try {
         }
 
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to copy installation files." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_COPY_INSTALLATION_FAILED -ErrorMessage "Failed to copy installation files." -AdditionalInfo "Service has been rolled back to previous state."
     }
 
     # Copy files to keep from backup
@@ -169,7 +201,7 @@ try {
         }
 
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to copy files to keep." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_COPY_FILES_TO_KEEP_FAILED -ErrorMessage "Failed to copy files to keep." -AdditionalInfo "Service has been rolled back to previous state."
     }
 
     # Install service
@@ -178,7 +210,7 @@ try {
 
     if (-not $installResult) {
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Failed to install service." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
-        Exit 1
+        Update-StateAndExit -ErrorCode $global:ERROR_INSTALL_FAILED -ErrorMessage "Failed to install the service." -AdditionalInfo "Service has been rolled back to previous state."
     }
 
     # Success
@@ -186,6 +218,9 @@ try {
 
     # Clean up backup folder
     Remove-BackupFolder -BackupFolder $backupFolder
+
+    # Update state file with success
+    Update-ReinstallStateFile -ServiceFolder $ServiceFolder -ErrorCode $global:ERROR_SUCCESS -ErrorMessage "Service reinstallation completed successfully." -AdditionalInfo "Migration performed: $PerformMigration"
 
     Exit 0
 }
@@ -195,10 +230,10 @@ catch {
     # If we have a backup folder, try to restore
     if ($backupFolder -and (Test-Path -Path $backupFolder)) {
         Invoke-ServiceRollback -BackupFolder $backupFolder -ServiceFolder $ServiceFolder -FailureReason "Unexpected error occurred." -InstallationFolder $InstallationFolder -MigrationPerformed $migrationPerformed -PerformMigration $PerformMigration -InstallScriptName $InstallScriptName
+        Update-StateAndExit -ErrorCode $global:ERROR_UNEXPECTED_EXCEPTION -ErrorMessage "Unexpected error occurred during reinstallation." -AdditionalInfo "Service has been rolled back to previous state. Error: $_"
     }
     else {
         Write-ServiceLog -Level Error -Message "No backup available for rollback. Service may be in an inconsistent state."
+        Update-StateAndExit -ErrorCode $global:ERROR_ROLLBACK_FAILED -ErrorMessage "Unexpected error occurred and no backup available for rollback." -AdditionalInfo "Service may be in an inconsistent state. Error: $_"
     }
-
-    Exit 1
 }
