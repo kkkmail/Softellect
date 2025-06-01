@@ -16,7 +16,7 @@ module Models =
 
     /// Number of "molecules" or building blocks used in a protocell.
     /// This controls the non-linearity of the creation model.
-    /// Default value is set to 1 because we take into account that a single protocell encounters with food
+    /// The default value is set to 1 because we take into account that a single protocell encounters with food
     /// proportionally to concentration of the food.
     type NumberOfMolecules =
         | NumberOfMolecules of int

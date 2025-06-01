@@ -27,7 +27,7 @@ module Primitives =
     /// Interesting values: sigma = 10, rho = 28, beta = 8/3
     let lorenzSystem (sigma: double) (rho: double) (beta: double) (t: double) (x: double[]) (i: int): double =
         Logger.logTrace (fun () -> $"lorenzSystem: t = {t}.")
-        // Thread.Sleep(1_000_000) // Frees the derivative like forever.
+        // Thread.Sleep(1_000_000) // Freezes the derivative like forever.
 
         match i with
         | 0 -> sigma * (x.[1] - x.[0])               // dx1/dt = sigma * (x2 - x1)
