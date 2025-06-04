@@ -7,10 +7,26 @@ open Softellect.Sys.Logging
 open Softellect.Samples.DistrProc.Core.Primitives
 
 module ExtendedLotkaVolterra =
+    // Hunting consists of the following events:
+    // 1. Predator decides to hunt. This is based on the predator state and the prey availability in the vicinity.
+    // 2. Predator searches for prey. This is a quasi-random event, and it depends on the probability of the encounter.
+    // 3. If prey is found, then the predator tries to catch it. This is based on the dexterity of both predator and prey.
+    //    This process is not instantaneous, and it takes some time to catch the prey (or not).
+    // 4. All processes consume some energy, so the predator and prey states are updated accordingly.
+
+    // Hunting consists of three main events:
+    // 1. Prey is not found.
+    // 2. Prey is found, but escapes.
+    // 3. Prey is found and captured.
+    // An evolution time is a discrete time unit in the evolution of a population.
 
     /// An evolution epoch is a discrete time unit in the evolution of a population.
-    /// One day is likely too fine-grained for evolution, and one year is likely too coarse.
-    /// So, something like a week or a month is probably a good choice.
+    ///
+    /// An evolution epoch is the amount of time when we can consider single events of each type.
+    /// For example, if a fox needs one rabbit per day to survive, then an evolution epoch should be less than one day,
+    /// so that on average, a fox will eat that one rabbit per day.
+    ///
+    /// The alternative is to consider multiple events in a single epoch, and that will bring its own complications.
     type EvolutionEpoch =
         | EvolutionEpoch of int
 
@@ -26,12 +42,12 @@ module ExtendedLotkaVolterra =
 
 
     /// A state of nutrition for an animal.
-    /// Takes a value between -1 and 1, where 0 means optimal nutrition,
+    /// Takes a value between -1 and 1, where 0 means optimal nutrition for SURVIVABILITY,
     /// -1 means a starving-to-death animal,
     /// and 1 means a completely overfed animal, which will die from obesity.
     ///
     /// We shall state that 0 does not mean a perfect nutrition state (e.g., well-fed animal),
-    /// but rather an optimal one for survivability and reproduction.
+    /// but rather an optimal one for survivability.
     ///
     /// Both (-1) and (1) are fatal states and so are realistically unattainable.
     ///
@@ -39,6 +55,7 @@ module ExtendedLotkaVolterra =
     ///
     /// One may argue that the optimal nutrition states for survivability and reproduction could be different.
     /// For example, cactuses are known to blossom only after a drought. We probably won't go this route for now.
+    /// However, it is straightforward to implement by providing different functions for dexterity and reproduction rate.
     type NutritionState =
         | NutritionState of double
 
@@ -54,7 +71,7 @@ module ExtendedLotkaVolterra =
 
 
     /// Dexterity is a combination of speed, agility, and coordination,
-    /// which is translated here into a function of age and nutrition state.
+    /// which is translated here into a function of <see cref="AnimalState"/>.
     ///
     /// A prey animal with high dexterity is more likely to escape predators,
     /// and a predator with high dexterity is more likely to catch prey.
@@ -71,6 +88,11 @@ module ExtendedLotkaVolterra =
         | DexterityFunction of (AnimalState -> Dexterity)
 
         member this.invoke = let (DexterityFunction f) = this in f
+
+
+    // Weight -> WeightFunction
+    // Edibility (come up with a better name - that's how much will be used by a predator) -> EdibilityFunction
+    // "Recycling" (and related) - that's how much can be used to replenish the soil.
 
 
     /// Current reproduction rate of an animal.
@@ -101,6 +123,38 @@ module ExtendedLotkaVolterra =
         member this.invoke = let (MortalityRateFunction f) = this in f
 
 
+    /// Encapsulates a need for feeding.
+    type FeedingNeed =
+        | NeedsFeeding
+        | MayNeedFeeding of double // A value between 0 and 1, where 0 means no need for feeding, and 1 means a strong need for feeding.
+
+
+    /// Hunting results affects the state of the prey and predator animals.
+    /// Change to NutritionState is different based on the result.
+    type HuntingResult =
+        | PreyNotFound
+        | PreyEscaped
+        | PreyCaptured
+
+
+    /// Current food consumption rate of an animal.
+    ///
+    /// Combination of threat and food availability.
+    type FoodConsumptionRate =
+        | FoodConsumptionRate of double
+
+        member this.value = let (FoodConsumptionRate v) = this in v
+
+
+    type AnimalFunctions =
+        {
+            dexterityFunction: DexterityFunction
+            reproductionRateFunction: ReproductionRateFunction
+            mortalityRateFunction: MortalityRateFunction
+            // foodConsumptionRate: FoodConsumptionRate
+        }
+
+
     type Animal =
         {
             age: Age
@@ -123,3 +177,4 @@ module ExtendedLotkaVolterra =
         | Grass // Add Seed ???
         | Rabbit
         | Fox
+        | Waste
