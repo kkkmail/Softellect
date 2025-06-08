@@ -72,7 +72,7 @@ module Evolution =
         ///
         /// If the event does not happen before the end of the epoch, then returns the end of epoch event and updates
         /// the evolution time to the end of epoch.
-        member p.evolve (e : EventState<'E>) : EventState<'E> =
+        member p.evolve e =
             match e.evolutionTime with
             | EpochExpired -> e // No evolution time left, return the event as is.
             | EvolutionTime v ->
