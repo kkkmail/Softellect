@@ -23,17 +23,19 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         let initialValue = 100L // Start with 100 elements
         let initialArray = SparseArray.create [| { x = centerPoint; value = initialValue } |]
 
-        // Create a deterministic Poisson sampler for testing
-        // This simply returns the lambda value rounded to the nearest integer
-        let deterministicPoissonSampler (lambda: double) : int64 =
-            int64 (Math.Round(lambda))
+        // // Create a deterministic Poisson sampler for testing
+        // // This simply returns the lambda value rounded to the nearest integer
+        // let deterministicPoissonSampler (lambda: double) : int64 =
+        //     int64 (Math.Round(lambda))
+        let poissonSampler = PoissonSampler<int64>.deterministic()
 
         let getMultiplier = fun _ -> 1.0 // No scaling
 
         // Create evolution parameter
         let evolutionParam =
             {
-                poissonSampler = PoissonSampler deterministicPoissonSampler
+                // poissonSampler = PoissonSampler deterministicPoissonSampler
+                poissonSampler = poissonSampler
                 toDouble = fun (n: int64) -> double n
                 fromDouble = fun (d: double) -> int64 d
             }
@@ -60,7 +62,8 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
             transitionValues
             |> Seq.map (fun tv ->
                 let lambda = (double initialValue) * tv.value
-                let expectedCount = deterministicPoissonSampler lambda
+                // let expectedCount = deterministicPoissonSampler lambda
+                let expectedCount = poissonSampler.nextNumberOfEvents lambda
                 (tv.x, expectedCount))
             |> Map.ofSeq
 

@@ -5,6 +5,7 @@ open System.Threading
 open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.Sys.Logging
 open Softellect.Samples.DistrProc.Core.Primitives
+open Softellect.Math.Evolution
 
 module ExtendedLotkaVolterra =
     // Hunting consists of the following events:
@@ -13,26 +14,19 @@ module ExtendedLotkaVolterra =
     // 3. If prey is found, then the predator tries to catch it. This is based on the dexterity of both predator and prey.
     //    This process is not instantaneous, and it takes some time to catch the prey (or not).
     // 4. All processes consume some energy, so the predator and prey states are updated accordingly.
+    // 5. The events happen during an evolution epoch, which is a discrete time unit in the evolution of a population.
+    //    Multiple events can happen during a single epoch.
+
+    // 5. If prey is caught, then the predator consumes it, and its nutrition state is updated.
+    // 6. If prey is not caught, then it escapes, and its nutrition state is updated.
+    // 7. If prey is not found, then the predator's nutrition state is updated.
+
 
     // Hunting consists of three main events:
     // 1. Prey is not found.
     // 2. Prey is found, but escapes.
     // 3. Prey is found and captured.
     // An evolution time is a discrete time unit in the evolution of a population.
-
-    /// An evolution epoch is a discrete time unit in the evolution of a population.
-    ///
-    /// An evolution epoch is the amount of time when we can consider single events of each type.
-    /// For example, if a fox needs one rabbit per day to survive, then an evolution epoch should be less than one day,
-    /// so that on average, a fox will eat that one rabbit per day.
-    ///
-    /// The alternative is to consider multiple events in a single epoch, and that will bring its own complications.
-    type EvolutionEpoch =
-        | EvolutionEpoch of int
-
-        member this.value = let (EvolutionEpoch v) = this in v
-        member this.increment() = this.value + 1 |> EvolutionEpoch
-
 
     type Age =
         | Age of EvolutionEpoch
