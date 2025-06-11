@@ -30,8 +30,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
         <ProjectReference Include="..\..\..\DistributedProcessing\ModelGenerator\ModelGenerator.fsproj" />
         <ProjectReference Include="..\Core\Core.fsproj" />
         <PackageReference Update="FSharp.Core" Version="9.0.300" />

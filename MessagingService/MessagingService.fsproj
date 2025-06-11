@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.300.33</Version>
-    <PackageVersion>9.0.300.33</PackageVersion>
+    <Version>9.0.300.35</Version>
+    <PackageVersion>9.0.300.35</PackageVersion>
     <Description>Softellect Messaging Service Library provides a Windows Service implementation of a simple general framework to exchange large messages without specific IO.</Description>
     <PackageTags>messaging;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -107,8 +107,8 @@
     <ProjectReference Include="..\Sys\Sys.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
     <PackageReference Update="FSharp.Core" Version="9.0.300" />
   </ItemGroup>
 </Project>

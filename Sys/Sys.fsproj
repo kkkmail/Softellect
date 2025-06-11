@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>9.0.300.33</Version>
-    <PackageVersion>9.0.300.33</PackageVersion>
+    <Version>9.0.300.35</Version>
+    <PackageVersion>9.0.300.35</PackageVersion>
     <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -55,6 +55,9 @@
     <Compile Include="FileSystemTypes.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="PreBuild.fsproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Argu" Version="6.2.5" />
     <PackageReference Include="Core.System.Configuration.Install" Version="1.1.0" />
     <PackageReference Include="CoreWCF.Http" Version="1.7.0" />
@@ -67,13 +70,13 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.5" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.6" />
     <PackageReference Include="System.ServiceModel.Http" Version="8.1.2" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="8.1.2" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.5" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.6" />
     <PackageReference Update="FSharp.Core" Version="9.0.300" />
-    <PackageReference Include="SQLProvider" Version="1.5.7" />
+    <PackageReference Include="SQLProvider" Version="1.5.9" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
     <PackageReference Include="System.Data.Common" Version="4.3.0" />
