@@ -22,16 +22,16 @@ module Evolution =
 
     /// A more granular time flow within an evolution epoch.
     /// Multiple events can happen during a single epoch.
-    type EvolutionTime =
+    type EpochEvolutionTime =
         | EpochExpired
-        | EvolutionTime of double
+        | EpochEvolutionTime of double
 
 
     /// A combination of an event and current evolution time within an epoch.
     type EventState<'E> =
         {
             event : 'E
-            evolutionTime : EvolutionTime
+            evolutionTime : EpochEvolutionTime
         }
 
 
@@ -75,7 +75,7 @@ module Evolution =
         member p.evolve e =
             match e.evolutionTime with
             | EpochExpired -> e // No evolution time left, return the event as is.
-            | EvolutionTime v ->
+            | EpochEvolutionTime v ->
                 // Event did not happen till the end of the epoch.
                 let ee() =
                     {
@@ -93,7 +93,7 @@ module Evolution =
                     | false ->
                         {
                             event = p.evaluateEvent e.event |> p.nextEvent
-                            evolutionTime = EvolutionTime nv
+                            evolutionTime = EpochEvolutionTime nv
                         }
 
 
