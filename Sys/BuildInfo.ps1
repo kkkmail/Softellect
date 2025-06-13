@@ -1,1 +1,1 @@
-[string] $global:buildNumber = "9.0.300.36"
+[string] $global:buildNumber = "9.0.300.37"

@@ -62,9 +62,8 @@ module MultidimensionalSparseTests =
             if a <= 0.0 || a >= 1.0 then
                 failwith "Parameter a must be in range (0, 1)"
 
-            // Calculate b based on the constraint a + 2b = 1
-            // Note: b should not be divided by k, as that's not consistent with the original formulation
-            let b = (1.0 - a) / 2.0
+            // Calculate base b for internal points based on the constraint a + 2 * k * b = 1
+            let b = (1.0 - a) / (2.0 * float k)
 
             // Create the matrix as functions (no full instantiation)
             {

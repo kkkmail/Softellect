@@ -56,11 +56,11 @@ module Primitives =
                     secondWord
                     |> Seq.iteri
                         (fun j c2 ->
-                            let insertions = previousRow.[j + 1] + 1
-                            let deletions = currentRow.[j] + 1
+                            let insertions = previousRow[j + 1] + 1
+                            let deletions = currentRow[j] + 1
 
                             let substitutions =
-                                previousRow.[j] + (if c1 <> c2 then 1 else 0)
+                                previousRow[j] + (if c1 <> c2 then 1 else 0)
 
                             // Get the minimum to append to the current row
                             currentRow <-
@@ -1140,6 +1140,10 @@ module Primitives =
                 x0 = d.points.value[p.i0]
             }
 
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0)
+
+
     /// 2D point representation
     type Point2D =
         {
@@ -1152,6 +1156,11 @@ module Primitives =
                 x0 = d.d0.points.value[p.i0]
                 x1 = d.d1.points.value[p.i1]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0)
+
 
     /// 3D point representation
     type Point3D =
@@ -1167,6 +1176,12 @@ module Primitives =
                 x1 = d.d1.points.value[p.i1]
                 x2 = d.d2.points.value[p.i2]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0)
+
 
     /// 4D point representation
     type Point4D =
@@ -1184,6 +1199,13 @@ module Primitives =
                 x2 = d.d2.points.value[p.i2]
                 x3 = d.d3.points.value[p.i3]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0) +
+            (if p.i3 = 0 || p.i3 = d - 1 then 1 else 0)
+
 
     /// 5D point representation
     type Point5D =
@@ -1203,6 +1225,14 @@ module Primitives =
                 x3 = d.d3.points.value[p.i3]
                 x4 = d.d4.points.value[p.i4]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0) +
+            (if p.i3 = 0 || p.i3 = d - 1 then 1 else 0) +
+            (if p.i4 = 0 || p.i4 = d - 1 then 1 else 0)
+
 
     /// 6D point representation
     type Point6D =
@@ -1224,6 +1254,15 @@ module Primitives =
                 x4 = d.d4.points.value[p.i4]
                 x5 = d.d5.points.value[p.i5]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0) +
+            (if p.i3 = 0 || p.i3 = d - 1 then 1 else 0) +
+            (if p.i4 = 0 || p.i4 = d - 1 then 1 else 0) +
+            (if p.i5 = 0 || p.i5 = d - 1 then 1 else 0)
+
 
     /// 7D point representation
     type Point7D =
@@ -1247,6 +1286,16 @@ module Primitives =
                 x5 = d.d5.points.value[p.i5]
                 x6 = d.d6.points.value[p.i6]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0) +
+            (if p.i3 = 0 || p.i3 = d - 1 then 1 else 0) +
+            (if p.i4 = 0 || p.i4 = d - 1 then 1 else 0) +
+            (if p.i5 = 0 || p.i5 = d - 1 then 1 else 0) +
+            (if p.i6 = 0 || p.i6 = d - 1 then 1 else 0)
+
 
     /// 8D point representation
     type Point8D =
@@ -1272,6 +1321,16 @@ module Primitives =
                 x6 = d.d6.points.value[p.i6]
                 x7 = d.d7.points.value[p.i7]
             }
+
+        member p.boundaryCount (d : int) =
+            (if p.i0 = 0 || p.i0 = d - 1 then 1 else 0) +
+            (if p.i1 = 0 || p.i1 = d - 1 then 1 else 0) +
+            (if p.i2 = 0 || p.i2 = d - 1 then 1 else 0) +
+            (if p.i3 = 0 || p.i3 = d - 1 then 1 else 0) +
+            (if p.i4 = 0 || p.i4 = d - 1 then 1 else 0) +
+            (if p.i5 = 0 || p.i5 = d - 1 then 1 else 0) +
+            (if p.i6 = 0 || p.i6 = d - 1 then 1 else 0) +
+            (if p.i7 = 0 || p.i7 = d - 1 then 1 else 0)
 
 
     let arithmeticOperations1D =

@@ -11,6 +11,8 @@ open Softellect.Math.Sparse
 [<Trait("Category", "Comparison")>]
 type MatrixComparisonTests(output: ITestOutputHelper) =
 
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+
     /// Helper to extract sparse values from an array
     let extractValues (sparseArray: SparseArray<'I, double>) =
         sparseArray.getValues()
@@ -79,17 +81,17 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
     [<Fact>]
     let ``Compare Old and New Matrix Creation Methods`` () =
         // Parameters for small test matrices
-        let d = 5  // Small dimension size for easier debugging
+        let d = 3  // Small dimension size for easier debugging
         let k = 2  // 2D matrices for simplicity
         let a = 0.5 // Diagonal element value
 
-        output.WriteLine($"Creating 2D matrices with d = {d} using old and new methods")
+        output.WriteLine($"Creating 2D matrices with d = {d} using new and old methods.")
 
-        // Create matrix using old method from MultidimensionalTests
-        let oldMatrix = createTridiagonalMatrix2D d a
+        // Create matrix using new method from Softellect.Math.Tridiagonal
+        let newMatrix = createTridiagonalMatrix2D d a
 
-        // Create matrix using new method from MultidimensionalSparseTests
-        let newMatrix = MultidimensionalSparseTests.Helpers.createTridiagonalMatrix d k a
+        // Create matrix using old method from MultidimensionalSparseTests
+        let oldMatrix = MultidimensionalSparseTests.Helpers.createTridiagonalMatrix d k a
 
         // Compare x_y results for a sample of points
         output.WriteLine("Comparing x_y results for sample points:")
@@ -97,11 +99,11 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
 
         for i in 0..(d-1) do
             for j in 0..(d-1) do
-                let oldPoint : Point2D = { i0 = i; i1 = j }
-                let newPoint = [|i; j|]
+                let newPoint : Point2D = { i0 = i; i1 = j }
+                let oldPoint = [|i; j|]
 
-                let oldResult = oldMatrix.x_y oldPoint
-                let newResult = newMatrix.x_y newPoint |> toOldSparse2DArray
+                let newResult = newMatrix.x_y newPoint
+                let oldResult = oldMatrix.x_y oldPoint |> toOldSparse2DArray
 
                 output.WriteLine($"Testing point ({i}, {j}):")
                 let differences = compareSparseArrays "old x_y" oldResult "new x_y" newResult
@@ -113,37 +115,37 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
 
         for i in 0..(d-1) do
             for j in 0..(d-1) do
-                let oldPoint : Point2D = { i0 = i; i1 = j }
-                let newPoint = [|i; j|]
+                let newPoint : Point2D = { i0 = i; i1 = j }
+                let oldPoint = [|i; j|]
 
-                let oldResult = oldMatrix.y_x oldPoint
-                let newResult = newMatrix.y_x newPoint |> toOldSparse2DArray
+                let newResult = newMatrix.y_x newPoint
+                let oldResult = oldMatrix.y_x oldPoint |> toOldSparse2DArray
 
                 output.WriteLine($"Testing point ({i}, {j}):")
                 let differences = compareSparseArrays "old y_x" oldResult "new y_x" newResult
                 totalDifferences <- totalDifferences + differences
 
         // Create sample vectors
-        let oldVector = MultidimensionalTests.Helpers.create2DHypersphereVector d 0.7 0.05
-        let newVector = MultidimensionalSparseTests.Helpers.createHypersphereVector d k 0.7 0.05
+        let newVector = MultidimensionalTests.Helpers.create2DHypersphereVector d 0.7 0.05
+        let oldVector = MultidimensionalSparseTests.Helpers.createHypersphereVector d k 0.7 0.05
 
         // Print vector details
-        printSparseArray "Old vector" oldVector
-        printSparseArray "New vector" (toOldSparse2DArray newVector)
+        printSparseArray "New vector" newVector
+        printSparseArray "Old vector" (toOldSparse2DArray oldVector)
 
         // Compare vectors
-        let vectorDifferences = compareSparseArrays "new vector" (toOldSparse2DArray newVector) "old vector" oldVector
+        let vectorDifferences = compareSparseArrays "old vector" (toOldSparse2DArray oldVector) "new vector" newVector
 
         // Perform multiplications
-        let oldResult = oldMatrix * oldVector
         let newResult = newMatrix * newVector
+        let oldResult = oldMatrix * oldVector
 
         // Print result details
-        printSparseArray "Old result" oldResult
-        printSparseArray "New result" (toOldSparse2DArray newResult)
+        printSparseArray "New result" newResult
+        printSparseArray "Old result" (toOldSparse2DArray oldResult)
 
         // Compare results
-        let resultDifferences = compareSparseArrays "new result" (toOldSparse2DArray newResult) "old result" oldResult
+        let resultDifferences = compareSparseArrays "old result" (toOldSparse2DArray oldResult) "new result" newResult
 
         // Summary
         output.WriteLine("==== Comparison Summary ====")

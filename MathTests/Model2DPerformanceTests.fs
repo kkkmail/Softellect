@@ -13,6 +13,8 @@ open System.Diagnostics
 
 type Model2DPerformanceTests(output: ITestOutputHelper) =
     let writeLine = output.WriteLine
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+
 
     [<Fact>]
     member _.``Evolution model performance test 2D`` () =

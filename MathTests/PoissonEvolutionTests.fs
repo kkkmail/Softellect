@@ -1,6 +1,5 @@
 ﻿namespace Softellect.Tests.MathTests
 
-open System
 open Xunit
 open FluentAssertions
 open Softellect.Math.Primitives
@@ -10,6 +9,8 @@ open Softellect.Math.Evolution
 open Xunit.Abstractions
 
 type PoissonEvolutionTests(output: ITestOutputHelper) =
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+
 
     [<Fact>]
     member _.``Evolution should distribute elements according to transition probabilities in 2D``() =
@@ -76,7 +77,7 @@ type PoissonEvolutionTests(output: ITestOutputHelper) =
         output.WriteLine($"Total elements after evolution: {totalElements}")
         output.WriteLine("Expected distribution:")
 
-        for (point, count) in Map.toArray expectedValues do
+        for point, count in Map.toArray expectedValues do
             output.WriteLine($"Point {point}: {count}")
 
         output.WriteLine("Actual distribution:")
