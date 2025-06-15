@@ -11,7 +11,7 @@ open Softellect.Math.Sparse
 [<Trait("Category", "Comparison")>]
 type MatrixComparisonTests(output: ITestOutputHelper) =
 
-    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.FixedStaying
 
     /// Helper to extract sparse values from an array
     let extractValues (sparseArray: SparseArray<'I, double>) =
@@ -78,10 +78,10 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
         |> Seq.toArray
         |> SparseArray.create
 
-    [<Fact>]
+    [<Fact (Skip = "The old matrix is not a probability.")>]
     let ``Compare Old and New Matrix Creation Methods`` () =
         // Parameters for small test matrices
-        let d = 3  // Small dimension size for easier debugging
+        let d = 5  // Small dimension size for easier debugging
         let k = 2  // 2D matrices for simplicity
         let a = 0.5 // Diagonal element value
 

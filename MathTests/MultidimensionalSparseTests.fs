@@ -56,11 +56,12 @@ module MultidimensionalSparseTests =
             xyTotalTime <- 0L
 
 
+        /// Note that this tridiagonal matrix does not sum to 1 on edges.
+        /// As such, it cannot be treated as a probability matrix.
         /// Create a k-dimensional tridiagonal sparse matrix
         let createTridiagonalMatrix (d: int) (k: int) (a: float) : SparseMatrix<int[], float> =
             // Parameter validation
-            if a <= 0.0 || a >= 1.0 then
-                failwith "Parameter a must be in range (0, 1)"
+            if a < 0.0 || a > 1.0 then failwith "Parameter a must be in range [0, 1]."
 
             // Calculate base b for internal points based on the constraint a + 2 * k * b = 1
             let b = (1.0 - a) / (2.0 * float k)
@@ -69,10 +70,7 @@ module MultidimensionalSparseTests =
             {
                 x_y = fun point ->
                     xyStopwatch.Restart()
-
-                    if point.Length <> k then
-                        failwith $"Point should have {k} dimensions"
-
+                    if point.Length <> k then failwith $"Point should have {k} dimensions"
                     let values = ResizeArray<SparseValue<int[], float>>()
 
                     // Diagonal element (self-connection)
@@ -173,119 +171,6 @@ module MultidimensionalSparseTests =
             generatePoints [] 0
 
             SparseArray.create (values.ToArray())
-
-        // ==================================================
-
-        // /// Create a k-dimensional tridiagonal sparse matrix
-        // let createTridiagonalMatrix (d: int) (k: int) (a: float) : SparseMatrix<list<int>, float> =
-        //     // Parameter validation
-        //     if a <= 0.0 || a >= 1.0 then
-        //         failwith "Parameter a must be in range (0, 1)"
-        //
-        //     // Calculate b based on the constraint a + 2b = 1
-        //     // Note: b should not be divided by k, as that's not consistent with the original formulation
-        //     let b = (1.0 - a) / 2.0
-        //
-        //     // Create the matrix as functions (no full instantiation)
-        //     {
-        //         x_y = fun point ->
-        //             xyStopwatch.Restart()
-        //
-        //             if point.Length <> k then
-        //                 failwith $"Point should have {k} dimensions"
-        //
-        //             let values = ResizeArray<SparseValue<list<int>, float>>()
-        //
-        //             // Diagonal element (self-connection)
-        //             values.Add({ x = point; value = a })
-        //
-        //             // Off-diagonal elements (adjacent points)
-        //             // For each dimension, add connections to adjacent points
-        //             for i in 0..(point.Length - 1) do
-        //                 // Decreasing the i-th coordinate by 1
-        //                 if point[i] > 0 then
-        //                     let newPoint = List.mapi (fun idx val' -> if idx = i then val' - 1 else val') point
-        //                     values.Add({ x = newPoint; value = b })
-        //
-        //                 // Increasing the i-th coordinate by 1
-        //                 if point[i] < d - 1 then
-        //                     let newPoint = List.mapi (fun idx val' -> if idx = i then val' + 1 else val') point
-        //                     values.Add({ x = newPoint; value = b })
-        //
-        //             let retVal = SparseArray.create (values.ToArray())
-        //
-        //             xyStopwatch.Stop()
-        //             xyCallCount <- xyCallCount + 1
-        //             xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-        //
-        //             retVal
-        //
-        //         y_x = fun point ->
-        //             xyStopwatch.Restart()
-        //
-        //             if point.Length <> k then
-        //                 failwith $"Point should have {k} dimensions"
-        //
-        //             let values = ResizeArray<SparseValue<list<int>, float>>()
-        //
-        //             // Diagonal element (self-connection)
-        //             values.Add({ x = point; value = a })
-        //
-        //             // Off-diagonal elements (adjacent points)
-        //             // For each dimension, add connections to adjacent points
-        //             for i in 0..(point.Length - 1) do
-        //                 // Decreasing the i-th coordinate by 1
-        //                 if point[i] > 0 then
-        //                     let newPoint = List.mapi (fun idx val' -> if idx = i then val' - 1 else val') point
-        //                     values.Add({ x = newPoint; value = b })
-        //
-        //                 // Increasing the i-th coordinate by 1
-        //                 if point[i] < d - 1 then
-        //                     let newPoint = List.mapi (fun idx val' -> if idx = i then val' + 1 else val') point
-        //                     values.Add({ x = newPoint; value = b })
-        //
-        //             let retVal = SparseArray.create (values.ToArray())
-        //
-        //             xyStopwatch.Stop()
-        //             xyCallCount <- xyCallCount + 1
-        //             xyTotalTime <- xyTotalTime + xyStopwatch.ElapsedTicks
-        //
-        //             retVal
-        //     }
-        //
-        // /// Create a hypersphere vector in k dimensions
-        // let createHypersphereVector (d: int) (k: int) (radius: float) (epsilon: float) : SparseArray<list<int>, float> =
-        //     let values = ResizeArray<SparseValue<list<int>, float>>()
-        //
-        //     // For high dimensions, we need to be more selective about which points to include
-        //     // to prevent explosion of vector elements
-        //     let pointsToCheck =
-        //         if k <= 3 then d
-        //         else min d (max 100 (1000 / k)) // Reduce points for higher dimensions
-        //
-        //     // Generate all points in the k-dimensional space
-        //     let rec generatePoints (current: int list) (dimension: int) =
-        //         if dimension = k then
-        //             // Point is already in the correct format (list<int>)
-        //             let point = List.rev current
-        //
-        //             // Calculate normalized coordinates
-        //             let normalizedCoords =
-        //                 point |> List.map (fun idx -> normalizeIndex d idx) |> List.toArray
-        //
-        //             // Check if point is on the hypersphere
-        //             if isNearHypersphere radius epsilon normalizedCoords then
-        //                 values.Add({ x = point; value = 1.0 })
-        //         else
-        //             // Only check a subset of points for higher dimensions to avoid explosion
-        //             let stepSize = max 1 (d / pointsToCheck)
-        //             for i in 0 .. stepSize .. (d-1) do
-        //                 generatePoints (i :: current) (dimension + 1)
-        //
-        //     // Start recursive generation with empty list and dimension 0
-        //     generatePoints [] 0
-        //
-        //     SparseArray.create (values.ToArray())
 
     open Helpers
 
