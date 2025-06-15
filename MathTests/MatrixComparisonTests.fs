@@ -78,7 +78,7 @@ type MatrixComparisonTests(output: ITestOutputHelper) =
         |> Seq.toArray
         |> SparseArray.create
 
-    [<Fact (Skip = "The old matrix is not a probability.")>]
+    [<Fact (Skip = "The old matrix is not a probability. Values on edges won't match no matter what.")>]
     let ``Compare Old and New Matrix Creation Methods`` () =
         // Parameters for small test matrices
         let d = 5  // Small dimension size for easier debugging

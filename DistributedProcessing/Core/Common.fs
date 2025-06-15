@@ -540,7 +540,7 @@ module Common =
             | OdePack (_, _, nc) -> nc.correction
 
 
-    type OdeParams =
+    type OdeContext =
         {
             stepSize : double
             absoluteTolerance : AbsoluteTolerance

@@ -3,7 +3,7 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 
-/// Generated module for tridiagonal sparse matrices.
+/// Generated module for symmetric tridiagonal sparse matrices.
 /// See: https://claude.ai/chat/75221a0e-895f-4d27-b5d5-6d8ce80974bd
 ///      https://claude.ai/chat/dd074aaa-3817-4232-a667-d41c36e5b593
 module Tridiagonal =
@@ -14,6 +14,7 @@ module Tridiagonal =
         | FixedStaying           // Keep 'a' constant, redistribute to available neighbors
         | LinearScaling          // Scale 'a' by ratio of available neighbors
         | ReflectingBoundaries   // Add blocked probabilities back to staying probability
+
 
         /// Function to calculate boundary configurations based on the chosen method
         member boundaryConfig.calculate (k: int) (a: float) : (float * float)[] =

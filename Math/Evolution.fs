@@ -9,6 +9,43 @@ open Softellect.Math.Sparse
 
 module Evolution =
 
+    /// Number of evolution epochs in an integer model.
+    type NoOfEpochs =
+        | NoOfEpochs of int
+
+        member r.value = let (NoOfEpochs v) = r in v
+
+
+    /// Total number of "molecules" used in the system.
+    /// This value adjusted to the number of "atoms" in each type of "molecules" generally should be an invariant.
+    ///
+    /// The actual meaning depends on the model:
+    ///     It is a number of molecules in chemical systems.
+    ///     It is a number of some species (whatever they are) in more general cases.
+    type MoleculeCount =
+        | MoleculeCount of int64
+
+        member r.value = let (MoleculeCount v) = r in v
+
+        /// K: 10^3
+        static member OneThousand = MoleculeCount 1_000L
+
+         /// M: 10^6
+        static member OneMillion = MoleculeCount 1_000_000L
+
+        /// G: 10^9
+        static member OneBillion = MoleculeCount 1_000_000_000L
+
+        /// T: 10^12
+        static member OneTrillion = MoleculeCount 1_000_000_000_000L
+
+        /// P: 10^15
+        static member OneQuadrillion = MoleculeCount 1_000_000_000_000_000L
+
+        /// E: 10^18
+        static member OneQuintillion = MoleculeCount 1_000_000_000_000_000_000L
+
+
     /// An evolution epoch is a discrete time unit in the Poisson evolution.
     type EvolutionEpoch =
         | EvolutionEpoch of int
@@ -128,6 +165,7 @@ module Evolution =
             | e -> failwith $"lambda: {lambda}, exception: {e}"
 
 
+    /// ! Uses a mutable internal state !
     /// State for the deterministic Poisson sampler
     type DeterministicPoissonState =
         {
@@ -192,7 +230,18 @@ module Evolution =
         }
 
 
+    type ModelContext<'I, 'T, 'S when 'I: equality and 'I: comparison and 'T: equality and 'T: comparison> =
+        {
+            evolutionContext : EvolutionContext<'I, 'T>
+            noOfEpochs : NoOfEpochs
+            initialData : 'S
+            callBack : int -> 'S -> unit
+        }
+
+
     /// A type to describe a multiplier for the Poisson evolution.
+    /// The multiplier is needed because Poisson evolution uses function based sparse matrices.
+    /// Subsequently, it is convenient to use a multiplier instead of baking it in into some standard functions.
     type Multiplier<'I when 'I : equality and 'I : comparison> =
         | Multiplier of ('I -> double)
 
