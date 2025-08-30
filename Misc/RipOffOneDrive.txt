@@ -1,0 +1,18 @@
+Stop: OneDrive.exe, OneDrive.App.exe, FileCoAuth.exe, UserOOBEBroker.exe; if files still locked, stop Windows Explorer.
+
+Uninstall: OneDriveSetup.exe /uninstall (prefer %SystemRoot%\SysWOW64\OneDriveSetup.exe; fallback %SystemRoot%\System32\OneDriveSetup.exe).
+
+Delete leftovers: %USERPROFILE%\OneDrive; %LOCALAPPDATA%\Microsoft\OneDrive; %LOCALAPPDATA%\Microsoft\OneDriveStandaloneUpdater; %APPDATA%\Microsoft\OneDrive; %PROGRAMDATA%\Microsoft OneDrive; %ProgramFiles%\Microsoft OneDrive; %ProgramFiles(x86)%\Microsoft OneDrive; C:\Users\Default\AppData\Local\Microsoft\OneDrive.
+
+Regedit -> HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders: set
+Personal=%USERPROFILE%\Documents; Desktop=%USERPROFILE%\Desktop; "My Pictures"=%USERPROFILE%\Pictures; "My Music"=%USERPROFILE%\Music; "My Video"=%USERPROFILE%\Videos; Downloads=%USERPROFILE%\Downloads; Favorites=%USERPROFILE%\Favorites.
+
+Regedit -> create HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive: set DWORDs DisableFileSyncNGSC=1, DisablePersonalSync=1, ExcludeOneDriveFromFileExplorer=1.
+
+Regedit -> hide Explorer entry: HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}\System.IsPinnedToNameSpaceTree=0 and (64-bit) HKCR\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}\System.IsPinnedToNameSpaceTree=0.
+
+Task Scheduler: delete/disable all OneDrive tasks under Microsoft\OneDrive and Microsoft\Windows\OneDrive; Regedit startup: remove OneDrive entries from HKCU\Software\Microsoft\Windows\CurrentVersion\Run and HKLM\Software\Microsoft\Windows\CurrentVersion\Run.
+
+Restart Windows Explorer or reboot.
+
+Set app defaults to local paths: Office (Save -> “Save to Computer by default” + default local path), Visual Studio (Projects and Solutions -> Locations), Windows (Storage -> “Where new content is saved” = local drives).
