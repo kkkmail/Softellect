@@ -5,8 +5,8 @@ function Install-Service {
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
 
-        [Parameter(Mandatory = $false)]
-        [string]$InstallScriptName = "Install-WorkerNodeService.ps1"
+        [Parameter(Mandatory = $true)]
+        [string]$InstallScriptName
     )
 
     try {

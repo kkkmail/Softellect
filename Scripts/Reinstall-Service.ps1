@@ -6,8 +6,8 @@ param (
     [Parameter(Mandatory = $true)]
     [string]$InstallationFolder,
 
-    [Parameter(Mandatory = $false)]
-    [string]$InstallScriptName = "Install-WorkerNodeService.ps1",
+    [Parameter(Mandatory = $true)]
+    [string]$InstallScriptName,
 
     [Parameter(Mandatory = $false)]
     [string]$UninstallScriptName = "Uninstall-WorkerNodeService.ps1",

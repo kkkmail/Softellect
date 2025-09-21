@@ -5,8 +5,8 @@ function Uninstall-Service {
         [Parameter(Mandatory = $true)]
         [string]$ServiceFolder,
 
-        [Parameter(Mandatory = $false)]
-        [string]$UninstallScriptName = "Uninstall-WorkerNodeService.ps1"
+        [Parameter(Mandatory = $true)]
+        [string]$UninstallScriptName
     )
 
     try {
