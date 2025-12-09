@@ -166,7 +166,7 @@ module Crypto =
             doc.Root.Add(XElement("Guid", id.ToString()))
             doc.ToString()
 
-        (addGuidToXml publicKeyXml |> PublicKey, privateKeyXml |> PrivateKey)
+        (addGuidToXml publicKeyXml |> PublicKey, addGuidToXml privateKeyXml |> PrivateKey)
 
 
     /// Extracts the Guid from an XML key.
