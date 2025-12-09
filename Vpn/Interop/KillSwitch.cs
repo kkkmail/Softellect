@@ -32,26 +32,49 @@ public sealed class KillSwitch : IDisposable
             return Result<Unit>.Failure("Kill-switch is already enabled");
         }
 
-        // Open WFP engine
-        var result = WindowsFilteringPlatform.FwpmEngineOpen0(
-            null,
-            WindowsFilteringPlatform.RPC_C_AUTHN_WINNT,
-            IntPtr.Zero,
-            IntPtr.Zero,
-            out _engineHandle);
-
-        if (result != WindowsFilteringPlatform.ErrorSuccess)
+        // Create a dynamic session - filters will be automatically removed when the session ends
+        // This also helps with permissions when running as a service
+        var session = new WindowsFilteringPlatform.FWPM_SESSION0
         {
-            return Result<Unit>.Failure($"Failed to open WFP engine: 0x{result:X8}");
+            displayData = new WindowsFilteringPlatform.FWPM_DISPLAY_DATA0
+            {
+                name = "Softellect VPN Kill-Switch Session",
+                description = "Dynamic session for VPN kill-switch"
+            },
+            flags = WindowsFilteringPlatform.FWPM_SESSION_FLAG_DYNAMIC,
+            txnWaitTimeoutInMSec = 0 // Infinite wait
+        };
+
+        var sessionPtr = Marshal.AllocHGlobal(Marshal.SizeOf<WindowsFilteringPlatform.FWPM_SESSION0>());
+        Marshal.StructureToPtr(session, sessionPtr, false);
+
+        try
+        {
+            // Open WFP engine with dynamic session
+            var result = WindowsFilteringPlatform.FwpmEngineOpen0(
+                null,
+                WindowsFilteringPlatform.RPC_C_AUTHN_DEFAULT,
+                IntPtr.Zero,
+                sessionPtr,
+                out _engineHandle);
+
+            if (result != WindowsFilteringPlatform.ErrorSuccess)
+            {
+                return Result<Unit>.Failure($"Failed to open WFP engine: 0x{result:X8}");
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(sessionPtr);
         }
 
         try
         {
             // Begin transaction
-            result = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
-            if (result != WindowsFilteringPlatform.ErrorSuccess)
+            var txnResult = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
+            if (txnResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to begin transaction: 0x{result:X8}");
+                return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
             }
 
             // Add sublayer
@@ -102,10 +125,10 @@ public sealed class KillSwitch : IDisposable
             }
 
             // Commit transaction
-            result = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
-            if (result != WindowsFilteringPlatform.ErrorSuccess)
+            var commitResult = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
+            if (commitResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to commit transaction: 0x{result:X8}");
+                return Result<Unit>.Failure($"Failed to commit transaction: 0x{commitResult:X8}");
             }
 
             _isEnabled = true;
@@ -209,44 +232,42 @@ public sealed class KillSwitch : IDisposable
 
     private Result<Unit> AddBlockAllFilter()
     {
-        var namePtr = Marshal.StringToHGlobalUni("VPN Kill-Switch Block All");
-        var descPtr = Marshal.StringToHGlobalUni("Blocks all outbound traffic not explicitly permitted");
-
-        try
+        // Block all filter without conditions (matches everything)
+        var filter = new WindowsFilteringPlatform.FWPM_FILTER0
         {
-            // Block all filter without conditions (matches everything)
-            var filter = new WindowsFilteringPlatform.FWPM_FILTER0
+            filterKey = Guid.NewGuid(),
+            displayData = new WindowsFilteringPlatform.FWPM_DISPLAY_DATA0
             {
-                filterKey = Guid.NewGuid(),
-                displayDataName = namePtr,
-                displayDataDescription = descPtr,
-                layerKey = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
-                subLayerKey = WindowsFilteringPlatform.VpnSublayerGuid,
-                weightType = WindowsFilteringPlatform.FWP_UINT8,
-                weightValue = 1, // Low weight = processes last
-                numFilterConditions = 0,
-                filterCondition = IntPtr.Zero,
-                actionType = WindowsFilteringPlatform.FWP_ACTION_BLOCK
-            };
-
-            var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, ref filter, IntPtr.Zero, out var filterId);
-
-            if (result != WindowsFilteringPlatform.ErrorSuccess)
+                name = "VPN Kill-Switch Block All",
+                description = "Blocks all outbound traffic not explicitly permitted"
+            },
+            layerKey = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
+            subLayerKey = WindowsFilteringPlatform.VpnSublayerGuid,
+            weight = new WindowsFilteringPlatform.FWP_VALUE0
             {
-                return Result<Unit>.Failure($"Failed to add block-all filter: 0x{result:X8}");
+                type = WindowsFilteringPlatform.FWP_UINT8,
+                uint8 = 1 // Low weight = processes last
+            },
+            numFilterConditions = 0,
+            filterCondition = IntPtr.Zero,
+            action = new WindowsFilteringPlatform.FWPM_ACTION0
+            {
+                type = WindowsFilteringPlatform.FWP_ACTION_BLOCK
             }
+        };
 
-            _filterIds.Add(filterId);
-            return Result<Unit>.Success(Unit.Value);
-        }
-        finally
+        var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, ref filter, IntPtr.Zero, out var filterId);
+
+        if (result != WindowsFilteringPlatform.ErrorSuccess)
         {
-            Marshal.FreeHGlobal(namePtr);
-            Marshal.FreeHGlobal(descPtr);
+            return Result<Unit>.Failure($"Failed to add block-all filter: 0x{result:X8}");
         }
+
+        _filterIds.Add(filterId);
+        return Result<Unit>.Success(Unit.Value);
     }
 
-    private Result<Unit> AddFilterWithCondition(string name, uint action, uint ipAddress, uint mask, byte weight)
+    private Result<Unit> AddFilterWithCondition(string name, uint action, uint ipAddress, uint mask, byte filterWeight)
     {
         // Allocate condition value (FWP_V4_ADDR_AND_MASK)
         var addrMask = new WindowsFilteringPlatform.FWP_V4_ADDR_AND_MASK
@@ -258,18 +279,18 @@ public sealed class KillSwitch : IDisposable
         var addrMaskPtr = Marshal.AllocHGlobal(Marshal.SizeOf<WindowsFilteringPlatform.FWP_V4_ADDR_AND_MASK>());
         Marshal.StructureToPtr(addrMask, addrMaskPtr, false);
 
-        var namePtr = Marshal.StringToHGlobalUni(name);
-        var descPtr = Marshal.StringToHGlobalUni($"VPN Kill-Switch: {name}");
-
         try
         {
-            // Create condition with flattened structure
+            // Create condition - use Sequential struct with nested FWP_CONDITION_VALUE0
             var condition = new WindowsFilteringPlatform.FWPM_FILTER_CONDITION0
             {
                 fieldKey = WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS,
                 matchType = WindowsFilteringPlatform.FWP_MATCH_EQUAL,
-                valueType = WindowsFilteringPlatform.FWP_V4_ADDR_MASK,
-                valuePtr = addrMaskPtr
+                conditionValue = new WindowsFilteringPlatform.FWP_CONDITION_VALUE0
+                {
+                    type = WindowsFilteringPlatform.FWP_V4_ADDR_MASK,
+                    value = addrMaskPtr
+                }
             };
 
             var conditionPtr = Marshal.AllocHGlobal(Marshal.SizeOf<WindowsFilteringPlatform.FWPM_FILTER_CONDITION0>());
@@ -280,15 +301,24 @@ public sealed class KillSwitch : IDisposable
                 var filter = new WindowsFilteringPlatform.FWPM_FILTER0
                 {
                     filterKey = Guid.NewGuid(),
-                    displayDataName = namePtr,
-                    displayDataDescription = descPtr,
+                    displayData = new WindowsFilteringPlatform.FWPM_DISPLAY_DATA0
+                    {
+                        name = name,
+                        description = $"VPN Kill-Switch: {name}"
+                    },
                     layerKey = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
                     subLayerKey = WindowsFilteringPlatform.VpnSublayerGuid,
-                    weightType = WindowsFilteringPlatform.FWP_UINT8,
-                    weightValue = weight,
+                    weight = new WindowsFilteringPlatform.FWP_VALUE0
+                    {
+                        type = WindowsFilteringPlatform.FWP_UINT8,
+                        uint8 = filterWeight
+                    },
                     numFilterConditions = 1,
                     filterCondition = conditionPtr,
-                    actionType = action
+                    action = new WindowsFilteringPlatform.FWPM_ACTION0
+                    {
+                        type = action
+                    }
                 };
 
                 var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, ref filter, IntPtr.Zero, out var filterId);
@@ -309,8 +339,6 @@ public sealed class KillSwitch : IDisposable
         finally
         {
             Marshal.FreeHGlobal(addrMaskPtr);
-            Marshal.FreeHGlobal(namePtr);
-            Marshal.FreeHGlobal(descPtr);
         }
     }
 

@@ -10,6 +10,7 @@ $scriptDirectory = $PSScriptRoot
 . "$scriptDirectory\Start-DistributedService.ps1"
 . "$scriptDirectory\Stop-DistributedService.ps1"
 . "$scriptDirectory\Write-ServiceLog.ps1"
+. "$scriptDirectory\Grant-WfpPermissions.ps1"
 
 $ServiceName = $global:vpnClientServiceName
 
@@ -20,6 +21,11 @@ function InstallVpnClient {
     Write-ServiceLog -Message "InstallVpnClient - Parameters:" -Level "Info"
     Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
     Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
+
+    # Grant WFP permissions to LOCAL SERVICE before installing the service
+    # This is required for the kill-switch functionality
+    Write-ServiceLog -Message "Granting WFP permissions to LOCAL SERVICE..." -Level "Info"
+    Grant-WfpPermissions
 
     Install-DistributedService -ServiceName $ServiceName
 }
