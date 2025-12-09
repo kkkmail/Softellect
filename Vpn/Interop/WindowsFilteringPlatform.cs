@@ -119,26 +119,31 @@ public static class WindowsFilteringPlatform
         public IntPtr data;
     }
 
-    // FWPM_FILTER0 - using Sequential layout matching Windows SDK definition
-    // The struct must be marshaled to unmanaged memory manually for proper alignment
-    [StructLayout(LayoutKind.Sequential)]
+    // FWPM_FILTER0 - Explicit layout with exact offsets from Windows SDK
+    // Total size on x64: 192 bytes
+    [StructLayout(LayoutKind.Explicit)]
     public struct FWPM_FILTER0
     {
-        public Guid filterKey;                    // 16 bytes
-        public FWPM_DISPLAY_DATA0 displayData;    // 16 bytes (two pointers)
-        public uint flags;                        // 4 bytes
-        public IntPtr providerKey;                // 8 bytes (pointer to GUID)
-        public FWP_BYTE_BLOB providerData;        // 16 bytes
-        public Guid layerKey;                     // 16 bytes
-        public Guid subLayerKey;                  // 16 bytes
-        public FWP_VALUE0 weight;                 // 16 bytes
-        public uint numFilterConditions;          // 4 bytes
-        public IntPtr filterCondition;            // 8 bytes (pointer to array)
-        public FWPM_ACTION0 action;               // 20 bytes (4 + 16)
-        public ulong rawContext;                  // 8 bytes
-        public IntPtr reserved;                   // 8 bytes
-        public ulong filterId;                    // 8 bytes
-        public FWP_VALUE0 effectiveWeight;        // 16 bytes
+        [FieldOffset(0)] public Guid filterKey;              // 0-15: GUID (16 bytes)
+        [FieldOffset(16)] public IntPtr displayDataName;     // 16-23: LPWSTR name
+        [FieldOffset(24)] public IntPtr displayDataDesc;     // 24-31: LPWSTR description
+        [FieldOffset(32)] public uint flags;                 // 32-35: UINT32 (4 bytes + 4 pad)
+        [FieldOffset(40)] public IntPtr providerKey;         // 40-47: GUID* (8 bytes)
+        [FieldOffset(48)] public uint providerDataSize;      // 48-51: UINT32
+        [FieldOffset(56)] public IntPtr providerDataData;    // 56-63: UINT8* (aligned to 8)
+        [FieldOffset(64)] public Guid layerKey;              // 64-79: GUID (16 bytes)
+        [FieldOffset(80)] public Guid subLayerKey;           // 80-95: GUID (16 bytes)
+        [FieldOffset(96)] public uint weightType;            // 96-99: FWP_DATA_TYPE
+        [FieldOffset(104)] public ulong weightValue;         // 104-111: union (8 bytes, aligned)
+        [FieldOffset(112)] public uint numFilterConditions;  // 112-115: UINT32 (4 bytes + 4 pad)
+        [FieldOffset(120)] public IntPtr filterCondition;    // 120-127: FWPM_FILTER_CONDITION0*
+        [FieldOffset(128)] public uint actionType;           // 128-131: FWP_ACTION_TYPE
+        [FieldOffset(132)] public Guid actionFilterType;     // 132-147: GUID (16 bytes)
+        [FieldOffset(152)] public ulong rawContext;          // 152-159: UINT64 (aligned to 8)
+        [FieldOffset(160)] public IntPtr reserved;           // 160-167: void*
+        [FieldOffset(168)] public ulong filterId;            // 168-175: UINT64
+        [FieldOffset(176)] public uint effectiveWeightType;  // 176-179: FWP_DATA_TYPE
+        [FieldOffset(184)] public ulong effectiveWeightValue;// 184-191: union (8 bytes)
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -159,19 +164,15 @@ public static class WindowsFilteringPlatform
         [FieldOffset(8)] public IntPtr byteBlob;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    // FWPM_FILTER_CONDITION0 - Explicit layout
+    // Total size on x64: 40 bytes
+    [StructLayout(LayoutKind.Explicit)]
     public struct FWPM_FILTER_CONDITION0
     {
-        public Guid fieldKey;                       // 16 bytes
-        public uint matchType;                      // 4 bytes + 4 padding
-        public FWP_CONDITION_VALUE0 conditionValue; // 16 bytes
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct FWP_CONDITION_VALUE0
-    {
-        public uint type;       // 4 bytes + 4 padding
-        public IntPtr value;    // 8 bytes (union - use IntPtr for pointer types)
+        [FieldOffset(0)] public Guid fieldKey;      // 0-15: GUID (16 bytes)
+        [FieldOffset(16)] public uint matchType;    // 16-19: FWP_MATCH_TYPE (4 bytes + 4 pad)
+        [FieldOffset(24)] public uint valueType;    // 24-27: FWP_DATA_TYPE (4 bytes + 4 pad)
+        [FieldOffset(32)] public IntPtr valueData;  // 32-39: union value (8 bytes)
     }
 
     [StructLayout(LayoutKind.Sequential)]
