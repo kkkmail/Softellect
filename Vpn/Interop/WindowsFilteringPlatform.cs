@@ -16,6 +16,9 @@ public static class WindowsFilteringPlatform
     public const uint ErrorSuccess = 0;
     public const uint FwpEAlreadyExists = 0x80320009;
 
+    // RPC authentication service constants
+    public const uint RPC_C_AUTHN_WINNT = 10;
+
     // Layer GUIDs
     public static readonly Guid FWPM_LAYER_ALE_AUTH_CONNECT_V4 = new("c38d57d1-05a7-4c33-904f-7fbceee60e82");
     public static readonly Guid FWPM_LAYER_ALE_AUTH_CONNECT_V6 = new("4a72393b-319f-44bc-84c3-ba54dcb3b6b4");

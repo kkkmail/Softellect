@@ -35,7 +35,7 @@ public sealed class KillSwitch : IDisposable
         // Open WFP engine
         var result = WindowsFilteringPlatform.FwpmEngineOpen0(
             null,
-            0, // RPC_C_AUTHN_DEFAULT
+            WindowsFilteringPlatform.RPC_C_AUTHN_WINNT,
             IntPtr.Zero,
             IntPtr.Zero,
             out _engineHandle);
