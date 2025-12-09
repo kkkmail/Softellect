@@ -6,6 +6,7 @@ open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
 open Softellect.Vpn.Core.AppSettings
+open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Client.Service
 open Microsoft.Extensions.DependencyInjection
@@ -37,18 +38,20 @@ module Program =
                     Error $"Failed to import client private key: %A{e}"
 
 
-    let private loadServerPublicKey (serverPublicKeyPath: FolderName) =
+    let private loadServerPublicKey (serverPublicKeyPath: FolderName) (vpnServerId: VpnServerId) =
         if not (Directory.Exists serverPublicKeyPath.value) then
             Logger.logError $"Server public key folder not found: {serverPublicKeyPath.value}"
             Error $"Server public key folder not found: {serverPublicKeyPath.value}"
         else
-            let pkxFiles = Directory.GetFiles(serverPublicKeyPath.value, "*.pkx")
+            let keyId = KeyId vpnServerId.value
+            let keyFileName = FileName $"{vpnServerId.value}.pkx"
+            let keyFilePath = keyFileName.combine serverPublicKeyPath
 
-            if pkxFiles.Length = 0 then
-                Logger.logError $"Server public key not found in: {serverPublicKeyPath.value}"
-                Error $"Server public key not found in: {serverPublicKeyPath.value}"
+            if not (File.Exists keyFilePath.value) then
+                Logger.logError $"Server public key file not found: {keyFilePath.value}"
+                Error $"Server public key file not found: {keyFilePath.value}"
             else
-                match tryImportPublicKey (FileName pkxFiles.[0]) None with
+                match tryImportPublicKey keyFilePath (Some keyId) with
                 | Ok (_, publicKey) -> Ok publicKey
                 | Error e ->
                     Logger.logError $"Failed to import server public key: %A{e}"
@@ -63,7 +66,7 @@ module Program =
 
         match loadClientKeys clientAccessInfo.clientKeyPath with
         | Ok (clientPrivateKey, clientPublicKey) ->
-            match loadServerPublicKey clientAccessInfo.serverPublicKeyPath with
+            match loadServerPublicKey clientAccessInfo.serverPublicKeyPath clientAccessInfo.vpnServerId with
             | Ok serverPublicKey ->
                 let serviceData =
                     {

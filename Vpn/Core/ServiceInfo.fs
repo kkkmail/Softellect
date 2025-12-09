@@ -44,6 +44,7 @@ module ServiceInfo =
     type VpnServerAccessInfo =
         {
             vpnDataVersion : VpnDataVersion
+            vpnServerId : VpnServerId
             serviceAccessInfo : ServiceAccessInfo
             vpnSubnet : VpnSubnet
             serverKeyPath : FolderName
@@ -53,6 +54,7 @@ module ServiceInfo =
         static member defaultValue =
             {
                 vpnDataVersion = VpnDataVersion.current
+                vpnServerId = VpnServerId.create()
                 serviceAccessInfo =
                     {
                         netTcpServiceAddress = ServiceAddress localHost
@@ -70,6 +72,7 @@ module ServiceInfo =
     type VpnClientAccessInfo =
         {
             vpnClientId : VpnClientId
+            vpnServerId : VpnServerId
             serverAccessInfo : ServiceAccessInfo
             clientKeyPath : FolderName
             serverPublicKeyPath : FolderName
@@ -79,6 +82,7 @@ module ServiceInfo =
         static member defaultValue =
             {
                 vpnClientId = VpnClientId.create()
+                vpnServerId = VpnServerId.create()
                 serverAccessInfo =
                     {
                         netTcpServiceAddress = ServiceAddress localHost
@@ -88,6 +92,6 @@ module ServiceInfo =
                     }
                     |> NetTcpServiceInfo
                 clientKeyPath = FolderName @"C:\Keys\VpnClient"
-                serverPublicKeyPath = FolderName @"C:\Keys\VpnServerKey"
+                serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
                 localLanExclusions = LocalLanExclusion.defaultValues
             }

@@ -13,6 +13,7 @@ module AppSettings =
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
+    let vpnServerIdKey = ConfigKey "VpnServerId"
     let vpnSubnetKey = ConfigKey "VpnSubnet"
     let serverKeyPathKey = ConfigKey "ServerKeyPath"
     let clientKeysPathKey = ConfigKey "ClientKeysPath"
@@ -34,12 +35,21 @@ module AppSettings =
         | Ok provider ->
             let d = VpnServerAccessInfo.defaultValue
             let serviceAccess = getServiceAccessInfo provider vpnServerAccessInfoKey d.serviceAccessInfo
+
+            let vpnServerId =
+                match provider.getStringOrDefault vpnServerIdKey "" |> VpnServerId.tryCreate with
+                | Some id -> id
+                | None ->
+                    Logger.logWarn "loadVpnServerAccessInfo - No VpnServerId found in settings, generating new one."
+                    VpnServerId.create()
+
             let vpnSubnet = provider.getStringOrDefault vpnSubnetKey d.vpnSubnet.value |> VpnSubnet
             let serverKeyPath = provider.getStringOrDefault serverKeyPathKey d.serverKeyPath.value |> FolderName
             let clientKeysPath = provider.getStringOrDefault clientKeysPathKey d.clientKeysPath.value |> FolderName
 
             {
                 vpnDataVersion = VpnDataVersion.current
+                vpnServerId = vpnServerId
                 serviceAccessInfo = serviceAccess
                 vpnSubnet = vpnSubnet
                 serverKeyPath = serverKeyPath
@@ -63,6 +73,13 @@ module AppSettings =
                     Logger.logWarn "loadVpnClientAccessInfo - No VpnClientId found in settings, generating new one."
                     VpnClientId.create()
 
+            let vpnServerId =
+                match provider.getStringOrDefault vpnServerIdKey "" |> VpnServerId.tryCreate with
+                | Some id -> id
+                | None ->
+                    Logger.logWarn "loadVpnClientAccessInfo - No VpnServerId found in settings, generating new one."
+                    VpnServerId.create()
+
             let clientKeyPath = provider.getStringOrDefault clientKeyPathKey d.clientKeyPath.value |> FolderName
             let serverPublicKeyPath = provider.getStringOrDefault serverPublicKeyPathKey d.serverPublicKeyPath.value |> FolderName
 
@@ -75,6 +92,7 @@ module AppSettings =
 
             {
                 vpnClientId = clientId
+                vpnServerId = vpnServerId
                 serverAccessInfo = serverAccess
                 clientKeyPath = clientKeyPath
                 serverPublicKeyPath = serverPublicKeyPath
@@ -91,6 +109,7 @@ module AppSettings =
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             provider.trySet vpnServerAccessInfoKey (info.serviceAccessInfo.serialize()) |> ignore
+            provider.trySet vpnServerIdKey (info.vpnServerId.value.ToString()) |> ignore
             provider.trySet vpnSubnetKey info.vpnSubnet.value |> ignore
             provider.trySet serverKeyPathKey info.serverKeyPath.value |> ignore
             provider.trySet clientKeysPathKey info.clientKeysPath.value |> ignore
@@ -110,6 +129,7 @@ module AppSettings =
         | Ok provider ->
             provider.trySet vpnClientAccessInfoKey (info.serverAccessInfo.serialize()) |> ignore
             provider.trySet vpnClientIdKey (info.vpnClientId.value.ToString()) |> ignore
+            provider.trySet vpnServerIdKey (info.vpnServerId.value.ToString()) |> ignore
             provider.trySet clientKeyPathKey info.clientKeyPath.value |> ignore
             provider.trySet serverPublicKeyPathKey info.serverPublicKeyPath.value |> ignore
 

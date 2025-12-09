@@ -111,27 +111,46 @@ module Implementation =
         if String.IsNullOrWhiteSpace inputFile then
             Error "Input file name is required."
         else
-            match tryImportPublicKey (FileName inputFile) None with
-            | Ok (keyId, publicKey) ->
-                // serverPublicKeyPath is a folder where we store server keys
-                let targetFolder = ctx.clientAccessInfo.serverPublicKeyPath
+            let sourceFileName = FileName inputFile
 
-                match targetFolder.tryEnsureFolderExists() with
-                | Ok () ->
-                    match tryExportPublicKey targetFolder publicKey true with
-                    | Ok () ->
-                        Logger.logInfo $"Imported server key: {keyId.value}"
-                        Logger.logInfo $"Saved to: {targetFolder.value}"
-                        Ok $"Server key imported. Server Key ID: {keyId.value}"
+            match sourceFileName.tryGetFullFileName() with
+            | Ok fullSourcePath ->
+                if not (File.Exists fullSourcePath.value) then
+                    Error $"Input file not found: {inputFile}"
+                else
+                    // Import the key to verify and extract server ID
+                    match tryImportPublicKey fullSourcePath None with
+                    | Ok (keyId, publicKey) ->
+                        let targetFolder = ctx.clientAccessInfo.serverPublicKeyPath
+
+                        match targetFolder.tryEnsureFolderExists() with
+                        | Ok () ->
+                            match tryExportPublicKey targetFolder publicKey true with
+                            | Ok () ->
+                                // Update the VpnServerId in settings to match the imported key
+                                let vpnServerId = VpnServerId keyId.value
+                                let updatedClientInfo = { ctx.clientAccessInfo with vpnServerId = vpnServerId }
+
+                                match updateVpnClientAccessInfo updatedClientInfo with
+                                | Ok () ->
+                                    Logger.logInfo $"Imported server key: {keyId.value}"
+                                    Logger.logInfo $"Updated VpnServerId in settings"
+                                    Ok $"Server key imported. Server ID: {keyId.value}"
+                                | Error e ->
+                                    Logger.logError $"Failed to update settings: %A{e}"
+                                    Error $"Key imported but failed to update settings: %A{e}"
+                            | Error e ->
+                                Logger.logError $"Failed to export server key: %A{e}"
+                                Error $"Failed to export server key: %A{e}"
+                        | Error e ->
+                            Logger.logError $"Failed to create target folder: %A{e}"
+                            Error $"Failed to create target folder: %A{e}"
                     | Error e ->
-                        Logger.logError $"Failed to save server key: %A{e}"
-                        Error $"Failed to save server key: %A{e}"
-                | Error e ->
-                    Logger.logError $"Failed to create server key folder: %A{e}"
-                    Error $"Failed to create server key folder: %A{e}"
+                        Logger.logError $"Failed to import server key: %A{e}"
+                        Error $"Failed to import server key: %A{e}"
             | Error e ->
-                Logger.logError $"Failed to import server key: %A{e}"
-                Error $"Failed to import server key: %A{e}"
+                Logger.logError $"Invalid input file path: %A{e}"
+                Error $"Invalid input file path: %A{e}"
 
 
     let status (ctx: ClientAdmContext) (args: StatusArgs list) =
@@ -139,6 +158,7 @@ module Implementation =
 
         Logger.logInfo "VPN Client Configuration:"
         Logger.logInfo $"  Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
+        Logger.logInfo $"  Server ID: {ctx.clientAccessInfo.vpnServerId.value}"
 
         match ctx.clientAccessInfo.serverAccessInfo with
         | NetTcpServiceInfo info ->
@@ -156,8 +176,8 @@ module Implementation =
         Logger.logInfo $"  Client Keys: {clientKeysStatus}"
 
         let serverKeyFolder = ctx.clientAccessInfo.serverPublicKeyPath.value
-        let serverKeyFiles = if Directory.Exists serverKeyFolder then Directory.GetFiles(serverKeyFolder, "*.pkx") else [||]
-        let serverKeyStatus = if serverKeyFiles.Length > 0 then "OK" else "MISSING"
+        let serverKeyFile = Path.Combine(serverKeyFolder, $"{ctx.clientAccessInfo.vpnServerId.value}.pkx")
+        let serverKeyStatus = if File.Exists serverKeyFile then "OK" else "MISSING"
         Logger.logInfo $"  Server Key: {serverKeyStatus}"
 
         if verbose then

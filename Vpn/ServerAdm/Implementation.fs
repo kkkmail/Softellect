@@ -27,10 +27,10 @@ module Implementation =
     let generateKeys (ctx: ServerAdmContext) (args: GenerateKeysArgs list) =
         let force = args |> List.tryPick (function Force f -> Some f) |> Option.defaultValue false
         let keyFolder = ctx.serverAccessInfo.serverKeyPath
+        let keyId = KeyId ctx.serverAccessInfo.vpnServerId.value
 
         match keyFolder.tryEnsureFolderExists() with
         | Ok () ->
-            let keyId = KeyId (Guid.NewGuid())
             let (publicKey, privateKey) = generateKey keyId
 
             match tryExportPrivateKey keyFolder privateKey force with
@@ -38,9 +38,9 @@ module Implementation =
                 match tryExportPublicKey keyFolder publicKey force with
                 | Ok () ->
                     Logger.logInfo $"Generated server keys at {keyFolder.value}"
-                    Logger.logInfo $"Key ID: {keyId.value}"
+                    Logger.logInfo $"Server ID: {ctx.serverAccessInfo.vpnServerId.value}"
                     Logger.logInfo $"Private key: {privateKeyFile.value}"
-                    Ok $"Keys generated successfully. Key ID: {keyId.value}"
+                    Ok $"Keys generated successfully. Server ID: {ctx.serverAccessInfo.vpnServerId.value}"
                 | Error e ->
                     // Clean up private key file on failure
                     try File.Delete(privateKeyFile.value) with | _ -> ()

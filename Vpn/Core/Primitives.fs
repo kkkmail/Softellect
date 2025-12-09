@@ -10,6 +10,19 @@ module Primitives =
     let VpnWcfServiceName = "VpnWcfService"
 
 
+    type VpnServerId =
+        | VpnServerId of Guid
+
+        member this.value = let (VpnServerId v) = this in v
+
+        static member tryCreate (s: string) =
+            match Guid.TryParse s with
+            | true, g -> Some (VpnServerId g)
+            | false, _ -> None
+
+        static member create() = Guid.NewGuid() |> VpnServerId
+
+
     type VpnClientId =
         | VpnClientId of Guid
 
