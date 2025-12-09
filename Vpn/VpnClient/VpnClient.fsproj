@@ -35,7 +35,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
         <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="..\VpnVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="VpnClientName.ps1">
