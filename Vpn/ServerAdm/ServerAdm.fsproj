@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="appsettings.json">
+        <Content Include="..\VpnServer\appsettings.json" Link="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>

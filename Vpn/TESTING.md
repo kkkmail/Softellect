@@ -12,26 +12,15 @@ This guide explains how to test the Softellect VPN on a local network with two m
 
 ### Server Machine
 - Static IP address or known hostname on the local network
-- WinTun driver installed (see below)
 
 ### Client Machine
 - Network connectivity to the server
-- WinTun driver installed (see below)
 
-## Step 1: Install WinTun Driver
+> **Note**: The WinTun driver (`wintun.dll`) is bundled with the build and automatically copied to the output directories. No manual driver installation is required.
 
-On **both machines**, download and install the WinTun driver:
+## Step 1: Configure the Server
 
-1. Download from: https://www.wintun.net/
-2. Extract `wintun.dll` (x64 version) to:
-   - `C:\GitHub\Softellect\Vpn\Native\wintun.dll`
-   - Or copy to the same folder as VpnServer.exe / VpnClient.exe
-
-Alternatively, the build should have copied it to the output directories if it exists in the Native folder.
-
-## Step 2: Configure the Server
-
-### 2.1 Create Key Storage Directories
+### 1.1 Create Key Storage Directories
 
 On the **server machine**, create directories for keys:
 
@@ -40,9 +29,11 @@ mkdir C:\Keys\VpnServer
 mkdir C:\Keys\VpnClients
 ```
 
-### 2.2 Configure Server Settings
+### 1.2 Configure Server Settings
 
-Edit `C:\GitHub\Softellect\Vpn\ServerAdm\bin\x64\Debug\net9.0\appsettings.json`:
+Edit `C:\GitHub\Softellect\Vpn\VpnServer\appsettings.json`:
+
+> **Note**: The same appsettings.json is shared between VpnServer and VpnServerAdm (via project link).
 
 ```json
 {
@@ -58,7 +49,7 @@ Edit `C:\GitHub\Softellect\Vpn\ServerAdm\bin\x64\Debug\net9.0\appsettings.json`:
 
 Replace `0.0.0.0` with the server's actual LAN IP address (e.g., `192.168.1.100`).
 
-### 2.3 Generate Server Keys
+### 1.3 Generate Server Keys
 
 ```cmd
 cd C:\GitHub\Softellect\Vpn\ServerAdm\bin\x64\Debug\net9.0
@@ -72,7 +63,7 @@ Key ID: <some-guid>
 Keys generated successfully.
 ```
 
-### 2.4 Export Server Public Key
+### 1.4 Export Server Public Key
 
 Export the public key to share with the client:
 
@@ -82,9 +73,9 @@ VpnServerAdm.exe ExportPublicKey -ofn C:\Keys\Export
 
 This creates a `.pkx` file that needs to be copied to the client machine.
 
-## Step 3: Configure the Client
+## Step 2: Configure the Client
 
-### 3.1 Create Key Storage Directories
+### 2.1 Create Key Storage Directories
 
 On the **client machine**, create directories:
 
@@ -92,9 +83,11 @@ On the **client machine**, create directories:
 mkdir C:\Keys\VpnClient
 ```
 
-### 3.2 Configure Client Settings
+### 2.2 Configure Client Settings
 
-Edit `C:\GitHub\Softellect\Vpn\ClientAdm\bin\x64\Debug\net9.0\appsettings.json`:
+Edit `C:\GitHub\Softellect\Vpn\VpnClient\appsettings.json`:
+
+> **Note**: The same appsettings.json is shared between VpnClient and VpnClientAdm (via project link).
 
 ```json
 {
@@ -113,34 +106,34 @@ Replace `SERVER_IP` with the server's LAN IP address.
 
 **Important**: Generate a unique GUID for `VpnClientId` or use the one shown above for testing.
 
-### 3.3 Generate Client Keys
+### 2.3 Generate Client Keys
 
 ```cmd
 cd C:\GitHub\Softellect\Vpn\ClientAdm\bin\x64\Debug\net9.0
 VpnClientAdm.exe GenerateKeys
 ```
 
-### 3.4 Export Client Public Key
+### 2.4 Export Client Public Key
 
 ```cmd
 VpnClientAdm.exe ExportPublicKey -ofn C:\Keys\Export
 ```
 
-### 3.5 Import Server Public Key
+### 2.5 Import Server Public Key
 
-Copy the server's `.pkx` file from Step 2.4 to the client machine, then:
+Copy the server's `.pkx` file from Step 1.4 to the client machine, then:
 
 ```cmd
 VpnClientAdm.exe ImportServerKey -ifn C:\Keys\ServerPublicKey.pkx
 ```
 
-## Step 4: Register Client on Server
+## Step 3: Register Client on Server
 
-### 4.1 Copy Client Public Key to Server
+### 3.1 Copy Client Public Key to Server
 
-Copy the client's `.pkx` file (from Step 3.4) to the server machine.
+Copy the client's `.pkx` file (from Step 2.4) to the server machine.
 
-### 4.2 Import Client Key on Server
+### 3.2 Import Client Key on Server
 
 On the **server machine**:
 
@@ -149,13 +142,13 @@ cd C:\GitHub\Softellect\Vpn\ServerAdm\bin\x64\Debug\net9.0
 VpnServerAdm.exe ImportClientKey -ifn C:\Path\To\ClientPublicKey.pkx
 ```
 
-### 4.3 Register the Client
+### 3.3 Register the Client
 
 ```cmd
 VpnServerAdm.exe RegisterClient -id {00000000-0000-0000-0000-000000000001} -n "TestClient" -ip 10.66.77.2
 ```
 
-## Step 5: Start the VPN Server
+## Step 4: Start the VPN Server
 
 On the **server machine**, open an **Administrator** command prompt:
 
@@ -171,7 +164,7 @@ Packet router started with IP: 10.66.77.1
 VPN Service started successfully
 ```
 
-## Step 6: Start the VPN Client
+## Step 5: Start the VPN Client
 
 On the **client machine**, open an **Administrator** command prompt:
 
@@ -191,9 +184,9 @@ Tunnel started with IP: 10.66.77.2
 VPN Client connected with IP: 10.66.77.2
 ```
 
-## Step 7: Verify VPN Connection
+## Step 6: Verify VPN Connection
 
-### 7.1 Check Network Adapters
+### 6.1 Check Network Adapters
 
 On the **client machine**, open a command prompt and run:
 
@@ -203,7 +196,7 @@ ipconfig /all
 
 Look for the `SoftellectVPN` adapter with IP `10.66.77.2`.
 
-### 7.2 Ping the VPN Server
+### 6.2 Ping the VPN Server
 
 From the client:
 
@@ -213,7 +206,7 @@ ping 10.66.77.1
 
 This should succeed if the tunnel is working.
 
-### 7.3 Check Route Table
+### 6.3 Check Route Table
 
 ```cmd
 route print
@@ -221,7 +214,7 @@ route print
 
 Look for routes through the `10.66.77.x` network.
 
-## Step 8: Verify Traffic Goes Through VPN
+## Step 7: Verify Traffic Goes Through VPN
 
 ### Method 1: Traceroute
 
@@ -262,13 +255,13 @@ On the client, use Resource Monitor:
 3. Watch "Network Activity" while browsing
 4. Traffic should flow through the SoftellectVPN adapter
 
-## Step 9: Test Kill-Switch
+## Step 8: Test Kill-Switch
 
 The kill-switch ensures all traffic is blocked if VPN disconnects unexpectedly.
 
 ### Test Procedure
 
-1. Connect the VPN client (Step 6)
+1. Connect the VPN client (Step 5)
 2. Verify internet access works
 3. **On the server**, stop VpnServer.exe (Ctrl+C)
 4. **On the client**, try to access the internet:
@@ -285,14 +278,17 @@ The kill-switch ensures all traffic is blocked if VPN disconnects unexpectedly.
 ## Troubleshooting
 
 ### "Failed to create adapter"
-- Ensure WinTun driver is installed
 - Run as Administrator
-- Check if wintun.dll is in the same folder as the executable
+- Verify `wintun.dll` is in the same folder as the executable (should be there by default)
+- Check that no other application is using a WinTun adapter with the same name
 
 ### "Failed to enable kill-switch"
 - Run as Administrator
-- Check Windows Filtering Platform service is running
-- Disable other VPN software
+- Check Windows Filtering Platform service is running:
+  ```cmd
+  sc query BFE
+  ```
+- Disable other VPN software that might conflict
 
 ### "Authentication failed"
 - Verify client ID matches on both sides
@@ -302,7 +298,10 @@ The kill-switch ensures all traffic is blocked if VPN disconnects unexpectedly.
 ### "Connection timeout"
 - Check firewall allows port 5080 (TCP)
 - Verify server IP address in client config
-- Check Windows Firewall on both machines
+- Check Windows Firewall on both machines:
+  ```cmd
+  netsh advfirewall firewall add rule name="VPN Server" dir=in action=allow protocol=tcp localport=5080
+  ```
 
 ### Server not receiving packets
 - Check Windows Firewall
