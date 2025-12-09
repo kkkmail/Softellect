@@ -1,0 +1,55 @@
+[2025-12-09 11:25:16] [Info] InstallVpnClient - Parameters:
+[2025-12-09 11:25:16] [Info]   scriptDirectory = 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0'
+[2025-12-09 11:25:16] [Info]   ServiceName = 'VpnClient'
+
+[91m.: [0mC:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\Get-ServiceName.ps1:10
+[96mLine |
+[96m  10 | [0m     . [96m"$scriptDirectory\MessagingVersionInfo.ps1"[0m
+[96m     | [91m       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[91m[96m     | [91mThe term 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\MessagingVersionInfo.ps1' is not recognized as a name of a
+[96m     | [91mcmdlet, function, script file, or executable program. Check the spelling of the name, or if a path was included, verify that the path
+[96m     | [91mis correct and try again.
+[0m
+
+[91m.: [0mC:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\Get-Description.ps1:10
+[96mLine |
+[96m  10 | [0m     . [96m"$scriptDirectory\BuildInfo.ps1"[0m
+[96m     | [91m       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[91m[96m     | [91mThe term 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\BuildInfo.ps1' is not recognized as a name of a cmdlet, function,
+[96m     | [91mscript file, or executable program. Check the spelling of the name, or if a path was included, verify that the path is correct and
+[96m     | [91mtry again.
+[0m
+
+[91m.: [0mC:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\Get-Description.ps1:11
+[96mLine |
+[96m  11 | [0m     . [96m"$scriptDirectory\MessagingVersionInfo.ps1"[0m
+[96m     | [91m       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[91m[96m     | [91mThe term 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\MessagingVersionInfo.ps1' is not recognized as a name of a
+[96m     | [91mcmdlet, function, script file, or executable program. Check the spelling of the name, or if a path was included, verify that the path
+[96m     | [91mis correct and try again.
+[0m
+[2025-12-09 11:25:16] [Info] Install-DistributedService - Parameters:
+[2025-12-09 11:25:16] [Info]   scriptDirectory = 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0'
+[2025-12-09 11:25:16] [Info]   ServiceName = 'VpnClient'
+[2025-12-09 11:25:16] [Info]   windowsServiceName = 'VpnClient-'
+[2025-12-09 11:25:16] [Info]   binaryPath = 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\VpnClient.exe'
+[2025-12-09 11:25:16] [Info]   description = 'VpnClient, version: , messaging data version: .'
+[2025-12-09 11:25:16] [Info] Attempting to reinstall service: VpnClient-...
+[2025-12-09 11:25:16] [Info] Attempting to stop service: VpnClient-...
+[2025-12-09 11:25:16] [Info] Service: VpnClient- is not found.
+[2025-12-09 11:25:16] [Info] Starting uninstallatiopn of service: VpnClient-...
+[2025-12-09 11:25:16] [Info] Attempting to stop service: VpnClient-...
+[2025-12-09 11:25:16] [Info] Service: VpnClient- is not found.
+[2025-12-09 11:25:16] [Info] Service: VpnClient- successfully stopped and uninstalled.
+[2025-12-09 11:25:16] [Info] Password created for service: VpnClient-.
+[2025-12-09 11:25:16] [Info] Credentials created for service: VpnClient-.
+[2025-12-09 11:25:16] [Info] Installing service: VpnClient- with user name: 'NT AUTHORITY\LOCAL SERVICE'...
+
+Status   Name               DisplayName
+------   ----               -----------
+Stopped  VpnClient-         VpnClient-
+[2025-12-09 11:25:16] [Info] Installed service: VpnClient-.
+[2025-12-09 11:25:16] [Info] Attempting to start service: VpnClient-...
+[2025-12-09 11:25:16] [Info] Trying to start new service: VpnClient-.
+[2025-12-09 11:25:17] [Error] Error starting service VpnClient-: Service 'VpnClient- (VpnClient-)' cannot be started due to the following error: Cannot start service 'VpnClient-' on computer '.'.
+[2025-12-09 11:25:17] [Error] Error reinstalling service VpnClient-: Service 'VpnClient- (VpnClient-)' cannot be started due to the following error: Cannot start service 'VpnClient-' on computer '.'.

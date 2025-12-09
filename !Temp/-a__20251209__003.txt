@@ -1,0 +1,16 @@
+
+[91m.: [0mC:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\Get-ServiceName.ps1:10
+[96mLine |
+[96m  10 | [0m     . [96m"$scriptDirectory\MessagingVersionInfo.ps1"[0m
+[96m     | [91m       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[91m[96m     | [91mThe term 'C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\MessagingVersionInfo.ps1' is not recognized as a name of a
+[96m     | [91mcmdlet, function, script file, or executable program. Check the spelling of the name, or if a path was included, verify that the path
+[96m     | [91mis correct and try again.
+[0m
+[2025-12-09 11:25:44] [Info] Attempting to stop service: VpnClient-...
+[2025-12-09 11:25:44] [Info] Service: VpnClient- is not running.
+[2025-12-09 11:25:44] [Info] Starting uninstallatiopn of service: VpnClient-...
+[2025-12-09 11:25:44] [Info] Attempting to stop service: VpnClient-...
+[2025-12-09 11:25:44] [Info] Service: VpnClient- is not running.
+[2025-12-09 11:25:44] [Info] Attempting to uninstall service: VpnClient-...
+[2025-12-09 11:25:44] [Info] Uninstalled service: VpnClient- via Remove-Service cmdlet.
