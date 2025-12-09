@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="Primitives.fs" />
     <Compile Include="Errors.fs" />
+    <Compile Include="KeyManagement.fs" />
     <Compile Include="ServiceInfo.fs" />
     <Compile Include="AppSettings.fs" />
   </ItemGroup>

@@ -5,9 +5,11 @@ open System.IO
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
+open Softellect.Sys.Core
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
+open Softellect.Vpn.Core.KeyManagement
 open Softellect.Wcf.Common
 open Softellect.Vpn.ClientAdm.CommandLine
 
@@ -24,33 +26,35 @@ module Implementation =
             }
 
 
-    let private ensureDirectory (path: string) =
-        if not (Directory.Exists path) then
-            Directory.CreateDirectory path |> ignore
-
-
     let generateKeys (ctx: ClientAdmContext) (args: GenerateKeysArgs list) =
         let force = args |> List.tryPick (function Force f -> Some f) |> Option.defaultValue false
-        let keyPath = ctx.clientAccessInfo.clientKeyPath.value
-        let privateKeyFile = Path.Combine(keyPath, "client.key")
-        let publicKeyFile = Path.Combine(keyPath, "client.pkx")
+        let keyFolder = ctx.clientAccessInfo.clientKeyPath
 
-        if File.Exists(privateKeyFile) && not force then
-            Logger.logWarn $"Keys already exist at {keyPath}. Use -f true to force regeneration."
-            Error $"Keys already exist. Use -f true to force regeneration."
-        else
-            ensureDirectory keyPath
-
+        match keyFolder.tryEnsureFolderExists() with
+        | Ok () ->
             // Use the client ID as the key ID
             let keyId = KeyId ctx.clientAccessInfo.vpnClientId.value
             let (publicKey, privateKey) = generateKey keyId
 
-            File.WriteAllText(privateKeyFile, privateKey.value)
-            File.WriteAllText(publicKeyFile, publicKey.value)
-
-            Logger.logInfo $"Generated client keys at {keyPath}"
-            Logger.logInfo $"Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
-            Ok $"Keys generated successfully. Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
+            match tryExportPrivateKey keyFolder privateKey force with
+            | Ok privateKeyFile ->
+                match tryExportPublicKey keyFolder publicKey force with
+                | Ok () ->
+                    Logger.logInfo $"Generated client keys at {keyFolder.value}"
+                    Logger.logInfo $"Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
+                    Logger.logInfo $"Private key: {privateKeyFile.value}"
+                    Ok $"Keys generated successfully. Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
+                | Error e ->
+                    // Clean up private key file on failure
+                    try File.Delete(privateKeyFile.value) with | _ -> ()
+                    Logger.logError $"Failed to export public key: %A{e}"
+                    Error $"Failed to export public key: %A{e}"
+            | Error e ->
+                Logger.logError $"Failed to export private key: %A{e}"
+                Error $"Failed to export private key: %A{e}"
+        | Error e ->
+            Logger.logError $"Failed to create key folder: %A{e}"
+            Error $"Failed to create key folder: %A{e}"
 
 
     let exportPublicKey (ctx: ClientAdmContext) (args: ExportPublicKeyArgs list) =
@@ -67,22 +71,35 @@ module Implementation =
         if String.IsNullOrWhiteSpace outputFolder then
             Error "Output folder name is required."
         else
-            let keyPath = ctx.clientAccessInfo.clientKeyPath.value
-            let publicKeyFile = Path.Combine(keyPath, "client.pkx")
+            let keyFolder = ctx.clientAccessInfo.clientKeyPath
 
-            if not (File.Exists publicKeyFile) then
-                Error $"Client public key not found at {publicKeyFile}. Generate keys first."
+            // Find the .pkx file in the key folder
+            let pkxFiles = Directory.GetFiles(keyFolder.value, "*.pkx")
+
+            if pkxFiles.Length = 0 then
+                Error $"No public key found in {keyFolder.value}. Generate keys first."
             else
-                let publicKeyXml = File.ReadAllText(publicKeyFile)
-                let publicKey = PublicKey publicKeyXml
+                let sourceFile = FileName pkxFiles.[0]
 
-                match tryExportPublicKey (FolderName outputFolder) publicKey overwrite with
-                | Ok () ->
-                    Logger.logInfo $"Exported public key to {outputFolder}"
-                    Ok $"Public key exported to {outputFolder}"
+                match tryImportPublicKey sourceFile None with
+                | Ok (keyId, publicKey) ->
+                    let outputFolderName = FolderName outputFolder
+
+                    match outputFolderName.tryEnsureFolderExists() with
+                    | Ok () ->
+                        match tryExportPublicKey outputFolderName publicKey overwrite with
+                        | Ok () ->
+                            Logger.logInfo $"Exported public key {keyId.value} to {outputFolder}"
+                            Ok $"Public key exported to {outputFolder}"
+                        | Error e ->
+                            Logger.logError $"Failed to export public key: %A{e}"
+                            Error $"Failed to export public key: %A{e}"
+                    | Error e ->
+                        Logger.logError $"Failed to create output folder: %A{e}"
+                        Error $"Failed to create output folder: %A{e}"
                 | Error e ->
-                    Logger.logError $"Failed to export public key: %A{e}"
-                    Error $"Failed to export public key: %A{e}"
+                    Logger.logError $"Failed to read public key: %A{e}"
+                    Error $"Failed to read public key: %A{e}"
 
 
     let importServerKey (ctx: ClientAdmContext) (args: ImportServerKeyArgs list) =
@@ -96,15 +113,22 @@ module Implementation =
         else
             match tryImportPublicKey (FileName inputFile) None with
             | Ok (keyId, publicKey) ->
-                let targetPath = ctx.clientAccessInfo.serverPublicKeyPath.value
-                let targetDir = Path.GetDirectoryName(targetPath)
-                ensureDirectory targetDir
+                // serverPublicKeyPath is a folder where we store server keys
+                let targetFolder = ctx.clientAccessInfo.serverPublicKeyPath
 
-                File.WriteAllText(targetPath, publicKey.value)
-
-                Logger.logInfo $"Imported server key: {keyId.value}"
-                Logger.logInfo $"Saved to: {targetPath}"
-                Ok $"Server key imported. Server Key ID: {keyId.value}"
+                match targetFolder.tryEnsureFolderExists() with
+                | Ok () ->
+                    match tryExportPublicKey targetFolder publicKey true with
+                    | Ok () ->
+                        Logger.logInfo $"Imported server key: {keyId.value}"
+                        Logger.logInfo $"Saved to: {targetFolder.value}"
+                        Ok $"Server key imported. Server Key ID: {keyId.value}"
+                    | Error e ->
+                        Logger.logError $"Failed to save server key: %A{e}"
+                        Error $"Failed to save server key: %A{e}"
+                | Error e ->
+                    Logger.logError $"Failed to create server key folder: %A{e}"
+                    Error $"Failed to create server key folder: %A{e}"
             | Error e ->
                 Logger.logError $"Failed to import server key: %A{e}"
                 Error $"Failed to import server key: %A{e}"
@@ -125,19 +149,20 @@ module Implementation =
             Logger.logInfo $"  Server: {info.httpServiceAddress.value}:{info.httpServicePort.value}"
             Logger.logInfo $"  Protocol: HTTP"
 
-        let clientKeyPath = ctx.clientAccessInfo.clientKeyPath.value
-        let privateKeyExists = File.Exists(Path.Combine(clientKeyPath, "client.key"))
-        let publicKeyExists = File.Exists(Path.Combine(clientKeyPath, "client.pkx"))
-        let clientKeysStatus = if privateKeyExists && publicKeyExists then "OK" else "MISSING"
+        let clientKeyFolder = ctx.clientAccessInfo.clientKeyPath.value
+        let keyFiles = if Directory.Exists clientKeyFolder then Directory.GetFiles(clientKeyFolder, "*.key") else [||]
+        let pkxFiles = if Directory.Exists clientKeyFolder then Directory.GetFiles(clientKeyFolder, "*.pkx") else [||]
+        let clientKeysStatus = if keyFiles.Length > 0 && pkxFiles.Length > 0 then "OK" else "MISSING"
         Logger.logInfo $"  Client Keys: {clientKeysStatus}"
 
-        let serverKeyExists = File.Exists(ctx.clientAccessInfo.serverPublicKeyPath.value)
-        let serverKeyStatus = if serverKeyExists then "OK" else "MISSING"
+        let serverKeyFolder = ctx.clientAccessInfo.serverPublicKeyPath.value
+        let serverKeyFiles = if Directory.Exists serverKeyFolder then Directory.GetFiles(serverKeyFolder, "*.pkx") else [||]
+        let serverKeyStatus = if serverKeyFiles.Length > 0 then "OK" else "MISSING"
         Logger.logInfo $"  Server Key: {serverKeyStatus}"
 
         if verbose then
-            Logger.logInfo $"  Client Key Path: {clientKeyPath}"
-            Logger.logInfo $"  Server Key Path: {ctx.clientAccessInfo.serverPublicKeyPath.value}"
+            Logger.logInfo $"  Client Key Path: {clientKeyFolder}"
+            Logger.logInfo $"  Server Key Path: {serverKeyFolder}"
             Logger.logInfo "  Local LAN Exclusions:"
             for exclusion in ctx.clientAccessInfo.localLanExclusions do
                 Logger.logInfo $"    - {exclusion.value}"

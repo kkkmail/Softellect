@@ -96,7 +96,7 @@ Edit `C:\GitHub\Softellect\Vpn\VpnClient\appsettings.json`:
     "VpnClientAccessInfo": "NetTcpServiceInfo|netTcpServiceAddress=SERVER_IP;netTcpServicePort=5080;netTcpServiceName=VpnService;netTcpSecurityMode=NoSecurity",
     "VpnClientId": "{00000000-0000-0000-0000-000000000001}",
     "ClientKeyPath": "C:\\Keys\\VpnClient",
-    "ServerPublicKeyPath": "C:\\Keys\\VpnServer.pkx",
+    "ServerPublicKeyPath": "C:\\Keys\\VpnServerKey",
     "LocalLanExclusions": "192.168.0.0/16;10.0.0.0/8;172.16.0.0/12;169.254.0.0/16;127.0.0.0/8"
   }
 }

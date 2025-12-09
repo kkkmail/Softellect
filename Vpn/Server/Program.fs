@@ -1,6 +1,5 @@
 namespace Softellect.Vpn.Server
 
-open System
 open System.IO
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
@@ -8,27 +7,34 @@ open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
 open Softellect.Wcf.Program
 open Softellect.Vpn.Core.AppSettings
+open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Server.Service
 
 module Program =
 
     let private loadServerKeys (serverKeyPath: FolderName) =
-        let privateKeyFile = Path.Combine(serverKeyPath.value, "server.key")
-        let publicKeyFile = Path.Combine(serverKeyPath.value, "server.pkx")
-
-        if File.Exists(privateKeyFile) && File.Exists(publicKeyFile) then
-            try
-                let privateKeyXml = File.ReadAllText(privateKeyFile)
-                let publicKeyXml = File.ReadAllText(publicKeyFile)
-                Ok (PrivateKey privateKeyXml, PublicKey publicKeyXml)
-            with
-            | ex ->
-                Logger.logError $"Failed to load server keys: {ex.Message}"
-                Error $"Failed to load server keys: {ex.Message}"
+        if not (Directory.Exists serverKeyPath.value) then
+            Logger.logError $"Server key folder not found: {serverKeyPath.value}"
+            Error $"Server key folder not found: {serverKeyPath.value}. Use ServerAdm to generate keys."
         else
-            Logger.logError $"Server keys not found in {serverKeyPath.value}"
-            Error $"Server keys not found in {serverKeyPath.value}. Use ServerAdm to generate keys."
+            let keyFiles = Directory.GetFiles(serverKeyPath.value, "*.key")
+            let pkxFiles = Directory.GetFiles(serverKeyPath.value, "*.pkx")
+
+            if keyFiles.Length = 0 || pkxFiles.Length = 0 then
+                Logger.logError $"Server keys not found in {serverKeyPath.value}"
+                Error $"Server keys not found in {serverKeyPath.value}. Use ServerAdm to generate keys."
+            else
+                match tryImportPrivateKey (FileName keyFiles.[0]) None with
+                | Ok (keyId, privateKey) ->
+                    match tryImportPublicKey (FileName pkxFiles.[0]) (Some keyId) with
+                    | Ok (_, publicKey) -> Ok (privateKey, publicKey)
+                    | Error e ->
+                        Logger.logError $"Failed to import server public key: %A{e}"
+                        Error $"Failed to import server public key: %A{e}"
+                | Error e ->
+                    Logger.logError $"Failed to import server private key: %A{e}"
+                    Error $"Failed to import server private key: %A{e}"
 
 
     let vpnServerMain programName argv =

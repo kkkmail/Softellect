@@ -170,7 +170,7 @@ module Crypto =
 
 
     /// Extracts the Guid from an XML key.
-    let private extractKeyIdFromKey (keyXml: string) =
+    let extractKeyIdFromKey (keyXml: string) =
         try
             let doc = XDocument.Parse(keyXml)
             let guidElement = doc.Root.Element("Guid")

@@ -64,7 +64,7 @@ module AppSettings =
                     VpnClientId.create()
 
             let clientKeyPath = provider.getStringOrDefault clientKeyPathKey d.clientKeyPath.value |> FolderName
-            let serverPublicKeyPath = provider.getStringOrDefault serverPublicKeyPathKey d.serverPublicKeyPath.value |> FileName
+            let serverPublicKeyPath = provider.getStringOrDefault serverPublicKeyPathKey d.serverPublicKeyPath.value |> FolderName
 
             let localLanExclusions =
                 let s = provider.getStringOrDefault localLanExclusionsKey ""

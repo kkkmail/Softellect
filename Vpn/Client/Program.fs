@@ -6,6 +6,7 @@ open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
 open Softellect.Vpn.Core.AppSettings
+open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Client.Service
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
@@ -13,38 +14,45 @@ open Microsoft.Extensions.Hosting
 module Program =
 
     let private loadClientKeys (clientKeyPath: FolderName) =
-        let privateKeyFile = Path.Combine(clientKeyPath.value, "client.key")
-        let publicKeyFile = Path.Combine(clientKeyPath.value, "client.pkx")
-
-        if File.Exists(privateKeyFile) && File.Exists(publicKeyFile) then
-            try
-                let privateKeyXml = File.ReadAllText(privateKeyFile)
-                let publicKeyXml = File.ReadAllText(publicKeyFile)
-                Ok (PrivateKey privateKeyXml, PublicKey publicKeyXml)
-            with
-            | ex ->
-                Logger.logError $"Failed to load client keys: {ex.Message}"
-                Error $"Failed to load client keys: {ex.Message}"
+        if not (Directory.Exists clientKeyPath.value) then
+            Logger.logError $"Client key folder not found: {clientKeyPath.value}"
+            Error $"Client key folder not found: {clientKeyPath.value}. Use ClientAdm to generate keys."
         else
-            Logger.logError $"Client keys not found in {clientKeyPath.value}"
-            Error $"Client keys not found in {clientKeyPath.value}. Use ClientAdm to generate keys."
+            let keyFiles = Directory.GetFiles(clientKeyPath.value, "*.key")
+            let pkxFiles = Directory.GetFiles(clientKeyPath.value, "*.pkx")
+
+            if keyFiles.Length = 0 || pkxFiles.Length = 0 then
+                Logger.logError $"Client keys not found in {clientKeyPath.value}"
+                Error $"Client keys not found in {clientKeyPath.value}. Use ClientAdm to generate keys."
+            else
+                match tryImportPrivateKey (FileName keyFiles.[0]) None with
+                | Ok (keyId, privateKey) ->
+                    match tryImportPublicKey (FileName pkxFiles.[0]) (Some keyId) with
+                    | Ok (_, publicKey) -> Ok (privateKey, publicKey)
+                    | Error e ->
+                        Logger.logError $"Failed to import client public key: %A{e}"
+                        Error $"Failed to import client public key: %A{e}"
+                | Error e ->
+                    Logger.logError $"Failed to import client private key: %A{e}"
+                    Error $"Failed to import client private key: %A{e}"
 
 
-    let private loadServerPublicKey (serverPublicKeyPath: FileName) =
-        if File.Exists(serverPublicKeyPath.value) then
-            try
-                match tryImportPublicKey serverPublicKeyPath None with
+    let private loadServerPublicKey (serverPublicKeyPath: FolderName) =
+        if not (Directory.Exists serverPublicKeyPath.value) then
+            Logger.logError $"Server public key folder not found: {serverPublicKeyPath.value}"
+            Error $"Server public key folder not found: {serverPublicKeyPath.value}"
+        else
+            let pkxFiles = Directory.GetFiles(serverPublicKeyPath.value, "*.pkx")
+
+            if pkxFiles.Length = 0 then
+                Logger.logError $"Server public key not found in: {serverPublicKeyPath.value}"
+                Error $"Server public key not found in: {serverPublicKeyPath.value}"
+            else
+                match tryImportPublicKey (FileName pkxFiles.[0]) None with
                 | Ok (_, publicKey) -> Ok publicKey
                 | Error e ->
                     Logger.logError $"Failed to import server public key: %A{e}"
                     Error $"Failed to import server public key: %A{e}"
-            with
-            | ex ->
-                Logger.logError $"Failed to load server public key: {ex.Message}"
-                Error $"Failed to load server public key: {ex.Message}"
-        else
-            Logger.logError $"Server public key not found: {serverPublicKeyPath.value}"
-            Error $"Server public key not found: {serverPublicKeyPath.value}"
 
 
     let vpnClientMain programName argv =

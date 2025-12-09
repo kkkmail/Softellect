@@ -1,2 +1,2 @@
 # Must match value in F#
-[string] $global:vpnDataVersion = "1"
+[string] $global:messagingDataVersion = "1"

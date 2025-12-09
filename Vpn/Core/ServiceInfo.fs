@@ -72,7 +72,7 @@ module ServiceInfo =
             vpnClientId : VpnClientId
             serverAccessInfo : ServiceAccessInfo
             clientKeyPath : FolderName
-            serverPublicKeyPath : FileName
+            serverPublicKeyPath : FolderName
             localLanExclusions : LocalLanExclusion list
         }
 
@@ -88,6 +88,6 @@ module ServiceInfo =
                     }
                     |> NetTcpServiceInfo
                 clientKeyPath = FolderName @"C:\Keys\VpnClient"
-                serverPublicKeyPath = FileName @"C:\Keys\VpnServer.pkx"
+                serverPublicKeyPath = FolderName @"C:\Keys\VpnServerKey"
                 localLanExclusions = LocalLanExclusion.defaultValues
             }
