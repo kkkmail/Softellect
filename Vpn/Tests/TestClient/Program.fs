@@ -2,9 +2,11 @@ namespace Softellect.Vpn.TestClient
 
 open System
 open System.ServiceModel
-open System.ServiceModel.Channels
 open Softellect.Sys.Core
+open Softellect.Sys.Primitives
+open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
+open Softellect.Vpn.Core.Errors
 
 module Program =
 
@@ -17,27 +19,31 @@ module Program =
         binding.MaxBufferSize <- Int32.MaxValue
         binding.MaxBufferPoolSize <- int64 Int32.MaxValue
 
-        // URI you expect the service to expose
-        // Try VpnService first. If the service actually uses VpnWcfService, change the last part.
         let address = EndpointAddress("net.tcp://127.0.0.1:45001/VpnService")
-
-        let factory =
-            new ChannelFactory<IVpnWcfService>(binding, address)
-
-        let proxy =
-            factory.CreateChannel()
+        let factory = new ChannelFactory<IVpnWcfService>(binding, address)
+        let proxy = factory.CreateChannel()
+        let clientId = Guid("10e38c19-d220-4852-8589-82eca51ade92") |> VpnClientId
 
         try
             printfn "Calling authenticate..."
-            let payload = [| 1uy; 2uy; 3uy; 4uy; 5uy; 6uy; 7uy; 8uy; 9uy |] |> fromByteArray |> zip   // dummy test data
 
+            let authRequest =
+                {
+                    clientId = clientId
+                    timestamp = DateTime.Now
+                    nonce = [| 1uy; 2uy; 3uy; 4uy; 5uy; 6uy; 7uy; 8uy; 9uy |]
+                }
+
+            let payload = authRequest |> serialize BinaryZippedFormat   // dummy test data
             let response = proxy.authenticate payload
-
             printfn $"Received response (%d{response.Length} bytes): %A{response}"
 
             (proxy :?> IClientChannel).Close()
             factory.Close()
 
+            match response |> tryDeserialize<Result<VpnAuthResponse, VpnError>> BinaryZippedFormat with
+            | Ok r -> printfn $"Result: '%A{r}'."
+            | Error e -> printfn $"Error: '%A{e}'."
         with ex ->
             printfn "\nCALL FAILED:"
             printfn $"%s{ex.ToString()}"
