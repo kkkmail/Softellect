@@ -189,9 +189,12 @@ public static class WindowsFilteringPlatform
         public uint mask;
     }
 
-    // Action types
-    public const uint FWP_ACTION_BLOCK = 0x0001;
-    public const uint FWP_ACTION_PERMIT = 0x0002;
+    // Action flags
+    public const uint FWP_ACTION_FLAG_TERMINATING = 0x00001000;
+
+    // Action types - must include FWP_ACTION_FLAG_TERMINATING for block/permit
+    public const uint FWP_ACTION_BLOCK = 0x0001 | FWP_ACTION_FLAG_TERMINATING;   // = 0x1001
+    public const uint FWP_ACTION_PERMIT = 0x0002 | FWP_ACTION_FLAG_TERMINATING;  // = 0x1002
 
     // Match types
     public const uint FWP_MATCH_EQUAL = 0;
