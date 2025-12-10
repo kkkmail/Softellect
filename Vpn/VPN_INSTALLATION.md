@@ -173,9 +173,9 @@ This indicates the service account lacks WFP permissions:
 2. Restart the BFE service: `Restart-Service -Name BFE -Force`
 3. Restart the VPN Client service
 
-### WFP Error 0x80320024 (FWP_E_INVALID_PARAMETER)
+### WFP Error 0x80320024 (FWP_E_INVALID_ACTION_TYPE)
 
-This indicates a struct marshalling issue. Ensure you're using the latest build.
+This indicates incorrect action type values. Ensure `FWP_ACTION_BLOCK` and `FWP_ACTION_PERMIT` include the `FWP_ACTION_FLAG_TERMINATING` flag (0x1001 and 0x1002 respectively). See `WFP_IMPLEMENTATION.md` for details.
 
 ### Key File Not Found
 
