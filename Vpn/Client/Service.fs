@@ -55,23 +55,25 @@ module Service =
             | HttpServiceInfo info -> info.httpServicePort.value
 
         let enableKillSwitch () =
-            Logger.logInfo "Enabling kill-switch..."
-            let ks = new KillSwitch()
-            let serverIp = getServerIp()
-            let serverPort = getServerPort()
-            let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
-
-            let result = ks.Enable(serverIp, serverPort, exclusions)
-
-            if result.IsSuccess then
-                killSwitch <- Some ks
-                Logger.logInfo "Kill-switch enabled"
-                Ok ()
-            else
-                let errMsg = match result.Error with | null -> "Unknown error" | e -> e
-                Logger.logError $"Failed to enable kill-switch: {errMsg}"
-                ks.Dispose()
-                Error errMsg
+            Logger.logInfo "Kill-switch is turned off..."
+            Ok ()
+            // Logger.logInfo "Enabling kill-switch..."
+            // let ks = new KillSwitch()
+            // let serverIp = getServerIp()
+            // let serverPort = getServerPort()
+            // let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
+            //
+            // let result = ks.Enable(serverIp, serverPort, exclusions)
+            //
+            // if result.IsSuccess then
+            //     killSwitch <- Some ks
+            //     Logger.logInfo "Kill-switch enabled"
+            //     Ok ()
+            // else
+            //     let errMsg = match result.Error with | null -> "Unknown error" | e -> e
+            //     Logger.logError $"Failed to enable kill-switch: {errMsg}"
+            //     ks.Dispose()
+            //     Error errMsg
 
         let disableKillSwitch () =
             match killSwitch with
