@@ -1,0 +1,95 @@
+#    0.069 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'TraceLog'."
+#    0.089 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\VPN\appsettings.json"'."
+#    0.131 # INFO  # vpnServerMain # "vpnServerMain - serverAccessInfo = '{ vpnDataVersion = VpnDataVersion 1
+  vpnServerId = VpnServerId fb22de75-91c0-4adc-8d17-87078ea226a4
+  serviceAccessInfo =
+   NetTcpServiceInfo
+     { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.225.50")
+       netTcpServicePort = ServicePort 45001
+       netTcpServiceName = ServiceName "VpnService"
+       netTcpSecurityMode = NoSecurity }
+  vpnSubnet = VpnSubnet "10.66.77.0/24"
+  serverKeyPath = FolderName "C:\Keys\VpnServer"
+  clientKeysPath = FolderName "C:\Keys\VpnClients" }'."
+#    0.134 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.key"', fullPath = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.key"'."
+#    0.138 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"', fullPath = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"'."
+#    0.140 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\VPN\appsettings.json"'."
+#    0.295 # WARN  # loadClientKeys # "Client keys path does not exist: C:\Keys\VpnClients"
+#    0.379 # INFO  # wcfMain # "wcfMain<IVpnService, IVpnWcfService, VpnWcfService> - data.serviceAccessInfo = 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.225.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'."
+#    0.379 # INFO  # vpnServerMain # "vpnServerMain - VPN Server started with subnet: 10.66.77.0/24"
+#    0.422 # INFO  # StartAsync # "Starting VPN Service..."
+#    0.423 # INFO  # Start # "Starting packet router with adapter: SoftellectVPN"
+#    0.899 # INFO  # Start # "Packet router started with IP: 10.66.77.1"
+#    0.899 # INFO  # StartAsync # "VPN Service started successfully"
+#    0.949 # INFO  # createServiceModel # "createServiceModel - netTcpBinding: 'CoreWCF.NetTcpBinding', netTcpServiceName: 'ServiceName "VpnService"'."
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:45001
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\VPN
+#    3.961 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.22"
+#    3.961 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.22"
+#    3.961 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#    3.983 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    3.984 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    3.986 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.22"
+#    3.988 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    4.383 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#    4.397 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.22"
+#    4.737 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    4.748 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    4.748 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    5.481 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#    5.481 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#    5.493 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    5.501 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    5.502 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    6.239 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    6.254 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    6.254 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#    8.512 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#    8.512 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#    9.513 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#    9.513 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#   11.516 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#   11.516 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.251"
+#   19.493 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   19.494 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   19.494 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   19.904 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   19.905 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   20.243 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   20.995 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   52.773 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   52.773 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   52.773 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   53.185 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   53.185 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   53.522 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   54.274 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   85.085 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   85.086 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   85.086 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   85.497 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   85.497 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#   85.837 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#   86.587 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#  117.346 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#  117.347 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#  117.347 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#  117.759 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#  117.759 # TRACE # receiveLoop # "No client found for destination IP: 224.0.0.252"
+#  118.118 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+#  118.868 # TRACE # receiveLoop # "No client found for destination IP: 10.66.77.255"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+#  122.491 # INFO  # StopAsync # "Stopping VPN Service..."
+#  122.491 # INFO  # Stop # "Stopping packet router"
+#  123.117 # INFO  # Stop # "Packet router stopped"
+#  123.117 # INFO  # StopAsync # "VPN Service stopped"
