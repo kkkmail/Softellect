@@ -44,6 +44,7 @@ module Tunnel =
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
                             packetQueue.Enqueue(packet)
+                            Logger.logTrace (fun () -> $"Tunnel captured packet from TUN adapter, size={packet.Length} bytes")
                         else
                             Thread.Sleep(1)
                     with
@@ -120,7 +121,9 @@ module Tunnel =
             match adapter with
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
-                if result.IsSuccess then Ok ()
+                if result.IsSuccess then
+                    Logger.logTrace (fun () -> $"Tunnel injected packet to TUN adapter, size={packet.Length} bytes")
+                    Ok ()
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Tunnel not ready"

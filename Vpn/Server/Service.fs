@@ -95,6 +95,7 @@ module Service =
                 match registry.TryGetSession(clientId) with
                 | Some _ ->
                     registry.UpdateActivity(clientId)
+                    Logger.logTrace (fun () -> $"Server received packet from client {clientId.value}, size={packet.Length} bytes")
 
                     match router.InjectPacket(packet) with
                     | Ok () -> Ok ()
@@ -108,6 +109,8 @@ module Service =
                     registry.UpdateActivity(clientId)
                     let packets = registry.DequeuePacketsForClient(clientId, 100)
                     if packets.Length > 0 then
+                        let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                        Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client {clientId.value}, total {totalBytes} bytes")
                         Ok (Some packets)
                     else
                         Ok None

@@ -72,11 +72,16 @@ module PacketRouter =
                             // Packet from the TUN adapter - route to appropriate client
                             match getDestinationIp packet with
                             | Some destIp ->
-                                match findClientByIp destIp with
-                                | Some session ->
-                                    registry.EnqueuePacketForClient(session.clientId, packet) |> ignore
+                                match getSourceIp packet with
+                                | Some srcIp ->
+                                    match findClientByIp destIp with
+                                    | Some session ->
+                                        registry.EnqueuePacketForClient(session.clientId, packet) |> ignore
+                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes → client {session.clientId.value}")
+                                    | None ->
+                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
                                 | None ->
-                                    Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
                             | None ->
                                 Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                         else
@@ -161,7 +166,9 @@ module PacketRouter =
             match adapter with
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
-                if result.IsSuccess then Ok ()
+                if result.IsSuccess then
+                    Logger.logTrace (fun () -> $"Injected packet to TUN adapter, size={packet.Length} bytes")
+                    Ok ()
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Adapter not ready"

@@ -133,6 +133,10 @@ module Service =
                     | Some t when t.IsRunning ->
                         let packets = t.DequeueOutboundPackets(50)
 
+                        if packets.Length > 0 then
+                            let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
+
                         for packet in packets do
                             match wcfClient.sendPacket packet with
                             | Ok () -> ()
@@ -155,6 +159,8 @@ module Service =
                     | Some t, Connected _ when t.IsRunning ->
                         match wcfClient.receivePackets data.clientAccessInfo.vpnClientId with
                         | Ok (Some packets) ->
+                            let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
                             for packet in packets do
                                 match t.InjectPacket(packet) with
                                 | Ok () -> ()
