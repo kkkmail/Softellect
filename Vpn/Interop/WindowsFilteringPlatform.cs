@@ -197,15 +197,43 @@ public static class WindowsFilteringPlatform
     public const uint FWP_ACTION_PERMIT = 0x0002 | FWP_ACTION_FLAG_TERMINATING;  // = 0x1002
 
     // Match types
+    // Match types (FWP_MATCH_TYPE)
     public const uint FWP_MATCH_EQUAL = 0;
-    public const uint FWP_MATCH_NOT_EQUAL = 7;
+    public const uint FWP_MATCH_GREATER = 1;
+    public const uint FWP_MATCH_LESS = 2;
+    public const uint FWP_MATCH_GREATER_OR_EQUAL = 3;
+    public const uint FWP_MATCH_LESS_OR_EQUAL = 4;
+    public const uint FWP_MATCH_RANGE = 5;
+    public const uint FWP_MATCH_FLAGS_ALL_SET = 6;
+    public const uint FWP_MATCH_FLAGS_ANY_SET = 7;
+    public const uint FWP_MATCH_FLAGS_NONE_SET = 8;
+    public const uint FWP_MATCH_EQUAL_CASE_INSENSITIVE = 9;
+    public const uint FWP_MATCH_NOT_EQUAL = 10;
+    public const uint FWP_MATCH_TYPE_MAX = 11;
 
-    // Value types
-    public const uint FWP_UINT8 = 0;
-    public const uint FWP_UINT16 = 1;
-    public const uint FWP_UINT32 = 2;
-    public const uint FWP_UINT64 = 3;
-    public const uint FWP_V4_ADDR_MASK = 11;
-    public const uint FWP_V6_ADDR_MASK = 12;
+    // Value types (FWP_DATA_TYPE)
     public const uint FWP_EMPTY = 0;
+    public const uint FWP_UINT8 = 1;
+    public const uint FWP_UINT16 = 2;
+    public const uint FWP_UINT32 = 3;
+    public const uint FWP_UINT64 = 4;
+    public const uint FWP_INT8 = 5;
+    public const uint FWP_INT16 = 6;
+    public const uint FWP_INT32 = 7;
+    public const uint FWP_INT64 = 8;
+    public const uint FWP_FLOAT = 9;
+    public const uint FWP_DOUBLE = 10;
+    public const uint FWP_BYTE_ARRAY16_TYPE = 11;
+    public const uint FWP_BYTE_BLOB_TYPE = 12;
+    public const uint FWP_SID = 13;
+    public const uint FWP_SECURITY_DESCRIPTOR_TYPE = 14;
+    public const uint FWP_TOKEN_INFORMATION_TYPE = 15;
+    public const uint FWP_TOKEN_ACCESS_INFORMATION_TYPE = 16;
+    public const uint FWP_UNICODE_STRING_TYPE = 17;
+    public const uint FWP_BYTE_ARRAY6_TYPE = 18;
+    public const uint FWP_SINGLE_DATA_TYPE_MAX = 0xFF;
+    public const uint FWP_V4_ADDR_MASK = 0x100;
+    public const uint FWP_V6_ADDR_MASK = 0x101;
+    public const uint FWP_RANGE_TYPE = 0x102;
+    public const uint FWP_DATA_TYPE_MAX = 0x103;
 }
