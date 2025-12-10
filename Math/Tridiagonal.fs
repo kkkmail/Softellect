@@ -3,97 +3,91 @@
 open Softellect.Math.Primitives
 open Softellect.Math.Sparse
 
-/// Generated module for tridiagonal sparse matrices.
+/// Generated module for symmetric tridiagonal sparse matrices.
 /// See: https://claude.ai/chat/75221a0e-895f-4d27-b5d5-6d8ce80974bd
+///      https://claude.ai/chat/dd074aaa-3817-4232-a667-d41c36e5b593
 module Tridiagonal =
 
-    /// Create a 1D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix1D (d: int) (a: float) : SparseMatrix<Point1D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
+    /// Discriminated Union to describe boundary probability calculation methods
+    type BoundaryConfig =
+        | ProportionalScaling    // Original method: a * neighbors / (neighbors + a)
+        | FixedStaying           // Keep 'a' constant, redistribute to available neighbors
+        | LinearScaling          // Scale 'a' by ratio of available neighbors
+        | ReflectingBoundaries   // Add blocked probabilities back to staying probability
 
-        // Dimension for 1D
-        let k = 1
 
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
+        /// Function to calculate boundary configurations based on the chosen method
+        member boundaryConfig.calculate (k: int) (a: float) : (float * float)[] =
+            let baseB = (1.0 - a) / (2.0 * float k)
 
-        // Precompute probability configurations for all possible boundary cases (k+1 = 2 cases)
-        // Case 0: Internal point (touching 0 boundaries) - original a and b
-        let internal_a = a
-        let internal_b = baseB
+            Array.init (k + 1) (fun i ->
+                if i = 0 then
+                    // Internal point - original a and b
+                    (a, baseB)
+                else
+                    let availableNeighbors = 2.0 * float k - float i
+                    let blockedNeighbors = float i
 
-        // Case 1: Point touching 1 boundary (1 neighbor instead of 2)
-        let boundary1_a = a * (2.0 * float k - 1.0) / (2.0 * float k - 1.0 + a)
-        let boundary1_b = (1.0 - boundary1_a) / (2.0 * float k - 1.0)
+                    match boundaryConfig with
+                    | ProportionalScaling ->
+                        let adj_a = a * availableNeighbors / (availableNeighbors + a)
+                        let adj_b = (1.0 - adj_a) / availableNeighbors
+                        (adj_a, adj_b)
+
+                    | FixedStaying ->
+                        // Keep 'a' constant, redistribute blocked probability to available neighbors
+                        let redistributed_prob = blockedNeighbors * baseB
+                        let adj_b = (1.0 - a + redistributed_prob) / availableNeighbors
+                        (a, adj_b)
+
+                    | LinearScaling ->
+                        // Simple linear scaling of 'a'
+                        let adj_a = a * availableNeighbors / (2.0 * float k)
+                        let adj_b = (1.0 - adj_a) / availableNeighbors
+                        (adj_a, adj_b)
+
+                    | ReflectingBoundaries ->
+                        // Add blocked movement probabilities to staying probability
+                        let blocked_prob = blockedNeighbors * baseB
+                        let adj_a = a + blocked_prob
+                        let adj_b = (1.0 - adj_a) / availableNeighbors
+                        (adj_a, adj_b)
+            )
+
+
+/// Create a 1D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix1D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point1D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 1 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point1D) =
             let values = ResizeArray<SparseValue<Point1D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                if point.i0 = 0 || point.i0 = d - 1 then 1 else 0
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) =
-                match boundaryCount with
-                | 0 -> (internal_a, internal_b)
-                | 1 -> (boundary1_a, boundary1_b)
-                | _ -> failwith "Invalid boundary count"
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
 
-            // Off-diagonal connections in the single dimension
+            // Off-diagonal in x0 direction
             if point.i0 > 0 then values.Add({ x = { point with i0 = point.i0 - 1 }; value = move_prob })
             if point.i0 < d - 1 then values.Add({ x = { point with i0 = point.i0 + 1 }; value = move_prob })
 
             SparseArray.create (values.ToArray())
 
-        // x_y function: essentially transposition of y_x
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 2D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix2D (d: int) (a: float) : SparseMatrix<Point2D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 2D
-        let k = 2
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 3 cases)
-        // Case 0: Internal point (touching 0 boundaries) - original a and b
-        let internal_a = a
-        let internal_b = baseB
-
-        // Case 1: Point touching 1 boundary (3 neighbors instead of 4)
-        let boundary1_a = a * (2.0 * float k - 1.0) / (2.0 * float k - 1.0 + a)
-        let boundary1_b = (1.0 - boundary1_a) / (2.0 * float k - 1.0)
-
-        // Case 2: Point touching 2 boundaries (corner, 2 neighbors)
-        let boundary2_a = a * (2.0 * float k - 2.0) / (2.0 * float k - 2.0 + a)
-        let boundary2_b = (1.0 - boundary2_a) / (2.0 * float k - 2.0)
+    /// Create a 2D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix2D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point2D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 2 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point2D) =
             let values = ResizeArray<SparseValue<Point2D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) =
-                match boundaryCount with
-                | 0 -> (internal_a, internal_b)
-                | 1 -> (boundary1_a, boundary1_b)
-                | 2 -> (boundary2_a, boundary2_b)
-                | _ -> failwith "Invalid boundary count"
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -108,57 +102,19 @@ module Tridiagonal =
 
             SparseArray.create (values.ToArray())
 
-        // x_y function: essentially transposition of y_x
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 3D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix3D (d: int) (a: float) : SparseMatrix<Point3D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 3D
-        let k = 3
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 4 cases)
-        // Case 0: Internal point (touching 0 boundaries) - original a and b
-        let internal_a = a
-        let internal_b = baseB
-
-        // Case 1: Point touching 1 boundary (5 neighbors instead of 6)
-        // Keep the ratio between a and b the same: a / (2k*b) = a_1 / (2k-1)*b_1
-        // With constraint a_1 + (2k-1)*b_1 = 1
-        let boundary1_a = a * (2.0 * float k - 1.0) / (2.0 * float k - 1.0 + a)
-        let boundary1_b = (1.0 - boundary1_a) / (2.0 * float k - 1.0)
-
-        // Case 2: Point touching 2 boundaries (4 neighbors)
-        let boundary2_a = a * (2.0 * float k - 2.0) / (2.0 * float k - 2.0 + a)
-        let boundary2_b = (1.0 - boundary2_a) / (2.0 * float k - 2.0)
-
-        // Case 3: Point touching 3 boundaries (corner, 3 neighbors)
-        let boundary3_a = a * (2.0 * float k - 3.0) / (2.0 * float k - 3.0 + a)
-        let boundary3_b = (1.0 - boundary3_a) / (2.0 * float k - 3.0)
+    /// Create a 3D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix3D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point3D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 3 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point3D) =
             let values = ResizeArray<SparseValue<Point3D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) =
-                match boundaryCount with
-                | 0 -> (internal_a, internal_b)
-                | 1 -> (boundary1_a, boundary1_b)
-                | 2 -> (boundary2_a, boundary2_b)
-                | 3 -> (boundary3_a, boundary3_b)
-                | _ -> failwith "Invalid boundary count"
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -179,45 +135,17 @@ module Tridiagonal =
 
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 4D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix4D (d: int) (a: float) : SparseMatrix<Point4D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 4D
-        let k = 4
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 5 cases)
-        // Case 0: Internal point (touching 0 boundaries) - original a and b
-        let internal_a = a
-        let internal_b = baseB
-
-        // Cases 1-4: Points touching 1-4 boundaries
-        let boundaryConfigs = Array.init (k + 1) (fun i ->
-            if i = 0 then (internal_a, internal_b)
-            else
-                let adjNbCount = 2.0 * float k - float i
-                let adj_a = a * adjNbCount / (adjNbCount + a)
-                let adj_b = (1.0 - adj_a) / adjNbCount
-                (adj_a, adj_b)
-        )
+    /// Create a 4D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix4D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point4D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 4 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point4D) =
             let values = ResizeArray<SparseValue<Point4D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
-                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -242,41 +170,17 @@ module Tridiagonal =
 
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 5D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix5D (d: int) (a: float) : SparseMatrix<Point5D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 5D
-        let k = 5
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 6 cases)
-        let boundaryConfigs = Array.init (k + 1) (fun i ->
-            if i = 0 then (a, baseB)
-            else
-                let adjNbCount = 2.0 * float k - float i
-                let adj_a = a * adjNbCount / (adjNbCount + a)
-                let adj_b = (1.0 - adj_a) / adjNbCount
-                (adj_a, adj_b)
-        )
+    /// Create a 5D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix5D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point5D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 5 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point5D) =
             let values = ResizeArray<SparseValue<Point5D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
-                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0) +
-                (if point.i4 = 0 || point.i4 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -305,42 +209,17 @@ module Tridiagonal =
 
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 6D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix6D (d: int) (a: float) : SparseMatrix<Point6D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 6D
-        let k = 6
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 7 cases)
-        let boundaryConfigs = Array.init (k + 1) (fun i ->
-            if i = 0 then (a, baseB)
-            else
-                let adjNbCount = 2.0 * float k - float i
-                let adj_a = a * adjNbCount / (adjNbCount + a)
-                let adj_b = (1.0 - adj_a) / adjNbCount
-                (adj_a, adj_b)
-        )
+    /// Create a 6D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix6D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point6D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 6 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point6D) =
             let values = ResizeArray<SparseValue<Point6D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
-                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0) +
-                (if point.i4 = 0 || point.i4 = d - 1 then 1 else 0) +
-                (if point.i5 = 0 || point.i5 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -373,43 +252,17 @@ module Tridiagonal =
 
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 7D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix7D (d: int) (a: float) : SparseMatrix<Point7D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 7D
-        let k = 7
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 8 cases)
-        let boundaryConfigs = Array.init (k + 1) (fun i ->
-            if i = 0 then (a, baseB)
-            else
-                let adjNbCount = 2.0 * float k - float i
-                let adj_a = a * adjNbCount / (adjNbCount + a)
-                let adj_b = (1.0 - adj_a) / adjNbCount
-                (adj_a, adj_b)
-        )
+    /// Create a 7D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix7D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point7D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 7 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point7D) =
             let values = ResizeArray<SparseValue<Point7D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
-                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0) +
-                (if point.i4 = 0 || point.i4 = d - 1 then 1 else 0) +
-                (if point.i5 = 0 || point.i5 = d - 1 then 1 else 0) +
-                (if point.i6 = 0 || point.i6 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })
@@ -446,44 +299,17 @@ module Tridiagonal =
 
         { x_y = y_x; y_x = y_x }
 
-    /// Create a 8D tridiagonal sparse matrix with optimized performance for random walk probabilities
-    let createTridiagonalMatrix8D (d: int) (a: float) : SparseMatrix<Point8D, float> =
-        // Parameter validation
-        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range (0, 1)"
 
-        // Dimension for 8D
-        let k = 8
-
-        // Calculate base b for internal points based on the constraint a + 2*k*b = 1
-        let baseB = (1.0 - a) / (2.0 * float k)
-
-        // Precompute probability configurations for all possible boundary cases (k+1 = 9 cases)
-        let boundaryConfigs = Array.init (k + 1) (fun i ->
-            if i = 0 then (a, baseB)
-            else
-                let adjNbCount = 2.0 * float k - float i
-                let adj_a = a * adjNbCount / (adjNbCount + a)
-                let adj_b = (1.0 - adj_a) / adjNbCount
-                (adj_a, adj_b)
-        )
+    /// Create a 8D tridiagonal sparse matrix with configurable boundary handling
+    let createTridiagonalMatrix8D (boundaryConfig : BoundaryConfig) (d : int) (a : float) : SparseMatrix<Point8D, float> =
+        if a < 0.0 || a > 1.0 then failwith $"Parameter a must be in range [0, 1]."
+        let boundaryConfigs = boundaryConfig.calculate 8 a
 
         // y_x function: probabilities of walking from y to x
         let y_x (point: Point8D) =
             let values = ResizeArray<SparseValue<Point8D, float>>()
-
-            // Count how many boundaries this point touches
-            let boundaryCount =
-                (if point.i0 = 0 || point.i0 = d - 1 then 1 else 0) +
-                (if point.i1 = 0 || point.i1 = d - 1 then 1 else 0) +
-                (if point.i2 = 0 || point.i2 = d - 1 then 1 else 0) +
-                (if point.i3 = 0 || point.i3 = d - 1 then 1 else 0) +
-                (if point.i4 = 0 || point.i4 = d - 1 then 1 else 0) +
-                (if point.i5 = 0 || point.i5 = d - 1 then 1 else 0) +
-                (if point.i6 = 0 || point.i6 = d - 1 then 1 else 0) +
-                (if point.i7 = 0 || point.i7 = d - 1 then 1 else 0)
-
-            // Select appropriate probability values based on boundary count
-            let (stay_prob, move_prob) = boundaryConfigs.[boundaryCount]
+            let boundaryCount = point.boundaryCount d
+            let stay_prob, move_prob = boundaryConfigs[boundaryCount]
 
             // Diagonal element (self-connection)
             values.Add({ x = point; value = stay_prob })

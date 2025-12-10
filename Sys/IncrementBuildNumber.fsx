@@ -6,13 +6,13 @@ open System.IO
 open System.Text.RegularExpressions
 open System.Xml.Linq
 
-// If true, check for a loop using a lock file.
-// Otherwise, check only for the presence of the lock file.
+/// If true, check for a loop using a lock file.
+/// Otherwise, check only for the presence of the lock file.
 let checkTimeStamp = false
 
-// Configure projects to update (relative paths from script location)
+/// Configure projects to update (relative paths from script location)
+/// List of (project name, relative path to a project file).
 let projectsToUpdate = [
-    // Project name, relative path to project file
     ("Sys", "Sys.fsproj")
     ("Wcf", @"..\Wcf\Wcf.fsproj")
     ("Analytics", @"..\Analytics\Analytics.fsproj")
@@ -29,16 +29,16 @@ let projectsToUpdate = [
     ("DistributedProcessing\WorkerNodeService", @"..\DistributedProcessing\WorkerNodeService\WorkerNodeService.fsproj")
 ]
 
-// Get the directory of the script
+/// Get the directory of the script
 let scriptDir = __SOURCE_DIRECTORY__
 
-// Path to the BuildInfo.fs file (relative to script location)
+/// Path to the BuildInfo.fs file (relative to script location)
 let buildInfoPath = Path.Combine(scriptDir, "BuildInfo.fs")
 
-// Path to the BuildInfo.ps1 file (relative to script location)
+/// Path to the BuildInfo.ps1 file (relative to script location)
 let buildInfoPsPath = Path.Combine(scriptDir, "BuildInfo.ps1")
 
-// Path to a lock file to prevent infinite loops
+/// Path to a lock file to prevent infinite loops
 let lockFilePath = Path.Combine(scriptDir, ".version-update-lock")
 
 /// Checks if a lock file exists and if we're in a loop
@@ -86,7 +86,7 @@ let incrementBuildNumber () =
         // Read the current content
         let content = File.ReadAllText(buildInfoPath)
 
-        // Define regex pattern to find the build number
+        // Define a regex pattern to find the build number
         let pattern = @"let\s+BuildNumber\s+=\s+(\d+)"
         let regex = Regex(pattern)
 
@@ -142,7 +142,7 @@ let extractFSharpCoreVersion (projectXml: XDocument) =
     with
     | _ -> None
 
-/// Updates version in a project file based on new build number
+/// Updates a version in a project file based on the new build number
 let updateProjectVersion (projectFilePath: string) (newBuildNumber: int) =
     try
         if File.Exists(projectFilePath) then
@@ -261,7 +261,7 @@ try
     if checkForLoop() then
         exit 0
 
-    // Update lock file
+    // Update the lock file
     updateLockFile 0.0
 
     // Increment build number once

@@ -1,0 +1,152 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Apps/" />
+  <Folder Name="/Apps/DistrProc/">
+    <Project Path="Apps/DistrProc/MessagingService/MessagingService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/DistrProc/PartitionerAdm/PartitionerAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/DistrProc/PartitionerService/PartitionerService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/DistrProc/WorkerNodeAdm/WorkerNodeAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/DistrProc/WorkerNodeService/WorkerNodeService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/DistributedProcessing/">
+    <Project Path="DistributedProcessing/Core/Core.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/MessagingService/MessagingService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/ModelGenerator/ModelGenerator.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/PartitionerAdm/PartitionerAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/PartitionerService/PartitionerService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/SolverRunner/SolverRunner.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/WorkerNodeAdm/WorkerNodeAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="DistributedProcessing/WorkerNodeService/WorkerNodeService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Messaging/">
+    <Project Path="Messaging/Messaging.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="MessagingService/MessagingService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Samples/" />
+  <Folder Name="/Samples/DistrProc/">
+    <Project Path="Samples/DistrProc/Core/Core.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/DistrProc/ModelGenerator/ModelGenerator.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/DistrProc/SolverRunner/SolverRunner.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Samples/Msg/">
+    <Project Path="Samples/Msg/MsgClientOne/MsgClientOne.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Msg/MsgClientTwo/MsgClientTwo.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Msg/MsgServiceInfo/MsgServiceInfo.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Msg/MsgWorker/MsgWorker.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Samples/Wcf/">
+    <Project Path="Samples/Wcf/NetCoreClient/NetCoreClient.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Wcf/NetCoreService/NetCoreService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Wcf/WcfClient/WcfClient.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Wcf/WcfService/WcfService.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Wcf/WcfServiceInfo/WcfServiceInfo.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Samples/Wcf/WcfWorker/WcfWorker.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="MathTests/MathTests.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="SysTests/SysTests.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Vpn/">
+    <Project Path="Vpn/Core/Core.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/Interop/Interop.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/Client/Client.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/Server/Server.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/ClientAdm/ClientAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/ServerAdm/ServerAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/VpnClient/VpnClient.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/VpnServer/VpnServer.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Project Path="Analytics/Analytics.fsproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Math/Math.fsproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Sys/PreBuild.fsproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Sys/Sys.fsproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Wcf/Wcf.fsproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

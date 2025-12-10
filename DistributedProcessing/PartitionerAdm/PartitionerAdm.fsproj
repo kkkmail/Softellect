@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.300.27</Version>
-    <PackageVersion>9.0.300.27</PackageVersion>
+    <Version>9.0.303.39</Version>
+    <PackageVersion>9.0.303.39</PackageVersion>
     <Description>Softellect Partitioner Administration ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -47,8 +47,8 @@
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
-    <PackageReference Update="FSharp.Core" Version="9.0.300" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.8" />
+    <PackageReference Update="FSharp.Core" Version="9.0.303" />
   </ItemGroup>
 </Project>

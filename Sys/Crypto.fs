@@ -166,11 +166,11 @@ module Crypto =
             doc.Root.Add(XElement("Guid", id.ToString()))
             doc.ToString()
 
-        (addGuidToXml publicKeyXml |> PublicKey, privateKeyXml |> PrivateKey)
+        (addGuidToXml publicKeyXml |> PublicKey, addGuidToXml privateKeyXml |> PrivateKey)
 
 
     /// Extracts the Guid from an XML key.
-    let private extractKeyIdFromKey (keyXml: string) =
+    let extractKeyIdFromKey (keyXml: string) =
         try
             let doc = XDocument.Parse(keyXml)
             let guidElement = doc.Root.Element("Guid")

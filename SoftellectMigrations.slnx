@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Apps/DistrProc/Migrations/Common/Migrations.Common.csproj" />
+  <Project Path="Apps/DistrProc/Migrations/MessagingService/Migrations.MessagingService.csproj" />
+  <Project Path="Apps/DistrProc/Migrations/PartitionerService/Migrations.PartitionerService.csproj" />
+  <Project Path="Apps/DistrProc/Migrations/WorkerNodeService/Migrations.WorkerNodeService.csproj" />
+</Solution>

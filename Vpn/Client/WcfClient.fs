@@ -1,0 +1,47 @@
+namespace Softellect.Vpn.Client
+
+open Softellect.Sys.Logging
+open Softellect.Wcf.Client
+open Softellect.Wcf.Common
+open Softellect.Wcf.Errors
+open Softellect.Vpn.Core.Primitives
+open Softellect.Vpn.Core.Errors
+open Softellect.Vpn.Core.ServiceInfo
+
+module WcfClient =
+
+    type VpnWcfClientData =
+        {
+            clientAccessInfo : VpnClientAccessInfo
+        }
+
+
+    let private toAuthError (e: WcfError) = e |> AuthWcfErr |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+    let private toSendError (e: WcfError) = e |> SendPacketWcfErr |> fun _ -> ConfigErr "Send packet error"
+    let private toReceiveError (e: WcfError) = e |> ReceivePacketsWcfErr |> fun _ -> ConfigErr "Receive packets error"
+
+
+    type VpnWcfClient(data: VpnWcfClientData) =
+        let url = data.clientAccessInfo.serverAccessInfo.getUrl()
+        let commType = data.clientAccessInfo.serverAccessInfo.communicationType
+
+        let getService() = tryGetWcfService<IVpnWcfService> commType url
+
+        interface IVpnClient with
+            member _.authenticate request =
+                Logger.logTrace (fun () -> $"authenticate: Sending auth request for client {request.clientId.value}")
+                tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
+
+            member _.sendPacket packet =
+                Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}")
+                let payload = (data.clientAccessInfo.vpnClientId, packet)
+                tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
+
+            member _.receivePackets clientId =
+                Logger.logTrace (fun () -> $"receivePackets: Receiving packets for client {clientId.value}")
+                tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
+
+
+    let createVpnClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
+        let data = { clientAccessInfo = clientAccessInfo }
+        VpnWcfClient(data) :> IVpnClient

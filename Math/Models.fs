@@ -8,16 +8,10 @@ open Softellect.Math.Evolution
 ///     However, I need to run some tests to see how all the new logic works.
 module Models =
 
-    type NoOfEpochs =
-        | NoOfEpochs of int
-
-        member r.value = let (NoOfEpochs v) = r in v
-
-
     /// Number of "molecules" or building blocks used in a protocell.
     /// This controls the non-linearity of the creation model.
-    /// Default value is set to 1 because we take into account that a single protocell encounters with food
-    /// proportionally to concentration of the food.
+    /// The default value is set to 1 because we take into account that a single protocell encounters with food
+    /// proportionally to the concentration of the food.
     type NumberOfMolecules =
         | NumberOfMolecules of int
 
@@ -72,18 +66,6 @@ module Models =
         }
 
 
-    type MoleculeCount =
-        | MoleculeCount of int64
-
-        member r.value = let (MoleculeCount v) = r in v
-        static member OneThousand = MoleculeCount 1_000L // 10^3 - K
-        static member OneMillion = MoleculeCount 1_000_000L // 10^6 - M
-        static member OneBillion = MoleculeCount 1_000_000_000L // 10^9 - G
-        static member OneTrillion = MoleculeCount 1_000_000_000_000L // 10^12 - T
-        static member OneQuadrillion = MoleculeCount 1_000_000_000_000_000L // 10^15 - P
-        static member OneQuintillion = MoleculeCount 1_000_000_000_000_000_000L // 10^18 - E
-
-
     type ModelInitParams =
         {
             uInitial : MoleculeCount
@@ -97,15 +79,6 @@ module Models =
                 totalMolecules = MoleculeCount.OneBillion
                 seedValue = 1
             }
-
-
-    type ModelContext<'I, 'T, 'S when 'I: equality and 'I: comparison and 'T: equality and 'T: comparison> =
-        {
-            evolutionContext : EvolutionContext<'I, 'T>
-            noOfEpochs : NoOfEpochs
-            initialData : 'S
-            callBack : int -> 'S -> unit
-        }
 
 
     /// A very simple arbitrary dimension evolutionary model (x is a point in the domain):

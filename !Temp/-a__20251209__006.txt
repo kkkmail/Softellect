@@ -1,0 +1,7 @@
+#    0.055 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'TraceLog'."
+#    0.068 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+#    0.082 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+#    0.084 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"'."
+#    0.088 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"'."
+#    0.090 # ERROR # loadServerPublicKey # "Server public key folder not found: C:\Keys\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"
+#    0.090 # CRIT  # vpnClientMain # "Server public key folder not found: C:\Keys\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"

@@ -13,13 +13,13 @@ open Softellect.Math.Tridiagonal
 module MultidimensionalRecordTests =
     /// Helper functions for creating multi-dimensional test data
     module Helpers =
-        let create2DTridiagonalMatrix = createTridiagonalMatrix2D
-        let create3DTridiagonalMatrix = createTridiagonalMatrix3D
-        let create4DTridiagonalMatrix = createTridiagonalMatrix4D
-        let create5DTridiagonalMatrix = createTridiagonalMatrix5D
-        let create6DTridiagonalMatrix = createTridiagonalMatrix6D
-        let create7DTridiagonalMatrix = createTridiagonalMatrix7D
-        let create8DTridiagonalMatrix = createTridiagonalMatrix8D
+        let create2DTridiagonalMatrix = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+        let create3DTridiagonalMatrix = createTridiagonalMatrix3D BoundaryConfig.ProportionalScaling
+        let create4DTridiagonalMatrix = createTridiagonalMatrix4D BoundaryConfig.ProportionalScaling
+        let create5DTridiagonalMatrix = createTridiagonalMatrix5D BoundaryConfig.ProportionalScaling
+        let create6DTridiagonalMatrix = createTridiagonalMatrix6D BoundaryConfig.ProportionalScaling
+        let create7DTridiagonalMatrix = createTridiagonalMatrix7D BoundaryConfig.ProportionalScaling
+        let create8DTridiagonalMatrix = createTridiagonalMatrix8D BoundaryConfig.ProportionalScaling
 
 
         /// Map a dimension index to normalized range [-1, 1]

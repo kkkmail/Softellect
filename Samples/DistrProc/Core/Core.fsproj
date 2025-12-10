@@ -22,14 +22,16 @@
 
     <ItemGroup>
         <Compile Include="Primitives.fs" />
+        <Compile Include="ExtendedLotkaVolterra.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\..\..\DistributedProcessing\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\..\Math\Math.fsproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Update="FSharp.Core" Version="9.0.300" />
+        <PackageReference Update="FSharp.Core" Version="9.0.303" />
     </ItemGroup>
 
 </Project>

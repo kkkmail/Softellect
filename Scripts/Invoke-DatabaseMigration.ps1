@@ -3,6 +3,9 @@ function Invoke-DatabaseMigration {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [string]$ServiceFolder,
+
+        [Parameter(Mandatory = $true)]
         [string]$InstallationFolder,
 
         [Parameter(Mandatory = $false)]
@@ -18,11 +21,11 @@ function Invoke-DatabaseMigration {
         [bool]$Down = $false
     )
 
-    # Check prerequisites
-    if (-not (Test-MigrationPrerequisites -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
-        Write-ServiceLog -Level Error -Message "Migration prerequisites check failed."
-        return $false
-    }
+#    # Check prerequisites
+#    if (-not (Test-MigrationPrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
+#        Write-ServiceLog -Level Error -Message "Migration prerequisites check failed."
+#        return $false
+#    }
 
     $exePath = Get-MigrationExecutable -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName
     Write-ServiceLog -Message "Using migration executable: $exePath"
@@ -32,7 +35,9 @@ function Invoke-DatabaseMigration {
     $operationName = ""
     if ($Down) {
         $operationName = "Database migration DOWN"
-        $migrationFolderPath = Join-Path -Path $InstallationFolder -ChildPath $SubFolder
+
+        # Down migration takes migration data from the service folder, not the installation folder.
+        $migrationFolderPath = Join-Path -Path $ServiceFolder -ChildPath $SubFolder
         $migrationFilePath = Join-Path -Path $migrationFolderPath -ChildPath $MigrationFile
         $command = "downFile:$migrationFilePath"
         Write-ServiceLog -Message "Running database migration DOWN"

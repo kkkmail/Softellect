@@ -74,7 +74,7 @@ function Reinstall-WindowsService {
         Start-WindowsService -ServiceName $ServiceName
     }
     catch {
-        Write-ServiceLog -Message "Error reinstalling service $(ServiceName): $_" -Level "Error"
+        Write-ServiceLog -Message "Error reinstalling service $($ServiceName): $_" -Level "Error"
         throw $_
     }
 }

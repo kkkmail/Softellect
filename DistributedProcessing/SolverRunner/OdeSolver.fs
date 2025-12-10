@@ -20,18 +20,18 @@ module OdeSolver =
 
 
     let private fUseNonNegative (
-                                odeParams : OdeParams,
+                                odeContext : OdeContext,
                                 tryCallBack : TryCallBack<double[]>,
                                 neq : byref<int>,
                                 t : byref<double>,
                                 x : nativeptr<double>,
                                 dx : nativeptr<double>) : unit =
 
-        let x1 = makeNonNegativeByRef odeParams.odeSolverType.correction neq x
+        let x1 = makeNonNegativeByRef odeContext.odeSolverType.correction neq x
         let et = decimal t |> EvolutionTime
         tryCallBack.invoke et x1
 
-        match odeParams.derivative with
+        match odeContext.derivative with
         | OneByOne f -> for i in 0..(neq - 1) do NativePtr.set dx i (f t x1 i)
         | FullArray f ->
             let d = f t x1
@@ -39,7 +39,7 @@ module OdeSolver =
 
 
     let private fDoNotCorrect (
-                                odeParams : OdeParams,
+                                odeContext : OdeContext,
                                 tryCallBack : TryCallBack<double[]>,
                                 neq : byref<int>,
                                 t : byref<double>,
@@ -122,7 +122,7 @@ module OdeSolver =
                                 n.absoluteTolerance.value)
 
                 //notifyAll n (FinalCallBack CompletedCalculation) result
-                Logger.logTrace (fun () -> $"t = %A{(fst result)}")
+                Logger.logTrace (fun () -> $"t = %A{(fst result)}.")
                 result
 
             SolverRunner solve

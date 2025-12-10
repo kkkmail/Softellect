@@ -1,4 +1,4 @@
-param([string] $drive = "C:\")
+param($InputFolder = "C:\", $FileMask = "*.*")
 
-. ./Functions.ps1
-GetFolderSizes -drive $drive
+. ./Scripts/Get-FolderSizes.ps1
+Get-FolderSizes -InputFolder $InputFolder -FileMask $FileMask

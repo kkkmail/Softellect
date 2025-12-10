@@ -62,6 +62,12 @@ function Test-ServicePrerequisites {
         $prerequisites = $false
     }
 
+    # Check if uninstall script exists in installation folder
+    if (-not (Test-Path -Path (Join-Path -Path $InstallationFolder -ChildPath $UninstallScriptName))) {
+        Write-ServiceLog -Level Error -Message "Uninstall script '$UninstallScriptName' not found in installation folder."
+        $prerequisites = $false
+    }
+
     # Check if migrate script exists in installation folder when PerformMigration is true
     if ($PerformMigration) {
         # Check migrate script
@@ -71,7 +77,7 @@ function Test-ServicePrerequisites {
         }
 
         # Run migration prereqs check including verification
-        if (-not (Test-MigrationPrerequisites -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
+        if (-not (Test-MigrationPrerequisites -ServiceFolder $ServiceFolder -InstallationFolder $InstallationFolder -SubFolder $SubFolder -ExeName $ExeName -MigrationFile $MigrationFile)) {
             Write-ServiceLog -Level Error -Message "Migration prerequisites check failed."
             $prerequisites = $false
         }

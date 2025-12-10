@@ -8,6 +8,7 @@ function Start-WindowsService {
     # Get the script directory and load Write-ServiceLog
     $scriptDirectory = $PSScriptRoot
     . "$scriptDirectory\Write-ServiceLog.ps1"
+    . "$scriptDirectory\Get-ServiceName.ps1"
 
     Write-ServiceLog -Message "Attempting to start service: $ServiceName..."
     $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -21,11 +22,13 @@ function Start-WindowsService {
 
     try {
         # Trying to start new service.
+        # Set-PSDebug -Trace 2
         Write-ServiceLog -Message "Trying to start new service: $ServiceName."
         Start-Service -Name $ServiceName -ErrorAction Stop
 
         # Check that service has started.
         Write-ServiceLog -Message "Waiting 5 seconds to give service time to start..."
+        # Set-PSDebug -Off
         Start-Sleep -Seconds 5
         $testService = Get-Service -Name $ServiceName
 
@@ -39,7 +42,7 @@ function Start-WindowsService {
         }
     }
     catch {
-        Write-ServiceLog -Message "Error starting service $(ServiceName): $_" -Level "Error"
+        Write-ServiceLog -Message "Error starting service $($ServiceName): $_" -Level "Error"
         throw $_
     }
 }

@@ -12,6 +12,10 @@ open System
 open System.Diagnostics
 
 module Helpers =
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix3D = createTridiagonalMatrix3D BoundaryConfig.ProportionalScaling
+
+
     let inline runEvolutionModelTest<'I, 'C, 'D when 'I: equality and 'I: comparison>
             (name : string)
             writeLine

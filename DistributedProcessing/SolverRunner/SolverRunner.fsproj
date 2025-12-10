@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.300.27</Version>
-    <PackageVersion>9.0.300.27</PackageVersion>
+    <Version>9.0.303.39</Version>
+    <PackageVersion>9.0.303.39</PackageVersion>
     <Description>Softellect Solver Runner ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -39,6 +39,7 @@
     <Compile Include="NoSql.fs" />
     <Compile Include="..\Core\Proxy.fs" Link="Proxy.fs" />
     <Compile Include="OdeSolver.fs" />
+    <Compile Include="PoissonSolver.fs" />
     <Compile Include="Runner.fs" />
     <Compile Include="Implementation.fs" />
     <Compile Include="Program.fs" />
@@ -52,9 +53,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="alglib.net" Version="3.19.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.5" />
-    <PackageReference Include="Softellect.OdePackInterop" Version="9.0.100.5" />
-    <PackageReference Update="FSharp.Core" Version="9.0.300" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.8" />
+    <PackageReference Include="Softellect.OdePackInterop" Version="9.0.300.27" />
+    <PackageReference Update="FSharp.Core" Version="9.0.303" />
   </ItemGroup>
 </Project>

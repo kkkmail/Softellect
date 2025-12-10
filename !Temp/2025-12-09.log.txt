@@ -1,0 +1,13 @@
+# 2025-12-09 18:20:00.295 # INFO  # StartAsync                     # Starting VPN Client Service... 
+
+# 2025-12-09 18:20:00.301 # INFO  # enableKillSwitch               # Enabling kill-switch... 
+
+# 2025-12-09 18:20:00.305 # ERROR # enableKillSwitch               # Failed to enable kill-switch: Failed to begin transaction: 0x00000005 
+
+# 2025-12-09 18:20:00.305 # ERROR # StartAsync                     # Failed to enable kill-switch: Failed to begin transaction: 0x00000005 
+
+# 2025-12-09 18:20:00.307 # ERROR # Hosting failed to start 
+
+System.Exception: Failed to enable kill-switch: Failed to begin transaction: 0x00000005
+   at Microsoft.Extensions.Hosting.Internal.Host.<StartAsync>b__14_1(IHostedService service, CancellationToken token)
+   at Microsoft.Extensions.Hosting.Internal.Host.ForeachService[T](IEnumerable`1 services, CancellationToken token, Boolean concurrent, Boolean abortOnFirstException, List`1 exceptions, Func`3 operation)

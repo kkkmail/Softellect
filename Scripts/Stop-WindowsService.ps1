@@ -29,6 +29,6 @@ function Stop-WindowsService {
         }
     }
     catch {
-        Write-ServiceLog -Message "Error stopping service $(ServiceName): $_" -Level "Error"
+        Write-ServiceLog -Message "Error stopping service $($ServiceName): $_" -Level "Error"
     }
 }

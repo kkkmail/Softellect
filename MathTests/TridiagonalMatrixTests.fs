@@ -8,6 +8,15 @@ open Softellect.Math.Tridiagonal
 open Xunit.Abstractions
 
 type TridiagonalMatrixTests(output: ITestOutputHelper) =
+    let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix3D = createTridiagonalMatrix3D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix4D = createTridiagonalMatrix4D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix5D = createTridiagonalMatrix5D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix6D = createTridiagonalMatrix6D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix7D = createTridiagonalMatrix7D BoundaryConfig.ProportionalScaling
+    let createTridiagonalMatrix8D = createTridiagonalMatrix8D BoundaryConfig.ProportionalScaling
+
+
     [<Fact>]
     member _.``y_x probabilities should sum to 1 for all points in 3D matrix``() =
         // Arrange
@@ -420,7 +429,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         ]
 
         // Verify each test case
-        for (point, expectedLength) in testCases do
+        for point, expectedLength in testCases do
             let values = matrix.y_x point
             // Print the actual length for debugging
             output.WriteLine $"Point %A{point}: Expected {expectedLength}, Got {values.values.Length}"
@@ -556,7 +565,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         ]
 
         // Verify each test case
-        for (point, expectedLength) in testCases do
+        for point, expectedLength in testCases do
             let values = matrix.y_x point
             output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
             values.values.Length.Should().Be(expectedLength) |> ignore
@@ -664,7 +673,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         ]
 
         // Verify each test case
-        for (point, expectedLength) in testCases do
+        for point, expectedLength in testCases do
             let values = matrix.y_x point
             output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
             values.values.Length.Should().Be(expectedLength) |> ignore
@@ -786,7 +795,7 @@ type TridiagonalMatrixTests(output: ITestOutputHelper) =
         ]
 
         // Verify each test case
-        for (point, expectedLength) in testCases do
+        for point, expectedLength in testCases do
             let values = matrix.y_x point
             output.WriteLine $"Point {point}: Expected {expectedLength}, Got {values.values.Length}"
             values.values.Length.Should().Be(expectedLength) |> ignore

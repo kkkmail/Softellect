@@ -90,6 +90,10 @@ module MultidimensionalTests =
 
     /// Helper functions for creating multi-dimensional test data
     module Helpers =
+        let createTridiagonalMatrix2D = createTridiagonalMatrix2D BoundaryConfig.ProportionalScaling
+        let createTridiagonalMatrix3D = createTridiagonalMatrix3D BoundaryConfig.ProportionalScaling
+        let createTridiagonalMatrix4D = createTridiagonalMatrix4D BoundaryConfig.ProportionalScaling
+
         let mutable xyCallCount = 0
         let mutable xyTotalTime = 0L
         let xyStopwatch = Stopwatch()

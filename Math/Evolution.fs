@@ -9,6 +9,132 @@ open Softellect.Math.Sparse
 
 module Evolution =
 
+    /// Number of evolution epochs in an integer model.
+    type NoOfEpochs =
+        | NoOfEpochs of int
+
+        member r.value = let (NoOfEpochs v) = r in v
+
+
+    /// Total number of "molecules" used in the system.
+    /// This value adjusted to the number of "atoms" in each type of "molecules" generally should be an invariant.
+    ///
+    /// The actual meaning depends on the model:
+    ///     It is a number of molecules in chemical systems.
+    ///     It is a number of some species (whatever they are) in more general cases.
+    type MoleculeCount =
+        | MoleculeCount of int64
+
+        member r.value = let (MoleculeCount v) = r in v
+
+        /// K: 10^3
+        static member OneThousand = MoleculeCount 1_000L
+
+         /// M: 10^6
+        static member OneMillion = MoleculeCount 1_000_000L
+
+        /// G: 10^9
+        static member OneBillion = MoleculeCount 1_000_000_000L
+
+        /// T: 10^12
+        static member OneTrillion = MoleculeCount 1_000_000_000_000L
+
+        /// P: 10^15
+        static member OneQuadrillion = MoleculeCount 1_000_000_000_000_000L
+
+        /// E: 10^18
+        static member OneQuintillion = MoleculeCount 1_000_000_000_000_000_000L
+
+
+    /// An evolution epoch is a discrete time unit in the Poisson evolution.
+    type EvolutionEpoch =
+        | EvolutionEpoch of int
+
+        member this.value = let (EvolutionEpoch v) = this in v
+        member this.increment() = this.value + 1 |> EvolutionEpoch
+
+    /// A constant value for the epoch, used in granular evolution time calculations.
+        static member epochValue = 1.0
+
+
+    /// A more granular time flow within an evolution epoch.
+    /// Multiple events can happen during a single epoch.
+    type EpochEvolutionTime =
+        | EpochExpired
+        | EpochEvolutionTime of double
+
+
+    /// A combination of an event and current evolution time within an epoch.
+    type EventState<'E> =
+        {
+            event : 'E
+            evolutionTime : EpochEvolutionTime
+        }
+
+
+    /// Represents a wait time in a Poisson process.
+    type WaitTime =
+        | InfiniteWaitTime
+        | FiniteWaitTime of double
+
+
+    /// Represents the result of an event in a Poisson process.
+    type EventResult<'R> =
+        | EventResult of 'R
+
+        member r.value = let (EventResult v) = r in v
+
+
+    /// Encapsulates a proxy for handling events in a multistep Poisson process
+    /// when the next step depends on the outcome of the previous one.
+    type EventProxy<'E, 'R> =
+        {
+            /// Evaluates the current event and returns a result.
+            evaluateEvent : 'E -> 'R
+
+            /// Gets the next event based on the result of the previous event.
+            nextEvent : 'R -> 'E
+
+            /// Gets the next event based on the epoch expiration.
+            endOfEpochEvent : 'E -> 'E
+
+            /// Gets the wait time for the current event.
+            waitTime : 'E -> WaitTime
+        }
+
+        /// Attempts to wait for the current event to happen.
+        ///
+        /// If the event happens before the end of the epoch, then evaluates the event and returns the next event
+        /// and updates the evolution time.
+        ///
+        /// If the event does not happen before the end of the epoch, then returns the end of epoch event and updates
+        /// the evolution time to the end of epoch.
+        member p.evolve e =
+            match e.evolutionTime with
+            | EpochExpired -> e // No evolution time left, return the event as is.
+            | EpochEvolutionTime v ->
+                // Event did not happen till the end of the epoch.
+                let ee() =
+                    {
+                        event = p.endOfEpochEvent e.event
+                        evolutionTime = EpochExpired
+                    }
+
+                match p.waitTime e.event with
+                | InfiniteWaitTime -> ee()
+                | FiniteWaitTime w ->
+                    let nv = v + w
+
+                    match nv > EvolutionEpoch.epochValue with
+                    | true -> ee()
+                    | false ->
+                        {
+                            event = p.evaluateEvent e.event |> p.nextEvent
+                            evolutionTime = EpochEvolutionTime nv
+                        }
+
+
+    /// Returns the next random number of events for a given lambda.
     let inline private poissonSample converter rnd lambda =
         match lambda with
         | lambda when lambda <= 0.0 -> 0.0
@@ -27,6 +153,19 @@ module Evolution =
         |> converter
 
 
+    /// Returns the next random wait time until the first event for a Poisson process with rate lambda.
+    /// The wait time follows an exponential distribution with parameter lambda.
+    let inline private exponentialWaitTime rnd lambda =
+        match lambda with
+        | lambda when lambda <= 0.0 -> InfiniteWaitTime
+        | _ ->
+            try
+                Exponential.Sample(rnd, lambda) |> FiniteWaitTime
+            with
+            | e -> failwith $"lambda: {lambda}, exception: {e}"
+
+
+    /// ! Uses a mutable internal state !
     /// State for the deterministic Poisson sampler
     type DeterministicPoissonState =
         {
@@ -53,67 +192,29 @@ module Evolution =
 
 
     /// Encapsulation of a Poisson distribution sampler.
-    /// It takes a value of lambda and returns next random number of events.
+    /// It takes a value of lambda and returns the next random number of events.
     type PoissonSampler<'T when 'T: equality and 'T: comparison> =
-        | PoissonSampler of (float -> 'T)
+        {
+            nextNumberOfEvents : float -> 'T
+            nextWaitTime : float -> WaitTime
+        }
 
-        member inline private r.invoke = let (PoissonSampler v) = r in v
-        member inline r.next lambda = r.invoke lambda
-        static member inline create converter rnd : PoissonSampler<'T> = poissonSample converter rnd |> PoissonSampler
+        member inline r.next lambda = r.nextNumberOfEvents lambda
+        static member inline create converter rnd : PoissonSampler<'T> =
+            {
+                nextNumberOfEvents = poissonSample converter rnd
+                nextWaitTime = exponentialWaitTime rnd
+            }
 
         static member inline deterministic() =
             let state = DeterministicPoissonState.create()
-            PoissonSampler (deterministicPoissonSample state)
 
-
-    // /// Encapsulation of a Poisson distribution sampler.
-    // /// It takes a value of lambda and returns next random number of events.
-    // type PoissonSingleSampler =
-    //     | PoissonSingleSampler of (float -> int64)
-    //
-    //     member inline private r.value = let (PoissonSingleSampler v) = r in v
-    //     member r.nextPoisson lambda = r.value lambda
-    //     static member create rnd = poissonSample rnd |> PoissonSingleSampler
-    //
-    //
-    // /// Encapsulation of a Poisson distribution sampler factory suitable for both sequential and parallel code.
-    // type PoissonMultiSampler =
-    //     {
-    //         sampler : PoissonSingleSampler
-    //         parallelSampler : PoissonSingleSampler[]
-    //     }
-    //
-    //     static member create n (rnd : Random) =
-    //         let r() = Random(rnd.Next())
-    //         let sampler = PoissonSingleSampler.create (r())
-    //         let parallelSampler = [| for _ in 0..(n - 1) -> PoissonSingleSampler.create (r()) |]
-    //         {
-    //             sampler = sampler
-    //             parallelSampler = parallelSampler
-    //         }
-    //
-    //
-    // type PoissonSampler =
-    //     | SingleSampler of PoissonSingleSampler
-    //     | MultiSampler of PoissonMultiSampler
-    //
-    //     member p.sampler =
-    //         match p with
-    //         | SingleSampler s -> s
-    //         | MultiSampler s -> s.sampler
-    //
-    //     member p.getSampler i =
-    //         match p with
-    //         | SingleSampler s -> s
-    //         | MultiSampler s -> s.parallelSampler[i]
-    //
-    //     member p.length =
-    //         match p with
-    //         | SingleSampler _ -> 0
-    //         | MultiSampler s -> s.parallelSampler.Length
-    //
-    //     static member createMultiSampler n rnd = PoissonMultiSampler.create n rnd |> MultiSampler
-    //     static member createSingleSampler rnd = PoissonSingleSampler.create rnd |> SingleSampler
+            {
+                nextNumberOfEvents = (deterministicPoissonSample state)
+                nextWaitTime = fun lambda ->
+                    if lambda <= 0.0 then InfiniteWaitTime
+                    else 1.0 / lambda |> FiniteWaitTime
+            }
 
 
     type EvolutionType =
@@ -129,7 +230,18 @@ module Evolution =
         }
 
 
+    type ModelContext<'I, 'T, 'S when 'I: equality and 'I: comparison and 'T: equality and 'T: comparison> =
+        {
+            evolutionContext : EvolutionContext<'I, 'T>
+            noOfEpochs : NoOfEpochs
+            initialData : 'S
+            callBack : int -> 'S -> unit
+        }
+
+
     /// A type to describe a multiplier for the Poisson evolution.
+    /// The multiplier is needed because Poisson evolution uses function based sparse matrices.
+    /// Subsequently, it is convenient to use a multiplier instead of baking it in into some standard functions.
     type Multiplier<'I when 'I : equality and 'I : comparison> =
         | Multiplier of ('I -> double)
 

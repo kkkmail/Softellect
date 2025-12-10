@@ -10,8 +10,6 @@ $scriptDirectory = $PSScriptRoot
 . "$scriptDirectory\Stop-DistributedService.ps1"
 . "$scriptDirectory\Write-ServiceLog.ps1"
 
-$MessagingDataVersion = $global:messagingDataVersion
-$VersionNumber = $global:messagingDataVersion
 $ServiceName = $global:messagingServiceName
 
 function InstallMessagingService {
