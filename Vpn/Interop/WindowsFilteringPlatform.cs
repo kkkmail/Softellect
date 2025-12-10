@@ -73,6 +73,13 @@ public static class WindowsFilteringPlatform
         out ulong filterId);
 
     [DllImport(Fwpuclnt, SetLastError = true)]
+    public static extern uint FwpmFilterAdd0(
+        IntPtr engineHandle,
+        IntPtr filter,
+        IntPtr sd,
+        out ulong filterId);
+
+    [DllImport(Fwpuclnt, SetLastError = true)]
     public static extern uint FwpmFilterDeleteById0(
         IntPtr engineHandle,
         ulong filterId);

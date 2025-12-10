@@ -237,30 +237,76 @@ public sealed class KillSwitch : IDisposable
 
         try
         {
-            // Block all filter without conditions (matches everything)
-            var filter = new WindowsFilteringPlatform.FWPM_FILTER0
-            {
-                filterKey = Guid.NewGuid(),
-                displayDataName = namePtr,
-                displayDataDesc = descPtr,
-                layerKey = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
-                subLayerKey = WindowsFilteringPlatform.VpnSublayerGuid,
-                weightType = WindowsFilteringPlatform.FWP_UINT8,
-                weightValue = 1, // Low weight = processes last
-                numFilterConditions = 0,
-                filterCondition = IntPtr.Zero,
-                actionType = WindowsFilteringPlatform.FWP_ACTION_BLOCK
-            };
+            // Manually marshal FWPM_FILTER0 to ensure correct layout
+            // Total size: 192 bytes on x64
+            var filterSize = 192;
+            var filterPtr = Marshal.AllocHGlobal(filterSize);
 
-            var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, ref filter, IntPtr.Zero, out var filterId);
+            // Zero out all memory first (critical for WFP - reserved fields must be zero)
+            for (int i = 0; i < filterSize; i++)
+                Marshal.WriteByte(filterPtr, i, 0);
 
-            if (result != WindowsFilteringPlatform.ErrorSuccess)
+            var filterKey = Guid.NewGuid();
+
+            // filterKey (GUID) at offset 0
+            var filterKeyBytes = filterKey.ToByteArray();
+            Marshal.Copy(filterKeyBytes, 0, filterPtr, 16);
+
+            // displayData.name (LPWSTR) at offset 16
+            Marshal.WriteIntPtr(filterPtr + 16, namePtr);
+
+            // displayData.description (LPWSTR) at offset 24
+            Marshal.WriteIntPtr(filterPtr + 24, descPtr);
+
+            // flags (UINT32) at offset 32 - leave as 0
+            // providerKey (GUID*) at offset 40 - leave as NULL
+            // providerData.size at offset 48 - leave as 0
+            // providerData.data at offset 56 - leave as NULL
+
+            // layerKey (GUID) at offset 64
+            var layerKeyBytes = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4.ToByteArray();
+            Marshal.Copy(layerKeyBytes, 0, filterPtr + 64, 16);
+
+            // subLayerKey (GUID) at offset 80
+            var subLayerKeyBytes = WindowsFilteringPlatform.VpnSublayerGuid.ToByteArray();
+            Marshal.Copy(subLayerKeyBytes, 0, filterPtr + 80, 16);
+
+            // weight.type (UINT32) at offset 96 - FWP_EMPTY for auto-weight
+            Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_EMPTY);
+
+            // weight.value at offset 104 - leave as 0
+
+            // numFilterConditions (UINT32) at offset 112 - 0 for block all
+            Marshal.WriteInt32(filterPtr + 112, 0);
+
+            // filterCondition (pointer) at offset 120 - NULL for block all
+            Marshal.WriteIntPtr(filterPtr + 120, IntPtr.Zero);
+
+            // action.type (UINT32) at offset 128
+            Marshal.WriteInt32(filterPtr + 128, (int)WindowsFilteringPlatform.FWP_ACTION_BLOCK);
+
+            // action.filterType (GUID) at offset 132 - leave as zero GUID
+            // rawContext at offset 152 - leave as 0
+            // reserved at offset 160 - leave as NULL
+            // filterId at offset 168 - leave as 0 (assigned by system)
+            // effectiveWeight at offset 176 - leave as 0 (assigned by system)
+
+            try
             {
-                return Result<Unit>.Failure($"Failed to add block-all filter: 0x{result:X8}");
+                var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, filterPtr, IntPtr.Zero, out var filterId);
+
+                if (result != WindowsFilteringPlatform.ErrorSuccess)
+                {
+                    return Result<Unit>.Failure($"Failed to add block-all filter: 0x{result:X8}");
+                }
+
+                _filterIds.Add(filterId);
+                return Result<Unit>.Success(Unit.Value);
             }
-
-            _filterIds.Add(filterId);
-            return Result<Unit>.Success(Unit.Value);
+            finally
+            {
+                Marshal.FreeHGlobal(filterPtr);
+            }
         }
         finally
         {
@@ -286,43 +332,104 @@ public sealed class KillSwitch : IDisposable
 
         try
         {
-            // Create condition with explicit layout fields
-            var condition = new WindowsFilteringPlatform.FWPM_FILTER_CONDITION0
-            {
-                fieldKey = WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS,
-                matchType = WindowsFilteringPlatform.FWP_MATCH_EQUAL,
-                valueType = WindowsFilteringPlatform.FWP_V4_ADDR_MASK,
-                valueData = addrMaskPtr
-            };
+            // Manually marshal FWPM_FILTER_CONDITION0 to ensure correct layout
+            // Total size: 40 bytes on x64
+            var conditionSize = 40;
+            var conditionPtr = Marshal.AllocHGlobal(conditionSize);
 
-            var conditionPtr = Marshal.AllocHGlobal(Marshal.SizeOf<WindowsFilteringPlatform.FWPM_FILTER_CONDITION0>());
-            Marshal.StructureToPtr(condition, conditionPtr, false);
+            // Zero out the memory first
+            for (int i = 0; i < conditionSize; i++)
+                Marshal.WriteByte(conditionPtr, i, 0);
+
+            // fieldKey (GUID) at offset 0 - 16 bytes
+            var fieldKeyBytes = WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS.ToByteArray();
+            Marshal.Copy(fieldKeyBytes, 0, conditionPtr, 16);
+
+            // matchType (UINT32) at offset 16
+            Marshal.WriteInt32(conditionPtr + 16, (int)WindowsFilteringPlatform.FWP_MATCH_EQUAL);
+
+            // conditionValue.type (UINT32) at offset 24
+            Marshal.WriteInt32(conditionPtr + 24, (int)WindowsFilteringPlatform.FWP_V4_ADDR_MASK);
+
+            // conditionValue.value (pointer) at offset 32
+            Marshal.WriteIntPtr(conditionPtr + 32, addrMaskPtr);
 
             try
             {
-                var filter = new WindowsFilteringPlatform.FWPM_FILTER0
-                {
-                    filterKey = Guid.NewGuid(),
-                    displayDataName = namePtr,
-                    displayDataDesc = descPtr,
-                    layerKey = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
-                    subLayerKey = WindowsFilteringPlatform.VpnSublayerGuid,
-                    weightType = WindowsFilteringPlatform.FWP_UINT8,
-                    weightValue = filterWeight,
-                    numFilterConditions = 1,
-                    filterCondition = conditionPtr,
-                    actionType = action
-                };
+                // Manually marshal FWPM_FILTER0 to ensure correct layout
+                // Total size: 192 bytes on x64
+                var filterSize = 192;
+                var filterPtr = Marshal.AllocHGlobal(filterSize);
 
-                var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, ref filter, IntPtr.Zero, out var filterId);
+                // Zero out all memory first (critical for WFP - reserved fields must be zero)
+                for (int i = 0; i < filterSize; i++)
+                    Marshal.WriteByte(filterPtr, i, 0);
 
-                if (result != WindowsFilteringPlatform.ErrorSuccess)
+                var filterKey = Guid.NewGuid();
+
+                // filterKey (GUID) at offset 0
+                var filterKeyBytes = filterKey.ToByteArray();
+                Marshal.Copy(filterKeyBytes, 0, filterPtr, 16);
+
+                // displayData.name (LPWSTR) at offset 16
+                Marshal.WriteIntPtr(filterPtr + 16, namePtr);
+
+                // displayData.description (LPWSTR) at offset 24
+                Marshal.WriteIntPtr(filterPtr + 24, descPtr);
+
+                // flags (UINT32) at offset 32 - leave as 0
+
+                // providerKey (GUID*) at offset 40 - leave as NULL
+
+                // providerData.size at offset 48 - leave as 0
+                // providerData.data at offset 56 - leave as NULL
+
+                // layerKey (GUID) at offset 64
+                var layerKeyBytes = WindowsFilteringPlatform.FWPM_LAYER_ALE_AUTH_CONNECT_V4.ToByteArray();
+                Marshal.Copy(layerKeyBytes, 0, filterPtr + 64, 16);
+
+                // subLayerKey (GUID) at offset 80
+                var subLayerKeyBytes = WindowsFilteringPlatform.VpnSublayerGuid.ToByteArray();
+                Marshal.Copy(subLayerKeyBytes, 0, filterPtr + 80, 16);
+
+                // weight.type (UINT32) at offset 96
+                Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_UINT8);
+
+                // weight.value (union, 8 bytes) at offset 104 - for FWP_UINT8, value is in first byte
+                Marshal.WriteByte(filterPtr + 104, (byte)Math.Min(filterWeight, (byte)15));
+
+                // numFilterConditions (UINT32) at offset 112
+                Marshal.WriteInt32(filterPtr + 112, 1);
+
+                // filterCondition (pointer) at offset 120
+                Marshal.WriteIntPtr(filterPtr + 120, conditionPtr);
+
+                // action.type (UINT32) at offset 128
+                Marshal.WriteInt32(filterPtr + 128, (int)action);
+
+                // action.filterType (GUID) at offset 132 - leave as zero GUID
+
+                // rawContext at offset 152 - leave as 0
+                // reserved at offset 160 - leave as NULL
+                // filterId at offset 168 - leave as 0 (assigned by system)
+                // effectiveWeight at offset 176 - leave as 0 (assigned by system)
+
+                try
                 {
-                    return Result<Unit>.Failure($"Failed to add filter '{name}': 0x{result:X8}");
+                    var result = WindowsFilteringPlatform.FwpmFilterAdd0(_engineHandle, filterPtr, IntPtr.Zero, out var filterId);
+
+                    if (result != WindowsFilteringPlatform.ErrorSuccess)
+                    {
+                        return Result<Unit>.Failure($"Failed to add filter '{name}': 0x{result:X8}");
+                    }
+
+                    _filterIds.Add(filterId);
+                    return Result<Unit>.Success(Unit.Value);
                 }
-
-                _filterIds.Add(filterId);
-                return Result<Unit>.Success(Unit.Value);
+                finally
+                {
+                    Marshal.FreeHGlobal(filterPtr);
+                }
             }
             finally
             {
