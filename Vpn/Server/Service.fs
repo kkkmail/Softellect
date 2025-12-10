@@ -43,7 +43,7 @@ module Service =
             {
                 vpnSubnet = data.serverAccessInfo.vpnSubnet
                 adapterName = "SoftellectVPN"
-                serverVpnIp = VpnIpAddress (System.Net.IPAddress.Parse "10.66.77.1")
+                serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
             }
 
         let router = PacketRouter(routerConfig, registry)
@@ -74,7 +74,7 @@ module Service =
                                 {
                                     success = true
                                     assignedIp = Some session.assignedIp
-                                    serverPublicIp = Some (VpnIpAddress (System.Net.IPAddress.Parse "10.66.77.1"))
+                                    serverPublicIp = VpnIpAddress.tryCreate "10.66.77.1"
                                     errorMessage = None
                                 }
                             Ok response

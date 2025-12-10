@@ -1,7 +1,6 @@
 namespace Softellect.Vpn.Core
 
 open System
-open System.Net
 open Softellect.Sys.Primitives
 
 module Primitives =
@@ -49,14 +48,10 @@ module Primitives =
 
 
     type VpnIpAddress =
-        | VpnIpAddress of IPAddress
+        | VpnIpAddress of IpAddress
 
         member this.value = let (VpnIpAddress v) = this in v
-
-        static member tryParse (s: string) =
-            match IPAddress.TryParse s with
-            | true, ip -> Some (VpnIpAddress ip)
-            | false, _ -> None
+        static member tryCreate (s: string) = IpAddress.tryCreate s |> Option.map VpnIpAddress
 
 
     type LocalLanExclusion =

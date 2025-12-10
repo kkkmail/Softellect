@@ -116,7 +116,7 @@ module Service =
                 {
                     adapterName = "SoftellectVPN"
                     assignedIp = assignedIp
-                    subnetMask = IPAddress.Parse("255.255.255.0")
+                    subnetMask = Ip4 "255.255.255.0"
                 }
 
             let t = Tunnel(config)

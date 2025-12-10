@@ -1,8 +1,7 @@
 using System;
 using System.ComponentModel;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
+using Softellect.Sys;
 
 namespace Softellect.Vpn.Interop;
 
@@ -179,14 +178,14 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="ipAddress">IP address to assign.</param>
     /// <param name="subnetMask">Subnet mask.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetIpAddress(IPAddress ipAddress, IPAddress subnetMask)
+    public Result<Unit> SetIpAddress(Primitives.IpAddress ipAddress, Primitives.IpAddress subnetMask)
     {
         try
         {
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "netsh",
-                Arguments = $"interface ip set address name=\"{_name}\" static {ipAddress} {subnetMask}",
+                Arguments = $"interface ip set address name=\"{_name}\" static {ipAddress.value} {subnetMask.value}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

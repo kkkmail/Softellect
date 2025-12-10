@@ -136,7 +136,7 @@ module Implementation =
 
         match VpnClientId.tryCreate clientIdStr with
         | Some clientId ->
-            match VpnIpAddress.tryParse assignedIpStr with
+            match VpnIpAddress.tryCreate assignedIpStr with
             | Some assignedIp ->
                 // For now, just log the registration. In a full implementation,
                 // this would update a clients.json or database

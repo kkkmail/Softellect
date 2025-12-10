@@ -1,9 +1,9 @@
 namespace Softellect.Vpn.Client
 
 open System
-open System.Net
 open System.Threading
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 
@@ -13,7 +13,7 @@ module Tunnel =
         {
             adapterName : string
             assignedIp : VpnIpAddress
-            subnetMask : IPAddress
+            subnetMask : IpAddress
         }
 
 

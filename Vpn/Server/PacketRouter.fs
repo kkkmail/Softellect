@@ -1,9 +1,9 @@
 namespace Softellect.Vpn.Server
 
 open System
-open System.Net
 open System.Threading
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 
@@ -20,7 +20,7 @@ module PacketRouter =
             {
                 vpnSubnet = VpnSubnet.defaultValue
                 adapterName = "SoftellectVPN"
-                serverVpnIp = VpnIpAddress (IPAddress.Parse "10.66.77.1")
+                serverVpnIp =  "10.66.77.1" |> Ip4 |> VpnIpAddress
             }
 
 
@@ -32,8 +32,8 @@ module PacketRouter =
         let parseSubnet (subnet: string) =
             let parts = subnet.Split('/')
             if parts.Length = 2 then
-                match IPAddress.TryParse(parts.[0]), Int32.TryParse(parts.[1]) with
-                | (true, ip), (true, prefix) ->
+                match IpAddress.tryCreate(parts[0]), Int32.TryParse(parts[1]) with
+                | Some ip, (true, prefix) ->
                     let maskBytes =
                         if prefix = 0 then 0u
                         else UInt32.MaxValue <<< (32 - prefix)
@@ -45,20 +45,18 @@ module PacketRouter =
         let getDestinationIp (packet: byte[]) =
             if packet.Length >= 20 then
                 // IPv4: destination IP is at bytes 16-19
-                let ipBytes = [| packet.[16]; packet.[17]; packet.[18]; packet.[19] |]
-                Some (IPAddress ipBytes)
+                IpAddress.tryCreate $"{packet[16]}.{packet[17]}.{packet[18]}.{packet[19]}"
             else
                 None
 
         let getSourceIp (packet: byte[]) =
             if packet.Length >= 16 then
                 // IPv4: source IP is at bytes 12-15
-                let ipBytes = [| packet.[12]; packet.[13]; packet.[14]; packet.[15] |]
-                Some (IPAddress ipBytes)
+                IpAddress.tryCreate $"{packet[12]}.{packet[13]}.{packet[14]}.{packet[15]}"
             else
                 None
 
-        let findClientByIp (ip: IPAddress) =
+        let findClientByIp (ip: IpAddress) =
             registry.GetAllSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
 
@@ -115,7 +113,7 @@ module PacketRouter =
                 if sessionResult.IsSuccess then
                     // Set IP address on the adapter
                     let serverIp = config.serverVpnIp.value
-                    let subnetMask = IPAddress.Parse("255.255.255.0")
+                    let subnetMask = Ip4 "255.255.255.0"
 
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
                     if ipResult.IsSuccess then
