@@ -25,7 +25,16 @@ module WcfClient =
         let url = data.clientAccessInfo.serverAccessInfo.getUrl()
         let commType = data.clientAccessInfo.serverAccessInfo.communicationType
 
-        let getService() = tryGetWcfService<IVpnWcfService> commType url
+        do Logger.logInfo $"VpnWcfClient created - URL: '{url}', CommType: '%A{commType}'"
+        do Logger.logInfo $"VpnWcfClient - serverAccessInfo: '%A{data.clientAccessInfo.serverAccessInfo}'"
+
+        let getService() =
+            Logger.logTrace (fun () -> $"VpnWcfClient.getService - About to call tryGetWcfService with URL: '{url}', CommType: '%A{commType}'")
+            let result = tryGetWcfService<IVpnWcfService> commType url
+            match result with
+            | Ok _ -> Logger.logTrace (fun () -> "VpnWcfClient.getService - Successfully created WCF service proxy")
+            | Error e -> Logger.logError $"VpnWcfClient.getService - Failed to create WCF service proxy: %A{e}"
+            result
 
         interface IVpnClient with
             member _.authenticate request =
