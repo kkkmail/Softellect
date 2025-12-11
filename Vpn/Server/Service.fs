@@ -41,6 +41,7 @@ module Service =
                 vpnSubnet = data.serverAccessInfo.vpnSubnet
                 adapterName = adapterName
                 serverVpnIp = serverVpnIp
+                serverPublicIp = data.serverAccessInfo.serviceAccessInfo.getIpAddress()
             }
 
         let router = PacketRouter(routerConfig, registry)

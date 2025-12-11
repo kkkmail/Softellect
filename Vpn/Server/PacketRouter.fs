@@ -1,11 +1,13 @@
 namespace Softellect.Vpn.Server
 
 open System
+open System.Net
 open System.Threading
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
+open Softellect.Vpn.Server.ExternalInterface
 
 module PacketRouter =
 
@@ -14,13 +16,15 @@ module PacketRouter =
             vpnSubnet : VpnSubnet
             adapterName : string
             serverVpnIp : VpnIpAddress
+            serverPublicIp : IpAddress
         }
 
         static member defaultValue =
             {
                 vpnSubnet = VpnSubnet.defaultValue
                 adapterName = adapterName
-                serverVpnIp =  serverVpnIp
+                serverVpnIp = serverVpnIp
+                serverPublicIp = Ip4 "0.0.0.0" // Must be configured with actual public IP
             }
 
 
@@ -28,6 +32,57 @@ module PacketRouter =
         let mutable adapter : WinTunAdapter option = None
         let mutable running = false
         let mutable receiveThread : Thread option = None
+
+        // ---- NAT / External interface setup ----
+
+        // Convert IP address string to uint32 (network byte order)
+        let ipToUInt32 (ip: IpAddress) =
+            let parts = ip.value.Split('.')
+            if parts.Length = 4 then
+                let b0 = byte parts[0]
+                let b1 = byte parts[1]
+                let b2 = byte parts[2]
+                let b3 = byte parts[3]
+                (uint32 b0 <<< 24) ||| (uint32 b1 <<< 16) ||| (uint32 b2 <<< 8) ||| uint32 b3
+            else
+                0u
+
+        let parseSubnetToUInt32 (subnet: string) =
+            let parts = subnet.Split('/')
+            if parts.Length = 2 then
+                match IpAddress.tryCreate(parts[0]), Int32.TryParse(parts[1]) with
+                | Some ip, (true, prefix) ->
+                    let subnetUint = ipToUInt32 ip
+                    let maskUint =
+                        if prefix = 0 then 0u
+                        else UInt32.MaxValue <<< (32 - prefix)
+                    Some (subnetUint, maskUint)
+                | _ -> None
+            else
+                None
+
+        // Parse VPN subnet for NAT
+        let vpnSubnetUint, vpnMaskUint =
+            match parseSubnetToUInt32 config.vpnSubnet.value with
+            | Some (s, m) -> s, m
+            | None ->
+                Logger.logWarn $"Failed to parse VPN subnet '{config.vpnSubnet.value}', using defaults"
+                (0x0A424D00u, 0xFFFFFF00u) // 10.66.77.0/24
+
+        // Parse external IP for NAT
+        let externalIpUint = ipToUInt32 config.serverPublicIp
+
+        // Check if an IP (in network byte order uint32) is inside VPN subnet
+        let isInsideVpnSubnet (ip: uint32) =
+            (ip &&& vpnMaskUint) = (vpnSubnetUint &&& vpnMaskUint)
+
+        // External gateway for internet traffic
+        let externalGateway =
+            let externalConfig : ExternalConfig =
+                {
+                    serverPublicIp = IPAddress.Parse(config.serverPublicIp.value)
+                }
+            new ExternalGateway(externalConfig)
 
         let parseSubnet (subnet: string) =
             let parts = subnet.Split('/')
@@ -56,6 +111,18 @@ module PacketRouter =
             else
                 None
 
+        // Get destination IP as uint32 for NAT comparison
+        let getDestinationIpUInt32 (packet: byte[]) =
+            if packet.Length >= 20 then
+                Some (
+                    (uint32 packet[16] <<< 24) |||
+                    (uint32 packet[17] <<< 16) |||
+                    (uint32 packet[18] <<< 8) |||
+                    uint32 packet[19]
+                )
+            else
+                None
+
         let findClientByIp (ip: IpAddress) =
             registry.getAllSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
@@ -67,19 +134,33 @@ module PacketRouter =
                     try
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
-                            // Packet from the TUN adapter - route to the appropriate client
-                            match getDestinationIp packet with
-                            | Some destIp ->
-                                match getSourceIp packet with
-                                | Some srcIp ->
-                                    match findClientByIp destIp with
-                                    | Some session ->
-                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes → client {session.clientId.value}")
+                            // Packet from the TUN adapter - route based on destination
+                            match getDestinationIpUInt32 packet with
+                            | Some destIpUint ->
+                                if isInsideVpnSubnet destIpUint then
+                                    // Destination is inside VPN subnet - route to VPN client
+                                    match getDestinationIp packet with
+                                    | Some destIp ->
+                                        match getSourceIp packet with
+                                        | Some srcIp ->
+                                            match findClientByIp destIp with
+                                            | Some session ->
+                                                registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                                Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}")
+                                            | None ->
+                                                Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                        | None ->
+                                            Logger.logTrace (fun () -> "Could not parse source IP from packet")
                                     | None ->
-                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
-                                | None ->
-                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
+                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                else
+                                    // Destination is outside VPN subnet - NAT and forward to external network
+                                    match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                    | Some natPacket ->
+                                        externalGateway.SendOutbound(natPacket)
+                                        Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
+                                    | None ->
+                                        Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
                             | None ->
                                 Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                         else
@@ -118,6 +199,26 @@ module PacketRouter =
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
                     if ipResult.IsSuccess then
                         running <- true
+
+                        // Start external gateway with NAT inbound callback
+                        externalGateway.Start(fun rawPacket ->
+                            // Called when external gateway receives a packet from internet
+                            match Nat.translateInbound externalIpUint rawPacket with
+                            | Some translated ->
+                                // Inject translated packet into WinTun (routing loop will deliver to client)
+                                match adapter with
+                                | Some adp when adp.IsSessionActive ->
+                                    let result = adp.SendPacket(translated)
+                                    if result.IsSuccess then
+                                        Logger.logTrace (fun () -> $"NAT inbound: injected packet to TUN, size={translated.Length} bytes")
+                                    else
+                                        Logger.logWarn "NAT inbound: failed to inject packet to TUN"
+                                | _ ->
+                                    Logger.logWarn "NAT inbound: adapter not ready"
+                            | None ->
+                                Logger.logTrace (fun () -> "NAT inbound: packet dropped (no mapping)")
+                        )
+
                         let thread = Thread(ThreadStart(receiveLoop))
                         thread.IsBackground <- true
                         thread.Start()
@@ -144,6 +245,9 @@ module PacketRouter =
         member _.stop() =
             Logger.logInfo "Stopping packet router"
             running <- false
+
+            // Stop external gateway first
+            externalGateway.Stop()
 
             match receiveThread with
             | Some thread ->
