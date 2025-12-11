@@ -16,9 +16,6 @@ open Softellect.Vpn.Server.PacketRouter
 
 module Service =
 
-    let serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
-
-
     type VpnServerData =
         {
             serverAccessInfo : VpnServerAccessInfo
@@ -42,7 +39,7 @@ module Service =
         let routerConfig =
             {
                 vpnSubnet = data.serverAccessInfo.vpnSubnet
-                adapterName = "SoftellectVPN"
+                adapterName = adapterName
                 serverVpnIp = serverVpnIp
             }
 

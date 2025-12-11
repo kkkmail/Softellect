@@ -19,8 +19,8 @@ module PacketRouter =
         static member defaultValue =
             {
                 vpnSubnet = VpnSubnet.defaultValue
-                adapterName = "SoftellectVPN"
-                serverVpnIp =  "10.66.77.1" |> Ip4 |> VpnIpAddress
+                adapterName = adapterName
+                serverVpnIp =  serverVpnIp
             }
 
 
@@ -105,13 +105,13 @@ module PacketRouter =
         member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
-            let createResult = WinTunAdapter.Create(config.adapterName, "SoftellectVPN", System.Nullable<Guid>())
+            let createResult = WinTunAdapter.Create(config.adapterName, adapterName, System.Nullable<Guid>())
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value
 
                 let sessionResult = createResult.Value.StartSession()
                 if sessionResult.IsSuccess then
-                    // Set IP address on the adapter
+                    // Set the IP address on the adapter
                     let serverIp = config.serverVpnIp.value
                     let subnetMask = Ip4 "255.255.255.0"
 

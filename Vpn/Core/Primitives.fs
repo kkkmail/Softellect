@@ -9,6 +9,8 @@ module Primitives =
     [<Literal>]
     let VpnWcfServiceName = "VpnWcfService"
 
+    let adapterName = "SoftellectVPN"
+
 
     type VpnServerId =
         | VpnServerId of Guid
@@ -55,6 +57,9 @@ module Primitives =
 
         member this.value = let (VpnIpAddress v) = this in v
         static member tryCreate (s: string) = IpAddress.tryCreate s |> Option.map VpnIpAddress
+
+
+    let serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
 
 
     type LocalLanExclusion =

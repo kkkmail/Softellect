@@ -106,14 +106,14 @@ module Service =
         let startTunnel (assignedIp: VpnIpAddress) =
             let config =
                 {
-                    adapterName = "SoftellectVPN"
+                    adapterName = adapterName
                     assignedIp = assignedIp
                     subnetMask = Ip4 "255.255.255.0"
                 }
 
             let t = Tunnel(config)
 
-            match t.Start() with
+            match t.start() with
             | Ok () ->
                 tunnel <- Some t
                 Ok ()
@@ -124,8 +124,8 @@ module Service =
             while running do
                 try
                     match tunnel with
-                    | Some t when t.IsRunning ->
-                        let packets = t.DequeueOutboundPackets(50)
+                    | Some t when t.isRunning ->
+                        let packets = t.dequeueOutboundPackets(50)
 
                         if packets.Length > 0 then
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
@@ -150,13 +150,13 @@ module Service =
             while running do
                 try
                     match tunnel, state with
-                    | Some t, Connected _ when t.IsRunning ->
+                    | Some t, Connected _ when t.isRunning ->
                         match wcfClient.receivePackets data.clientAccessInfo.vpnClientId with
                         | Ok (Some packets) ->
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
                             for packet in packets do
-                                match t.InjectPacket(packet) with
+                                match t.injectPacket(packet) with
                                 | Ok () -> ()
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
@@ -233,7 +233,7 @@ module Service =
 
                 match tunnel with
                 | Some t ->
-                    t.Stop()
+                    t.stop()
                     tunnel <- None
                 | None -> ()
 
