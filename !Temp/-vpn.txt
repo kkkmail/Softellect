@@ -1,0 +1,14 @@
+*** Request to UnKnown timed-out
+DNS request timed out.
+    timeout was 2 seconds.
+Server:  UnKnown
+Address:  8.8.8.8
+
+DNS request timed out.
+    timeout was 2 seconds.
+DNS request timed out.
+    timeout was 2 seconds.
+DNS request timed out.
+    timeout was 2 seconds.
+DNS request timed out.
+    timeout was 2 seconds.
