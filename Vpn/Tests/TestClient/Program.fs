@@ -20,6 +20,7 @@ module Program =
         binding.MaxBufferPoolSize <- int64 Int32.MaxValue
 
         let address = EndpointAddress("net.tcp://127.0.0.1:45001/VpnService")
+
         let factory = new ChannelFactory<IVpnWcfService>(binding, address)
         let proxy = factory.CreateChannel()
         let clientId = Guid("10e38c19-d220-4852-8589-82eca51ade92") |> VpnClientId
