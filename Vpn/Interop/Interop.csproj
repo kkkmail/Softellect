@@ -21,4 +21,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Sys\Sys.fsproj" />
+  </ItemGroup>
 </Project>

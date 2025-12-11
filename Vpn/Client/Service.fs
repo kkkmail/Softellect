@@ -55,6 +55,9 @@ module Service =
             | HttpServiceInfo info -> info.httpServicePort.value
 
         let enableKillSwitch () =
+            // Logger.logInfo "Kill-switch is turned off..."
+            // Ok ()
+
             Logger.logInfo "Enabling kill-switch..."
             let ks = new KillSwitch()
             let serverIp = getServerIp()
@@ -93,33 +96,24 @@ module Service =
                 }
 
             match wcfClient.authenticate request with
-            | Ok response when response.success ->
-                match response.assignedIp with
-                | Some ip ->
-                    Logger.logInfo $"Authenticated successfully. Assigned IP: {ip.value}"
-                    Ok ip
-                | None ->
-                    Logger.logError "Authentication succeeded but no IP assigned"
-                    Error "No IP assigned"
             | Ok response ->
-                let msg = response.errorMessage |> Option.defaultValue "Unknown error"
-                Logger.logError $"Authentication failed: {msg}"
-                Error msg
-            | Error _ ->
+                Logger.logInfo $"Authenticated successfully. Assigned IP: {response.assignedIp.value}"
+                Ok response.assignedIp
+            | Error e ->
                 Logger.logError "Authentication error"
-                Error "Authentication error"
+                Error $"Authentication error: '%A{e}'."
 
         let startTunnel (assignedIp: VpnIpAddress) =
             let config =
                 {
-                    adapterName = "SoftellectVPN"
+                    adapterName = adapterName
                     assignedIp = assignedIp
-                    subnetMask = IPAddress.Parse("255.255.255.0")
+                    subnetMask = Ip4 "255.255.255.0"
                 }
 
             let t = Tunnel(config)
 
-            match t.Start() with
+            match t.start() with
             | Ok () ->
                 tunnel <- Some t
                 Ok ()
@@ -130,8 +124,12 @@ module Service =
             while running do
                 try
                     match tunnel with
-                    | Some t when t.IsRunning ->
-                        let packets = t.DequeueOutboundPackets(50)
+                    | Some t when t.isRunning ->
+                        let packets = t.dequeueOutboundPackets(50)
+
+                        if packets.Length > 0 then
+                            let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
 
                         for packet in packets do
                             match wcfClient.sendPacket packet with
@@ -152,11 +150,13 @@ module Service =
             while running do
                 try
                     match tunnel, state with
-                    | Some t, Connected _ when t.IsRunning ->
+                    | Some t, Connected _ when t.isRunning ->
                         match wcfClient.receivePackets data.clientAccessInfo.vpnClientId with
                         | Ok (Some packets) ->
+                            let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
                             for packet in packets do
-                                match t.InjectPacket(packet) with
+                                match t.injectPacket(packet) with
                                 | Ok () -> ()
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
@@ -233,7 +233,7 @@ module Service =
 
                 match tunnel with
                 | Some t ->
-                    t.Stop()
+                    t.stop()
                     tunnel <- None
                 | None -> ()
 

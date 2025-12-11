@@ -1,9 +1,9 @@
 namespace Softellect.Vpn.Client
 
 open System
-open System.Net
 open System.Threading
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 
@@ -13,7 +13,7 @@ module Tunnel =
         {
             adapterName : string
             assignedIp : VpnIpAddress
-            subnetMask : IPAddress
+            subnetMask : IpAddress
         }
 
 
@@ -26,7 +26,7 @@ module Tunnel =
 
     type Tunnel(config: TunnelConfig) =
         let mutable adapter : WinTunAdapter option = None
-        let mutable state = Disconnected
+        let mutable tunnelState = Disconnected
         let mutable running = false
         let mutable receiveThread : Thread option = None
         let packetQueue = System.Collections.Concurrent.ConcurrentQueue<byte[]>()
@@ -44,6 +44,7 @@ module Tunnel =
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
                             packetQueue.Enqueue(packet)
+                            Logger.logTrace (fun () -> $"Tunnel captured packet from TUN adapter, size={packet.Length} bytes")
                         else
                             Thread.Sleep(1)
                     with
@@ -53,11 +54,11 @@ module Tunnel =
             | _ ->
                 Logger.logWarn "Tunnel adapter not ready for receive loop"
 
-        member _.Start() =
+        member _.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
-            state <- Connecting
+            tunnelState <- Connecting
 
-            let createResult = WinTunAdapter.Create(config.adapterName, "SoftellectVPN", System.Nullable<Guid>())
+            let createResult = WinTunAdapter.Create(config.adapterName, adapterName, System.Nullable<Guid>())
 
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value
@@ -73,18 +74,18 @@ module Tunnel =
                         thread.IsBackground <- true
                         thread.Start()
                         receiveThread <- Some thread
-                        state <- Connected
+                        tunnelState <- Connected
                         Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
                         Ok ()
                     else
                         let errMsg = getErrorMessage ipResult
-                        state <- TunnelError errMsg
+                        tunnelState <- TunnelError errMsg
                         createResult.Value.Dispose()
                         adapter <- None
                         Error errMsg
                 else
                     let errMsg = getErrorMessage sessionResult
-                    state <- TunnelError errMsg
+                    tunnelState <- TunnelError errMsg
                     createResult.Value.Dispose()
                     adapter <- None
                     Error errMsg
@@ -93,10 +94,10 @@ module Tunnel =
                     match createResult.Error with
                     | null -> "Unknown error creating adapter"
                     | err -> err
-                state <- TunnelError errMsg
+                tunnelState <- TunnelError errMsg
                 Error errMsg
 
-        member _.Stop() =
+        member _.stop() =
             Logger.logInfo "Stopping tunnel"
             running <- false
 
@@ -113,19 +114,21 @@ module Tunnel =
                 adapter <- None
             | None -> ()
 
-            state <- Disconnected
+            tunnelState <- Disconnected
             Logger.logInfo "Tunnel stopped"
 
-        member _.InjectPacket(packet: byte[]) =
+        member _.injectPacket(packet: byte[]) =
             match adapter with
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
-                if result.IsSuccess then Ok ()
+                if result.IsSuccess then
+                    Logger.logTrace (fun () -> $"Tunnel injected packet to TUN adapter, size={packet.Length} bytes")
+                    Ok ()
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Tunnel not ready"
 
-        member _.DequeueOutboundPackets(maxPackets: int) =
+        member _.dequeueOutboundPackets(maxPackets: int) =
             let packets = ResizeArray<byte[]>()
             let mutable count = 0
 
@@ -139,5 +142,5 @@ module Tunnel =
 
             packets.ToArray()
 
-        member _.State = state
-        member _.IsRunning = running
+        member _.state = tunnelState
+        member _.isRunning = running

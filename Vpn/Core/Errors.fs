@@ -48,6 +48,7 @@ module Errors =
         | ClientAuthErr of VpnAuthError
         | PacketForwardErr of string
         | SessionExpiredErr of VpnClientId
+        | ClientNotRegisteredErr of VpnClientId
 
 
     type VpnError =

@@ -1,9 +1,9 @@
 namespace Softellect.Vpn.Server
 
 open System
-open System.Net
 open System.Threading
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 
@@ -19,8 +19,8 @@ module PacketRouter =
         static member defaultValue =
             {
                 vpnSubnet = VpnSubnet.defaultValue
-                adapterName = "SoftellectVPN"
-                serverVpnIp = VpnIpAddress (IPAddress.Parse "10.66.77.1")
+                adapterName = adapterName
+                serverVpnIp =  serverVpnIp
             }
 
 
@@ -32,8 +32,8 @@ module PacketRouter =
         let parseSubnet (subnet: string) =
             let parts = subnet.Split('/')
             if parts.Length = 2 then
-                match IPAddress.TryParse(parts.[0]), Int32.TryParse(parts.[1]) with
-                | (true, ip), (true, prefix) ->
+                match IpAddress.tryCreate(parts[0]), Int32.TryParse(parts[1]) with
+                | Some ip, (true, prefix) ->
                     let maskBytes =
                         if prefix = 0 then 0u
                         else UInt32.MaxValue <<< (32 - prefix)
@@ -45,21 +45,19 @@ module PacketRouter =
         let getDestinationIp (packet: byte[]) =
             if packet.Length >= 20 then
                 // IPv4: destination IP is at bytes 16-19
-                let ipBytes = [| packet.[16]; packet.[17]; packet.[18]; packet.[19] |]
-                Some (IPAddress ipBytes)
+                IpAddress.tryCreate $"{packet[16]}.{packet[17]}.{packet[18]}.{packet[19]}"
             else
                 None
 
         let getSourceIp (packet: byte[]) =
             if packet.Length >= 16 then
                 // IPv4: source IP is at bytes 12-15
-                let ipBytes = [| packet.[12]; packet.[13]; packet.[14]; packet.[15] |]
-                Some (IPAddress ipBytes)
+                IpAddress.tryCreate $"{packet[12]}.{packet[13]}.{packet[14]}.{packet[15]}"
             else
                 None
 
-        let findClientByIp (ip: IPAddress) =
-            registry.GetAllSessions()
+        let findClientByIp (ip: IpAddress) =
+            registry.getAllSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
 
         let receiveLoop () =
@@ -69,14 +67,19 @@ module PacketRouter =
                     try
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
-                            // Packet from the TUN adapter - route to appropriate client
+                            // Packet from the TUN adapter - route to the appropriate client
                             match getDestinationIp packet with
                             | Some destIp ->
-                                match findClientByIp destIp with
-                                | Some session ->
-                                    registry.EnqueuePacketForClient(session.clientId, packet) |> ignore
+                                match getSourceIp packet with
+                                | Some srcIp ->
+                                    match findClientByIp destIp with
+                                    | Some session ->
+                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes → client {session.clientId.value}")
+                                    | None ->
+                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
                                 | None ->
-                                    Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
                             | None ->
                                 Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                         else
@@ -99,18 +102,18 @@ module PacketRouter =
             | null -> "Unknown error"
             | err -> err
 
-        member _.Start() =
+        member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
-            let createResult = WinTunAdapter.Create(config.adapterName, "SoftellectVPN", System.Nullable<Guid>())
+            let createResult = WinTunAdapter.Create(config.adapterName, adapterName, System.Nullable<Guid>())
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value
 
                 let sessionResult = createResult.Value.StartSession()
                 if sessionResult.IsSuccess then
-                    // Set IP address on the adapter
+                    // Set the IP address on the adapter
                     let serverIp = config.serverVpnIp.value
-                    let subnetMask = IPAddress.Parse("255.255.255.0")
+                    let subnetMask = Ip4 "255.255.255.0"
 
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
                     if ipResult.IsSuccess then
@@ -138,7 +141,7 @@ module PacketRouter =
                 Logger.logError $"Failed to create adapter: {errMsg}"
                 Error $"Failed to create adapter: {errMsg}"
 
-        member _.Stop() =
+        member _.stop() =
             Logger.logInfo "Stopping packet router"
             running <- false
 
@@ -157,13 +160,15 @@ module PacketRouter =
 
             Logger.logInfo "Packet router stopped"
 
-        member _.InjectPacket(packet: byte[]) =
+        member _.injectPacket(packet: byte[]) =
             match adapter with
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
-                if result.IsSuccess then Ok ()
+                if result.IsSuccess then
+                    Logger.logTrace (fun () -> $"Injected packet to TUN adapter, size={packet.Length} bytes")
+                    Ok ()
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Adapter not ready"
 
-        member _.IsRunning = running
+        member _.isRunning = running

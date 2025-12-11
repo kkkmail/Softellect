@@ -28,12 +28,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\VpnServer\appsettings.json" Link="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Argu" Version="6.2.5" />
         <ProjectReference Include="..\..\Sys\Sys.fsproj" />
         <ProjectReference Include="..\Core\Core.fsproj" />

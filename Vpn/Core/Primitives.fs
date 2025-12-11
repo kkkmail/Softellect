@@ -1,13 +1,15 @@
 namespace Softellect.Vpn.Core
 
 open System
-open System.Net
 open Softellect.Sys.Primitives
+open Softellect.Sys.AppSettings
 
 module Primitives =
 
     [<Literal>]
     let VpnWcfServiceName = "VpnWcfService"
+
+    let adapterName = "SoftellectVPN"
 
 
     type VpnServerId =
@@ -27,6 +29,8 @@ module Primitives =
         | VpnClientId of Guid
 
         member this.value = let (VpnClientId v) = this in v
+        member this.configKey = $"{this.value:B}".ToUpper() |> ConfigKey
+
         static member tryCreate (s: string) =
             match Guid.TryParse s with
             | true, g -> Some (VpnClientId g)
@@ -49,14 +53,13 @@ module Primitives =
 
 
     type VpnIpAddress =
-        | VpnIpAddress of IPAddress
+        | VpnIpAddress of IpAddress
 
         member this.value = let (VpnIpAddress v) = this in v
+        static member tryCreate (s: string) = IpAddress.tryCreate s |> Option.map VpnIpAddress
 
-        static member tryParse (s: string) =
-            match IPAddress.TryParse s with
-            | true, ip -> Some (VpnIpAddress ip)
-            | false, _ -> None
+
+    let serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
 
 
     type LocalLanExclusion =
@@ -74,11 +77,20 @@ module Primitives =
             ]
 
 
+    type VpnClientData =
+        {
+            clientName : VpnClientName
+            assignedIp : VpnIpAddress
+        }
+
+        member data.serialize() =
+            $"{nameof(data.clientName)}{ValueSeparator}{data.clientName.value}{ListSeparator}{nameof(data.assignedIp)}{ValueSeparator}{data.assignedIp.value.value}"
+
+
     type VpnClientConfig =
         {
             clientId : VpnClientId
-            clientName : VpnClientName
-            assignedIp : VpnIpAddress
+            clientData : VpnClientData
         }
 
 
@@ -100,10 +112,8 @@ module Primitives =
 
     type VpnAuthResponse =
         {
-            success : bool
-            assignedIp : VpnIpAddress option
-            serverPublicIp : VpnIpAddress option
-            errorMessage : string option
+            assignedIp : VpnIpAddress
+            serverPublicIp : VpnIpAddress
         }
 
 

@@ -108,20 +108,25 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Folder Name="/Tests/VpnTests/">
+    <Project Path="Vpn/Tests/TestClient/TestClient.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/Vpn/">
+    <Project Path="Vpn/Client/Client.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/ClientAdm/ClientAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="Vpn/Core/Core.fsproj">
       <Platform Project="x64" />
     </Project>
     <Project Path="Vpn/Interop/Interop.csproj">
       <Platform Project="x64" />
     </Project>
-    <Project Path="Vpn/Client/Client.fsproj">
-      <Platform Project="x64" />
-    </Project>
     <Project Path="Vpn/Server/Server.fsproj">
-      <Platform Project="x64" />
-    </Project>
-    <Project Path="Vpn/ClientAdm/ClientAdm.fsproj">
       <Platform Project="x64" />
     </Project>
     <Project Path="Vpn/ServerAdm/ServerAdm.fsproj">

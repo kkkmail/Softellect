@@ -6,6 +6,7 @@ open System.IO
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.Logging
+open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
@@ -33,43 +34,60 @@ module ClientRegistry =
 
     type ClientRegistry(data: ClientRegistryData) =
         let sessions = ConcurrentDictionary<VpnClientId, ClientSession>()
-        let clientConfigs = ConcurrentDictionary<VpnClientId, VpnClientConfig * PublicKey>()
+        // let clientConfigs = ConcurrentDictionary<VpnClientId, VpnClientConfig * PublicKey>()
 
-        let loadClientKeys () =
-            let clientKeysPath = data.serverAccessInfo.clientKeysPath.value
+        // let loadClientsFromAppSettings () =
+        //     let configs = Softellect.Vpn.Core.AppSettings.loadVpnClientConfigs()
+        //     let clientKeysPath = data.serverAccessInfo.clientKeysPath.value
+        //
+        //     Logger.logInfo $"Loading {configs.Length} client(s) from appsettings..."
+        //
+        //     for config in configs do
+        //         let keyId = KeyId config.clientId.value
+        //         let keyFileName = FileName $"{config.clientId.value}.pkx"
+        //         let keyFilePath = keyFileName.combine (FolderName clientKeysPath)
+        //
+        //         if File.Exists keyFilePath.value then
+        //             match tryImportPublicKey keyFilePath (Some keyId) with
+        //             | Ok (_, publicKey) ->
+        //                 clientConfigs.[config.clientId] <- (config, publicKey)
+        //                 Logger.logInfo $"Loaded client: {config.clientName.value} ({config.clientId.value}) -> {config.assignedIp.value}"
+        //             | Error e ->
+        //                 Logger.logWarn $"Failed to load public key for client {config.clientId.value}: %A{e}"
+        //         else
+        //             Logger.logWarn $"Public key file not found for client {config.clientId.value}: {keyFilePath.value}"
+        //
+        // do loadClientsFromAppSettings()
 
-            if Directory.Exists clientKeysPath then
-                let files = Directory.GetFiles(clientKeysPath, "*.pkx")
+        // member _.registerClient(clientId: VpnClientId, config: VpnClientConfig, publicKey: PublicKey) =
+        //     clientConfigs.[clientId] <- (config, publicKey)
+        //     Logger.logInfo $"Registered client: {clientId.value} with IP {config.clientData.assignedIp.value}"
+        //
+        // member _.tryGetClientConfig(clientId: VpnClientId) =
+        //     match clientConfigs.TryGetValue(clientId) with
+        //     | true, (config, key) -> Some (config, key)
+        //     | false, _ -> None
 
-                for file in files do
-                    try
-                        match tryImportPublicKey (FileName file) None with
-                        | Ok (keyId, publicKey) ->
-                            let clientId = VpnClientId keyId.value
-                            Logger.logInfo $"Loaded client key for {clientId.value}"
-                            // Client config would be loaded from separate config
-                            ()
-                        | Error e ->
-                            Logger.logWarn $"Failed to load client key from {file}: %A{e}"
-                    with
-                    | ex -> Logger.logWarn $"Exception loading client key from {file}: {ex.Message}"
-            else
-                Logger.logWarn $"Client keys path does not exist: {clientKeysPath}"
+        member private _.tryGetClientConfig(clientId : VpnClientId) =
+            let keyId = KeyId clientId.value
+            let keyFileName = FileName $"{clientId.value}.pkx"
+            let clientKeysPath = data.serverAccessInfo.clientKeysPath
+            let keyFilePath = keyFileName.combine clientKeysPath
 
-        do loadClientKeys()
+            match tryImportPublicKey keyFilePath (Some keyId) with
+            | Ok (_, publicKey) ->
+                match tryLoadVpnClientConfig clientId with
+                | Ok config ->
+                    Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}'."
+                    Ok (config, publicKey)
+                | Error e -> Error e
+            | Error e ->
+                Logger.logWarn $"Failed to load public key for client {clientId.value}: '%A{e}'."
+                $"Failed to load public key for client {clientId.value}: '%A{e}'" |> ConfigErr |> Error
 
-        member _.RegisterClient(clientId: VpnClientId, config: VpnClientConfig, publicKey: PublicKey) =
-            clientConfigs.[clientId] <- (config, publicKey)
-            Logger.logInfo $"Registered client: {clientId.value} with IP {config.assignedIp.value}"
-
-        member _.TryGetClientConfig(clientId: VpnClientId) =
-            match clientConfigs.TryGetValue(clientId) with
-            | true, (config, key) -> Some (config, key)
-            | false, _ -> None
-
-        member _.CreateSession(clientId: VpnClientId) : Result<ClientSession, VpnError> =
-            match clientConfigs.TryGetValue(clientId) with
-            | true, (config, publicKey) ->
+        member r.createSession(clientId: VpnClientId) : Result<ClientSession, VpnError> =
+            match r.tryGetClientConfig(clientId) with
+            | Ok (config, publicKey) ->
                 let session =
                     {
                         clientId = clientId
@@ -83,33 +101,33 @@ module ClientRegistry =
                 sessions.[clientId] <- session
                 Logger.logInfo $"Created session for client {clientId.value}"
                 Ok session
-            | false, _ ->
-                Logger.logWarn $"Client not found: {clientId.value}"
+            | Error e ->
+                Logger.logWarn $"Client not found: '{clientId.value}', error: '%A{e}'."
                 clientId |> ClientNotFoundErr |> AuthFailedErr |> ConnectionErr |> Error
 
-        member _.TryGetSession(clientId: VpnClientId) =
+        member _.tryGetSession(clientId: VpnClientId) =
             match sessions.TryGetValue(clientId) with
             | true, session -> Some session
             | false, _ -> None
 
-        member _.UpdateActivity(clientId: VpnClientId) =
+        member _.updateActivity(clientId: VpnClientId) =
             match sessions.TryGetValue(clientId) with
             | true, session ->
                 sessions.[clientId] <- { session with lastActivity = DateTime.UtcNow }
             | false, _ -> ()
 
-        member _.RemoveSession(clientId: VpnClientId) =
+        member _.removeSession(clientId: VpnClientId) =
             sessions.TryRemove(clientId) |> ignore
             Logger.logInfo $"Removed session for client {clientId.value}"
 
-        member _.EnqueuePacketForClient(clientId: VpnClientId, packet: byte[]) =
+        member _.enqueuePacketForClient(clientId: VpnClientId, packet: byte[]) =
             match sessions.TryGetValue(clientId) with
             | true, session ->
                 session.pendingPackets.Enqueue(packet)
                 true
             | false, _ -> false
 
-        member _.DequeuePacketsForClient(clientId: VpnClientId, maxPackets: int) =
+        member _.dequeuePacketsForClient(clientId: VpnClientId, maxPackets: int) =
             match sessions.TryGetValue(clientId) with
             | true, session ->
                 let packets = ResizeArray<byte[]>()
@@ -126,8 +144,8 @@ module ClientRegistry =
                 packets.ToArray()
             | false, _ -> [||]
 
-        member _.GetAllSessions() =
+        member _.getAllSessions() =
             sessions.Values |> Seq.toList
 
-        member _.ServerPrivateKey = data.serverPrivateKey
-        member _.ServerPublicKey = data.serverPublicKey
+        member _.serverPrivateKey = data.serverPrivateKey
+        member _.serverPublicKey = data.serverPublicKey
