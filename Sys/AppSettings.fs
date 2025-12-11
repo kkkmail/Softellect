@@ -58,19 +58,146 @@ module AppSettings =
         | ConfigKey of string
 
         static member projectName = ConfigKey "ProjectName"
+        member this.value = let (ConfigKey v) = this in v
 
 
-    let private trySet jsonObj (ConfigSection section) (ConfigKey key) value =
+    let private trySet (jsonObj: JObject) (ConfigSection section) (ConfigKey key) value =
         try
-            let sectionObj =
-                if jsonObj?(section) = null then
-                    let newSection = new JObject()
-                    jsonObj?Add(section, newSection)
-                    newSection
-                else jsonObj?(section)
+            // 1) Guard against null jsonObj
+            if isNull (box jsonObj) then invalidArg "jsonObj" "jsonObj is null"
 
-            sectionObj?(key) <- $"{value}"
+            // 2) Get or create the section object
+            let sectionObj =
+                match jsonObj.[section] with
+                | null ->
+                    let newSection = JObject()
+                    jsonObj.[section] <- newSection
+                    newSection
+                | token ->
+                    token :?> JObject
+
+            // 3) Set the key value
+            sectionObj.[key] <- JValue($"{value}")
+
             Ok()
+        with
+        | e -> Error e
+
+
+    let private trySetNested (jsonObj: JObject) (sections: string list) (key: string) value =
+        try
+            if isNull (box jsonObj) then invalidArg "jsonObj" "jsonObj is null"
+
+            let rec getOrCreateSection (currentObj: JObject) (sectionPath: string list) =
+                match sectionPath with
+                | [] -> currentObj
+                | section :: rest ->
+                    let nextObj =
+                        match currentObj.[section] with
+                        | null ->
+                            let newObj = JObject()
+                            currentObj.[section] <- newObj
+                            newObj
+                        | token -> token :?> JObject
+                    getOrCreateSection nextObj rest
+
+            let targetObj = getOrCreateSection jsonObj sections
+            targetObj.[key] <- JValue($"{value}")
+            Ok()
+        with
+        | e -> Error e
+
+
+    let private tryGetNested (jsonObj: JObject) (sections: string list) (key: string) =
+        try
+            let rec navigate (currentObj: JObject) (sectionPath: string list) =
+                match sectionPath with
+                | [] -> Some currentObj
+                | section :: rest ->
+                    match currentObj.TryGetValue(section) with
+                    | true, token ->
+                        match token with
+                        | :? JObject as nextObj -> navigate nextObj rest
+                        | _ -> None
+                    | _ -> None
+
+            match navigate jsonObj sections with
+            | Some targetObj ->
+                match targetObj.TryGetValue(key) with
+                | true, value when value <> null -> Ok (Some (value.ToString()))
+                | _ -> Ok None
+            | None -> Ok None
+        with
+        | e -> Error e
+
+
+    let private tryGetNestedSection (jsonObj: JObject) (sections: string list) =
+        try
+            let rec navigate (currentObj: JObject) (sectionPath: string list) =
+                match sectionPath with
+                | [] -> Some currentObj
+                | section :: rest ->
+                    match currentObj.TryGetValue(section) with
+                    | true, token ->
+                        match token with
+                        | :? JObject as nextObj -> navigate nextObj rest
+                        | _ -> None
+                    | _ -> None
+
+            Ok (navigate jsonObj sections)
+        with
+        | e -> Error e
+
+
+    let private trySetArray<'T> (jsonObj: JObject) (ConfigSection section) (ConfigKey key) (items: 'T list) =
+        try
+            // 1) Guard against null jsonObj
+            if isNull (box jsonObj) then invalidArg "jsonObj" "jsonObj is null"
+
+            // 2) Get or create the section object
+            let sectionObj =
+                match jsonObj.[section] with
+                | null ->
+                    let newSection = JObject()
+                    jsonObj.[section] <- newSection
+                    newSection
+                | token ->
+                    token :?> JObject
+
+            // 3) Serialize items to JSON array
+            let jsonArray = JArray()
+            for item in items do
+                let itemJson = JsonConvert.SerializeObject(item)
+                let itemObj = JObject.Parse(itemJson)
+                jsonArray.Add(itemObj)
+
+            // 4) Set the key to the array
+            sectionObj.[key] <- jsonArray
+
+            Ok()
+        with
+        | e -> Error e
+
+
+    let private tryGetArray<'T> (jsonObj: JObject) (ConfigSection section) (ConfigKey key) : Result<'T list option, exn> =
+        try
+            match jsonObj.TryGetValue(section) with
+            | true, sectionObj ->
+                match sectionObj :?> JObject with
+                | null -> Ok None
+                | sectionJObj ->
+                    match sectionJObj.TryGetValue(key) with
+                    | true, value when value <> null ->
+                        match value :?> JArray with
+                        | null -> Ok None
+                        | arr ->
+                            let items =
+                                arr
+                                |> Seq.map (fun token -> token.ToString() |> jsonDeserialize<'T>)
+                                |> Seq.toList
+                            Ok (Some items)
+                    | _ -> Ok None
+            | _ -> Ok None
         with
         | e -> Error e
 
@@ -179,8 +306,8 @@ module AppSettings =
             defaultValue
 
 
-    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
-    /// and returns provided default value instead.
+    /// Returns a value if parsed properly. Otherwise, ignores missing and/or incorrect value
+    /// and returns the provided default value instead.
     let private getFromJsonOrDefault<'T> setOnMissing (defaultValue : 'T) jsonObj section key : 'T =
         match tryGetFromJson<'T> jsonObj section key with
         | Ok (Some v) -> v
@@ -265,7 +392,7 @@ module AppSettings =
 
 
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
-    /// Currently it supports only simple key value pairs.
+    /// Currently, it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
     type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject, setOnMissing : bool) =
         member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
@@ -287,6 +414,11 @@ module AppSettings =
             getFromJsonOrDefault<'T> setOnMissing defaultValue jsonObj ConfigSection.appSettings key
 
         member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
+        // member _.tryGetArray<'T> key = tryGetArray<'T> jsonObj ConfigSection.appSettings key
+        // member _.trySetArray<'T> key items = trySetArray<'T> jsonObj ConfigSection.appSettings key items
+        // member _.trySetNested sections key value = trySetNested jsonObj sections key value
+        // member _.tryGetNested sections key = tryGetNested jsonObj sections key
+        // member _.tryGetNestedSection sections = tryGetNestedSection jsonObj sections
 
         member _.tryGetConnectionString key = tryGetString jsonObj ConfigSection.connectionStrings key
         member _.trySetConnectionString key value = trySet jsonObj ConfigSection.connectionStrings key value
@@ -324,7 +456,10 @@ module AppSettings =
             match fileName.tryGetFullFileName() with
             | Ok fullFileName ->
                 match tryOpenJson fullFileName with
-                | Ok jsonObj -> (fullFileName, (jsonObj :?> Newtonsoft.Json.Linq.JObject), SetOnMissing) |> AppSettingsProvider |> Ok
+                | Ok jsonObj ->
+                    let jObj = jsonObj :?> Newtonsoft.Json.Linq.JObject
+                    if isNull jObj then fullFileName |> JsonObjectIsNull |> Error
+                    else (fullFileName, jObj, SetOnMissing) |> AppSettingsProvider |> Ok
                 | Error e -> e |> TryOpenJsonExn |> Error
             | Error e -> Error e
 

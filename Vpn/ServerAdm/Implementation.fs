@@ -138,12 +138,25 @@ module Implementation =
         | Some clientId ->
             match VpnIpAddress.tryCreate assignedIpStr with
             | Some assignedIp ->
-                // For now, just log the registration. In a full implementation,
-                // this would update a clients.json or database
-                Logger.logInfo $"Registered client: {clientId.value}"
-                Logger.logInfo $"  Name: {clientName}"
-                Logger.logInfo $"  Assigned IP: {assignedIp.value}"
-                Ok $"Client registered: {clientName} ({clientId.value}) -> {assignedIp.value}"
+                let config =
+                    {
+                        clientId = clientId
+                        clientData =
+                            {
+                                clientName = VpnClientName clientName
+                                assignedIp = assignedIp
+                            }
+                    }
+
+                match addOrUpdateVpnClientConfig config with
+                | Ok () ->
+                    Logger.logInfo $"Registered client: {clientId.value}"
+                    Logger.logInfo $"  Name: {clientName}"
+                    Logger.logInfo $"  Assigned IP: {assignedIp.value}"
+                    Ok $"Client registered: {clientName} ({clientId.value}) -> {assignedIp.value}"
+                | Error e ->
+                    Logger.logError $"Failed to save client config: %A{e}"
+                    Error $"Failed to save client config: %A{e}"
             | None ->
                 Error $"Invalid IP address: {assignedIpStr}"
         | None ->

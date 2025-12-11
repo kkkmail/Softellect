@@ -56,6 +56,7 @@ module Errors =
         | TryGetFolderNameExn of exn
         | TryGetExtensionExn of exn
         | TryOpenJsonExn of exn
+        | JsonObjectIsNull of FileName
 
 
     type UnhandledEventInfo =

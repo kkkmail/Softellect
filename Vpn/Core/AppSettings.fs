@@ -21,13 +21,36 @@ module AppSettings =
     let clientKeyPathKey = ConfigKey "ClientKeyPath"
     let serverPublicKeyPathKey = ConfigKey "ServerPublicKeyPath"
     let localLanExclusionsKey = ConfigKey "LocalLanExclusions"
-    let vpnClientsKey = ConfigKey "VpnClients"
+    // let vpnClientsKey = ConfigKey "VpnClients"
 
 
     let private tryParseLocalLanExclusions (s: string) =
         s.Split([| ';' |], StringSplitOptions.RemoveEmptyEntries)
         |> Array.map (fun x -> LocalLanExclusion (x.Trim()))
         |> Array.toList
+
+
+    let private toErr e = e |> ConfigErr |> Error
+
+
+    type VpnClientData
+        with
+        static member private marker = Unchecked.defaultof<VpnClientData>
+
+        static member tryDeserialize (s : string) =
+            let p = parseSimpleSetting s
+
+            match p |> Map.tryFind (nameof VpnClientData.marker.clientName), p |> Map.tryFind (nameof VpnClientData.marker.assignedIp) with
+            | Some a, Some b ->
+                match b |> VpnIpAddress.tryCreate with
+                | Some v ->
+                    {
+                        clientName = VpnClientName a
+                        assignedIp = v
+                    }
+                    |> Ok
+                | None -> $"Some values in '{s}' are invalid." |> ConfigErr |> Error
+            | _ -> $"Value of '{s}' is invalid." |> ConfigErr |> Error
 
 
     let loadVpnServerAccessInfo () =
@@ -104,7 +127,6 @@ module AppSettings =
 
 
     let updateVpnServerAccessInfo (info: VpnServerAccessInfo) =
-        let toErr e = e |> ConfigErr |> Error
 
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
@@ -123,8 +145,6 @@ module AppSettings =
 
 
     let updateVpnClientAccessInfo (info: VpnClientAccessInfo) =
-        let toErr e = e |> ConfigErr |> Error
-
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
             provider.trySet vpnClientAccessInfoKey (info.serverAccessInfo.serialize()) |> ignore
@@ -145,4 +165,118 @@ module AppSettings =
             | Error e -> toErr $"Failed to save settings: %A{e}"
         | Error e ->
             Logger.logError $"updateVpnClientAccessInfo: ERROR - %A{e}."
+            toErr $"Failed to create settings provider: %A{e}"
+
+
+    // let loadVpnClientConfigs () : VpnClientConfig list =
+    //     match AppSettingsProvider.tryCreate() with
+    //     | Ok provider ->
+    //         match provider.tryGetNestedSection ["appSettings"; "VpnClients"] with
+    //         | Ok (Some clientsObj) ->
+    //             let configs =
+    //                 clientsObj.Properties()
+    //                 |> Seq.choose (fun prop ->
+    //                     let clientName = prop.Name
+    //                     match provider.tryGetNested ["appSettings"; "VpnClients"; clientName] "ClientId" with
+    //                     | Ok (Some clientIdStr) ->
+    //                         match provider.tryGetNested ["appSettings"; "VpnClients"; clientName] "AssignedIp" with
+    //                         | Ok (Some assignedIpStr) ->
+    //                             match VpnClientId.tryCreate clientIdStr, VpnIpAddress.tryCreate assignedIpStr with
+    //                             | Some clientId, Some assignedIp ->
+    //                                 Some {
+    //                                     clientId = clientId
+    //                                     clientName = VpnClientName clientName
+    //                                     assignedIp = assignedIp
+    //                                 }
+    //                             | _ -> None
+    //                         | _ -> None
+    //                     | _ -> None
+    //                 )
+    //                 |> Seq.toList
+    //
+    //             Logger.logInfo $"loadVpnClientConfigs: Loaded {configs.Length} client(s)"
+    //             configs
+    //         | Ok None ->
+    //             Logger.logInfo "loadVpnClientConfigs: No VpnClients section found"
+    //             []
+    //         | Error e ->
+    //             Logger.logError $"loadVpnClientConfigs: ERROR getting VpnClients section - %A{e}."
+    //             []
+    //     | Error e ->
+    //         Logger.logError $"loadVpnClientConfigs: ERROR creating provider - %A{e}."
+    //         []
+    //
+    //
+    // let addOrUpdateVpnClientConfig (config: VpnClientConfig) =
+    //     let toErr e = e |> ConfigErr |> Error
+    //
+    //     match AppSettingsProvider.tryCreate() with
+    //     | Ok provider ->
+    //         let clientName = config.clientName.value
+    //         let sections = ["appSettings"; "VpnClients"; clientName]
+    //
+    //         match provider.trySetNested sections "ClientId" (config.clientId.value.ToString()) with
+    //         | Ok () ->
+    //             match provider.trySetNested sections "AssignedIp" config.assignedIp.value with
+    //             | Ok () ->
+    //                 Logger.logInfo $"addOrUpdateVpnClientConfig: Set values for client {clientName}"
+    //
+    //                 match provider.trySave() with
+    //                 | Ok () ->
+    //                     Logger.logInfo "addOrUpdateVpnClientConfig: trySave succeeded"
+    //                     Ok ()
+    //                 | Error e ->
+    //                     Logger.logError $"addOrUpdateVpnClientConfig: trySave failed: %A{e}"
+    //                     toErr $"Failed to save client config: %A{e}"
+    //             | Error e ->
+    //                 Logger.logError $"addOrUpdateVpnClientConfig: trySetNested AssignedIp failed: %A{e}"
+    //                 toErr $"Failed to set AssignedIp: %A{e}"
+    //         | Error e ->
+    //             Logger.logError $"addOrUpdateVpnClientConfig: trySetNested ClientId failed: %A{e}"
+    //             toErr $"Failed to set ClientId: %A{e}"
+    //     | Error e ->
+    //         Logger.logError $"addOrUpdateVpnClientConfig: ERROR creating provider - %A{e}."
+    //         toErr $"Failed to create settings provider: %A{e}"
+
+    let addOrUpdateVpnClientConfig (config: VpnClientConfig) =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let clientKey = config.clientId.configKey
+            let data = config.clientData.serialize()
+
+            match provider.trySet clientKey data with
+            | Ok () -> Logger.logTrace (fun () -> $"Client: '{clientKey.value}' = '{data}' was set successfully.")
+            | Error e -> Logger.logError $"Client: '{clientKey.value}', error '%A{e}'."
+
+            match provider.trySave() with
+            | Ok () -> Ok ()
+            | Error e -> toErr $"Failed to save settings: '%A{e}'."
+        | Error e ->
+            Logger.logError $"addOrUpdateVpnClientConfig: ERROR creating provider - '%A{e}'."
+            toErr $"Failed to create settings provider: '%A{e}'."
+
+
+    let tryLoadVpnClientConfig (clientId : VpnClientId ) =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let clientKey = clientId.configKey
+            let tryCreate s =
+                match VpnClientData.tryDeserialize s with
+                | Ok s -> Ok s
+                | Error e -> Error $"'%A{e}'."
+
+            match provider.tryGet tryCreate clientKey  with
+            | Ok ro ->
+                match ro with
+                | Some r ->
+                    Logger.logTrace (fun () -> $"Successfully loaded client data: '%A{r}'.")
+                    Ok r
+                | None ->
+                    Logger.logWarn $"Cannot load client config for client: '{clientId.value}'."
+                    toErr $"Cannot load client config for client: '{clientId.value}'."
+            | Error e ->
+                Logger.logError $"Client: '{clientKey.value}', error '%A{e}'."
+                toErr $"Failed to parse client data: '%A{e}'."
+        | Error e ->
+            Logger.logError $"addOrUpdateVpnClientConfig: ERROR creating provider - '%A{e}'."
             toErr $"Failed to create settings provider: %A{e}"

@@ -1,6 +1,5 @@
 namespace Softellect.Vpn.Core
 
-open System
 open System.ServiceModel
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Primitives
@@ -65,7 +64,7 @@ module ServiceInfo =
                     |> NetTcpServiceInfo
                 vpnSubnet = VpnSubnet.defaultValue
                 serverKeyPath = FolderName @"C:\Keys\VpnServer"
-                clientKeysPath = FolderName @"C:\Keys\VpnClients"
+                clientKeysPath = FolderName @"C:\Keys\VpnClient"
             }
 
 

@@ -95,21 +95,12 @@ module Service =
                 }
 
             match wcfClient.authenticate request with
-            | Ok response when response.success ->
-                match response.assignedIp with
-                | Some ip ->
-                    Logger.logInfo $"Authenticated successfully. Assigned IP: {ip.value}"
-                    Ok ip
-                | None ->
-                    Logger.logError "Authentication succeeded but no IP assigned"
-                    Error "No IP assigned"
             | Ok response ->
-                let msg = response.errorMessage |> Option.defaultValue "Unknown error"
-                Logger.logError $"Authentication failed: {msg}"
-                Error msg
-            | Error _ ->
+                Logger.logInfo $"Authenticated successfully. Assigned IP: {response.assignedIp.value}"
+                Ok response.assignedIp
+            | Error e ->
                 Logger.logError "Authentication error"
-                Error "Authentication error"
+                Error $"Authentication error: '%A{e}'."
 
         let startTunnel (assignedIp: VpnIpAddress) =
             let config =

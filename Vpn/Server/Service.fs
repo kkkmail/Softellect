@@ -7,10 +7,7 @@ open CoreWCF
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
-open Softellect.Sys.Crypto
-open Softellect.Sys.Core
 open Softellect.Wcf.Service
-open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
@@ -18,6 +15,9 @@ open Softellect.Vpn.Server.ClientRegistry
 open Softellect.Vpn.Server.PacketRouter
 
 module Service =
+
+    let serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
+
 
     type VpnServerData =
         {
@@ -43,7 +43,7 @@ module Service =
             {
                 vpnSubnet = data.serverAccessInfo.vpnSubnet
                 adapterName = "SoftellectVPN"
-                serverVpnIp = "10.66.77.1" |> Ip4 |> VpnIpAddress
+                serverVpnIp = serverVpnIp
             }
 
         let router = PacketRouter(routerConfig, registry)
@@ -52,62 +52,64 @@ module Service =
         let toSendError f = f |> ConfigErr
         let toReceiveError f = f |> ConfigErr
 
-        let verifyAuthRequest (request: VpnAuthRequest) (clientPublicKey: PublicKey) =
-            // Verify timestamp is recent (within 5 minutes)
+        /// Verify the timestamp is recent (within 5 minutes)
+        let verifyAuthRequest (request: VpnAuthRequest) =
             let timeDiff = DateTime.UtcNow - request.timestamp
-            if timeDiff.TotalMinutes > 5.0 then
-                Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
-            else
-                Ok ()
+            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
+            else Ok ()
 
         interface IVpnService with
             member _.authenticate request =
                 Logger.logInfo $"Authentication request from client: {request.clientId.value}"
 
-                match registry.TryGetClientConfig(request.clientId) with
-                | Some (config, publicKey) ->
-                    match verifyAuthRequest request publicKey with
-                    | Ok () ->
-                        match registry.CreateSession(request.clientId) with
-                        | Ok session ->
-                            let response =
-                                {
-                                    success = true
-                                    assignedIp = Some session.assignedIp
-                                    serverPublicIp = VpnIpAddress.tryCreate "10.66.77.1"
-                                    errorMessage = None
-                                }
-                            Ok response
-                        | Error e -> Error e
+                match verifyAuthRequest request with
+                | Ok () ->
+                    match registry.createSession(request.clientId) with
+                    | Ok session ->
+                        let response =
+                            {
+                                assignedIp = session.assignedIp
+                                serverPublicIp = serverVpnIp
+                            }
+                        Ok response
                     | Error e -> Error e
-                | None ->
-                    Logger.logWarn $"Client not registered: {request.clientId.value}"
-                    let response =
-                        {
-                            success = false
-                            assignedIp = None
-                            serverPublicIp = None
-                            errorMessage = Some "Client not registered"
-                        }
-                    Ok response
+                | Error e -> Error e
+
+                // match registry.tryGetClientConfig(request.clientId) with
+                // | Some (config, publicKey) ->
+                //     match verifyAuthRequest request publicKey with
+                //     | Ok () ->
+                //         match registry.createSession(request.clientId) with
+                //         | Ok session ->
+                //             let response =
+                //                 {
+                //                     assignedIp = session.assignedIp
+                //                     serverPublicIp = serverVpnIp
+                //                 }
+                //             Ok response
+                //         | Error e -> Error e
+                //     | Error e -> Error e
+                // | None ->
+                //     Logger.logWarn $"Client not registered: {request.clientId.value}"
+                //     Error (ClientNotRegisteredErr request.clientId |> ServerErr)
 
             member _.sendPacket (clientId, packet) =
-                match registry.TryGetSession(clientId) with
+                match registry.tryGetSession(clientId) with
                 | Some _ ->
-                    registry.UpdateActivity(clientId)
+                    registry.updateActivity(clientId)
                     Logger.logTrace (fun () -> $"Server received packet from client {clientId.value}, size={packet.Length} bytes")
 
-                    match router.InjectPacket(packet) with
+                    match router.injectPacket(packet) with
                     | Ok () -> Ok ()
                     | Error msg -> Error (ConfigErr msg)
                 | None ->
                     Error (clientId |> SessionExpiredErr |> ServerErr)
 
             member _.receivePackets clientId =
-                match registry.TryGetSession(clientId) with
+                match registry.tryGetSession(clientId) with
                 | Some _ ->
-                    registry.UpdateActivity(clientId)
-                    let packets = registry.DequeuePacketsForClient(clientId, 100)
+                    registry.updateActivity(clientId)
+                    let packets = registry.dequeuePacketsForClient(clientId, 100)
                     if packets.Length > 0 then
                         let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                         Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client {clientId.value}, total {totalBytes} bytes")
@@ -125,7 +127,7 @@ module Service =
                 else
                     Logger.logInfo "Starting VPN Service..."
 
-                    match router.Start() with
+                    match router.start() with
                     | Ok () ->
                         started <- true
                         Logger.logInfo "VPN Service started successfully"
@@ -140,7 +142,7 @@ module Service =
                     Task.CompletedTask
                 else
                     Logger.logInfo "Stopping VPN Service..."
-                    router.Stop()
+                    router.stop()
                     started <- false
                     Logger.logInfo "VPN Service stopped"
                     Task.CompletedTask

@@ -57,7 +57,7 @@ module PacketRouter =
                 None
 
         let findClientByIp (ip: IpAddress) =
-            registry.GetAllSessions()
+            registry.getAllSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
 
         let receiveLoop () =
@@ -67,14 +67,14 @@ module PacketRouter =
                     try
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
-                            // Packet from the TUN adapter - route to appropriate client
+                            // Packet from the TUN adapter - route to the appropriate client
                             match getDestinationIp packet with
                             | Some destIp ->
                                 match getSourceIp packet with
                                 | Some srcIp ->
                                     match findClientByIp destIp with
                                     | Some session ->
-                                        registry.EnqueuePacketForClient(session.clientId, packet) |> ignore
+                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
                                         Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes → client {session.clientId.value}")
                                     | None ->
                                         Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
@@ -102,7 +102,7 @@ module PacketRouter =
             | null -> "Unknown error"
             | err -> err
 
-        member _.Start() =
+        member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
             let createResult = WinTunAdapter.Create(config.adapterName, "SoftellectVPN", System.Nullable<Guid>())
@@ -141,7 +141,7 @@ module PacketRouter =
                 Logger.logError $"Failed to create adapter: {errMsg}"
                 Error $"Failed to create adapter: {errMsg}"
 
-        member _.Stop() =
+        member _.stop() =
             Logger.logInfo "Stopping packet router"
             running <- false
 
@@ -160,7 +160,7 @@ module PacketRouter =
 
             Logger.logInfo "Packet router stopped"
 
-        member _.InjectPacket(packet: byte[]) =
+        member _.injectPacket(packet: byte[]) =
             match adapter with
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
@@ -171,4 +171,4 @@ module PacketRouter =
             | _ ->
                 Error "Adapter not ready"
 
-        member _.IsRunning = running
+        member _.isRunning = running

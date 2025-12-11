@@ -2,6 +2,7 @@ namespace Softellect.Vpn.Core
 
 open System
 open Softellect.Sys.Primitives
+open Softellect.Sys.AppSettings
 
 module Primitives =
 
@@ -26,6 +27,8 @@ module Primitives =
         | VpnClientId of Guid
 
         member this.value = let (VpnClientId v) = this in v
+        member this.configKey = $"{this.value:B}".ToUpper() |> ConfigKey
+
         static member tryCreate (s: string) =
             match Guid.TryParse s with
             | true, g -> Some (VpnClientId g)
@@ -69,11 +72,20 @@ module Primitives =
             ]
 
 
+    type VpnClientData =
+        {
+            clientName : VpnClientName
+            assignedIp : VpnIpAddress
+        }
+
+        member data.serialize() =
+            $"{nameof(data.clientName)}{ValueSeparator}{data.clientName.value}{ListSeparator}{nameof(data.assignedIp)}{ValueSeparator}{data.assignedIp.value.value}"
+
+
     type VpnClientConfig =
         {
             clientId : VpnClientId
-            clientName : VpnClientName
-            assignedIp : VpnIpAddress
+            clientData : VpnClientData
         }
 
 
@@ -95,10 +107,8 @@ module Primitives =
 
     type VpnAuthResponse =
         {
-            success : bool
-            assignedIp : VpnIpAddress option
-            serverPublicIp : VpnIpAddress option
-            errorMessage : string option
+            assignedIp : VpnIpAddress
+            serverPublicIp : VpnIpAddress
         }
 
 
