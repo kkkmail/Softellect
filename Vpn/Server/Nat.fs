@@ -144,6 +144,13 @@ module Nat =
         let totalLen = int (readUInt16 buf 2)
         let segLen = totalLen - ihl
 
+        // Checksum field offset differs between TCP and UDP
+        let checksumOffset =
+            match proto with
+            | Tcp -> ihl + 16
+            | Udp -> ihl + 6
+            | Other _ -> -1  // never matches, don't skip anything
+
         let srcIp = readUInt32 buf 12
         let dstIp = readUInt32 buf 16
 
@@ -169,7 +176,7 @@ module Nat =
         // Sum segment
         let mutable i = ihl
         while i < ihl + segLen do
-            if i = ihl + 16 then
+            if i = checksumOffset then
                 // skip checksum field itself (we'll write it later)
                 ()
             else
@@ -201,6 +208,22 @@ module Nat =
             let csum = transportChecksum buf proto
             writeUInt16 buf checksumOffset csum
         | _ -> ()
+
+    /// For manual debugging only - verifies UDP checksum is correct.
+    /// Do NOT call from hot loops.
+    let private verifyUdpChecksum (packet: byte[]) : bool =
+        let ihl = headerLength packet
+        let proto = getProtocol packet
+        match proto with
+        | Udp ->
+            // Save existing checksum, zero it, compute expected, restore
+            let checksumOffset = ihl + 6
+            let actual = readUInt16 packet checksumOffset
+            writeUInt16 packet checksumOffset 0us
+            let expected = transportChecksum packet Udp
+            writeUInt16 packet checksumOffset actual
+            expected = actual
+        | _ -> true
 
     // ---- NAT core ----
 

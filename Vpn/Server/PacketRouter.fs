@@ -143,7 +143,7 @@ module PacketRouter =
                             match v with
                             | 4 ->
                                 // IPv4 packet - check for DNS proxy first, then route based on destination
-                                match DnsProxy.tryParseDnsQuery serverVpnIpUint packet with
+                                match tryParseDnsQuery serverVpnIpUint packet with
                                 | Some (clientIp, clientPort, dnsPayload) ->
                                     // DNS query to VPN gateway - forward to upstream and enqueue reply to client
                                     let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
@@ -151,7 +151,7 @@ module PacketRouter =
                                     | Some clientIpAddr ->
                                         match findClientByIp clientIpAddr with
                                         | Some session ->
-                                            match DnsProxy.forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
+                                            match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
                                             | Some replyPacket ->
                                                 // Enqueue DNS reply directly to the client (not into TUN)
                                                 registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
