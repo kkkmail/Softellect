@@ -14,6 +14,7 @@ open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Server.ClientRegistry
 open Softellect.Vpn.Server.PacketRouter
+open Softellect.Vpn.Server.DnsProxy
 
 module Service =
 
@@ -46,6 +47,8 @@ module Service =
             }
 
         let router = PacketRouter(routerConfig, registry)
+
+        let serverVpnIpUint = ipToUInt32 routerConfig.serverVpnIp.value
 
         let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
         let toSendError f = f |> ConfigErr
@@ -98,9 +101,23 @@ module Service =
                     registry.updateActivity(clientId)
                     Logger.logTrace (fun () -> $"Server received packet from client {clientId.value}, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
 
-                    match router.injectPacket(packet) with
-                    | Ok () -> Ok ()
-                    | Error msg -> Error (ConfigErr msg)
+                    // Check if this is a DNS query to the VPN gateway
+                    match tryParseDnsQuery serverVpnIpUint packet with
+                    | Some (srcIp, srcPort, dnsPayload) ->
+                        // Forward DNS query to upstream and enqueue reply
+                        match forwardDnsQuery serverVpnIpUint srcIp srcPort dnsPayload with
+                        | Some replyPacket ->
+                            registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
+                            Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
+                        | None ->
+                            // Timeout/error already logged in DnsProxy, do not inject into TUN
+                            ()
+                        Ok ()
+                    | None ->
+                        // Not a DNS query to the VPN gateway, inject into TUN as before
+                        match router.injectPacket(packet) with
+                        | Ok () -> Ok ()
+                        | Error msg -> Error (ConfigErr msg)
                 | None ->
                     Error (clientId |> SessionExpiredErr |> ServerErr)
 

@@ -13,6 +13,18 @@ open Softellect.Vpn.Server.ExternalInterface
 
 module PacketRouter =
 
+    /// Convert IP address string to uint32 (network byte order)
+    let ipToUInt32 (ip: IpAddress) =
+        let parts = ip.value.Split('.')
+        if parts.Length = 4 then
+            let b0 = byte parts[0]
+            let b1 = byte parts[1]
+            let b2 = byte parts[2]
+            let b3 = byte parts[3]
+            (uint32 b0 <<< 24) ||| (uint32 b1 <<< 16) ||| (uint32 b2 <<< 8) ||| uint32 b3
+        else
+            0u
+
     type PacketRouterConfig =
         {
             vpnSubnet : VpnSubnet
@@ -36,18 +48,6 @@ module PacketRouter =
         let mutable receiveThread : Thread option = None
 
         // ---- NAT / External interface setup ----
-
-        // Convert IP address string to uint32 (network byte order)
-        let ipToUInt32 (ip: IpAddress) =
-            let parts = ip.value.Split('.')
-            if parts.Length = 4 then
-                let b0 = byte parts[0]
-                let b1 = byte parts[1]
-                let b2 = byte parts[2]
-                let b3 = byte parts[3]
-                (uint32 b0 <<< 24) ||| (uint32 b1 <<< 16) ||| (uint32 b2 <<< 8) ||| uint32 b3
-            else
-                0u
 
         let parseSubnetToUInt32 (subnet: string) =
             let parts = subnet.Split('/')
