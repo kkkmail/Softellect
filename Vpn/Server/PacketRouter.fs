@@ -8,6 +8,7 @@ open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
+open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.ExternalInterface
 
 module PacketRouter =
@@ -72,6 +73,9 @@ module PacketRouter =
 
         // Parse external IP for NAT
         let externalIpUint = ipToUInt32 config.serverPublicIp
+
+        // Parse server VPN IP for DNS proxy
+        let serverVpnIpUint = ipToUInt32 config.serverVpnIp.value
 
         // Check if an IP (in network byte order uint32) is inside VPN subnet
         let isInsideVpnSubnet (ip: uint32) =
@@ -138,35 +142,49 @@ module PacketRouter =
                             let v = getIpVersion packet
                             match v with
                             | 4 ->
-                                // IPv4 packet - route based on destination
-                                match getDestinationIpUInt32 packet with
-                                | Some destIpUint ->
-                                    if isInsideVpnSubnet destIpUint then
-                                        // Destination is inside VPN subnet - route to VPN client
-                                        match getDestinationIp packet with
-                                        | Some destIp ->
-                                            match getSourceIp packet with
-                                            | Some srcIp ->
-                                                match findClientByIp destIp with
-                                                | Some session ->
-                                                    registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                                    Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
-                                                | None ->
-                                                    Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
-                                            | None ->
-                                                Logger.logTrace (fun () -> "Could not parse source IP from packet")
-                                        | None ->
-                                            Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                    else
-                                        // Destination is outside VPN subnet - NAT and forward to external network
-                                        match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                                        | Some natPacket ->
-                                            externalGateway.sendOutbound(natPacket)
-                                            // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
-                                        | None ->
-                                            Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                // IPv4 packet - check for DNS proxy first, then route based on destination
+                                match DnsProxy.tryParseDnsQuery serverVpnIpUint packet with
+                                | Some (clientIp, clientPort, dnsPayload) ->
+                                    // DNS query to VPN gateway - forward to upstream and inject reply
+                                    match DnsProxy.forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
+                                    | Some replyPacket ->
+                                        // Inject DNS reply into TUN adapter
+                                        let result = adp.SendPacket(replyPacket)
+                                        if not result.IsSuccess then
+                                            Logger.logWarn "DNSPROXY: failed to inject reply into TUN"
+                                    | None ->
+                                        // Timeout or error - already logged by DnsProxy
+                                        ()
                                 | None ->
-                                    Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                    // Not a DNS query to gateway - proceed with normal routing
+                                    match getDestinationIpUInt32 packet with
+                                    | Some destIpUint ->
+                                        if isInsideVpnSubnet destIpUint then
+                                            // Destination is inside VPN subnet - route to VPN client
+                                            match getDestinationIp packet with
+                                            | Some destIp ->
+                                                match getSourceIp packet with
+                                                | Some srcIp ->
+                                                    match findClientByIp destIp with
+                                                    | Some session ->
+                                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
+                                                    | None ->
+                                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                                | None ->
+                                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
+                                            | None ->
+                                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                        else
+                                            // Destination is outside VPN subnet - NAT and forward to external network
+                                            match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                            | Some natPacket ->
+                                                externalGateway.sendOutbound(natPacket)
+                                                // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
+                                            | None ->
+                                                Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                    | None ->
+                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                             | 6 ->
                                 // IPv6 packet - drop (VPN is IPv4-only)
                                 Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")

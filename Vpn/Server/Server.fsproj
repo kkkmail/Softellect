@@ -20,6 +20,7 @@
     <Compile Include="ClientRegistry.fs" />
     <Compile Include="Nat.fs" />
     <Compile Include="ExternalInterface.fs" />
+    <Compile Include="DnsProxy.fs" />
     <Compile Include="PacketRouter.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Program.fs" />
