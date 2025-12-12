@@ -145,16 +145,24 @@ module PacketRouter =
                                 // IPv4 packet - check for DNS proxy first, then route based on destination
                                 match DnsProxy.tryParseDnsQuery serverVpnIpUint packet with
                                 | Some (clientIp, clientPort, dnsPayload) ->
-                                    // DNS query to VPN gateway - forward to upstream and inject reply
-                                    match DnsProxy.forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
-                                    | Some replyPacket ->
-                                        // Inject DNS reply into TUN adapter
-                                        let result = adp.SendPacket(replyPacket)
-                                        if not result.IsSuccess then
-                                            Logger.logWarn "DNSPROXY: failed to inject reply into TUN"
+                                    // DNS query to VPN gateway - forward to upstream and enqueue reply to client
+                                    let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
+                                    match IpAddress.tryCreate clientIpStr with
+                                    | Some clientIpAddr ->
+                                        match findClientByIp clientIpAddr with
+                                        | Some session ->
+                                            match DnsProxy.forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
+                                            | Some replyPacket ->
+                                                // Enqueue DNS reply directly to the client (not into TUN)
+                                                registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
+                                                Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
+                                            | None ->
+                                                // Timeout or error - already logged by DnsProxy
+                                                ()
+                                        | None ->
+                                            Logger.logTrace (fun () -> $"DNSPROXY: no client found for source IP {clientIpStr}")
                                     | None ->
-                                        // Timeout or error - already logged by DnsProxy
-                                        ()
+                                        Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
                                 | None ->
                                     // Not a DNS query to gateway - proceed with normal routing
                                     match getDestinationIpUInt32 packet with
