@@ -297,9 +297,10 @@ module Nat =
                 let dstIp = readUInt32 packet 16
                 let proto = getProtocol packet
 
-                // We only care about packets TO our external IP
+                // Only handle packets addressed to our public IP.
+                // Everything else is not part of VPN NAT and must be ignored.
                 if dstIp <> externalIp then
-                    Some packet
+                    None
                 else
                     match proto with
                     | Tcp
