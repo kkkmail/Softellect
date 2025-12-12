@@ -5,6 +5,7 @@ open System.Net
 open System.Threading
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 open Softellect.Vpn.Server.ExternalInterface
@@ -133,36 +134,45 @@ module PacketRouter =
                 while running do
                     try
                         let packet = adp.ReceivePacket()
-                        if not (isNull packet) then
-                            // Packet from the TUN adapter - route based on destination
-                            match getDestinationIpUInt32 packet with
-                            | Some destIpUint ->
-                                if isInsideVpnSubnet destIpUint then
-                                    // Destination is inside VPN subnet - route to VPN client
-                                    match getDestinationIp packet with
-                                    | Some destIp ->
-                                        match getSourceIp packet with
-                                        | Some srcIp ->
-                                            match findClientByIp destIp with
-                                            | Some session ->
-                                                registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                                Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}")
+                        if not (isNull packet) && packet.Length > 0 then
+                            let v = getIpVersion packet
+                            match v with
+                            | 4 ->
+                                // IPv4 packet - route based on destination
+                                match getDestinationIpUInt32 packet with
+                                | Some destIpUint ->
+                                    if isInsideVpnSubnet destIpUint then
+                                        // Destination is inside VPN subnet - route to VPN client
+                                        match getDestinationIp packet with
+                                        | Some destIp ->
+                                            match getSourceIp packet with
+                                            | Some srcIp ->
+                                                match findClientByIp destIp with
+                                                | Some session ->
+                                                    registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                                    Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
+                                                | None ->
+                                                    Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
                                             | None ->
-                                                Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                                Logger.logTrace (fun () -> "Could not parse source IP from packet")
                                         | None ->
-                                            Logger.logTrace (fun () -> "Could not parse source IP from packet")
-                                    | None ->
-                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                else
-                                    // Destination is outside VPN subnet - NAT and forward to external network
-                                    match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                                    | Some natPacket ->
-                                        externalGateway.sendOutbound(natPacket)
-                                        // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
-                                    | None ->
-                                        Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
-                            | None ->
-                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                            Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                    else
+                                        // Destination is outside VPN subnet - NAT and forward to external network
+                                        match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                        | Some natPacket ->
+                                            externalGateway.sendOutbound(natPacket)
+                                            // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
+                                        | None ->
+                                            Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                | None ->
+                                    Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                            | 6 ->
+                                // IPv6 packet - drop (VPN is IPv4-only)
+                                Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                            | _ ->
+                                // Unknown/malformed - drop silently
+                                ()
                         else
                             // No packet available, wait a bit
                             Thread.Sleep(1)
@@ -269,7 +279,7 @@ module PacketRouter =
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
                 if result.IsSuccess then
-                    Logger.logTrace (fun () -> $"Injected packet to TUN adapter, size={packet.Length} bytes")
+                    Logger.logTrace (fun () -> $"Injected packet to TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
                     Ok ()
                 else Error (getErrorMessage result)
             | _ ->

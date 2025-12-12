@@ -1,6 +1,7 @@
 namespace Softellect.Vpn.Client
 
 open Softellect.Sys.Logging
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Wcf.Client
 open Softellect.Wcf.Common
 open Softellect.Wcf.Errors
@@ -42,7 +43,7 @@ module WcfClient =
                 tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
 
             member _.sendPacket packet =
-                Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}")
+                Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}, packet=%A{(summarizePacket packet)}")
                 let payload = (data.clientAccessInfo.vpnClientId, packet)
                 let result = tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
                 Logger.logTrace (fun () -> $"sendPacket: Received: '%A{result}'.")

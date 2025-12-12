@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 
@@ -42,9 +43,19 @@ module Tunnel =
                 while running do
                     try
                         let packet = adp.ReceivePacket()
-                        if not (isNull packet) then
-                            packetQueue.Enqueue(packet)
-                            Logger.logTrace (fun () -> $"Tunnel captured packet from TUN adapter, size={packet.Length} bytes, packet: '%A{packet}'.")
+                        if not (isNull packet) && packet.Length > 0 then
+                            let v = getIpVersion packet
+                            match v with
+                            | 4 ->
+                                // IPv4 packet - enqueue for sending to VPN server
+                                packetQueue.Enqueue(packet)
+                                Logger.logTrace (fun () -> $"Tunnel captured IPv4 packet from TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
+                            | 6 ->
+                                // IPv6 packet - drop (VPN is IPv4-only)
+                                Logger.logTrace (fun () -> $"Tunnel: dropping IPv6 packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                            | _ ->
+                                // Unknown/malformed - drop silently
+                                ()
                         else
                             Thread.Sleep(1)
                     with
@@ -122,7 +133,7 @@ module Tunnel =
             | Some adp when adp.IsSessionActive ->
                 let result = adp.SendPacket(packet)
                 if result.IsSuccess then
-                    Logger.logTrace (fun () -> $"Tunnel injected packet to TUN adapter, size={packet.Length} bytes")
+                    Logger.logTrace (fun () -> $"Tunnel injected packet to TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
                     Ok ()
                 else Error (getErrorMessage result)
             | _ ->

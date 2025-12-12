@@ -6,6 +6,7 @@ open System.Net.Sockets
 open System.Threading
 
 open Softellect.Sys.Logging
+open Softellect.Vpn.Core.PacketDebug
 
 /// User-space external interface for sending/receiving raw IPv4 packets to/from the real internet.
 /// This module handles both TCP and UDP traffic by working at the raw IP packet level.
@@ -95,7 +96,7 @@ module ExternalInterface =
                                 // Full logging for debugging
                                 let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
                                 let dstIp = getDestinationIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=UDP, src={srcIp}, dst={dstIp}")
+                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=UDP, src={srcIp}, dst={dstIp}, packet=%A{(summarizePacket packet)}")
 
                                 // Forward full IPv4 packet to NAT
                                 match onPacketCallback with
@@ -112,7 +113,7 @@ module ExternalInterface =
                                 // Full logging for debugging
                                 let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
                                 let dstIp = getDestinationIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=TCP, src={srcIp}, dst={dstIp}")
+                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=TCP, src={srcIp}, dst={dstIp}, packet=%A{(summarizePacket packet)}")
 
                                 // Forward full IPv4 packet to NAT
                                 match onPacketCallback with

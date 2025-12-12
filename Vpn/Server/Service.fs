@@ -7,6 +7,7 @@ open CoreWCF
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Wcf.Service
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
@@ -95,7 +96,7 @@ module Service =
                 match registry.tryGetSession(clientId) with
                 | Some _ ->
                     registry.updateActivity(clientId)
-                    Logger.logTrace (fun () -> $"Server received packet from client {clientId.value}, size={packet.Length} bytes")
+                    Logger.logTrace (fun () -> $"Server received packet from client {clientId.value}, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
 
                     match router.injectPacket(packet) with
                     | Ok () -> Ok ()
