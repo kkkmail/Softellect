@@ -44,11 +44,15 @@ module WcfClient =
             member _.sendPacket packet =
                 Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}")
                 let payload = (data.clientAccessInfo.vpnClientId, packet)
-                tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
+                let result = tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
+                Logger.logTrace (fun () -> $"sendPacket: Received: '%A{result}'.")
+                result
 
             member _.receivePackets clientId =
                 Logger.logTrace (fun () -> $"receivePackets: Receiving packets for client {clientId.value}")
-                tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
+                let result = tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
+                Logger.logTrace (fun () -> $"receivePackets: Received for client {clientId.value}: '%A{result}'.")
+                result
 
 
     let createVpnClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =

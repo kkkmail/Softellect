@@ -110,7 +110,7 @@ module ExternalInterface =
         /// Start the background receive loop.
         /// onPacketFromInternet is called when a raw IP packet arrives from the external network.
         /// The caller (PacketRouter) should pass these through NAT.translateInbound before injection.
-        member _.Start(onPacketFromInternet: byte[] -> unit) =
+        member _.start(onPacketFromInternet: byte[] -> unit) =
             if running then
                 Logger.logWarn "ExternalGateway already running"
             else
@@ -131,9 +131,9 @@ module ExternalInterface =
         ///
         /// This method sends the entire IPv4 packet as-is via the raw socket.
         /// Both TCP and UDP packets are handled uniformly at the raw IP level.
-        member _.SendOutbound(packet: byte[]) =
+        member _.sendOutbound(packet: byte[]) =
             if packet.Length < 20 then
-                Logger.logWarn "ExternalGateway.SendOutbound: Packet too short (< 20 bytes), dropping"
+                Logger.logWarn "ExternalGateway.sendOutbound: Packet too short (< 20 bytes), dropping"
             else
                 match getDestinationIpAddress packet with
                 | Some dstIp ->
@@ -143,20 +143,21 @@ module ExternalInterface =
 
                     try
                         let sent = rawSocket.SendTo(packet, remoteEndPoint)
+                        ()
 
-                        Logger.logTrace (fun () ->
-                            let proto = getProtocol packet |> Option.defaultValue 0uy
-                            let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                            $"ExternalGateway.SendOutbound: Sent {sent} bytes, proto={proto}, dst={dstIp}, src={srcIp}")
+                        // Logger.logTrace (fun () ->
+                        //     let proto = getProtocol packet |> Option.defaultValue 0uy
+                        //     let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
+                        //     $"ExternalGateway.sendOutbound: Sent {sent} bytes, proto={proto}, dst={dstIp}, src={srcIp}")
                     with
                     | ex ->
-                        Logger.logError $"ExternalGateway.SendOutbound: Failed to send packet: {ex.Message}"
+                        Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"
 
                 | None ->
-                    Logger.logWarn "ExternalGateway.SendOutbound: Could not extract destination IP, dropping packet"
+                    Logger.logWarn "ExternalGateway.sendOutbound: Could not extract destination IP, dropping packet"
 
         /// Stop the external gateway.
-        member _.Stop() =
+        member _.stop() =
             Logger.logInfo "ExternalGateway stopping"
             running <- false
 
@@ -175,4 +176,4 @@ module ExternalInterface =
             Logger.logInfo "ExternalGateway stopped"
 
         interface IDisposable with
-            member this.Dispose() = this.Stop()
+            member this.Dispose() = this.stop()

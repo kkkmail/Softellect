@@ -44,7 +44,7 @@ module Tunnel =
                         let packet = adp.ReceivePacket()
                         if not (isNull packet) then
                             packetQueue.Enqueue(packet)
-                            Logger.logTrace (fun () -> $"Tunnel captured packet from TUN adapter, size={packet.Length} bytes")
+                            Logger.logTrace (fun () -> $"Tunnel captured packet from TUN adapter, size={packet.Length} bytes, packet: '%A{packet}'.")
                         else
                             Thread.Sleep(1)
                     with

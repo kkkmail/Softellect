@@ -157,8 +157,8 @@ module PacketRouter =
                                     // Destination is outside VPN subnet - NAT and forward to external network
                                     match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
                                     | Some natPacket ->
-                                        externalGateway.SendOutbound(natPacket)
-                                        Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
+                                        externalGateway.sendOutbound(natPacket)
+                                        // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
                                     | None ->
                                         Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
                             | None ->
@@ -201,7 +201,7 @@ module PacketRouter =
                         running <- true
 
                         // Start external gateway with NAT inbound callback
-                        externalGateway.Start(fun rawPacket ->
+                        externalGateway.start(fun rawPacket ->
                             // Called when external gateway receives a packet from internet
                             match Nat.translateInbound externalIpUint rawPacket with
                             | Some translated ->
@@ -247,7 +247,7 @@ module PacketRouter =
             running <- false
 
             // Stop external gateway first
-            externalGateway.Stop()
+            externalGateway.stop()
 
             match receiveThread with
             | Some thread ->
