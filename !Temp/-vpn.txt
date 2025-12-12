@@ -2,7 +2,7 @@
 DNS request timed out.
     timeout was 2 seconds.
 Server:  UnKnown
-Address:  8.8.8.8
+Address:  10.66.77.1
 
 DNS request timed out.
     timeout was 2 seconds.
