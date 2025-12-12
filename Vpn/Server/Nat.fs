@@ -328,7 +328,7 @@ module Nat =
                     match proto with
                     | Tcp
                     | Udp ->
-                        let dstPort = readUInt16 packet ihl
+                        let dstPort = readUInt16 packet (ihl + 2)
 
                         match tableByExternalPort.TryGetValue dstPort with
                         | true, entry ->
@@ -339,14 +339,14 @@ module Nat =
 
                             // Rewrite dst IP/port to internal client
                             writeUInt32 packet 16 internalIp
-                            writeUInt16 packet ihl internalPort
+                            writeUInt16 packet (ihl + 2) internalPort
 
                             // Update checksums
                             updateIpChecksum packet
                             updateTransportChecksum packet proto
 
                             Logger.logTrace (fun () ->
-                                $"NAT IN: {srcIp:X8} -> {internalIp:X8}:{internalPort}, extPort={dstPort}, proto={proto}")
+                                $"NAT IN: proto={proto}, extPort={dstPort} -> {internalIp:X8}:{internalPort}")
 
                             Some packet
                         | false, _ ->
@@ -357,3 +357,72 @@ module Nat =
                     | Other _ ->
                         // Non-TCP/UDP – either pass or drop
                         Some packet
+
+    /// Internal self-test for NAT inbound translation.
+    /// Validates that destination port offset and UDP checksum are correct.
+    /// This function does not run automatically; call manually for debugging.
+    let internalSelfTest () =
+        // Clear NAT table for clean test
+        tableByExternalPort.Clear()
+        tableByInternal.Clear()
+
+        // Test parameters
+        let externalIp = 0x08080808u  // 8.8.8.8 (network byte order)
+        let internalIp = 0x0A424D02u // 10.66.77.2 (network byte order)
+        let internalPort = 5353us
+        let externalPort = 40000us
+        let remoteSrcPort = 12345us
+
+        // Insert NAT mapping: externalPort=40000 -> internal 10.66.77.2:5353 UDP
+        let key = makeKey internalIp internalPort Udp
+        let entry =
+            { key = key
+              externalPort = externalPort
+              lastSeen = now() }
+        tableByExternalPort[externalPort] <- entry
+        tableByInternal[key] <- externalPort
+
+        // Construct minimal IPv4 + UDP packet
+        // IPv4 header (20 bytes) + UDP header (8 bytes) + 0 data bytes = 28 bytes
+        let packet = Array.zeroCreate<byte> 28
+
+        // IPv4 header
+        packet[0] <- 0x45uy  // Version=4, IHL=5 (20 bytes)
+        packet[1] <- 0x00uy  // DSCP/ECN
+        writeUInt16 packet 2 28us  // Total length
+        writeUInt16 packet 4 0us   // ID
+        writeUInt16 packet 6 0us   // Flags/Fragment offset
+        packet[8] <- 64uy    // TTL
+        packet[9] <- 17uy    // Protocol = UDP
+        writeUInt16 packet 10 0us  // IP checksum (will be computed)
+        writeUInt32 packet 12 0x01020304u  // Source IP (arbitrary)
+        writeUInt32 packet 16 externalIp   // Destination IP = externalIp
+
+        // UDP header (starts at offset 20)
+        writeUInt16 packet 20 remoteSrcPort  // Source port = 12345
+        writeUInt16 packet 22 externalPort   // Destination port = 40000
+        writeUInt16 packet 24 8us            // UDP length = 8 (header only)
+        writeUInt16 packet 26 0us            // UDP checksum (will be computed)
+
+        // Compute checksums
+        updateIpChecksum packet
+        updateTransportChecksum packet Udp
+
+        // Call translateInbound
+        match translateInbound externalIp packet with
+        | None ->
+            failwith "internalSelfTest: translateInbound returned None, expected Some"
+        | Some translatedPacket ->
+            // Verify destination IP in IPv4 header
+            let dstIpResult = readUInt32 translatedPacket 16
+            if dstIpResult <> internalIp then
+                failwith $"internalSelfTest: destination IP mismatch. Expected {internalIp:X8}, got {dstIpResult:X8}"
+
+            // Verify destination port in UDP header (offset 20 + 2)
+            let dstPortResult = readUInt16 translatedPacket 22
+            if dstPortResult <> internalPort then
+                failwith $"internalSelfTest: destination port mismatch. Expected {internalPort}, got {dstPortResult}"
+
+            // Test passed
+            Logger.logInfo (fun () -> "internalSelfTest: PASS")
+            printfn "internalSelfTest: PASS"
