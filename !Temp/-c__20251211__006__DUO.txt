@@ -1,0 +1,961 @@
+#    0.066 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'TraceLog'."
+#    0.081 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+#    0.098 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+#    0.100 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"'."
+#    0.105 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"'."
+#    0.108 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"', fullPath = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"'."
+#    0.140 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+#    0.147 # INFO  # .ctor # "VpnWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    0.157 # INFO  # .ctor # "VpnWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+#    0.185 # INFO  # StartAsync # "Starting VPN Client Service..."
+#    0.185 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+#    0.193 # INFO  # enableKillSwitch # "Kill-switch enabled"
+#    0.193 # INFO  # authenticate # "Authenticating with server..."
+#    0.194 # TRACE # authenticate # "authenticate: Sending auth request for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    0.196 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    0.199 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    0.211 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    0.293 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    0.294 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    0.296 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    0.426 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:03 PM..."
+#    2.092 # INFO  # authenticate # "Authenticated successfully. Assigned IP: Ip4 "10.66.77.2""
+#    2.093 # INFO  # start # "Starting tunnel with adapter: SoftellectVPN"
+#    2.695 # INFO  # start # "Tunnel started with IP: Ip4 "10.66.77.2""
+#    2.698 # TRACE # sendLoop # "Client sending 1 packets to server, total 64 bytes"
+#    2.698 # INFO  # StartAsync # "VPN Client connected with IP: Ip4 "10.66.77.2""
+#    2.699 # TRACE # sendPacket # "sendPacket: Sending packet of size 64"
+#    2.699 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    2.700 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    2.700 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    2.701 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    2.701 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+##    2.701    2.701 #  # TRACETRACE #  # tryGetWcfService # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'.""tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+#    2.703 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 255uy; 28uy; 165uy; 191uy; 135uy; 0uy; 22uy;
+  195uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 141uy;
+  52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy|]'."
+#    2.704 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    2.704 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    2.704 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    2.705 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    2.705 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    2.705 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    2.706 # TRACE # #    2.706 # TRACE # receiveLoop # tryCommunicate # "Tunnel captured packet from TUN adapter, size=48 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 8uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 2uy; 133uy;
+  0uy; 189uy; 174uy; 0uy; 0uy; 0uy; 0uy|]'.""tryCommunicate: Calling service at 12/11/2025 8:40:05 PM..."
+
+##    2.709    2.709 #  # TRACE # TRACE # receiveLoop # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:05 PM...""Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 11uy; 165uy; 0uy; 0uy; 0uy; 1uy;
+  4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 255uy; 28uy; 165uy; 191uy|]'."
+
+#    3.061 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 176uy; 118uy; 0uy; 0uy; 0uy;
+  1uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 12uy|]'."
+#    3.108 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 56uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 8uy; 129uy; 0uy; 0uy; 0uy; 2uy;
+  4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 255uy; 28uy; 165uy; 191uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy|]'."
+#    3.374 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 5uy; 97uy; 123uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  216uy; 42uy; 7uy; 108uy; 0uy; 129uy; 3uy; 164uy; 77uy; 45uy; 83uy; 69uy; 65uy;
+  82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy; 46uy;
+  49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy; 70uy;
+  48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy; 10uy;
+  83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#    3.407 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 5uy; 97uy; 123uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  216uy; 42uy; 7uy; 108uy; 0uy; 129uy; 47uy; 105uy; 77uy; 45uy; 83uy; 69uy; 65uy;
+  82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy; 46uy;
+  49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy; 70uy;
+  48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy; 10uy;
+  83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#    3.516 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    3.527 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    3.528 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    3.528 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    3.529 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    3.529 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    3.529 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    3.529 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    3.530 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:06 PM..."
+#    3.600 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    3.601 # TRACE # sendLoop # "Client sending 6 packets to server, total 634 bytes"
+#    3.601 # TRACE # sendPacket # "sendPacket: Sending packet of size 48"
+#    3.601 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    3.601 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    3.602 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    3.603 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    3.603 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    3.603 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    3.603 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:06 PM..."
+#    3.606 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 136uy;
+  0uy; 252uy; 149uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy|]'."
+#    3.606 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=48 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 8uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 2uy; 133uy;
+  0uy; 189uy; 174uy; 0uy; 0uy; 0uy; 0uy|]'."
+#    3.623 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 56uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 172uy; 107uy; 0uy; 0uy; 0uy;
+  2uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 251uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy|]'."
+#    3.625 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=69 bytes, packet: '[|96uy; 0uy; 52uy; 51uy; 0uy; 29uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy; 243uy;
+  229uy; 20uy; 235uy; 0uy; 29uy; 68uy; 50uy; 157uy; 11uy; 0uy; 0uy; 0uy; 1uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 3uy; 68uy; 85uy; 79uy; 0uy; 0uy; 255uy; 0uy; 1uy|]'."
+#    4.042 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=69 bytes, packet: '[|96uy; 0uy; 52uy; 51uy; 0uy; 29uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy; 243uy;
+  229uy; 20uy; 235uy; 0uy; 29uy; 68uy; 50uy; 157uy; 11uy; 0uy; 0uy; 0uy; 1uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 3uy; 68uy; 85uy; 79uy; 0uy; 0uy; 255uy; 0uy; 1uy|]'."
+#    4.104 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 56uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 172uy; 107uy; 0uy; 0uy; 0uy;
+  2uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 251uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy|]'."
+#    4.104 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    4.118 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    4.118 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    4.118 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    4.119 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.119 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    4.119 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    4.119 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.120 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:06 PM..."
+#    4.205 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    4.205 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#    4.205 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    4.205 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    4.206 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.206 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    4.206 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    4.206 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.206 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:06 PM..."
+#    4.604 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=48 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 8uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 2uy; 133uy;
+  0uy; 189uy; 174uy; 0uy; 0uy; 0uy; 0uy|]'."
+#    4.669 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=101 bytes, packet: '[|96uy; 2uy; 151uy; 78uy; 0uy; 61uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 229uy; 17uy; 0uy; 53uy; 0uy; 61uy; 165uy; 7uy; 43uy; 6uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 17uy; 112uy; 117uy; 98uy; 45uy;
+  99uy; 115uy; 109uy; 45uy; 106uy; 112uy; 119uy; 101uy; 45uy; 48uy; 51uy; 45uy;
+  116uy; 7uy; 116uy; 114uy; 111uy; 117uy; 116uy; 101uy; 114uy; 5uy; 115uy; 107uy;
+  121uy; 112uy; 101uy; 3uy; 99uy; 111uy; 109uy; 0uy; 0uy; 65uy; 0uy; ...|]'."
+#    4.672 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=101 bytes, packet: '[|96uy; 4uy; 150uy; 56uy; 0uy; 61uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 247uy; 50uy; 0uy; 53uy; 0uy; 61uy; 199uy; 173uy; 54uy; 63uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 17uy; 112uy; 117uy; 98uy; 45uy;
+  99uy; 115uy; 109uy; 45uy; 106uy; 112uy; 119uy; 101uy; 45uy; 48uy; 51uy; 45uy;
+  116uy; 7uy; 116uy; 114uy; 111uy; 117uy; 116uy; 101uy; 114uy; 5uy; 115uy; 107uy;
+  121uy; 112uy; 101uy; 3uy; 99uy; 111uy; 109uy; 0uy; 0uy; 1uy; 0uy; ...|]'."
+#    4.674 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=80 bytes, packet: '[|96uy; 6uy; 178uy; 215uy; 0uy; 40uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 237uy; 120uy; 0uy; 53uy; 0uy; 40uy; 172uy; 14uy; 19uy; 40uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 116uy; 101uy; 97uy; 109uy;
+  115uy; 4uy; 108uy; 105uy; 118uy; 101uy; 3uy; 99uy; 111uy; 109uy; 0uy; 0uy;
+  65uy; 0uy; 1uy|]'."
+#    4.676 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=80 bytes, packet: '[|96uy; 15uy; 65uy; 150uy; 0uy; 40uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 202uy; 47uy; 0uy; 53uy; 0uy; 40uy; 220uy; 233uy; 5uy; 214uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 116uy; 101uy; 97uy; 109uy;
+  115uy; 4uy; 108uy; 105uy; 118uy; 101uy; 3uy; 99uy; 111uy; 109uy; 0uy; 0uy; 1uy;
+  0uy; 1uy|]'."
+#    4.692 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    4.699 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=82 bytes, packet: '[|96uy; 3uy; 159uy; 59uy; 0uy; 42uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 219uy; 4uy; 0uy; 53uy; 0uy; 42uy; 201uy; 205uy; 138uy; 199uy;
+  1uy; 0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 109uy; 116uy; 97uy;
+  108uy; 107uy; 6uy; 103uy; 111uy; 111uy; 103uy; 108uy; 101uy; 3uy; 99uy; 111uy;
+  109uy; 0uy; 0uy; 1uy; 0uy; 1uy|]'."
+#    4.713 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    4.713 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    4.714 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    4.714 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.715 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    4.715 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    4.715 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.715 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:07 PM..."
+#    4.779 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    4.779 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#    4.779 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    4.779 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    4.780 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.780 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    4.780 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    4.781 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    4.781 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:07 PM..."
+#    5.296 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    5.321 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    5.322 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    5.322 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    5.322 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.322 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    5.322 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    5.323 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.323 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:08 PM..."
+#    5.352 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    5.352 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#    5.353 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    5.353 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    5.353 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.353 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    5.353 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    5.353 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.353 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:08 PM..."
+#    5.923 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    5.923 # TRACE # sendPacket # "sendPacket: Sending packet of size 169"
+#    5.923 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    5.923 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    5.923 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.924 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    5.924 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    5.924 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    5.924 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:08 PM..."
+#    6.107 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 176uy; 135uy; 0uy; 0uy; 0uy;
+  1uy; 3uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 251uy|]'."
+#    6.119 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 177uy; 126uy; 0uy; 0uy; 0uy;
+  1uy; 3uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 1uy; 0uy; 3uy|]'."
+#    6.120 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 175uy; 135uy; 0uy; 0uy; 0uy;
+  1uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 251uy|]'."
+#    6.122 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=76 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 36uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 176uy; 126uy; 0uy; 0uy; 0uy;
+  1uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 1uy; 0uy; 3uy|]'."
+#    6.124 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=69 bytes, packet: '[|96uy; 1uy; 101uy; 172uy; 0uy; 29uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy;
+  218uy; 238uy; 20uy; 235uy; 0uy; 29uy; 138uy; 190uy; 111uy; 118uy; 0uy; 0uy;
+  0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 3uy; 68uy; 85uy; 79uy; 0uy; 0uy; 255uy;
+  0uy; 1uy|]'."
+#    6.195 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 225uy; 0uy; 0uy; 128uy; 17uy; 56uy; 39uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 23uy; 218uy; 220uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.196 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 226uy; 0uy; 0uy; 128uy; 17uy; 56uy; 38uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 24uy; 218uy; 221uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.196 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 227uy; 0uy; 0uy; 128uy; 17uy; 56uy; 37uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  171uy; 6uy; 218uy; 222uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 70uy; 72uy; 69uy; 80uy; 70uy; 67uy; 69uy; 76uy; 69uy; 72uy; 70uy; 67uy;
+  69uy; 80uy; 70uy; 70uy; 70uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 128uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.499 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    6.499 # TRACE # sendPacket # "sendPacket: Sending packet of size 169"
+#    6.499 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    6.499 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    6.499 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    6.500 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    6.500 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    6.500 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    6.500 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:09 PM..."
+#    6.552 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=69 bytes, packet: '[|96uy; 1uy; 101uy; 172uy; 0uy; 29uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy;
+  218uy; 238uy; 20uy; 235uy; 0uy; 29uy; 138uy; 190uy; 111uy; 118uy; 0uy; 0uy;
+  0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 3uy; 68uy; 85uy; 79uy; 0uy; 0uy; 255uy;
+  0uy; 1uy|]'."
+#    6.599 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 56uy; 0uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy; 2uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 22uy; 58uy;
+  0uy; 5uy; 2uy; 0uy; 0uy; 1uy; 0uy; 143uy; 0uy; 172uy; 107uy; 0uy; 0uy; 0uy;
+  2uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 251uy; 4uy; 0uy; 0uy; 0uy; 255uy; 2uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy; 0uy; 3uy|]'."
+#    6.958 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 228uy; 0uy; 0uy; 128uy; 17uy; 56uy; 36uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 23uy; 218uy; 220uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.958 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 229uy; 0uy; 0uy; 128uy; 17uy; 56uy; 35uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 24uy; 218uy; 221uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.959 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 230uy; 0uy; 0uy; 128uy; 17uy; 56uy; 34uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  171uy; 6uy; 218uy; 222uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 70uy; 72uy; 69uy; 80uy; 70uy; 67uy; 69uy; 76uy; 69uy; 72uy; 70uy; 67uy;
+  69uy; 80uy; 70uy; 70uy; 70uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 128uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    6.969 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    6.987 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    6.987 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    6.987 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    6.988 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    6.988 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    6.988 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    6.988 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    6.988 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:09 PM..."
+#    7.073 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    7.073 # TRACE # sendLoop # "Client sending 25 packets to server, total 2048 bytes"
+#    7.073 # TRACE # sendPacket # "sendPacket: Sending packet of size 64"
+#    7.073 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    7.073 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    7.073 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    7.074 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    7.074 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    7.074 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    7.074 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:09 PM..."
+#    7.220 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 14uy; 51uy; 197uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#    7.221 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 14uy; 51uy; 197uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#    7.648 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    7.648 # TRACE # sendPacket # "sendPacket: Sending packet of size 48"
+#    7.648 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    7.648 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    7.648 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    7.649 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    7.649 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    7.650 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    7.650 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:10 PM..."
+#    7.718 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 231uy; 0uy; 0uy; 128uy; 17uy; 56uy; 33uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  171uy; 6uy; 218uy; 222uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 70uy; 72uy; 69uy; 80uy; 70uy; 67uy; 69uy; 76uy; 69uy; 72uy; 70uy; 67uy;
+  69uy; 80uy; 70uy; 70uy; 70uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 128uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    7.719 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 232uy; 0uy; 0uy; 128uy; 17uy; 56uy; 32uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 24uy; 218uy; 221uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    7.720 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 233uy; 0uy; 0uy; 128uy; 17uy; 56uy; 31uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  83uy; 23uy; 218uy; 220uy; 41uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    7.975 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    7.998 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    7.999 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    7.999 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    7.999 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    7.999 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    8.000 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    8.000 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.000 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:10 PM..."
+#    8.154 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=82 bytes, packet: '[|96uy; 11uy; 37uy; 50uy; 0uy; 42uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 207uy; 61uy; 0uy; 53uy; 0uy; 42uy; 70uy; 54uy; 26uy; 38uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 109uy; 116uy; 97uy; 108uy;
+  107uy; 6uy; 103uy; 111uy; 111uy; 103uy; 108uy; 101uy; 3uy; 99uy; 111uy; 109uy;
+  0uy; 0uy; 1uy; 0uy; 1uy|]'."
+#    8.220 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    8.220 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#    8.220 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    8.220 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    8.220 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.221 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    8.221 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    8.221 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.221 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:10 PM..."
+#    8.483 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 234uy; 0uy; 0uy; 128uy; 17uy; 56uy; 30uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  84uy; 23uy; 218uy; 220uy; 40uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    8.483 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 235uy; 0uy; 0uy; 128uy; 17uy; 56uy; 29uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  84uy; 24uy; 218uy; 221uy; 40uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 69uy; 69uy; 70uy; 70uy; 69uy; 80uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy;
+  67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 0uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    8.484 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=96 bytes, packet: '[|69uy; 0uy; 0uy; 96uy; 82uy; 236uy; 0uy; 0uy; 128uy; 17uy; 56uy; 28uy; 10uy;
+  66uy; 77uy; 2uy; 10uy; 66uy; 77uy; 255uy; 0uy; 137uy; 0uy; 137uy; 0uy; 76uy;
+  172uy; 6uy; 218uy; 222uy; 40uy; 16uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 1uy;
+  32uy; 70uy; 72uy; 69uy; 80uy; 70uy; 67uy; 69uy; 76uy; 69uy; 72uy; 70uy; 67uy;
+  69uy; 80uy; 70uy; 70uy; 70uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy; 65uy; 67uy;
+  65uy; 67uy; 65uy; 67uy; 65uy; 65uy; 65uy; 0uy; 0uy; 32uy; 0uy; 1uy; 192uy;
+  12uy; 0uy; 32uy; 0uy; 1uy; 0uy; 4uy; 147uy; 224uy; 0uy; 6uy; 128uy; 0uy; 10uy;
+  66uy; 77uy; 2uy|]'."
+#    8.597 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    8.621 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    8.622 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    8.622 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    8.622 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.622 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    8.622 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    8.623 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.623 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:11 PM..."
+#    8.791 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    8.791 # TRACE # sendPacket # "sendPacket: Sending packet of size 69"
+#    8.791 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    8.791 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    8.792 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.792 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    8.792 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    8.792 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    8.792 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:11 PM..."
+#    9.241 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    9.258 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    9.258 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    9.258 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    9.258 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.259 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    9.259 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    9.259 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.259 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:11 PM..."
+#    9.363 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    9.363 # TRACE # sendPacket # "sendPacket: Sending packet of size 69"
+#    9.363 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    9.363 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    9.364 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.364 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    9.364 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    9.364 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.364 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:12 PM..."
+#    9.478 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 9uy; 103uy; 219uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  218uy; 239uy; 7uy; 108uy; 0uy; 129uy; 0uy; 223uy; 77uy; 45uy; 83uy; 69uy; 65uy;
+  82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy; 46uy;
+  49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy; 70uy;
+  48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy; 10uy;
+  83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#    9.510 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 9uy; 103uy; 219uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  218uy; 239uy; 7uy; 108uy; 0uy; 129uy; 44uy; 164uy; 77uy; 45uy; 83uy; 69uy;
+  65uy; 82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy;
+  46uy; 49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy;
+  70uy; 48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy;
+  10uy; 83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#    9.601 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy; 128uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy;
+  218uy; 135uy; 0uy; 139uy; 5uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy; 218uy|]'."
+#    9.885 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#    9.895 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    9.896 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    9.896 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    9.896 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.897 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    9.897 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    9.897 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.897 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:12 PM..."
+#    9.936 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#    9.936 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#    9.936 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    9.936 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    9.937 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.937 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    9.937 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    9.937 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    9.937 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:12 PM..."
+#   10.471 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   10.484 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   10.484 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   10.484 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   10.484 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   10.485 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   10.485 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   10.485 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   10.485 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:13 PM..."
+#   10.509 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   10.509 # TRACE # sendPacket # "sendPacket: Sending packet of size 48"
+#   10.509 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   10.510 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   10.510 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   10.510 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   10.510 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   10.510 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   10.510 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:13 PM..."
+#   10.608 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy; 128uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy;
+  218uy; 135uy; 0uy; 139uy; 5uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy; 218uy|]'."
+#   10.671 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   10.674 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   11.065 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   11.089 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   11.089 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   11.089 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   11.090 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.090 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   11.091 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   11.091 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.091 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:13 PM..."
+#   11.125 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   11.125 # TRACE # sendPacket # "sendPacket: Sending packet of size 101"
+#   11.126 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   11.126 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   11.126 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.127 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   11.127 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   11.127 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.127 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:13 PM..."
+#   11.586 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy; 128uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy;
+  218uy; 135uy; 0uy; 139uy; 5uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy; 218uy|]'."
+#   11.662 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   11.680 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   11.681 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   11.681 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   11.681 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.682 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   11.682 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   11.682 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.682 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:14 PM..."
+#   11.682 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   11.684 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   11.867 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   11.867 # TRACE # sendPacket # "sendPacket: Sending packet of size 101"
+#   11.867 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   11.868 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   11.868 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.868 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   11.868 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   11.868 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   11.869 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:14 PM..."
+#   12.251 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   12.271 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   12.271 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   12.272 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   12.272 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.273 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   12.273 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   12.273 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.273 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:15 PM..."
+#   12.441 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   12.441 # TRACE # sendPacket # "sendPacket: Sending packet of size 80"
+#   12.441 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   12.441 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   12.442 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.442 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   12.443 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   12.443 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.443 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:15 PM..."
+#   12.583 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 4uy; 220uy; 229uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  218uy; 239uy; 7uy; 108uy; 0uy; 129uy; 0uy; 223uy; 77uy; 45uy; 83uy; 69uy; 65uy;
+  82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy; 46uy;
+  49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy; 70uy;
+  48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy; 10uy;
+  83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#   12.615 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=169 bytes, packet: '[|96uy; 4uy; 220uy; 229uy; 0uy; 129uy; 17uy; 4uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  218uy; 239uy; 7uy; 108uy; 0uy; 129uy; 44uy; 164uy; 77uy; 45uy; 83uy; 69uy;
+  65uy; 82uy; 67uy; 72uy; 32uy; 42uy; 32uy; 72uy; 84uy; 84uy; 80uy; 47uy; 49uy;
+  46uy; 49uy; 13uy; 10uy; 72uy; 111uy; 115uy; 116uy; 58uy; 32uy; 91uy; 70uy;
+  70uy; 48uy; 50uy; 58uy; 58uy; 67uy; 93uy; 58uy; 49uy; 57uy; 48uy; 48uy; 13uy;
+  10uy; 83uy; 84uy; 58uy; 32uy; 117uy; 117uy; 105uy; 100uy; 58uy; ...|]'."
+#   12.897 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   12.908 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   12.909 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   12.909 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   12.909 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.910 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   12.910 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   12.910 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   12.910 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:15 PM..."
+#   13.015 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   13.015 # TRACE # sendPacket # "sendPacket: Sending packet of size 80"
+#   13.015 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   13.015 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   13.016 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.016 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   13.016 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   13.016 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.016 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:15 PM..."
+#   13.097 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   13.219 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   13.468 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   13.503 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   13.514 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   13.514 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   13.515 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   13.515 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.515 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   13.515 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   13.515 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.516 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:16 PM..."
+#   13.597 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   13.597 # TRACE # sendPacket # "sendPacket: Sending packet of size 82"
+#   13.598 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   13.598 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   13.598 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.598 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   13.598 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   13.598 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   13.599 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:16 PM..."
+#   13.687 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   13.688 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=88 bytes, packet: '[|96uy; 12uy; 22uy; 182uy; 0uy; 48uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 251uy;
+  20uy; 233uy; 20uy; 233uy; 0uy; 48uy; 205uy; 156uy; 0uy; 0uy; 0uy; 0uy; 0uy;
+  1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 11uy; 95uy; 103uy; 111uy; 111uy; 103uy;
+  108uy; 101uy; 99uy; 97uy; 115uy; 116uy; 4uy; 95uy; 116uy; 99uy; 112uy; 5uy;
+  108uy; 111uy; 99uy; 97uy; 108uy; 0uy; 0uy; 12uy; 0uy; 1uy|]'."
+#   13.966 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   14.133 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   14.150 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   14.151 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.151 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.151 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.151 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.151 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.151 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.151 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:16 PM..."
+#   14.171 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   14.171 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#   14.171 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.171 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.172 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.172 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.172 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.172 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.172 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:16 PM..."
+#   14.743 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   14.743 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#   14.744 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.744 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.744 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.744 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.744 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.744 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.745 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:17 PM..."
+#   14.796 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   14.819 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   14.821 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.821 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.822 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.822 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.822 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.822 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.822 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:17 PM..."
+#   14.945 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   15.319 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   15.319 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#   15.319 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   15.320 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   15.320 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.320 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   15.320 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   15.320 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.320 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:18 PM..."
+#   15.405 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   15.426 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   15.426 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   15.426 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   15.426 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.427 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   15.427 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   15.427 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.427 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:18 PM..."
+#   15.891 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   15.891 # TRACE # sendPacket # "sendPacket: Sending packet of size 76"
+#   15.891 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   15.891 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   15.891 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.892 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   15.892 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   15.892 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   15.892 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:18 PM..."
+#   15.994 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   16.017 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   16.018 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   16.018 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   16.018 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.018 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   16.018 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   16.018 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.018 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:18 PM..."
+#   16.469 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   16.469 # TRACE # sendPacket # "sendPacket: Sending packet of size 69"
+#   16.469 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   16.470 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   16.470 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.470 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   16.470 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   16.470 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.470 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:19 PM..."
+#   16.599 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   16.622 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   16.622 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   16.623 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   16.623 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.624 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   16.624 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   16.624 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   16.624 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:19 PM..."
+#   16.901 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   17.043 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   17.044 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#   17.044 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   17.044 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   17.044 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.044 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   17.044 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   17.045 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.045 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:19 PM..."
+#   17.309 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   17.321 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   17.321 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   17.321 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   17.322 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.322 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   17.322 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   17.322 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.323 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:20 PM..."
+#   17.477 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=82 bytes, packet: '[|96uy; 9uy; 215uy; 202uy; 0uy; 42uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 244uy; 255uy; 0uy; 53uy; 0uy; 42uy; 236uy; 107uy; 84uy; 42uy;
+  1uy; 0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 97uy; 108uy; 105uy;
+  118uy; 101uy; 6uy; 103uy; 105uy; 116uy; 104uy; 117uy; 98uy; 3uy; 99uy; 111uy;
+  109uy; 0uy; 0uy; 1uy; 0uy; 1uy|]'."
+#   17.479 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=82 bytes, packet: '[|96uy; 9uy; 137uy; 9uy; 0uy; 42uy; 17uy; 128uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy;
+  128uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy;
+  166uy; 218uy; 192uy; 4uy; 0uy; 53uy; 0uy; 42uy; 40uy; 182uy; 76uy; 155uy; 1uy;
+  0uy; 0uy; 1uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 5uy; 97uy; 108uy; 105uy; 118uy;
+  101uy; 6uy; 103uy; 105uy; 116uy; 104uy; 117uy; 98uy; 3uy; 99uy; 111uy; 109uy;
+  0uy; 0uy; 65uy; 0uy; 1uy|]'."
+#   17.663 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   17.663 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#   17.663 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   17.663 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   17.663 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.664 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   17.664 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   17.664 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   17.664 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:20 PM..."
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+#   17.894 # INFO  # StopAsync # "Stopping VPN Client Service..."
+#   17.966 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Ok None'."
+#   18.434 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   18.434 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#   18.434 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   18.435 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   18.435 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   18.435 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   18.435 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   18.435 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   18.435 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:21 PM..."
+#   18.902 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=704 bytes, packet: '[|96uy; 12uy; 41uy; 132uy; 2uy; 152uy; 17uy; 1uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 255uy;
+  2uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 12uy;
+  195uy; 151uy; 14uy; 118uy; 2uy; 152uy; 237uy; 248uy; 60uy; 63uy; 120uy; 109uy;
+  108uy; 32uy; 118uy; 101uy; 114uy; 115uy; 105uy; 111uy; 110uy; 61uy; 34uy; 49uy;
+  46uy; 48uy; 34uy; 32uy; 101uy; 110uy; 99uy; 111uy; 100uy; 105uy; 110uy; 103uy;
+  61uy; 34uy; 117uy; 116uy; 102uy; 45uy; 56uy; 34uy; 63uy; 62uy; 60uy; 115uy;
+  111uy; 97uy; 112uy; 58uy; 69uy; 110uy; 118uy; 101uy; 108uy; 111uy; 112uy;
+  101uy; ...|]'."
+#   19.532 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   19.533 # TRACE # sendPacket # "sendPacket: Sending packet of size 69"
+#   19.533 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   19.533 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   19.533 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   19.533 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   19.533 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   19.533 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   19.533 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:22 PM..."
+#   20.480 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   20.481 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#   20.481 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   20.481 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   20.481 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   20.481 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   20.481 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   20.481 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   20.481 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:23 PM..."
+#   21.522 # TRACE # sendPacket # "sendPacket: Received: 'Ok ()'."
+#   21.522 # TRACE # sendPacket # "sendPacket: Sending packet of size 96"
+#   21.522 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   21.522 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   21.522 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   21.522 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   21.522 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   21.522 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   21.523 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/11/2025 8:40:24 PM..."
+#   22.090 # TRACE # receiveLoop # "Tunnel captured packet from TUN adapter, size=64 bytes, packet: '[|96uy; 0uy; 0uy; 0uy; 0uy; 24uy; 58uy; 255uy; 254uy; 128uy; 0uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 141uy; 52uy; 239uy; 119uy; 157uy; 28uy; 165uy; 191uy; 254uy; 128uy;
+  0uy; 0uy; 0uy; 0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy;
+  218uy; 135uy; 0uy; 139uy; 5uy; 0uy; 0uy; 0uy; 0uy; 254uy; 128uy; 0uy; 0uy; 0uy;
+  0uy; 0uy; 0uy; 82uy; 255uy; 32uy; 255uy; 254uy; 116uy; 166uy; 218uy|]'."
+#   22.900 # INFO  # stop # "Stopping tunnel"
+#   23.097 # INFO  # stop # "Tunnel stopped"
+#   23.098 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+#   23.668 # INFO  # disableKillSwitch # "Kill-switch disabled"
+#   23.668 # INFO  # StopAsync # "VPN Client Service stopped"
