@@ -173,19 +173,20 @@ public sealed class WinTunAdapter : IDisposable
     }
 
     /// <summary>
-    /// Sets the IP address on this adapter using netsh.
+    /// Runs a command and returns the result.
     /// </summary>
-    /// <param name="ipAddress">IP address to assign.</param>
-    /// <param name="subnetMask">Subnet mask.</param>
-    /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetIpAddress(Primitives.IpAddress ipAddress, Primitives.IpAddress subnetMask)
+    /// <param name="fileName">Executable name.</param>
+    /// <param name="arguments">Command arguments.</param>
+    /// <param name="operationName">Name of the operation for error messages.</param>
+    /// <returns>Result indicating success or failure with stderr text.</returns>
+    private static Result<Unit> RunCommand(string fileName, string arguments, string operationName)
     {
         try
         {
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "netsh",
-                Arguments = $"interface ip set address name=\"{_name}\" static {ipAddress.value} {subnetMask.value}",
+                FileName = fileName,
+                Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -198,15 +199,140 @@ public sealed class WinTunAdapter : IDisposable
             if (process?.ExitCode != 0)
             {
                 var error = process?.StandardError.ReadToEnd();
-                return Result<Unit>.Failure($"Failed to set IP address: {error}");
+                return Result<Unit>.Failure($"Failed to {operationName}: {error}");
             }
 
             return Result<Unit>.Success(Unit.Value);
         }
         catch (Exception ex)
         {
-            return Result<Unit>.Failure($"Exception setting IP address: {ex.Message}");
+            return Result<Unit>.Failure($"Exception in {operationName}: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Runs a netsh command and returns the result.
+    /// </summary>
+    /// <param name="arguments">Command arguments (without 'netsh' prefix).</param>
+    /// <param name="operationName">Name of the operation for error messages.</param>
+    /// <returns>Result indicating success or failure with stderr text.</returns>
+    private static Result<Unit> RunNetsh(string arguments, string operationName)
+    {
+        return RunCommand("netsh", arguments, operationName);
+    }
+
+    /// <summary>
+    /// Sets the IP address on this adapter using netsh.
+    /// </summary>
+    /// <param name="ipAddress">IP address to assign.</param>
+    /// <param name="subnetMask">Subnet mask.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> SetIpAddress(Primitives.IpAddress ipAddress, Primitives.IpAddress subnetMask)
+    {
+        return RunNetsh(
+            $"interface ip set address name=\"{_name}\" static {ipAddress.value} {subnetMask.value}",
+            "set IP address");
+    }
+
+    /// <summary>
+    /// Sets the DNS server on this adapter using netsh.
+    /// </summary>
+    /// <param name="dnsServerIp">DNS server IP address.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> SetDnsServer(Primitives.IpAddress dnsServerIp)
+    {
+        return RunNetsh(
+            $"interface ip set dns name=\"{_name}\" static {dnsServerIp.value}",
+            "set DNS server");
+    }
+
+    /// <summary>
+    /// Adds a route via this adapter using netsh.
+    /// </summary>
+    /// <param name="destination">Destination network address.</param>
+    /// <param name="mask">Subnet mask for the route.</param>
+    /// <param name="gateway">Gateway IP address.</param>
+    /// <param name="metric">Route metric.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> AddRoute(Primitives.IpAddress destination, Primitives.IpAddress mask, Primitives.IpAddress gateway, int metric)
+    {
+        try
+        {
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "netsh",
+                Arguments = $"interface ipv4 add route {destination.value}/{MaskToCidr(mask.value)} \"{_name}\" {gateway.value} metric={metric}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            process?.WaitForExit(5000);
+
+            if (process?.ExitCode != 0)
+            {
+                var stderr = process?.StandardError.ReadToEnd() ?? "";
+                // Treat "already exists" as success for idempotency
+                if (stderr.Contains("exists", StringComparison.OrdinalIgnoreCase) ||
+                    stderr.Contains("object already exists", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<Unit>.Success(Unit.Value);
+                }
+                return Result<Unit>.Failure($"Failed to add route: {stderr}");
+            }
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (Exception ex)
+        {
+            return Result<Unit>.Failure($"Exception adding route: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Converts a subnet mask to CIDR notation.
+    /// </summary>
+    private static int MaskToCidr(string mask)
+    {
+        var parts = mask.Split('.');
+        if (parts.Length != 4) return 0;
+
+        int cidr = 0;
+        foreach (var part in parts)
+        {
+            if (byte.TryParse(part, out var b))
+            {
+                while (b != 0)
+                {
+                    cidr += (int)(b & 1);
+                    b >>= 1;
+                }
+            }
+        }
+        return cidr;
+    }
+
+    /// <summary>
+    /// Flushes the DNS resolver cache using ipconfig.
+    /// </summary>
+    /// <returns>Result indicating success or failure.</returns>
+    public static Result<Unit> FlushDns()
+    {
+        return RunCommand("ipconfig", "/flushdns", "flush DNS");
+    }
+
+    /// <summary>
+    /// Sets the interface metric on this adapter using netsh.
+    /// </summary>
+    /// <param name="metric">Interface metric value.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> SetInterfaceMetric(int metric)
+    {
+        return RunNetsh(
+            $"interface ipv4 set interface \"{_name}\" metric={metric}",
+            "set interface metric");
     }
 
     public void Dispose()

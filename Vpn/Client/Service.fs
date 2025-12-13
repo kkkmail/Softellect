@@ -104,11 +104,14 @@ module Service =
                 Error $"Authentication error: '%A{e}'."
 
         let startTunnel (assignedIp: VpnIpAddress) =
+            let gatewayIp = serverVpnIp.value
             let config =
                 {
                     adapterName = adapterName
                     assignedIp = assignedIp
                     subnetMask = Ip4 "255.255.255.0"
+                    gatewayIp = gatewayIp
+                    dnsServerIp = gatewayIp
                 }
 
             let t = Tunnel(config)

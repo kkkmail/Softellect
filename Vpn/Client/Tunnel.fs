@@ -15,6 +15,8 @@ module Tunnel =
             adapterName : string
             assignedIp : VpnIpAddress
             subnetMask : IpAddress
+            gatewayIp : IpAddress
+            dnsServerIp : IpAddress
         }
 
 
@@ -73,31 +75,70 @@ module Tunnel =
 
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value
+                let adp = createResult.Value
 
-                let sessionResult = createResult.Value.StartSession()
+                let sessionResult = adp.StartSession()
 
                 if sessionResult.IsSuccess then
-                    let ipResult = createResult.Value.SetIpAddress(config.assignedIp.value, config.subnetMask)
+                    let ipResult = adp.SetIpAddress(config.assignedIp.value, config.subnetMask)
 
                     if ipResult.IsSuccess then
-                        running <- true
-                        let thread = Thread(ThreadStart(receiveLoop))
-                        thread.IsBackground <- true
-                        thread.Start()
-                        receiveThread <- Some thread
-                        tunnelState <- Connected
-                        Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
-                        Ok ()
+                        // Configure DNS on the adapter
+                        Logger.logInfo $"Setting DNS server to: {config.dnsServerIp.value}"
+                        let dnsResult = adp.SetDnsServer(config.dnsServerIp)
+
+                        if not dnsResult.IsSuccess then
+                            let errMsg = getErrorMessage dnsResult
+                            Logger.logError $"Failed to set DNS server: {errMsg}"
+                            tunnelState <- TunnelError errMsg
+                            adp.Dispose()
+                            adapter <- None
+                            Error errMsg
+                        else
+                            // Add split default routes (0.0.0.0/1 and 128.0.0.0/1) through gateway
+                            let routeMask = Ip4 "128.0.0.0"
+                            let routeMetric = 1
+
+                            Logger.logInfo $"Adding route 0.0.0.0/1 via {config.gatewayIp.value}"
+                            let route1Result = adp.AddRoute(Ip4 "0.0.0.0", routeMask, config.gatewayIp, routeMetric)
+
+                            if not route1Result.IsSuccess then
+                                let errMsg = getErrorMessage route1Result
+                                Logger.logError $"Failed to add route 0.0.0.0/1: {errMsg}"
+                                tunnelState <- TunnelError errMsg
+                                adp.Dispose()
+                                adapter <- None
+                                Error errMsg
+                            else
+                                Logger.logInfo $"Adding route 128.0.0.0/1 via {config.gatewayIp.value}"
+                                let route2Result = adp.AddRoute(Ip4 "128.0.0.0", routeMask, config.gatewayIp, routeMetric)
+
+                                if not route2Result.IsSuccess then
+                                    let errMsg = getErrorMessage route2Result
+                                    Logger.logError $"Failed to add route 128.0.0.0/1: {errMsg}"
+                                    tunnelState <- TunnelError errMsg
+                                    adp.Dispose()
+                                    adapter <- None
+                                    Error errMsg
+                                else
+                                    running <- true
+                                    let thread = Thread(ThreadStart(receiveLoop))
+                                    thread.IsBackground <- true
+                                    thread.Start()
+                                    receiveThread <- Some thread
+                                    tunnelState <- Connected
+                                    Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
+                                    Ok ()
                     else
                         let errMsg = getErrorMessage ipResult
                         tunnelState <- TunnelError errMsg
-                        createResult.Value.Dispose()
+                        adp.Dispose()
                         adapter <- None
                         Error errMsg
                 else
                     let errMsg = getErrorMessage sessionResult
                     tunnelState <- TunnelError errMsg
-                    createResult.Value.Dispose()
+                    adp.Dispose()
                     adapter <- None
                     Error errMsg
             else
