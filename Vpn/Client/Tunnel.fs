@@ -73,11 +73,12 @@ module Tunnel =
         member private _.addHostRoute() =
             let processName = "netsh"
             let deleteCommand = $"interface ipv4 delete route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value}"
+            Logger.logInfo $"Executing: '{processName} {deleteCommand}'."
             let deleteResult = WinTunAdapter.RunCommand(processName, deleteCommand, "delete server /32 exclusion route");
 
             if not deleteResult.IsSuccess then
                 let errMsg = getErrorMessage deleteResult
-                Logger.logWarn $"Failed to execute: '{processName} {deleteResult}', error: {errMsg}. Proceeding further."
+                Logger.logWarn $"Failed to execute: '{processName} {deleteCommand}', error: {errMsg}. Proceeding further."
                 
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
