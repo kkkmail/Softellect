@@ -494,14 +494,23 @@ public sealed class KillSwitch : IDisposable
         }
     }
     
+    // private static uint IPv4ToUInt32(IPAddress ip)
+    // {
+    //     var bytes = ip.GetAddressBytes();
+    //     if (bytes.Length != 4)
+    //         throw new ArgumentException("Only IPv4 addresses are supported.", nameof(ip));
+    //
+    //     // Windows is little-endian; WFP expects the v4 addr in native order.
+    //     return BitConverter.ToUInt32(bytes, 0);
+    // }
+
     private static uint IPv4ToUInt32(IPAddress ip)
     {
-        var bytes = ip.GetAddressBytes();
-        if (bytes.Length != 4)
+        var ipBytes = ip.GetAddressBytes();
+        if (ipBytes.Length != 4)
             throw new ArgumentException("Only IPv4 addresses are supported.", nameof(ip));
 
-        // Windows is little-endian; WFP expects the v4 addr in native order.
-        return BitConverter.ToUInt32(bytes, 0);
+        return (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
     }
 
     public void Dispose()
