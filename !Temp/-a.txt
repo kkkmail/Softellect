@@ -1,1 +1,7 @@
 Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric,InterfaceMetric | Select-Object -First 1 ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric
+
+ifIndex         : 4
+InterfaceAlias  : Wi-Fi
+NextHop         : 192.168.2.1
+RouteMetric     : 0
+InterfaceMetric : 55
