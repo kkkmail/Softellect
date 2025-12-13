@@ -1,0 +1,459 @@
+#    0.059 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'TraceLog'."
+#    0.073 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+#    0.184 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+#    0.187 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"'."
+#    0.192 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"'."
+#    0.194 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"', fullPath = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"'."
+#    0.224 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+#    0.327 # INFO  # .ctor # "VpnWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    0.337 # INFO  # .ctor # "VpnWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+#    0.363 # INFO  # StartAsync # "Starting VPN Client Service..."
+#    0.363 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+#    0.372 # INFO  # enableKillSwitch # "Kill-switch enabled"
+#    0.373 # INFO  # authenticate # "Authenticating with server..."
+#    0.374 # TRACE # authenticate # "authenticate: Sending auth request for client 10e38c19-d220-4852-8589-82eca51ade92"
+#    0.375 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#    0.416 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#    0.434 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    0.508 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#    0.509 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#    0.511 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#    0.700 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/13/2025 9:53:45 AM..."
+#    2.340 # INFO  # authenticate # "Authenticated successfully. Assigned IP: Ip4 "10.66.77.2""
+#    2.342 # INFO  # start # "Starting tunnel with adapter: SoftellectVPN"
+#    3.072 # INFO  # start # "Setting DNS server to: 10.66.77.1"
+#   14.237 # INFO  # start # "Adding route 0.0.0.0/1 via 10.66.77.1"
+#   14.307 # INFO  # start # "Adding route 128.0.0.0/1 via 10.66.77.1"
+#   14.373 # INFO  # start # "Tunnel started with IP: Ip4 "10.66.77.2""
+#   14.373 # INFO  # StartAsync # "Tunnel started with IP: Ip4 "10.66.77.2""
+#   14.374 # INFO  # StartAsync # "Kill-switch: permitted VPN local address Ip4 "10.66.77.2""
+#   14.375 # INFO  # StartAsync # "VPN Client connected with IP: Ip4 "10.66.77.2""
+#   14.376 # TRACE # receivePackets # "receivePackets: Receiving packets for client 10e38c19-d220-4852-8589-82eca51ade92"
+#   14.377 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.377 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.378 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+#   14.379 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.379 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.380 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+#   14.380 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/13/2025 9:53:59 AM..."
+#   14.383 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.383 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:49873  ff02::1:3:5355, next=17, len=69""
+#   14.383 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=64, packet="IPv6: :::0  ff02::1:ff1c:a5bf:0, next=58, len=64""
+#   14.383 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=48, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::2:0, next=58, len=48""
+#   14.383 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=96, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=96""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:49873  ff02::1:3:5355, next=17, len=69""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:53264  ff02::c:1900, next=17, len=169""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=96, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=96""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:53264  ff02::c:1900, next=17, len=169""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=64, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::1:0, next=58, len=64""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=48, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::2:0, next=58, len=48""
+#   14.384 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=96, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=96""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:53065  ff02::1:3:5355, next=17, len=69""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:53065  ff02::1:3:5355, next=17, len=69""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=96, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=96""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=48, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::2:0, next=58, len=48""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.385 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.386 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=76, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=76""
+#   14.386 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:51874  ff02::1:3:5355, next=17, len=69""
+#   14.387 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.387 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.387 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.387 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:59550  10.66.77.1:53, proto=17, len=62""
+#   14.387 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=69, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:51874  ff02::1:3:5355, next=17, len=69""
+#   14.388 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=96, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:0  ff02::16:0, next=0, len=96""
+#   14.388 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.388 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.388 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.388 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:59550  10.66.77.1:53, proto=17, len=62""
+#   14.388 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.388 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:63845  10.66.77.1:53, proto=17, len=62""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=60 bytes, packet="IPv4: 10.66.77.2:50566  10.66.77.1:53, proto=17, len=60""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:59550  10.66.77.1:53, proto=17, len=62""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.389 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=96 bytes, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:63845  10.66.77.1:53, proto=17, len=62""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=60 bytes, packet="IPv4: 10.66.77.2:50566  10.66.77.1:53, proto=17, len=60""
+#   14.390 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:50336  ff02::c:1900, next=17, len=169""
+#   14.390 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:50336  ff02::c:1900, next=17, len=169""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=63 bytes, packet="IPv4: 10.66.77.2:59197  10.66.77.1:53, proto=17, len=63""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=60 bytes, packet="IPv4: 10.66.77.2:50566  10.66.77.1:53, proto=17, len=60""
+#   14.390 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:63845  10.66.77.1:53, proto=17, len=62""
+#   14.391 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:59550  10.66.77.1:53, proto=17, len=62""
+#   14.391 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.391 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.391 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:49319  10.66.77.1:53, proto=17, len=81""
+#   14.391 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:64111  10.66.77.1:53, proto=17, len=81""
+#   14.391 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.391 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.391 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:63845  10.66.77.1:53, proto=17, len=62""
+#   14.392 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=60 bytes, packet="IPv4: 10.66.77.2:50566  10.66.77.1:53, proto=17, len=60""
+#   14.392 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:49319  10.66.77.1:53, proto=17, len=81""
+#   14.392 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:64111  10.66.77.1:53, proto=17, len=81""
+#   14.392 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:50336  ff02::c:1900, next=17, len=169""
+#   14.392 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=169, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:50336  ff02::c:1900, next=17, len=169""
+#   14.392 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=68 bytes, packet="IPv4: 10.66.77.2:60124  10.66.77.1:53, proto=17, len=68""
+#   14.392 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   14.393 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:51078  10.66.77.1:53, proto=17, len=75""
+#   14.393 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:50484  10.66.77.1:53, proto=17, len=75""
+#   14.393 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:64111  10.66.77.1:53, proto=17, len=81""
+#   14.393 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:49319  10.66.77.1:53, proto=17, len=81""
+#   14.393 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   14.393 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   14.393 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.394 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=88, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:5353  ff02::fb:5353, next=17, len=88""
+#   14.394 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   14.394 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=68 bytes, packet="IPv4: 10.66.77.2:60124  10.66.77.1:53, proto=17, len=68""
+#   14.394 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62831  72.167.224.50:45001, proto=6, len=52""
+#   14.396 # TRACE # sendLoop # "Client sending 36 packets to server, total 2775 bytes"
+#   14.397 # TRACE # sendPacket # "sendPacket: Sending packet of size 96, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   14.397 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   14.397 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   14.398 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.399 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   14.399 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   14.399 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   14.401 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/13/2025 9:53:59 AM..."
+#   14.411 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62832  72.167.224.50:45001, proto=6, len=52""
+#   14.507 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=56 bytes, packet="IPv4: 10.66.77.2:58272  10.66.77.1:53, proto=17, len=56""
+#   14.507 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:59550  10.66.77.1:53, proto=17, len=62""
+#   14.569 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:50484  10.66.77.1:53, proto=17, len=75""
+#   14.569 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:51078  10.66.77.1:53, proto=17, len=75""
+#   14.647 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:62822  10.66.77.1:53, proto=17, len=69""
+#   15.162 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   15.319 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=68 bytes, packet="IPv4: 10.66.77.2:60124  10.66.77.1:53, proto=17, len=68""
+#   15.383 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=684 bytes, packet="IPv4: 10.66.77.2:60125  239.255.255.250:3702, proto=17, len=684""
+#   15.398 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62831  72.167.224.50:45001, proto=6, len=52""
+#   15.414 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62832  72.167.224.50:45001, proto=6, len=52""
+#   15.522 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=56 bytes, packet="IPv4: 10.66.77.2:58272  10.66.77.1:53, proto=17, len=56""
+#   15.585 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:50484  10.66.77.1:53, proto=17, len=75""
+#   15.585 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:51078  10.66.77.1:53, proto=17, len=75""
+#   15.585 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:49319  10.66.77.1:53, proto=17, len=81""
+#   15.585 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:64111  10.66.77.1:53, proto=17, len=81""
+#   15.662 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:62822  10.66.77.1:53, proto=17, len=69""
+#   15.913 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=165 bytes, packet="IPv4: 10.66.77.2:50339  239.255.255.250:1900, proto=17, len=165""
+#   16.355 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:62825  10.66.77.1:53, proto=17, len=75""
+#   16.355 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:63845  10.66.77.1:53, proto=17, len=62""
+#   16.355 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=60 bytes, packet="IPv4: 10.66.77.2:50566  10.66.77.1:53, proto=17, len=60""
+#   16.528 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=56 bytes, packet="IPv4: 10.66.77.2:58272  10.66.77.1:53, proto=17, len=56""
+#   16.670 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:62822  10.66.77.1:53, proto=17, len=69""
+#   16.921 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   17.330 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=68 bytes, packet="IPv4: 10.66.77.2:60124  10.66.77.1:53, proto=17, len=68""
+#   17.364 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:62825  10.66.77.1:53, proto=17, len=75""
+#   17.364 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=684 bytes, packet="IPv4: 10.66.77.2:60125  239.255.255.250:3702, proto=17, len=684""
+#   17.407 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62831  72.167.224.50:45001, proto=6, len=52""
+#   17.423 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62832  72.167.224.50:45001, proto=6, len=52""
+#   17.594 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:50484  10.66.77.1:53, proto=17, len=75""
+#   17.595 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:51078  10.66.77.1:53, proto=17, len=75""
+#   18.377 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:62825  10.66.77.1:53, proto=17, len=75""
+#   18.533 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=56 bytes, packet="IPv4: 10.66.77.2:58272  10.66.77.1:53, proto=17, len=56""
+#   18.675 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:62822  10.66.77.1:53, proto=17, len=69""
+#   18.926 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=165 bytes, packet="IPv4: 10.66.77.2:50339  239.255.255.250:1900, proto=17, len=165""
+#   18.926 # TRACE # receiveLoop # "Tunnel: dropping IPv6 packet, len=704, packet="IPv6: fe80::8d34:ef77:9d1c:a5bf:60126  ff02::c:3702, next=17, len=704""
+#   19.382 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=684 bytes, packet="IPv4: 10.66.77.2:60125  239.255.255.250:3702, proto=17, len=684""
+#   19.586 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:49319  10.66.77.1:53, proto=17, len=81""
+#   19.586 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=81 bytes, packet="IPv4: 10.66.77.2:64111  10.66.77.1:53, proto=17, len=81""
+#   19.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62839  149.154.175.52:443, proto=6, len=52""
+#   19.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62840  149.154.175.54:443, proto=6, len=52""
+#   19.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62841  149.154.175.52:80, proto=6, len=52""
+#   19.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62842  149.154.175.54:80, proto=6, len=52""
+#   20.382 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:62825  10.66.77.1:53, proto=17, len=75""
+#   20.382 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63276  52.123.128.14:443, proto=6, len=52""
+#   20.413 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:51052  10.66.77.1:53, proto=17, len=69""
+#   20.646 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61421  52.123.128.14:443, proto=6, len=52""
+#   20.694 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63273  52.123.128.14:443, proto=6, len=52""
+#   20.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63274  149.154.175.52:443, proto=6, len=52""
+#   20.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63275  149.154.175.54:443, proto=6, len=52""
+#   20.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63278  149.154.175.52:80, proto=6, len=52""
+#   20.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63279  149.154.175.54:80, proto=6, len=52""
+#   21.331 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=68 bytes, packet="IPv4: 10.66.77.2:60124  10.66.77.1:53, proto=17, len=68""
+#   21.378 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63276  52.123.128.14:443, proto=6, len=52""
+#   21.409 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62831  72.167.224.50:45001, proto=6, len=52""
+#   21.424 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62832  72.167.224.50:45001, proto=6, len=52""
+#   21.596 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:51078  10.66.77.1:53, proto=17, len=75""
+#   21.597 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:50484  10.66.77.1:53, proto=17, len=75""
+#   21.643 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61421  52.123.128.14:443, proto=6, len=52""
+#   21.706 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63273  52.123.128.14:443, proto=6, len=52""
+#   21.845 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63274  149.154.175.52:443, proto=6, len=52""
+#   21.845 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63275  149.154.175.54:443, proto=6, len=52""
+#   21.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63279  149.154.175.54:80, proto=6, len=52""
+#   21.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63278  149.154.175.52:80, proto=6, len=52""
+#   21.938 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=165 bytes, packet="IPv4: 10.66.77.2:50339  239.255.255.250:1900, proto=17, len=165""
+#   22.421 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=59 bytes, packet="IPv4: 10.66.77.2:51053  10.66.77.1:53, proto=17, len=59""
+#   22.545 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=56 bytes, packet="IPv4: 10.66.77.2:58272  10.66.77.1:53, proto=17, len=56""
+#   22.685 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=69 bytes, packet="IPv4: 10.66.77.2:62822  10.66.77.1:53, proto=17, len=69""
+#   22.840 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63282  149.154.175.52:443, proto=6, len=52""
+#   22.841 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63283  149.154.175.54:443, proto=6, len=52""
+#   22.841 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63284  149.154.175.52:80, proto=6, len=52""
+#   22.841 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63287  149.154.175.54:80, proto=6, len=52""
+#   23.385 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:51759  10.66.77.1:53, proto=17, len=61""
+#   23.385 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63317  74.125.131.194:443, proto=6, len=52""
+#   23.385 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63276  52.123.128.14:443, proto=6, len=52""
+#   23.587 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:64962  10.66.77.1:53, proto=17, len=62""
+#   23.649 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60962  74.125.131.194:443, proto=6, len=52""
+#   23.649 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61421  52.123.128.14:443, proto=6, len=52""
+#   23.695 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63273  52.123.128.14:443, proto=6, len=52""
+#   23.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63283  149.154.175.54:443, proto=6, len=52""
+#   23.835 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63282  149.154.175.52:443, proto=6, len=52""
+#   23.866 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63284  149.154.175.52:80, proto=6, len=52""
+#   23.866 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63287  149.154.175.54:80, proto=6, len=52""
+#   24.395 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=75 bytes, packet="IPv4: 10.66.77.2:62825  10.66.77.1:53, proto=17, len=75""
+#   24.395 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:51759  10.66.77.1:53, proto=17, len=61""
+#   24.395 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63317  74.125.131.194:443, proto=6, len=52""
+#   24.426 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=59 bytes, packet="IPv4: 10.66.77.2:64963  10.66.77.1:53, proto=17, len=59""
+#   24.595 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:64962  10.66.77.1:53, proto=17, len=62""
+#   24.611 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60965  135.225.243.230:443, proto=6, len=52""
+#   24.642 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60962  74.125.131.194:443, proto=6, len=52""
+#   24.954 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=165 bytes, packet="IPv4: 10.66.77.2:50339  239.255.255.250:1900, proto=17, len=165""
+#   25.342 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60966  4.207.247.138:443, proto=6, len=52""
+#   25.404 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:51759  10.66.77.1:53, proto=17, len=61""
+#   25.606 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:64962  10.66.77.1:53, proto=17, len=62""
+#   25.606 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60965  135.225.243.230:443, proto=6, len=52""
+#   25.699 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60967  23.32.25.249:80, proto=6, len=52""
+#   25.853 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63283  149.154.175.54:443, proto=6, len=52""
+#   25.853 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63282  149.154.175.52:443, proto=6, len=52""
+#   25.853 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63287  149.154.175.54:80, proto=6, len=52""
+#   25.853 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63284  149.154.175.52:80, proto=6, len=52""
+#   26.410 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63317  74.125.131.194:443, proto=6, len=52""
+#   26.425 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=59 bytes, packet="IPv4: 10.66.77.2:64964  10.66.77.1:53, proto=17, len=59""
+#   26.550 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60969  2.18.32.121:443, proto=6, len=52""
+#   26.596 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60966  4.207.247.138:443, proto=6, len=52""
+#   26.658 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60962  74.125.131.194:443, proto=6, len=52""
+#   26.690 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:51113  10.66.77.1:53, proto=17, len=62""
+#   26.721 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60967  23.32.25.249:80, proto=6, len=52""
+#   26.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60971  149.154.175.52:443, proto=6, len=52""
+#   26.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60972  149.154.175.54:443, proto=6, len=52""
+#   26.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60973  149.154.175.52:80, proto=6, len=52""
+#   26.846 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60974  149.154.175.54:80, proto=6, len=52""
+#   27.406 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:51759  10.66.77.1:53, proto=17, len=61""
+#   27.406 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63276  52.123.128.14:443, proto=6, len=52""
+#   27.561 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60969  2.18.32.121:443, proto=6, len=52""
+#   27.609 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:64962  10.66.77.1:53, proto=17, len=62""
+#   27.609 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60965  135.225.243.230:443, proto=6, len=52""
+#   27.670 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61421  52.123.128.14:443, proto=6, len=52""
+#   27.701 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:51113  10.66.77.1:53, proto=17, len=62""
+#   27.702 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63273  52.123.128.14:443, proto=6, len=52""
+#   27.839 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60971  149.154.175.52:443, proto=6, len=52""
+#   27.839 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60973  149.154.175.52:80, proto=6, len=52""
+#   27.839 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60974  149.154.175.54:80, proto=6, len=52""
+#   27.840 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60972  149.154.175.54:443, proto=6, len=52""
+#   27.964 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=165 bytes, packet="IPv4: 10.66.77.2:50339  239.255.255.250:1900, proto=17, len=165""
+#   28.336 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61570  52.113.194.132:443, proto=6, len=52""
+#   28.430 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=59 bytes, packet="IPv4: 10.66.77.2:61995  10.66.77.1:53, proto=17, len=59""
+#   28.430 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:53418  64.233.161.188:443, proto=6, len=52""
+#   28.600 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:58898  52.113.194.132:443, proto=6, len=52""
+#   28.709 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:51113  10.66.77.1:53, proto=17, len=62""
+#   28.709 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60967  23.32.25.249:80, proto=6, len=52""
+#   28.974 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60404  104.215.18.215:443, proto=6, len=52""
+#   29.098 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60966  4.207.247.138:443, proto=6, len=52""
+#   29.236 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51094  104.215.18.215:443, proto=6, len=52""
+#   29.236 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51095  20.42.65.84:443, proto=6, len=52""
+#   29.348 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61570  52.113.194.132:443, proto=6, len=52""
+#   29.410 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62831  72.167.224.50:45001, proto=6, len=52""
+#   29.426 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:53418  64.233.161.188:443, proto=6, len=52""
+#   29.426 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62832  72.167.224.50:45001, proto=6, len=52""
+#   29.550 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60969  2.18.32.121:443, proto=6, len=52""
+#   29.597 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:58898  52.113.194.132:443, proto=6, len=52""
+#   29.863 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60972  149.154.175.54:443, proto=6, len=52""
+#   29.863 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60973  149.154.175.52:80, proto=6, len=52""
+#   29.864 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60971  149.154.175.52:443, proto=6, len=52""
+#   29.864 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60974  149.154.175.54:80, proto=6, len=52""
+#   29.878 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51098  2.19.181.113:80, proto=6, len=52""
+#   29.974 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60404  104.215.18.215:443, proto=6, len=52""
+#   30.235 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51095  20.42.65.84:443, proto=6, len=52""
+#   30.235 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51094  104.215.18.215:443, proto=6, len=52""
+#   30.406 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63317  74.125.131.194:443, proto=6, len=52""
+#   30.670 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60962  74.125.131.194:443, proto=6, len=52""
+#   30.717 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:51113  10.66.77.1:53, proto=17, len=62""
+#   30.889 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51098  2.19.181.113:80, proto=6, len=52""
+#   31.354 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61570  52.113.194.132:443, proto=6, len=52""
+#   31.416 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:51759  10.66.77.1:53, proto=17, len=61""
+#   31.430 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:53418  64.233.161.188:443, proto=6, len=52""
+#   31.446 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51100  140.82.113.26:443, proto=6, len=52""
+#   31.523 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51101  13.248.151.210:443, proto=6, len=52""
+#   31.601 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:58898  52.113.194.132:443, proto=6, len=52""
+#   31.601 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:64962  10.66.77.1:53, proto=17, len=62""
+#   31.632 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60965  135.225.243.230:443, proto=6, len=52""
+#   31.991 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60404  104.215.18.215:443, proto=6, len=52""
+#   32.238 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51095  20.42.65.84:443, proto=6, len=52""
+#   32.238 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51094  104.215.18.215:443, proto=6, len=52""
+#   32.472 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51100  140.82.113.26:443, proto=6, len=52""
+#   32.534 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51101  13.248.151.210:443, proto=6, len=52""
+#   32.721 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60967  23.32.25.249:80, proto=6, len=52""
+#   32.892 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51098  2.19.181.113:80, proto=6, len=52""
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+#   33.394 # INFO  # StopAsync # "Stopping VPN Client Service..."
+#   33.577 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60969  2.18.32.121:443, proto=6, len=52""
+#   33.856 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60972  149.154.175.54:443, proto=6, len=52""
+#   33.857 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60971  149.154.175.52:443, proto=6, len=52""
+#   33.857 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60973  149.154.175.52:80, proto=6, len=52""
+#   33.857 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60974  149.154.175.54:80, proto=6, len=52""
+#   34.480 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51100  140.82.113.26:443, proto=6, len=52""
+#   34.528 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51101  13.248.151.210:443, proto=6, len=52""
+#   34.714 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=62 bytes, packet="IPv4: 10.66.77.2:51113  10.66.77.1:53, proto=17, len=62""
+#   34.838 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51106  149.154.175.52:443, proto=6, len=52""
+#   34.838 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51108  149.154.175.54:443, proto=6, len=52""
+#   34.838 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51109  149.154.175.52:80, proto=6, len=52""
+#   34.838 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51110  149.154.175.54:80, proto=6, len=52""
+#   35.351 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61570  52.113.194.132:443, proto=6, len=52""
+#   35.397 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63276  52.123.128.14:443, proto=6, len=52""
+#   35.443 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:53418  64.233.161.188:443, proto=6, len=52""
+#   35.450 # ERROR # tryCommunicate # #   35.450 # ERROR # tryCommunicate # "tryCommunicate: At 12/13/2025 9:54:20 AM got inner exception:' System.ServiceModel.EndpointNotFoundException: Could not connect to net.tcp://72.167.224.50:45001/VpnService. The connection attempt lasted for a time span of 00:00:21.0266252. TCP error code 10060: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.. 
+ ---> System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.CreateConnectionAsync(IPAddress address, Int32 port)
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   --- End of inner exception stack trace ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.BufferedConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.ConnectionPoolHelper.EstablishConnectionAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ClientFramingDuplexSessionChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.Runtime.TaskHelpers.WaitForCompletion(Task task)
+   at System.ServiceModel.Channels.CommunicationObject.Open(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOpenOnce.System.ServiceModel.Channels.ServiceChannel.ICallOnce.Call(ServiceChannel channel, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOnceManager.CallOnce(TimeSpan timeout, CallOnceManager cascade)
+   at System.ServiceModel.Channels.ServiceChannel.EnsureOpened(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
+   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
+   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
+   at generatedProxy_1.sendPacket(Byte[])
+   at Softellect.Wcf.Client.tryCommunicate$cont@99[c,a,b,d](FSharpFunc`2 c, FSharpFunc`2 f, c a, FSharpResult`2 matchValue, Unit unitVar) in C:\GitHub\Softellect\Wcf\Client.fs:line 107'."
+"tryCommunicate: At 12/13/2025 9:54:20 AM got inner exception:' System.ServiceModel.EndpointNotFoundException: Could not connect to net.tcp://72.167.224.50:45001/VpnService. The connection attempt lasted for a time span of 00:00:21.0203610. TCP error code 10060: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.. 
+ ---> System.Net.Sockets.SocketException (10060): A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.CreateConnectionAsync(IPAddress address, Int32 port)
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   --- End of inner exception stack trace ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.BufferedConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.ConnectionPoolHelper.EstablishConnectionAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ClientFramingDuplexSessionChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.Runtime.TaskHelpers.WaitForCompletion(Task task)
+   at System.ServiceModel.Channels.CommunicationObject.Open(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOpenOnce.System.ServiceModel.Channels.ServiceChannel.ICallOnce.Call(ServiceChannel channel, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOnceManager.CallOnce(TimeSpan timeout, CallOnceManager cascade)
+   at System.ServiceModel.Channels.ServiceChannel.EnsureOpened(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
+   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
+   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
+   at generatedProxy_1.receivePackets(Byte[])
+   at Softellect.Wcf.Client.tryCommunicate$cont@99[c,a,b,d](FSharpFunc`2 c, FSharpFunc`2 f, c a, FSharpResult`2 matchValue, Unit unitVar) in C:\GitHub\Softellect\Wcf\Client.fs:line 107'."
+#   35.453 # TRACE # receivePackets # "receivePackets: Received for client 10e38c19-d220-4852-8589-82eca51ade92: 'Error (ConfigErr "Receive packets error")'."
+#   35.453 # TRACE # sendPacket # "sendPacket: Received: 'Error (ConfigErr "Send packet error")'."
+#   35.453 # WARN  # receiveLoop # #   35.453 # WARN  # sendLoop # "Failed to receive packets: ConfigErr "Receive packets error"""Failed to send packet: ConfigErr "Send packet error""
+
+#   35.453 # TRACE # sendPacket # "sendPacket: Sending packet of size 96, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   35.453 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   35.453 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   35.453 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   35.454 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   35.454 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   35.454 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   35.454 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/13/2025 9:54:20 AM..."
+#   35.460 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51112  72.167.224.50:45001, proto=6, len=52""
+#   35.616 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:65515  10.66.77.1:53, proto=17, len=61""
+#   35.631 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:58898  52.113.194.132:443, proto=6, len=52""
+#   35.631 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:64764  74.125.131.94:443, proto=6, len=52""
+#   35.661 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:61421  52.123.128.14:443, proto=6, len=52""
+#   35.725 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:63273  52.123.128.14:443, proto=6, len=52""
+#   35.833 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51108  149.154.175.54:443, proto=6, len=52""
+#   35.834 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51110  149.154.175.54:80, proto=6, len=52""
+#   35.848 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51106  149.154.175.52:443, proto=6, len=52""
+#   35.848 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51109  149.154.175.52:80, proto=6, len=52""
+#   35.879 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62874  74.125.131.94:443, proto=6, len=52""
+#   35.989 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:60404  104.215.18.215:443, proto=6, len=52""
+#   36.254 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51094  104.215.18.215:443, proto=6, len=52""
+#   36.254 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51095  20.42.65.84:443, proto=6, len=52""
+#   36.456 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51112  72.167.224.50:45001, proto=6, len=52""
+#   36.628 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:65515  10.66.77.1:53, proto=17, len=61""
+#   36.628 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:64764  74.125.131.94:443, proto=6, len=52""
+#   36.894 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51098  2.19.181.113:80, proto=6, len=52""
+#   36.895 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:62874  74.125.131.94:443, proto=6, len=52""
+#   37.640 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=61 bytes, packet="IPv4: 10.66.77.2:65515  10.66.77.1:53, proto=17, len=61""
+#   37.859 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51108  149.154.175.54:443, proto=6, len=52""
+#   37.859 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51106  149.154.175.52:443, proto=6, len=52""
+#   37.859 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51110  149.154.175.54:80, proto=6, len=52""
+#   37.859 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:51109  149.154.175.52:80, proto=6, len=52""
+#   38.170 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:57306  52.123.128.14:443, proto=6, len=52""
+#   38.371 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:50432  23.35.105.145:443, proto=6, len=52""
+#   38.371 # TRACE # receiveLoop # "Tunnel captured IPv4 packet from TUN adapter, size=52 bytes, packet="IPv4: 10.66.77.2:54301  23.73.2.155:443, proto=6, len=52""
+#   38.403 # INFO  # stop # "Stopping tunnel"
+#   38.460 # ERROR # tryCommunicate # "tryCommunicate: At 12/13/2025 9:54:23 AM got inner exception:' System.ServiceModel.CommunicationException: Could not connect to net.tcp://72.167.224.50:45001/VpnService. The connection attempt lasted for a time span of 00:00:03.0011610. TCP error code 10053: An established connection was aborted by the software in your host machine.. 
+ ---> System.Net.Sockets.SocketException (10053): An established connection was aborted by the software in your host machine.
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+   at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource.GetResult(Int16 token)
+   at System.Threading.Tasks.ValueTask.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+--- End of stack trace from previous location ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.CreateConnectionAsync(IPAddress address, Int32 port)
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   --- End of inner exception stack trace ---
+   at System.ServiceModel.Channels.SocketConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.BufferedConnectionInitiator.ConnectAsync(Uri uri, TimeSpan timeout)
+   at System.ServiceModel.Channels.ConnectionPoolHelper.EstablishConnectionAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ClientFramingDuplexSessionChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.OnOpenAsync(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.OnOpenAsyncInternal(TimeSpan timeout)
+   at System.ServiceModel.Channels.CommunicationObject.System.ServiceModel.IAsyncCommunicationObject.OpenAsync(TimeSpan timeout)
+   at System.Runtime.TaskHelpers.WaitForCompletion(Task task)
+   at System.ServiceModel.Channels.CommunicationObject.Open(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOpenOnce.System.ServiceModel.Channels.ServiceChannel.ICallOnce.Call(ServiceChannel channel, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.CallOnceManager.CallOnce(TimeSpan timeout, CallOnceManager cascade)
+   at System.ServiceModel.Channels.ServiceChannel.EnsureOpened(TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
+   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
+   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
+   at generatedProxy_1.sendPacket(Byte[])
+   at Softellect.Wcf.Client.tryCommunicate$cont@99[c,a,b,d](FSharpFunc`2 c, FSharpFunc`2 f, c a, FSharpResult`2 matchValue, Unit unitVar) in C:\GitHub\Softellect\Wcf\Client.fs:line 107'."
+#   38.472 # TRACE # sendPacket # "sendPacket: Received: 'Error (ConfigErr "Send packet error")'."
+#   38.472 # WARN  # sendLoop # "Failed to send packet: ConfigErr "Send packet error""
+#   38.472 # TRACE # sendPacket # "sendPacket: Sending packet of size 96, packet="IPv4: 10.66.77.2:137  10.66.77.255:137, proto=17, len=96""
+#   38.473 # TRACE # getService # "VpnWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+#   38.473 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+#   38.473 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   38.475 # TRACE # getService # "VpnWcfClient.getService - Successfully created WCF service proxy"
+#   38.475 # TRACE # tryCommunicate # "tryCommunicate: Checking channel state..."
+#   38.475 # TRACE # tryCommunicate # "tryCommunicate: Channel State: 'Created', Via: 'net.tcp://72.167.224.50:45001/VpnService', RemoteAddress: 'net.tcp://72.167.224.50:45001/VpnService'."
+#   38.475 # TRACE # tryCommunicate # "tryCommunicate: Calling service at 12/13/2025 9:54:23 AM..."
+#   38.566 # INFO  # stop # "Tunnel stopped"
+#   38.567 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+#   39.225 # INFO  # disableKillSwitch # "Kill-switch disabled"
+#   39.225 # INFO  # StopAsync # "VPN Client Service stopped"
