@@ -16,7 +16,8 @@ module DnsProxy =
     let private upstreamDns = IPEndPoint(IPAddress.Parse("1.1.1.1"), 53)
 
     /// Timeout for upstream DNS response
-    let private dnsTimeoutMs = 2000
+    // let private dnsTimeoutMs = 2000
+    let private dnsTimeoutMs = 5000
 
     // ---- IPv4/UDP helpers ----
 
