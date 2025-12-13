@@ -58,7 +58,7 @@ module WcfClient =
                     r
                     |> Array.map (fun e -> Logger.logTrace (fun () -> $"Received for client {clientId.value}: '%A{(summarizePacket e)}'."))
                     |> ignore
-                | Ok None -> Logger.logWarn $"ERROR: Empty response." 
+                | Ok None -> Logger.logTrace (fun () -> "Empty response.") 
                 | Error e -> Logger.logWarn $"ERROR: '{e}'."    
 
                 result
