@@ -74,14 +74,14 @@ module Tunnel =
             let processName = "netsh"
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
-            Logger.logInfo $"Executing: '{processName} {command} {operation}'."
+            Logger.logInfo $"Executing: '{processName} {command}'."
             let hostResult = WinTunAdapter.RunCommand(processName, command, operation);
             if not hostResult.IsSuccess then
                 let errMsg = getErrorMessage hostResult
-                Logger.logError $"Failed to execute: '{processName} {command} {operation}', error: {errMsg}"
+                Logger.logError $"Failed to execute: '{processName} {command}', error: {errMsg}"
                 Error errMsg
             else
-                Logger.logInfo $"Successfully executed: '{processName} {command} {operation}'."
+                Logger.logInfo $"Successfully executed: '{processName} {command}'."
                 Ok ()
         
         member t.start() =

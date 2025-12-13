@@ -5,3 +5,6 @@ InterfaceAlias  : Wi-Fi
 NextHop         : 192.168.2.1
 RouteMetric     : 0
 InterfaceMetric : 55
+
+
+Get-NetRoute -DestinationPrefix 72.167.224.50/32 | Format-List ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric,PolicyStore
