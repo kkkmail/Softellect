@@ -15,3 +15,25 @@ RouteMetric     : 1
 InterfaceMetric : 55
 
 nslookup microsoft.com 10.66.77.1 > c:\GitHub\Softellect\!Temp\-vpn.txt 2>&1 3>&1 4>&1 5>&1 6>&1
+
+
+========================================================
+
+Get-NetIPInterface | Sort-Object ifIndex | Format-Table ifIndex,InterfaceAlias,AddressFamily,ConnectionState
+
+
+pktmon filter remove
+pktmon filter add -i <IFINDEX>
+pktmon filter add -p 53
+pktmon start --etw -p 0 --file-name c:\GitHub\Softellect\!Temp\vpn_dns.etl
+
+
+nslookup -timeout=10 dns.msftncsi.com 10.66.77.1
+
+
+pktmon stop
+pktmon format c:\GitHub\Softellect\!Temp\vpn_dns.etl -o c:\GitHub\Softellect\!Temp\vpn_dns.pcapng
+
+
+Wireshark - display filter
+dns || (udp.port == 53)
