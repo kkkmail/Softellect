@@ -23,6 +23,110 @@ module PacketDebug =
         b >= 32uy && b <= 126uy
     
 
+    let tryParseDnsName (payload: byte[]) (startOffset: int) =
+        // Parse QNAME (labels) from DNS question section.
+        // Returns (name, nextOffset) or ("<err>", startOffset) on failure.
+        try
+            let mutable off = startOffset
+            let sb = System.Text.StringBuilder()
+            let mutable first = true
+            let mutable done' = false
+
+            while not done' do
+                if off >= payload.Length then
+                    done' <- true
+                    sb.Clear() |> ignore
+                    sb.Append("<dns-qname-oob>") |> ignore
+                else
+                    let len = int payload[off]
+                    off <- off + 1
+                    if len = 0 then
+                        done' <- true
+                    elif (len &&& 0xC0) = 0xC0 then
+                        // compression pointer in QNAME (unexpected in question but can appear)
+                        if off >= payload.Length then
+                            done' <- true
+                            sb.Clear() |> ignore
+                            sb.Append("<dns-qname-badptr>") |> ignore
+                        else
+                            // pointer consumes one more byte
+                            off <- off + 1
+                            done' <- true
+                            if sb.Length = 0 then
+                                sb.Append("<dns-qname-ptr>") |> ignore
+                    else
+                        if off + len > payload.Length then
+                            done' <- true
+                            sb.Clear() |> ignore
+                            sb.Append("<dns-qname-trunc>") |> ignore
+                        else
+                            if not first then sb.Append('.') |> ignore
+                            first <- false
+                            // label bytes
+                            for i in 0 .. (len - 1) do
+                                let ch = payload[off + i]
+                                if isAsciiPrintable ch then sb.Append(char ch) |> ignore
+                                else sb.Append('?') |> ignore
+                            off <- off + len
+
+            let name =
+                if sb.Length = 0 then "<root>"
+                else sb.ToString()
+
+            name, off
+        with _ ->
+            "<dns-qname-ex>", startOffset
+
+    
+    let trySummarizeDns (udpPayload: byte[]) =
+        // DNS header is 12 bytes
+        if udpPayload.Length < 12 then
+            "DNS <payload-too-short>"
+        else
+            let txid = readUInt16BE udpPayload 0
+            let flags = readUInt16BE udpPayload 2
+            let qd = readUInt16BE udpPayload 4
+            let an = readUInt16BE udpPayload 6
+            let ns = readUInt16BE udpPayload 8
+            let ar = readUInt16BE udpPayload 10
+
+            let qr = (flags &&& 0x8000us) <> 0us
+            let rcode = int (flags &&& 0x000Fus)
+
+            // Best-effort parse first question name
+            let namePart =
+                if qd = 0us then
+                    ""
+                else
+                    let name, offAfterName = tryParseDnsName udpPayload 12
+                    // question has QTYPE/QCLASS (4 bytes) after name
+                    let qtqcOk = offAfterName + 4 <= udpPayload.Length
+                    let qtype =
+                        if qtqcOk then int (readUInt16BE udpPayload offAfterName) else 0
+                    let qclass =
+                        if qtqcOk then int (readUInt16BE udpPayload (offAfterName + 2)) else 0
+
+                    // common qtype names (just a few)
+                    let qtypeName =
+                        match qtype with
+                        | 1 -> "A"
+                        | 28 -> "AAAA"
+                        | 15 -> "MX"
+                        | 16 -> "TXT"
+                        | 5 -> "CNAME"
+                        | 2 -> "NS"
+                        | 12 -> "PTR"
+                        | 33 -> "SRV"
+                        | _ -> string qtype
+
+                    $" name={name} qtype={qtypeName} qclass={qclass}"
+
+            if qr then
+                $"DNS r txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar} rcode={rcode}{namePart}"
+            else
+                $"DNS q txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar}{namePart}"
+    
+    
     // let summarizePacket (bytes: byte[]) =
     //     if bytes.Length < 20 then
     //         $"<packet too short: {bytes.Length} bytes>"
@@ -73,108 +177,6 @@ module PacketDebug =
 
     let summarizePacket (bytes: byte[]) =
 
-        let tryParseDnsName (payload: byte[]) (startOffset: int) =
-            // Parse QNAME (labels) from DNS question section.
-            // Returns (name, nextOffset) or ("<err>", startOffset) on failure.
-            try
-                let mutable off = startOffset
-                let sb = System.Text.StringBuilder()
-                let mutable first = true
-                let mutable done' = false
-
-                while not done' do
-                    if off >= payload.Length then
-                        done' <- true
-                        sb.Clear() |> ignore
-                        sb.Append("<dns-qname-oob>") |> ignore
-                    else
-                        let len = int payload[off]
-                        off <- off + 1
-                        if len = 0 then
-                            done' <- true
-                        elif (len &&& 0xC0) = 0xC0 then
-                            // compression pointer in QNAME (unexpected in question but can appear)
-                            if off >= payload.Length then
-                                done' <- true
-                                sb.Clear() |> ignore
-                                sb.Append("<dns-qname-badptr>") |> ignore
-                            else
-                                // pointer consumes one more byte
-                                off <- off + 1
-                                done' <- true
-                                if sb.Length = 0 then
-                                    sb.Append("<dns-qname-ptr>") |> ignore
-                        else
-                            if off + len > payload.Length then
-                                done' <- true
-                                sb.Clear() |> ignore
-                                sb.Append("<dns-qname-trunc>") |> ignore
-                            else
-                                if not first then sb.Append('.') |> ignore
-                                first <- false
-                                // label bytes
-                                for i in 0 .. (len - 1) do
-                                    let ch = payload[off + i]
-                                    if isAsciiPrintable ch then sb.Append(char ch) |> ignore
-                                    else sb.Append('?') |> ignore
-                                off <- off + len
-
-                let name =
-                    if sb.Length = 0 then "<root>"
-                    else sb.ToString()
-
-                name, off
-            with _ ->
-                "<dns-qname-ex>", startOffset
-
-        let trySummarizeDns (udpPayload: byte[]) =
-            // DNS header is 12 bytes
-            if udpPayload.Length < 12 then
-                "DNS <payload-too-short>"
-            else
-                let txid = readUInt16BE udpPayload 0
-                let flags = readUInt16BE udpPayload 2
-                let qd = readUInt16BE udpPayload 4
-                let an = readUInt16BE udpPayload 6
-                let ns = readUInt16BE udpPayload 8
-                let ar = readUInt16BE udpPayload 10
-
-                let qr = (flags &&& 0x8000us) <> 0us
-                let rcode = int (flags &&& 0x000Fus)
-
-                // Best-effort parse first question name
-                let namePart =
-                    if qd = 0us then
-                        ""
-                    else
-                        let name, offAfterName = tryParseDnsName udpPayload 12
-                        // question has QTYPE/QCLASS (4 bytes) after name
-                        let qtqcOk = offAfterName + 4 <= udpPayload.Length
-                        let qtype =
-                            if qtqcOk then int (readUInt16BE udpPayload offAfterName) else 0
-                        let qclass =
-                            if qtqcOk then int (readUInt16BE udpPayload (offAfterName + 2)) else 0
-
-                        // common qtype names (just a few)
-                        let qtypeName =
-                            match qtype with
-                            | 1 -> "A"
-                            | 28 -> "AAAA"
-                            | 15 -> "MX"
-                            | 16 -> "TXT"
-                            | 5 -> "CNAME"
-                            | 2 -> "NS"
-                            | 12 -> "PTR"
-                            | 33 -> "SRV"
-                            | _ -> string qtype
-
-                        $" name={name} qtype={qtypeName} qclass={qclass}"
-
-                if qr then
-                    $"DNS r txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar} rcode={rcode}{namePart}"
-                else
-                    $"DNS q txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar}{namePart}"
-
         if bytes.Length < 20 then
             $"<packet too short: {bytes.Length} bytes>"
         else
@@ -214,7 +216,6 @@ module PacketDebug =
                             $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, len={bytes.Length}"
                     else
                         $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, len={bytes.Length}"
-
             | 6 ->
                 // IPv6
                 if bytes.Length < 40 then
@@ -236,6 +237,5 @@ module PacketDebug =
                         else 0, 0
 
                     $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
-
             | _ ->
                 $"<Unknown IP version={v}, len={bytes.Length}>"

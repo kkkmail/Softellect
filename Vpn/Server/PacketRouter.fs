@@ -10,6 +10,7 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.ExternalInterface
+open Softellect.Vpn.Server.Nat
 
 module PacketRouter =
 
@@ -185,7 +186,7 @@ module PacketRouter =
                                                 Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                                         else
                                             // Destination is outside VPN subnet - NAT and forward to external network
-                                            match Nat.translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
                                             | Some natPacket ->
                                                 externalGateway.sendOutbound(natPacket)
                                                 // Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes")
@@ -239,18 +240,24 @@ module PacketRouter =
                         // Start external gateway with NAT inbound callback
                         externalGateway.start(fun rawPacket ->
                             // Called when external gateway receives a packet from internet
-                            match Nat.translateInbound externalIpUint rawPacket with
+                            match translateInbound externalIpUint rawPacket with
                             | Some translated ->
-                                // Inject translated packet into WinTun (routing loop will deliver to client)
-                                match adapter with
-                                | Some adp when adp.IsSessionActive ->
-                                    let result = adp.SendPacket(translated)
-                                    if result.IsSuccess then
-                                        Logger.logTrace (fun () -> $"NAT inbound: injected packet to TUN, size={translated.Length} bytes")
-                                    else
-                                        Logger.logWarn "NAT inbound: failed to inject packet to TUN"
-                                | _ ->
-                                    Logger.logWarn "NAT inbound: adapter not ready"
+                                // Enqueue translated packet directly to the VPN client
+                                match getDestinationIpUInt32 translated with
+                                | Some destIpUint ->
+                                    let destIpStr = $"{byte (destIpUint >>> 24)}.{byte (destIpUint >>> 16)}.{byte (destIpUint >>> 8)}.{byte destIpUint}"
+                                    match IpAddress.tryCreate destIpStr with
+                                    | Some destIpAddr ->
+                                        match findClientByIp destIpAddr with
+                                        | Some session ->
+                                            registry.enqueuePacketForClient(session.clientId, translated) |> ignore
+                                            Logger.logTrace (fun () -> $"NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
+                                        | None ->
+                                            Logger.logTrace (fun () -> $"NAT inbound: no client session for destination IP {destIpStr}")
+                                    | None ->
+                                        Logger.logTrace (fun () -> $"NAT inbound: failed to parse destination IP {destIpStr}")
+                                | None ->
+                                    Logger.logTrace (fun () -> "NAT inbound: could not extract destination IP from translated packet")
                             | None ->
                                 Logger.logTrace (fun () -> "NAT inbound: packet dropped (no mapping)")
                         )
