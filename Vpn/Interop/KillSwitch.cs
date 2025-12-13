@@ -322,7 +322,7 @@ public sealed class KillSwitch : IDisposable
             Marshal.Copy(subLayerKeyBytes, 0, filterPtr + 80, 16);
 
             // weight.type (UINT32) at offset 96 - FWP_EMPTY for auto-weight
-            Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_EMPTY);
+            Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_UINT8);
 
             // weight.value at offset 104 - leave as 0
 
