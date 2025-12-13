@@ -17,6 +17,7 @@ module Tunnel =
             subnetMask : IpAddress
             gatewayIp : IpAddress
             dnsServerIp : IpAddress
+            serverPublicIp : IpAddress
             physicalGatewayIp : IpAddress
             physicalInterfaceName : string
         }
@@ -69,10 +70,18 @@ module Tunnel =
             | _ ->
                 Logger.logWarn "Tunnel adapter not ready for receive loop"
                 
-        static member AddHostRoute() =
-            ()
-
-        member _.start() =
+        member private _.addHostRoute() =
+            let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
+            let operation = "add server /32 exclusion route"
+            Logger.logInfo $"Using command: '{command}'."
+            let hostResult = WinTunAdapter.RunCommand("netsh", command, operation);
+            if not hostResult.IsSuccess then
+                let errMsg = getErrorMessage hostResult
+                Logger.logError $"Failed to execute 'netsh {command} {operation}': {errMsg}"
+                Error errMsg
+            else Ok ()
+        
+        member t.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
             tunnelState <- Connecting
 
@@ -100,40 +109,47 @@ module Tunnel =
                             adapter <- None
                             Error errMsg
                         else
-                            // Add split default routes (0.0.0.0/1 and 128.0.0.0/1) through gateway
-                            let routeMask = Ip4 "128.0.0.0"
-                            let routeMetric = 1
-
-                            Logger.logInfo $"Adding route 0.0.0.0/1 via {config.gatewayIp.value}"
-                            let route1Result = adp.AddRoute(Ip4 "0.0.0.0", routeMask, config.gatewayIp, routeMetric)
-
-                            if not route1Result.IsSuccess then
-                                let errMsg = getErrorMessage route1Result
-                                Logger.logError $"Failed to add route 0.0.0.0/1: {errMsg}"
-                                tunnelState <- TunnelError errMsg
+                            match t.addHostRoute() with                            
+                            | Error e ->
+                                tunnelState <- TunnelError e
                                 adp.Dispose()
                                 adapter <- None
-                                Error errMsg
-                            else
-                                Logger.logInfo $"Adding route 128.0.0.0/1 via {config.gatewayIp.value}"
-                                let route2Result = adp.AddRoute(Ip4 "128.0.0.0", routeMask, config.gatewayIp, routeMetric)
+                                Error e
+                            | Ok () ->                                
+                                // Add split default routes (0.0.0.0/1 and 128.0.0.0/1) through gateway
+                                let routeMask = Ip4 "128.0.0.0"
+                                let routeMetric = 1
 
-                                if not route2Result.IsSuccess then
-                                    let errMsg = getErrorMessage route2Result
-                                    Logger.logError $"Failed to add route 128.0.0.0/1: {errMsg}"
+                                Logger.logInfo $"Adding route 0.0.0.0/1 via {config.gatewayIp.value}"
+                                let route1Result = adp.AddRoute(Ip4 "0.0.0.0", routeMask, config.gatewayIp, routeMetric)
+
+                                if not route1Result.IsSuccess then
+                                    let errMsg = getErrorMessage route1Result
+                                    Logger.logError $"Failed to add route 0.0.0.0/1: {errMsg}"
                                     tunnelState <- TunnelError errMsg
                                     adp.Dispose()
                                     adapter <- None
                                     Error errMsg
                                 else
-                                    running <- true
-                                    let thread = Thread(ThreadStart(receiveLoop))
-                                    thread.IsBackground <- true
-                                    thread.Start()
-                                    receiveThread <- Some thread
-                                    tunnelState <- Connected
-                                    Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
-                                    Ok ()
+                                    Logger.logInfo $"Adding route 128.0.0.0/1 via {config.gatewayIp.value}"
+                                    let route2Result = adp.AddRoute(Ip4 "128.0.0.0", routeMask, config.gatewayIp, routeMetric)
+
+                                    if not route2Result.IsSuccess then
+                                        let errMsg = getErrorMessage route2Result
+                                        Logger.logError $"Failed to add route 128.0.0.0/1: {errMsg}"
+                                        tunnelState <- TunnelError errMsg
+                                        adp.Dispose()
+                                        adapter <- None
+                                        Error errMsg
+                                    else
+                                        running <- true
+                                        let thread = Thread(ThreadStart(receiveLoop))
+                                        thread.IsBackground <- true
+                                        thread.Start()
+                                        receiveThread <- Some thread
+                                        tunnelState <- Connected
+                                        Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
+                                        Ok ()
                     else
                         let errMsg = getErrorMessage ipResult
                         tunnelState <- TunnelError errMsg

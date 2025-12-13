@@ -49,6 +49,11 @@ module Service =
             | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
             | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
 
+        let getServerIpAddress () =
+            match data.clientAccessInfo.serverAccessInfo with
+            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
+            | HttpServiceInfo info -> info.httpServiceAddress.value
+
         let getServerPort () =
             match data.clientAccessInfo.serverAccessInfo with
             | NetTcpServiceInfo info -> info.netTcpServicePort.value
@@ -112,6 +117,9 @@ module Service =
                     subnetMask = Ip4 "255.255.255.0"
                     gatewayIp = gatewayIp
                     dnsServerIp = gatewayIp
+                    serverPublicIp = getServerIpAddress()
+                    physicalGatewayIp = Ip4 "192.168.2.1"
+                    physicalInterfaceName = "Wi-Fi"
                 }
 
             let t = Tunnel(config)
