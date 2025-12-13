@@ -219,7 +219,7 @@ public sealed class KillSwitch : IDisposable
         var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
         var mask = prefixLength == 0 ? 0 : uint.MaxValue << (32 - prefixLength);
 
-        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, ipUint, mask, 100);
+        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, mask, 100);
     }
 
     private Result<Unit> AddPermitFilterForHost(IPAddress ip, string name)
@@ -227,7 +227,60 @@ public sealed class KillSwitch : IDisposable
         var ipBytes = ip.GetAddressBytes();
         var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
 
-        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, ipUint, uint.MaxValue, 100);
+        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, uint.MaxValue, 100);
+    }
+
+    /// <summary>
+    /// Adds a permit filter for traffic originating from the specified local IPv4 address.
+    /// </summary>
+    /// <param name="localIp">The local IP address to permit.</param>
+    /// <param name="name">Display name for the filter.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> AddPermitFilterForLocalHost(IPAddress localIp, string name)
+    {
+        if (_engineHandle == IntPtr.Zero || !_isEnabled)
+        {
+            return Result<Unit>.Failure("Kill-switch is not enabled");
+        }
+
+        try
+        {
+            var txnResult = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
+            if (txnResult != WindowsFilteringPlatform.ErrorSuccess)
+            {
+                return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
+            }
+
+            var ipBytes = localIp.GetAddressBytes();
+            var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
+
+            var filterResult = AddFilterWithCondition(
+                name,
+                WindowsFilteringPlatform.FWP_ACTION_PERMIT,
+                WindowsFilteringPlatform.FWPM_CONDITION_IP_LOCAL_ADDRESS,
+                ipUint,
+                uint.MaxValue,
+                110);
+
+            if (!filterResult.IsSuccess)
+            {
+                WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
+                return filterResult;
+            }
+
+            var commitResult = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
+            if (commitResult != WindowsFilteringPlatform.ErrorSuccess)
+            {
+                return Result<Unit>.Failure($"Failed to commit transaction: 0x{commitResult:X8}");
+            }
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (Exception ex)
+        {
+            WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
+            return Result<Unit>.Failure($"Exception adding local host permit filter: {ex.Message}");
+        }
     }
 
     private Result<Unit> AddBlockAllFilter()
@@ -315,7 +368,7 @@ public sealed class KillSwitch : IDisposable
         }
     }
 
-    private Result<Unit> AddFilterWithCondition(string name, uint action, uint ipAddress, uint mask, byte filterWeight)
+    private Result<Unit> AddFilterWithCondition(string name, uint action, Guid fieldKey, uint ipAddress, uint mask, byte filterWeight)
     {
         // Allocate condition value (FWP_V4_ADDR_AND_MASK)
         var addrMask = new WindowsFilteringPlatform.FWP_V4_ADDR_AND_MASK
@@ -342,7 +395,7 @@ public sealed class KillSwitch : IDisposable
                 Marshal.WriteByte(conditionPtr, i, 0);
 
             // fieldKey (GUID) at offset 0 - 16 bytes
-            var fieldKeyBytes = WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS.ToByteArray();
+            var fieldKeyBytes = fieldKey.ToByteArray();
             Marshal.Copy(fieldKeyBytes, 0, conditionPtr, 16);
 
             // matchType (UINT32) at offset 16

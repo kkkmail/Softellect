@@ -185,6 +185,30 @@ module Service =
                     | Ok assignedIp ->
                         match startTunnel assignedIp with
                         | Ok () ->
+                            Logger.logInfo $"Tunnel started with IP: {assignedIp.value}"
+
+                            // Permit traffic from VPN local address in kill-switch
+                            let assignedIpAddress = assignedIp.value.ipAddress
+                            match killSwitch with
+                            | Some ks ->
+                                let r = ks.AddPermitFilterForLocalHost(assignedIpAddress, $"Permit VPN Local {assignedIp.value}")
+                                if r.IsSuccess then
+                                    Logger.logInfo $"Kill-switch: permitted VPN local address {assignedIp.value}"
+                                else
+                                    let errMsg = match r.Error with | null -> "Unknown error" | e -> e
+                                    state <- Failed errMsg
+                                    Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
+                                    Task.CompletedTask |> ignore
+                            | None ->
+                                state <- Failed "Kill-switch is not enabled"
+                                Logger.logError "Kill-switch instance is missing after Enable()"
+                                Task.CompletedTask |> ignore
+
+                            // Only start threads if kill-switch permit succeeded
+                            match state with
+                            | Failed _ -> Task.CompletedTask
+                            | _ ->
+
                             running <- true
 
                             let st = Thread(ThreadStart(sendLoop))
