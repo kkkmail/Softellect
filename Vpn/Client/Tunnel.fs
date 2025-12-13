@@ -17,6 +17,8 @@ module Tunnel =
             subnetMask : IpAddress
             gatewayIp : IpAddress
             dnsServerIp : IpAddress
+            physicalGatewayIp : IpAddress
+            physicalInterfaceName : string
         }
 
 
@@ -66,6 +68,9 @@ module Tunnel =
                         Thread.Sleep(100)
             | _ ->
                 Logger.logWarn "Tunnel adapter not ready for receive loop"
+                
+        static member AddHostRoute() =
+            ()
 
         member _.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"

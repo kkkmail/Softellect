@@ -1,0 +1,1 @@
+Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric,InterfaceMetric | Select-Object -First 1 ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric

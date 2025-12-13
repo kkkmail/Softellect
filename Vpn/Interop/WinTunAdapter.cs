@@ -179,7 +179,7 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="arguments">Command arguments.</param>
     /// <param name="operationName">Name of the operation for error messages.</param>
     /// <returns>Result indicating success or failure with stderr text.</returns>
-    private static Result<Unit> RunCommand(string fileName, string arguments, string operationName)
+    public static Result<Unit> RunCommand(string fileName, string arguments, string operationName)
     {
         try
         {
