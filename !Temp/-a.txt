@@ -35,5 +35,35 @@ pktmon stop
 pktmon format c:\GitHub\Softellect\!Temp\vpn_dns.etl -o c:\GitHub\Softellect\!Temp\vpn_dns.pcapng
 
 
+======================================================
+
+
+ifIndex InterfaceAlias               AddressFamily ConnectionState
+------- --------------               ------------- ---------------
+      1 Loopback Pseudo-Interface 1           IPv6       Connected
+      1 Loopback Pseudo-Interface 1           IPv4       Connected
+      4 Wi-Fi                                 IPv4       Connected
+      4 Wi-Fi                                 IPv6       Connected
+      7 Local Area Connection 3               IPv4    Disconnected
+      7 Local Area Connection 3               IPv6    Disconnected
+     11 Local Area Connection                 IPv6    Disconnected
+     11 Local Area Connection                 IPv4    Disconnected
+     12 Local Area Connection* 3              IPv4    Disconnected
+     12 Local Area Connection* 3              IPv6    Disconnected
+     16 Ethernet 3                            IPv6    Disconnected
+     16 Ethernet 3                            IPv4    Disconnected
+     19 Local Area Connection 4               IPv6    Disconnected
+     19 Local Area Connection 4               IPv4    Disconnected
+     20 Ethernet 4                            IPv4    Disconnected
+     20 Ethernet 4                            IPv6    Disconnected
+     22 OpenVPN Data Channel Offload          IPv4    Disconnected
+     22 OpenVPN Data Channel Offload          IPv6    Disconnected
+     27 Local Area Connection* 4              IPv6    Disconnected
+     27 Local Area Connection* 4              IPv4    Disconnected
+     82 SoftellectVPN                         IPv6       Connected
+     82 SoftellectVPN                         IPv4       Connected
+
+
+
 Wireshark - display filter
 dns || (udp.port == 53)
