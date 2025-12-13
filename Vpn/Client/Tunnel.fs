@@ -71,15 +71,18 @@ module Tunnel =
                 Logger.logWarn "Tunnel adapter not ready for receive loop"
                 
         member private _.addHostRoute() =
+            let processName = "netsh"
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
-            Logger.logInfo $"Using command: '{command}'."
-            let hostResult = WinTunAdapter.RunCommand("netsh", command, operation);
+            Logger.logInfo $"Executing: '{processName} {command} {operation}'."
+            let hostResult = WinTunAdapter.RunCommand(processName, command, operation);
             if not hostResult.IsSuccess then
                 let errMsg = getErrorMessage hostResult
-                Logger.logError $"Failed to execute 'netsh {command} {operation}': {errMsg}"
+                Logger.logError $"Failed to execute: '{processName} {command} {operation}', error: {errMsg}"
                 Error errMsg
-            else Ok ()
+            else
+                Logger.logInfo $"Successfully executed: '{processName} {command} {operation}'."
+                Ok ()
         
         member t.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
