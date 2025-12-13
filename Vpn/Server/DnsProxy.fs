@@ -17,7 +17,7 @@ module DnsProxy =
 
     /// Timeout for upstream DNS response
     // let private dnsTimeoutMs = 2000
-    let private dnsTimeoutMs = 5000
+    let private dnsTimeoutMs = 10_000
 
     // ---- IPv4/UDP helpers ----
 
