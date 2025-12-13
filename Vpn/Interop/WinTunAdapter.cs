@@ -194,7 +194,7 @@ public sealed class WinTunAdapter : IDisposable
             };
 
             using var process = System.Diagnostics.Process.Start(startInfo);
-            process?.WaitForExit(5000);
+            process?.WaitForExit(30_000);
 
             if (process?.ExitCode != 0)
             {
