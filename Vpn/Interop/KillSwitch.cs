@@ -215,8 +215,7 @@ public sealed class KillSwitch : IDisposable
     private Result<Unit> AddPermitFilter(string network, int prefixLength, string name)
     {
         var ip = IPAddress.Parse(network);
-        var ipBytes = ip.GetAddressBytes();
-        var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
+        var ipUint = IPv4ToUInt32(ip);
         var mask = prefixLength == 0 ? 0 : uint.MaxValue << (32 - prefixLength);
 
         return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, mask, 100);
@@ -224,8 +223,7 @@ public sealed class KillSwitch : IDisposable
 
     private Result<Unit> AddPermitFilterForHost(IPAddress ip, string name)
     {
-        var ipBytes = ip.GetAddressBytes();
-        var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
+        var ipUint = IPv4ToUInt32(ip);
 
         return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, uint.MaxValue, 100);
     }
@@ -251,9 +249,8 @@ public sealed class KillSwitch : IDisposable
                 return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
             }
 
-            var ipBytes = localIp.GetAddressBytes();
-            var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
-
+            var ipUint = IPv4ToUInt32(localIp);
+            
             var filterResult = AddFilterWithCondition(
                 name,
                 WindowsFilteringPlatform.FWP_ACTION_PERMIT,
@@ -495,6 +492,16 @@ public sealed class KillSwitch : IDisposable
             Marshal.FreeHGlobal(namePtr);
             Marshal.FreeHGlobal(descPtr);
         }
+    }
+    
+    private static uint IPv4ToUInt32(IPAddress ip)
+    {
+        var bytes = ip.GetAddressBytes();
+        if (bytes.Length != 4)
+            throw new ArgumentException("Only IPv4 addresses are supported.", nameof(ip));
+
+        // Windows is little-endian; WFP expects the v4 addr in native order.
+        return BitConverter.ToUInt32(bytes, 0);
     }
 
     public void Dispose()
