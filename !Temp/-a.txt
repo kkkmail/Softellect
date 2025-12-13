@@ -8,3 +8,9 @@ InterfaceMetric : 55
 
 
 Get-NetRoute -DestinationPrefix 72.167.224.50/32 | Format-List ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric,PolicyStore
+ifIndex         : 4
+InterfaceAlias  : Wi-Fi
+NextHop         : 192.168.2.1
+RouteMetric     : 1
+InterfaceMetric : 55
+
