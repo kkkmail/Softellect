@@ -19,7 +19,7 @@ function Fail($msg, $ex=$null) {
 }
 
 try {
-    "TCP connect -> $ip:$port"
+    "TCP connect -> ${ip}:${port}"
     $tcp = New-Object System.Net.Sockets.TcpClient
 
     $iar = $tcp.BeginConnect($ip, $port, $null, $null)
