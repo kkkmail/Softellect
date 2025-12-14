@@ -76,5 +76,6 @@ curl -v -k --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
 curl -v --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
+powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient('8.8.8.8',443); $s=$c.GetStream(); $w=New-Object IO.StreamWriter($s); $w.NewLine=\"`r`n\"; $w.Write(\"GET / HTTP/1.1`r`nHost: dns.google`r`nConnection: close`r`n`r`n\"); $w.Flush(); $r=New-Object IO.StreamReader($s); $r.ReadToEnd(); $c.Close()"
 
 
