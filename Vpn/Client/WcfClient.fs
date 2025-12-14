@@ -1,8 +1,8 @@
 namespace Softellect.Vpn.Client
 
 open Softellect.Sys.Logging
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Wcf.Client
-open Softellect.Wcf.Common
 open Softellect.Wcf.Errors
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
@@ -41,14 +41,25 @@ module WcfClient =
                 Logger.logTrace (fun () -> $"authenticate: Sending auth request for client {request.clientId.value}")
                 tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
 
-            member _.sendPacket packet =
-                Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}")
-                let payload = (data.clientAccessInfo.vpnClientId, packet)
-                tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
+            member _.sendPackets packets =
+                let clientId = data.clientAccessInfo.vpnClientId
+                Logger.logTrace (fun () -> $"Sending {packets.Length} packets for client {clientId.value}.")
+                Logger.logTracePackets (packets, (fun () -> $"Sending for client {clientId.value}: "))
+                let payload = (clientId, packets)
+                let result = tryCommunicate getService (fun s b -> s.sendPackets b) toSendError payload
+                Logger.logTrace (fun () -> $"Result: '%A{result}'.")
+                result
 
             member _.receivePackets clientId =
                 Logger.logTrace (fun () -> $"receivePackets: Receiving packets for client {clientId.value}")
-                tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
+                let result = tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
+                
+                match result with
+                | Ok (Some r) -> Logger.logTracePackets (r, (fun () -> $"Received for client {clientId.value}: "))
+                | Ok None -> Logger.logTrace (fun () -> "Empty response.") 
+                | Error e -> Logger.logWarn $"ERROR: '{e}'."    
+
+                result
 
 
     let createVpnClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =

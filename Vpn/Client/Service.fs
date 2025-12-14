@@ -1,7 +1,6 @@
 namespace Softellect.Vpn.Client
 
 open System
-open System.Net
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
@@ -9,11 +8,11 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
-open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Tunnel
 open Softellect.Vpn.Client.WcfClient
 open Softellect.Vpn.Interop
+open Softellect.Vpn.Core.PacketDebug
 
 module Service =
 
@@ -48,6 +47,11 @@ module Service =
             match data.clientAccessInfo.serverAccessInfo with
             | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
             | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
+
+        let getServerIpAddress () =
+            match data.clientAccessInfo.serverAccessInfo with
+            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
+            | HttpServiceInfo info -> info.httpServiceAddress.value
 
         let getServerPort () =
             match data.clientAccessInfo.serverAccessInfo with
@@ -104,11 +108,17 @@ module Service =
                 Error $"Authentication error: '%A{e}'."
 
         let startTunnel (assignedIp: VpnIpAddress) =
+            let gatewayIp = serverVpnIp.value
             let config =
                 {
                     adapterName = adapterName
                     assignedIp = assignedIp
                     subnetMask = Ip4 "255.255.255.0"
+                    gatewayIp = gatewayIp
+                    dnsServerIp = gatewayIp
+                    serverPublicIp = getServerIpAddress()
+                    physicalGatewayIp = Ip4 "192.168.2.1"
+                    physicalInterfaceName = "Wi-Fi"
                 }
 
             let t = Tunnel(config)
@@ -130,17 +140,14 @@ module Service =
                         if packets.Length > 0 then
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
+                            Logger.logTracePackets (packets, (fun () -> $"Client sending packet to server: "))
 
-                        for packet in packets do
-                            match wcfClient.sendPacket packet with
+                            match wcfClient.sendPackets packets with
                             | Ok () -> ()
-                            | Error e ->
-                                Logger.logWarn $"Failed to send packet: %A{e}"
+                            | Error e -> Logger.logWarn $"Failed to send {packets.Length} packets to server: %A{e}"
 
-                        if packets.Length = 0 then
-                            Thread.Sleep(5)
-                    | _ ->
-                        Thread.Sleep(100)
+                        if packets.Length = 0 then Thread.Sleep(5)
+                    | _ -> Thread.Sleep(100)
                 with
                 | ex ->
                     Logger.logError $"Error in send loop: {ex.Message}"
@@ -155,6 +162,8 @@ module Service =
                         | Ok (Some packets) ->
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
+                            Logger.logTracePackets (packets, (fun () -> $"Client received packet from server: "))
+                            
                             for packet in packets do
                                 match t.injectPacket(packet) with
                                 | Ok () -> ()
@@ -185,6 +194,30 @@ module Service =
                     | Ok assignedIp ->
                         match startTunnel assignedIp with
                         | Ok () ->
+                            Logger.logInfo $"Tunnel started with IP: {assignedIp.value}"
+
+                            // Permit traffic from VPN local address in kill-switch
+                            let assignedIpAddress = assignedIp.value.ipAddress
+                            match killSwitch with
+                            | Some ks ->
+                                let r = ks.AddPermitFilterForLocalHost(assignedIpAddress, $"Permit VPN Local {assignedIp.value}")
+                                if r.IsSuccess then
+                                    Logger.logInfo $"Kill-switch: permitted VPN local address {assignedIp.value}"
+                                else
+                                    let errMsg = match r.Error with | null -> "Unknown error" | e -> e
+                                    state <- Failed errMsg
+                                    Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
+                                    Task.CompletedTask |> ignore
+                            | None ->
+                                state <- Failed "Kill-switch is not enabled"
+                                Logger.logError "Kill-switch instance is missing after Enable()"
+                                Task.CompletedTask |> ignore
+
+                            // Only start threads if kill-switch permit succeeded
+                            match state with
+                            | Failed _ -> Task.CompletedTask
+                            | _ ->
+
                             running <- true
 
                             let st = Thread(ThreadStart(sendLoop))

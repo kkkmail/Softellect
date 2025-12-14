@@ -90,12 +90,25 @@ module Logging =
     type Logger private () =
         static let stopwatch = Stopwatch.StartNew()
 
-        /// Default log implementation.
+        // /// Default log implementation.
+        // static let mutable logImpl: LogLevel -> obj -> string -> unit =
+        //     fun level message callerName ->
+        //         let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
+        //         printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
+
+        /// Default log implementation (thread-safe).
+        static let logGate = obj()
+
         static let mutable logImpl: LogLevel -> obj -> string -> unit =
             fun level message callerName ->
+                // Build the full line *before* taking the lock to minimize lock duration.
+                // IMPORTANT: format to a single string so we only do one Console write.
                 let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
-                printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
+                let line = $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
 
+                // WriteLine is a single call; no interleaving now.
+                lock logGate (fun () -> System.Console.WriteLine(line))
+        
         /// Minimum log level for filtering messages.
         static let mutable minLogLevel = DebugLog
 
@@ -114,7 +127,7 @@ module Logging =
         /// Adjust the minimum log level (verbosity).
         static member setMinLogLevel level = minLogLevel <- level
 
-        static member private shouldLog level = isLoggingEnabled && level >= minLogLevel
+        static member shouldLog level = isLoggingEnabled && level >= minLogLevel
 
         /// Private log function with verbosity and enable/disable checks.
         static member private log (level: LogLevel) (message: obj) (callerName: string) =
@@ -124,6 +137,11 @@ module Logging =
         /// because we don't want to evaluate the message if the trace log is not applicable.
         static member logTrace (getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             if Logger.shouldLog TraceLog then logImpl TraceLog (getMessage()) (defaultArg callerName "")
+
+        /// A conditional trace logger. The function logWhenTrue will be evaluated only when we have trace logging enabled.
+        static member logTraceIf (logWhenTrue: unit -> bool, getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            if Logger.shouldLog TraceLog then
+                if logWhenTrue() then logImpl TraceLog (getMessage()) (defaultArg callerName "")
 
         static member logDebug (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             Logger.log DebugLog message (defaultArg callerName "")

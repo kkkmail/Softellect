@@ -1,0 +1,13 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 8.8.8.8:443...
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0* schannel: disabled automatic use of client certificate
+* schannel: using IP address, SNI is not supported by OS.
+* ALPN: curl offers http/1.1
+  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0* ALPN: server accepted http/1.1
+* Established connection to 8.8.8.8 (8.8.8.8 port 443) from 10.66.77.2 port 53478 
+  0     0    0     0    0     0      0      0 --:--:--  0:00:20 --:--:--     0* using HTTP/1.x
+* schannel: timed out sending data (bytes sent: 0)
+  0     0    0     0    0     0      0      0 --:--:--  0:00:20 --:--:--     0
+* Connection #0 to host 8.8.8.8:443 left intact
+curl: (28) schannel: timed out sending data (bytes sent: 0)

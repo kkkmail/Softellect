@@ -165,6 +165,11 @@ module Common =
             | HttpServiceInfo n ->  getHttpServiceUrl n.httpServiceAddress n.httpServicePort n.httpServiceName
             | NetTcpServiceInfo n -> getNetTcpServiceUrl n.netTcpServiceAddress n.netTcpServicePort n.netTcpServiceName
 
+        member i.getIpAddress() =
+            match i with
+            | HttpServiceInfo n ->  n.httpServiceAddress.value
+            | NetTcpServiceInfo n -> n.netTcpServiceAddress.value
+
         member i.communicationType =
             match i with
             | HttpServiceInfo _ -> HttpCommunication

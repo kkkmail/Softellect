@@ -215,19 +215,69 @@ public sealed class KillSwitch : IDisposable
     private Result<Unit> AddPermitFilter(string network, int prefixLength, string name)
     {
         var ip = IPAddress.Parse(network);
-        var ipBytes = ip.GetAddressBytes();
-        var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
+        var ipUint = IPv4ToUInt32(ip);
         var mask = prefixLength == 0 ? 0 : uint.MaxValue << (32 - prefixLength);
 
-        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, ipUint, mask, 100);
+        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, mask, 100);
     }
 
     private Result<Unit> AddPermitFilterForHost(IPAddress ip, string name)
     {
-        var ipBytes = ip.GetAddressBytes();
-        var ipUint = (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
+        var ipUint = IPv4ToUInt32(ip);
 
-        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, ipUint, uint.MaxValue, 100);
+        return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, uint.MaxValue, 100);
+    }
+
+    /// <summary>
+    /// Adds a permit filter for traffic originating from the specified local IPv4 address.
+    /// </summary>
+    /// <param name="localIp">The local IP address to permit.</param>
+    /// <param name="name">Display name for the filter.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> AddPermitFilterForLocalHost(IPAddress localIp, string name)
+    {
+        if (_engineHandle == IntPtr.Zero || !_isEnabled)
+        {
+            return Result<Unit>.Failure("Kill-switch is not enabled");
+        }
+
+        try
+        {
+            var txnResult = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
+            if (txnResult != WindowsFilteringPlatform.ErrorSuccess)
+            {
+                return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
+            }
+
+            var ipUint = IPv4ToUInt32(localIp);
+            
+            var filterResult = AddFilterWithCondition(
+                name,
+                WindowsFilteringPlatform.FWP_ACTION_PERMIT,
+                WindowsFilteringPlatform.FWPM_CONDITION_IP_LOCAL_ADDRESS,
+                ipUint,
+                uint.MaxValue,
+                110);
+
+            if (!filterResult.IsSuccess)
+            {
+                WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
+                return filterResult;
+            }
+
+            var commitResult = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
+            if (commitResult != WindowsFilteringPlatform.ErrorSuccess)
+            {
+                return Result<Unit>.Failure($"Failed to commit transaction: 0x{commitResult:X8}");
+            }
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (Exception ex)
+        {
+            WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
+            return Result<Unit>.Failure($"Exception adding local host permit filter: {ex.Message}");
+        }
     }
 
     private Result<Unit> AddBlockAllFilter()
@@ -272,7 +322,7 @@ public sealed class KillSwitch : IDisposable
             Marshal.Copy(subLayerKeyBytes, 0, filterPtr + 80, 16);
 
             // weight.type (UINT32) at offset 96 - FWP_EMPTY for auto-weight
-            Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_EMPTY);
+            Marshal.WriteInt32(filterPtr + 96, (int)WindowsFilteringPlatform.FWP_UINT8);
 
             // weight.value at offset 104 - leave as 0
 
@@ -315,7 +365,7 @@ public sealed class KillSwitch : IDisposable
         }
     }
 
-    private Result<Unit> AddFilterWithCondition(string name, uint action, uint ipAddress, uint mask, byte filterWeight)
+    private Result<Unit> AddFilterWithCondition(string name, uint action, Guid fieldKey, uint ipAddress, uint mask, byte filterWeight)
     {
         // Allocate condition value (FWP_V4_ADDR_AND_MASK)
         var addrMask = new WindowsFilteringPlatform.FWP_V4_ADDR_AND_MASK
@@ -342,7 +392,7 @@ public sealed class KillSwitch : IDisposable
                 Marshal.WriteByte(conditionPtr, i, 0);
 
             // fieldKey (GUID) at offset 0 - 16 bytes
-            var fieldKeyBytes = WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS.ToByteArray();
+            var fieldKeyBytes = fieldKey.ToByteArray();
             Marshal.Copy(fieldKeyBytes, 0, conditionPtr, 16);
 
             // matchType (UINT32) at offset 16
@@ -442,6 +492,25 @@ public sealed class KillSwitch : IDisposable
             Marshal.FreeHGlobal(namePtr);
             Marshal.FreeHGlobal(descPtr);
         }
+    }
+    
+    // private static uint IPv4ToUInt32(IPAddress ip)
+    // {
+    //     var bytes = ip.GetAddressBytes();
+    //     if (bytes.Length != 4)
+    //         throw new ArgumentException("Only IPv4 addresses are supported.", nameof(ip));
+    //
+    //     // Windows is little-endian; WFP expects the v4 addr in native order.
+    //     return BitConverter.ToUInt32(bytes, 0);
+    // }
+
+    private static uint IPv4ToUInt32(IPAddress ip)
+    {
+        var ipBytes = ip.GetAddressBytes();
+        if (ipBytes.Length != 4)
+            throw new ArgumentException("Only IPv4 addresses are supported.", nameof(ip));
+
+        return (uint)(ipBytes[0] << 24 | ipBytes[1] << 16 | ipBytes[2] << 8 | ipBytes[3]);
     }
 
     public void Dispose()
