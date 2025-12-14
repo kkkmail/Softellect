@@ -1,0 +1,15 @@
+TCP connect -> 9.9.9.9:443
+TCP connected (local [::ffff:10.66.77.2]:61838)
+TLS handshake (SNI=dns.google)
+TLS OK: Tls12  cipher=Aes256 256
+HTTP write
+HTTP read
+RESPONSE (first 20 lines):
+HTTP/1.1 404 File Not Found
+Date: Sun, 14 Dec 2025 21:35:34 GMT
+Connection: close
+Content-Length: 9
+Server: h2o/dnsdist
+content-type: text/plain; charset=utf-8
+
+not found
