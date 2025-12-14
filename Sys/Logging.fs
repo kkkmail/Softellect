@@ -90,12 +90,25 @@ module Logging =
     type Logger private () =
         static let stopwatch = Stopwatch.StartNew()
 
-        /// Default log implementation.
+        // /// Default log implementation.
+        // static let mutable logImpl: LogLevel -> obj -> string -> unit =
+        //     fun level message callerName ->
+        //         let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
+        //         printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
+
+        /// Default log implementation (thread-safe).
+        static let logGate = obj()
+
         static let mutable logImpl: LogLevel -> obj -> string -> unit =
             fun level message callerName ->
+                // Build the full line *before* taking the lock to minimize lock duration.
+                // IMPORTANT: format to a single string so we only do one Console write.
                 let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
-                printfn $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
+                let line = $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
 
+                // WriteLine is a single call; no interleaving now.
+                lock logGate (fun () -> System.Console.WriteLine(line))
+        
         /// Minimum log level for filtering messages.
         static let mutable minLogLevel = DebugLog
 
