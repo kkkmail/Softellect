@@ -178,9 +178,25 @@ module PacketDebug =
             $"IPv4 ICMP: {srcIp} → {dstIp}, {typeName}, code={icmpCode},{echoExtra} ipPayload={ipPayloadLen}, len={bytes.Length}"
         
     
+    // /// IPv4 - TCP
+    // let private summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
+    //     if bytes.Length < ihl + 20 then $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <tcp-too-short>, len={bytes.Length}"
+    //     else
+    //         let tcpOff = ihl
+    //         let seq = readUInt32BE bytes (tcpOff + 4)
+    //         let ack = readUInt32BE bytes (tcpOff + 8)
+    //         let dataOffsetWords = int (bytes[tcpOff + 12] >>> 4)
+    //         let tcpHdrLen = dataOffsetWords * 4
+    //         let flags = bytes[tcpOff + 13]
+    //         let win = readUInt16BE bytes (tcpOff + 14)
+    //         let appLen = max 0 (ipPayloadLen - tcpHdrLen)
+    //
+    //         $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}"
+        
     /// IPv4 - TCP
     let private summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
-        if bytes.Length < ihl + 20 then $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <tcp-too-short>, len={bytes.Length}"
+        if bytes.Length < ihl + 20 then
+            $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <tcp-too-short>, len={bytes.Length}"
         else
             let tcpOff = ihl
             let seq = readUInt32BE bytes (tcpOff + 4)
@@ -190,8 +206,32 @@ module PacketDebug =
             let flags = bytes[tcpOff + 13]
             let win = readUInt16BE bytes (tcpOff + 14)
             let appLen = max 0 (ipPayloadLen - tcpHdrLen)
+            let isPsh = (flags &&& 0x08uy) <> 0uy
 
-            $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}"
+            let hexdumpFirst64 (payloadOff: int) =
+                if payloadOff >= bytes.Length then ""
+                else
+                    let n = min 64 (bytes.Length - payloadOff)
+                    if n <= 0 then ""
+                    else
+                        let sbHex = System.Text.StringBuilder(n * 3)
+                        let sbAsc = System.Text.StringBuilder(n)
+                        
+                        for i in 0 .. (n - 1) do
+                            let b = bytes[payloadOff + i]
+                            sbHex.AppendFormat("{0:X2}", b) |> ignore
+                            if i <> n - 1 then sbHex.Append(' ') |> ignore
+                            sbAsc.Append(if isAsciiPrintable b then char b else '.') |> ignore
+                        $" pshDump[{n}]=<{sbHex}> ascii=<{sbAsc}>"
+
+            let payloadOff = tcpOff + tcpHdrLen
+            
+            let pshDump =
+                if isPsh && appLen > 0 && tcpHdrLen >= 20 then
+                    hexdumpFirst64 payloadOff
+                else ""
+
+            $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}{pshDump}"
         
     
     /// IPv4 - UDP
