@@ -60,7 +60,26 @@ module Service =
             let timeDiff = DateTime.UtcNow - request.timestamp
             if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
             else Ok ()
-
+            
+        let processPacket clientId packet =
+            // Check if this is a DNS query to the VPN gateway
+            match tryParseDnsQuery serverVpnIpUint packet with
+            | Some (srcIp, srcPort, dnsPayload) ->
+                // Forward DNS query to upstream and enqueue reply
+                match forwardDnsQuery serverVpnIpUint srcIp srcPort dnsPayload with
+                | Some replyPacket ->
+                    registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
+                    Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
+                | None ->
+                    // Timeout/error already logged in DnsProxy, do not inject into TUN
+                    ()
+                Ok ()
+            | None ->
+                // Not a DNS query to the VPN gateway, inject into TUN as before
+                match router.injectPacket(packet) with
+                | Ok () -> Ok ()
+                | Error msg -> Error (ConfigErr msg)
+            
         interface IVpnService with
             member _.authenticate request =
                 Logger.logInfo $"Authentication request from client: {request.clientId.value}"
@@ -78,6 +97,8 @@ module Service =
                     | Error e -> Error e
                 | Error e -> Error e
 
+            /// This function is called sendPackets to match the client side.
+            /// From the server side it is receiving packets sent by a client.
             member _.sendPackets (clientId, packets) =
                 match registry.tryGetSession(clientId) with
                 | Some _ ->
@@ -85,34 +106,17 @@ module Service =
                     Logger.logTrace (fun () -> $"Server received {packets.Length} packets from client {clientId.value}.")
                     Logger.logTracePackets (packets, (fun () -> $"Server received packets from client:  '{clientId.value}': "))
 
-                    let processPacket packet =
-                        // Check if this is a DNS query to the VPN gateway
-                        match tryParseDnsQuery serverVpnIpUint packet with
-                        | Some (srcIp, srcPort, dnsPayload) ->
-                            // Forward DNS query to upstream and enqueue reply
-                            match forwardDnsQuery serverVpnIpUint srcIp srcPort dnsPayload with
-                            | Some replyPacket ->
-                                registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
-                                Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
-                            | None ->
-                                // Timeout/error already logged in DnsProxy, do not inject into TUN
-                                ()
-                            Ok ()
-                        | None ->
-                            // Not a DNS query to the VPN gateway, inject into TUN as before
-                            match router.injectPacket(packet) with
-                            | Ok () -> Ok ()
-                            | Error msg -> Error (ConfigErr msg)
-                            
                     let result =
                         packets
-                        |> Array.map processPacket
+                        |> Array.map (processPacket clientId)
                         |> List.ofArray
                         |> foldUnitResults VpnError.addError
                 
                     result                        
                 | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
+            /// This function is called receivePackets to match the client side.
+            /// From the server side it is sending packets to a client.            
             member _.receivePackets clientId =
                 match registry.tryGetSession(clientId) with
                 | Some _ ->
