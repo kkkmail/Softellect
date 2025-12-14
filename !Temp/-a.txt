@@ -72,9 +72,9 @@ dns || (udp.port == 53)
 curl -v --connect-timeout 10 --max-time 10 http://93.184.216.34/
 
 
-curl -v -k --connect-timeout 10 --max-time 10 https://1.1.1.1/
+curl -v -k --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
-curl -v --connect-timeout 10 --max-time 10 https://1.1.1.1/
+curl -v --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
 
 
