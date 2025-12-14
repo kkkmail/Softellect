@@ -1,5 +1,9 @@
 ﻿namespace Softellect.Vpn.Core
 
+open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
+open Softellect.Sys.Logging
+
 module PacketDebug =
 
     /// Get IP version from packet (4 = IPv4, 6 = IPv6, 0 = empty/invalid)
@@ -239,3 +243,12 @@ module PacketDebug =
                     $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
             | _ ->
                 $"<Unknown IP version={v}, len={bytes.Length}>"
+                
+                
+    type Logger
+        with                 
+        static member logTracePackets (packets : byte[][], getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            if Logger.shouldLog TraceLog then
+                packets
+                |> Array.map (fun e -> Logger.logTrace (fun () -> $"{getMessage()}'%A{(summarizePacket e)}'."), callerName)
+                |> ignore                

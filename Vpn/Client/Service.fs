@@ -1,7 +1,6 @@
 namespace Softellect.Vpn.Client
 
 open System
-open System.Net
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
@@ -9,11 +8,11 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
-open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Tunnel
 open Softellect.Vpn.Client.WcfClient
 open Softellect.Vpn.Interop
+open Softellect.Vpn.Core.PacketDebug
 
 module Service =
 
@@ -141,6 +140,7 @@ module Service =
                         if packets.Length > 0 then
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
+                            Logger.logTracePackets (packets, (fun () -> $"Client sending packet to server: "))
 
                         for packet in packets do
                             match wcfClient.sendPacket packet with
@@ -166,6 +166,8 @@ module Service =
                         | Ok (Some packets) ->
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
+                            Logger.logTracePackets (packets, (fun () -> $"Client received packet from server: "))
+                            
                             for packet in packets do
                                 match t.injectPacket(packet) with
                                 | Ok () -> ()

@@ -114,7 +114,7 @@ module Logging =
         /// Adjust the minimum log level (verbosity).
         static member setMinLogLevel level = minLogLevel <- level
 
-        static member private shouldLog level = isLoggingEnabled && level >= minLogLevel
+        static member shouldLog level = isLoggingEnabled && level >= minLogLevel
 
         /// Private log function with verbosity and enable/disable checks.
         static member private log (level: LogLevel) (message: obj) (callerName: string) =
@@ -124,6 +124,11 @@ module Logging =
         /// because we don't want to evaluate the message if the trace log is not applicable.
         static member logTrace (getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             if Logger.shouldLog TraceLog then logImpl TraceLog (getMessage()) (defaultArg callerName "")
+
+        /// A conditional trace logger. The function logWhenTrue will be evaluated only when we have trace logging enabled.
+        static member logTraceIf (logWhenTrue: unit -> bool, getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
+            if Logger.shouldLog TraceLog then
+                if logWhenTrue() then logImpl TraceLog (getMessage()) (defaultArg callerName "")
 
         static member logDebug (message: obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             Logger.log DebugLog message (defaultArg callerName "")

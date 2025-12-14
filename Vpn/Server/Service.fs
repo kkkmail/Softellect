@@ -128,7 +128,8 @@ module Service =
                     let packets = registry.dequeuePacketsForClient(clientId, 100)
                     if packets.Length > 0 then
                         let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
-                        Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client {clientId.value}, total {totalBytes} bytes")
+                        Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client: '{clientId.value}', total {totalBytes} bytes")
+                        Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
                         Ok (Some packets)
                     else
                         Ok None

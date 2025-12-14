@@ -54,10 +54,7 @@ module WcfClient =
                 let result = tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
                 
                 match result with
-                | Ok (Some r) ->
-                    r
-                    |> Array.map (fun e -> Logger.logTrace (fun () -> $"Received for client {clientId.value}: '%A{(summarizePacket e)}'."))
-                    |> ignore
+                | Ok (Some r) -> Logger.logTracePackets (r, (fun () -> $"Received for client {clientId.value}: "))
                 | Ok None -> Logger.logTrace (fun () -> "Empty response.") 
                 | Error e -> Logger.logWarn $"ERROR: '{e}'."    
 
