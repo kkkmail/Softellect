@@ -115,4 +115,14 @@ At line:6 char:67
 An expression was expected after '('.
     + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
 
+=================================================
+PS C:\GitHub\Softellect\TestScripts> .\tcp_tls_handshake.ps1
+WriteError: C:\GitHub\Softellect\TestScripts\tcp_tls_handshake.ps1:7
+Line |
+   7 |  $host = "dns.google"   # Host header + SNI name we present in TLS
+     |  ~~~~~~~~~~~~~~~~~~~~
+     | Cannot overwrite variable Host because it is read-only or constant.
 
+ERROR: System.Management.Automation.MethodInvocationException: Exception calling "ReadToEnd" with "0" argument(s): "Unable to read data from the transport connection: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.."
+INNER: System.IO.IOException: Unable to read data from the transport connection: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond..
+PS C:\GitHub\Softellect\TestScripts>

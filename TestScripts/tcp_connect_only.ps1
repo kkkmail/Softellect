@@ -12,7 +12,7 @@ try {
 
     $c.EndConnect($iar)
 
-    "TCP CONNECT OK to $ip:$port"
+    "TCP CONNECT OK to ${ip}:${port}"
 }
 catch {
     "TCP CONNECT FAILED: $($_.Exception.Message)"
