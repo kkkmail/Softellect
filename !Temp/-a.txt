@@ -78,4 +78,41 @@ curl -v --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
 powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient('8.8.8.8',443); $s=$c.GetStream(); $w=New-Object IO.StreamWriter($s); $w.NewLine=\"`r`n\"; $w.Write(\"GET / HTTP/1.1`r`nHost: dns.google`r`nConnection: close`r`n`r`n\"); $w.Flush(); $r=New-Object IO.StreamReader($s); $r.ReadToEnd(); $c.Close()"
 
+=====================
+
+PS C:\GitHub\Softellect> powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient('8.8.8.8',443); $s=$c.GetStream(); $w=New-Object IO.StreamWriter($s); $w.NewLine=\"`r`n\"; $w.Write(\"GET / HTTP/1.1`r`nHost: dns.google`r`nConnection: close`r`n`r`n\"); $w.Flush(); $r=New-Object IO.StreamReader($s); $r.ReadToEnd(); $c.Close()"
+At line:1 char:63
++ ... New-Object Net.Sockets.TcpClient('8.8.8.8',443); =.GetStream(); =New- ...
++                                                                  ~
+An expression was expected after '('.
+At line:1 char:94
++ ... t('8.8.8.8',443); =.GetStream(); =New-Object IO.StreamWriter(); .NewL ...
++                                                                  ~
+An expression was expected after '('.
+At line:2 char:26
++ \; .Write(\GET / HTTP/1.1
++                          ~
+Missing closing ')' in expression.
+At line:6 char:2
++ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
++  ~
+Unexpected token ')' in expression or statement.
+At line:6 char:12
++ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
++            ~
+An expression was expected after '('.
+At line:6 char:43
++ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
++                                           ~
+An expression was expected after '('.
+At line:6 char:57
++ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
++                                                         ~
+An expression was expected after '('.
+At line:6 char:67
++ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
++                                                                   ~
+An expression was expected after '('.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+
 
