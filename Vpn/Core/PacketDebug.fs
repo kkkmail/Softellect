@@ -1,5 +1,7 @@
 ﻿namespace Softellect.Vpn.Core
 
+open System
+open System.Net
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open Softellect.Sys.Logging
@@ -19,15 +21,19 @@ module PacketDebug =
         b2u16 buf[offset] buf[offset + 1]
 
     
+    let inline readUInt32BE (buf: byte[]) (offset: int) =
+        (uint32 buf[offset] <<< 24) ||| (uint32 buf[offset + 1] <<< 16) ||| (uint32 buf[offset + 2] <<< 8) ||| uint32 buf[offset + 3]
+
+    
     let inline ipv4ToString (a: byte) (b: byte) (c: byte) (d: byte) =
         $"{a}.{b}.{c}.{d}"
 
     
     let inline isAsciiPrintable (b: byte) =
         b >= 32uy && b <= 126uy
-    
 
-    let tryParseDnsName (payload: byte[]) (startOffset: int) =
+    
+    let private tryParseDnsName (payload: byte[]) (startOffset: int) =
         // Parse QNAME (labels) from DNS question section.
         // Returns (name, nextOffset) or ("<err>", startOffset) on failure.
         try
@@ -82,7 +88,7 @@ module PacketDebug =
             "<dns-qname-ex>", startOffset
 
     
-    let trySummarizeDns (udpPayload: byte[]) =
+    let private trySummarizeDns (udpPayload: byte[]) =
         // DNS header is 12 bytes
         if udpPayload.Length < 12 then
             "DNS <payload-too-short>"
@@ -123,132 +129,158 @@ module PacketDebug =
                         | 33 -> "SRV"
                         | _ -> string qtype
 
-                    $" name={name} qtype={qtypeName} qclass={qclass}"
+                    $" qd=1 name={name} qtype={qtypeName} qclass={qclass}"
 
             if qr then
                 $"DNS r txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar} rcode={rcode}{namePart}"
             else
                 $"DNS q txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar}{namePart}"
-    
-    
-    // let summarizePacket (bytes: byte[]) =
-    //     if bytes.Length < 20 then
-    //         $"<packet too short: {bytes.Length} bytes>"
-    //     else
-    //         let v = int bytes[0] >>> 4
-    //         match v with
-    //         | 4 ->
-    //             // IPv4
-    //             let srcIp  = ipv4ToString bytes[12] bytes[13] bytes[14] bytes[15]
-    //             let dstIp  = ipv4ToString bytes[16] bytes[17] bytes[18] bytes[19]
-    //             let proto  = bytes[9]
-    //
-    //             let srcPort, dstPort =
-    //                 if proto = 6uy || proto = 17uy then
-    //                     // TCP or UDP
-    //                     let shp = uint16 bytes[20] <<< 8 ||| uint16 bytes[21]
-    //                     let dhp = uint16 bytes[22] <<< 8 ||| uint16 bytes[23]
-    //                     int shp, int dhp
-    //                 else
-    //                     0, 0
-    //
-    //             $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, len={bytes.Length}"
-    //
-    //         | 6 ->
-    //             // IPv6
-    //             if bytes.Length < 40 then
-    //                 $"<IPv6 packet too short: {bytes.Length} bytes>"
-    //             else
-    //                 let srcIp = IPAddress(bytes[8..23])
-    //                 let dstIp = IPAddress(bytes[24..39])
-    //                 let nextHeader = bytes[6]
-    //
-    //                 // Parse ports only for UDP/TCP
-    //                 let srcPort, dstPort =
-    //                     if nextHeader = 6uy || nextHeader = 17uy then
-    //                         let offs = 40
-    //                         if bytes.Length >= offs + 4 then
-    //                             let shp = uint16 bytes[offs] <<< 8 ||| uint16 bytes[offs+1]
-    //                             let dhp = uint16 bytes[offs+2] <<< 8 ||| uint16 bytes[offs+3]
-    //                             int shp, int dhp
-    //                         else 0,0
-    //                     else 0,0
-    //
-    //                 $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
-    //
-    //         | _ ->
-    //             $"<Unknown IP version={v}, len={bytes.Length}>"
 
+    
+    let private tcpFlagsToString (flags: byte) =
+        let addIf (cond: bool) (s: string) (acc: ResizeArray<string>) =
+            if cond then acc.Add(s)
+
+        let a = ResizeArray<string>()
+        addIf ((flags &&& 0x01uy) <> 0uy) "fin" a
+        addIf ((flags &&& 0x02uy) <> 0uy) "syn" a
+        addIf ((flags &&& 0x04uy) <> 0uy) "rst" a
+        addIf ((flags &&& 0x08uy) <> 0uy) "psh" a
+        addIf ((flags &&& 0x10uy) <> 0uy) "ack" a
+        addIf ((flags &&& 0x20uy) <> 0uy) "urg" a
+        if a.Count = 0 then "none" else String.Join("|", a)
+
+    
+    /// ICMP
+    let private summarizeIPv4ICMP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
+        if bytes.Length < ihl + 4 then $"IPv4 ICMP: {srcIp} → {dstIp}, <icmp-too-short>, len={bytes.Length}"
+        else
+            let icmpType = bytes[ihl]
+            let icmpCode = bytes[ihl + 1]
+
+            // Echo req/reply has id/seq at +4/+6
+            let echoExtra =
+                if (icmpType = 8uy || icmpType = 0uy) && bytes.Length >= ihl + 8 then
+                    let ident = readUInt16BE bytes (ihl + 4)
+                    let seq = readUInt16BE bytes (ihl + 6)
+                    $" id=0x{ident:X4} seq={seq}"
+                else
+                    ""
+
+            let typeName =
+                match icmpType with
+                | 8uy -> "echo-req"
+                | 0uy -> "echo-reply"
+                | 3uy -> "dest-unreach"
+                | 11uy -> "time-exceeded"
+                | _ -> $"type={icmpType}"
+
+            $"IPv4 ICMP: {srcIp} → {dstIp}, {typeName}, code={icmpCode},{echoExtra} ipPayload={ipPayloadLen}, len={bytes.Length}"
+        
+    
+    /// IPv4 - TCP
+    let private summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
+        if bytes.Length < ihl + 20 then $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <tcp-too-short>, len={bytes.Length}"
+        else
+            let tcpOff = ihl
+            let seq = readUInt32BE bytes (tcpOff + 4)
+            let ack = readUInt32BE bytes (tcpOff + 8)
+            let dataOffsetWords = int (bytes[tcpOff + 12] >>> 4)
+            let tcpHdrLen = dataOffsetWords * 4
+            let flags = bytes[tcpOff + 13]
+            let win = readUInt16BE bytes (tcpOff + 14)
+            let appLen = max 0 (ipPayloadLen - tcpHdrLen)
+
+            $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}"
+        
+    
+    /// IPv4 - UDP
+    let private summarizeIPv4UDP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
+        if bytes.Length < ihl + 8 then $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <udp-too-short>, len={bytes.Length}"
+        else
+            let udpLen = int (readUInt16BE bytes (ihl + 4))
+            let payloadOffset = ihl + 8
+            let payloadLenByIp = bytes.Length - payloadOffset
+            let payloadLenByUdp = max 0 (udpLen - 8)
+            let payloadLen = min payloadLenByIp payloadLenByUdp
+
+            if payloadLen > 0 && (srcPort = 53 || dstPort = 53) then
+                let udpPayload = Array.sub bytes payloadOffset payloadLen
+                $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, len={bytes.Length} {trySummarizeDns udpPayload}"
+            else
+                $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, udpLen={udpLen}, ipPayload={ipPayloadLen}, len={bytes.Length}"
+
+        
+    /// IPv4
+    let private summarizeIPv4Packet (bytes: byte[]) =
+        let ihl = int (bytes[0] &&& 0x0Fuy) * 4
+        if ihl < 20 || bytes.Length < ihl then $"<IPv4 header invalid: ihl={ihl}, len={bytes.Length}>"
+        else
+            let srcIp = ipv4ToString bytes[12] bytes[13] bytes[14] bytes[15]
+            let dstIp = ipv4ToString bytes[16] bytes[17] bytes[18] bytes[19]
+            let proto = bytes[9]
+
+            // Total length from IPv4 header (may be smaller than buffer)
+            let totalLen = int (readUInt16BE bytes 2)
+            let effectiveTotalLen =
+                if totalLen <= 0 then bytes.Length
+                else min totalLen bytes.Length
+            let ipPayloadLen = max 0 (effectiveTotalLen - ihl)
+
+            // L4 ports (UDP/TCP) if present
+            let srcPort, dstPort =
+                if (proto = 6uy || proto = 17uy) && bytes.Length >= ihl + 4 then
+                    let shp = readUInt16BE bytes ihl
+                    let dhp = readUInt16BE bytes (ihl + 2)
+                    int shp, int dhp
+                else
+                    0, 0
+
+            match proto with
+            | 1uy -> summarizeIPv4ICMP srcIp srcPort dstIp dstPort ihl ipPayloadLen bytes
+            | 6uy -> summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen bytes
+            | 17uy -> summarizeIPv4UDP srcIp srcPort dstIp dstPort ihl ipPayloadLen bytes
+            | _ ->
+                // Other IPv4
+                $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, ipPayload={ipPayloadLen}, len={bytes.Length}"
+    
+    
+    /// IPv6 (minimal)
+    let private summarizeIPv6Packet (bytes: byte[]) =
+        if bytes.Length < 40 then
+            $"<IPv6 packet too short: {bytes.Length} bytes>"
+        else
+            let srcIp = IPAddress(bytes[8..23])
+            let dstIp = IPAddress(bytes[24..39])
+            let nextHeader = bytes[6]
+
+            let srcPort, dstPort =
+                if nextHeader = 6uy || nextHeader = 17uy then
+                    let offs = 40
+                    if bytes.Length >= offs + 4 then
+                        let shp = b2u16 bytes[offs] bytes[offs + 1]
+                        let dhp = b2u16 bytes[offs + 2] bytes[offs + 3]
+                        int shp, int dhp
+                    else 0, 0
+                else 0, 0
+
+            $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
+    
+    
     let summarizePacket (bytes: byte[]) =
-
-        if bytes.Length < 20 then
-            $"<packet too short: {bytes.Length} bytes>"
+        if isNull bytes then "<null packet>"
+        elif bytes.Length < 20 then $"<packet too short: {bytes.Length} bytes>"
         else
             let v = int bytes[0] >>> 4
             match v with
-            | 4 ->
-                // IPv4
-                let ihl = int (bytes[0] &&& 0x0Fuy) * 4
-                if ihl < 20 || bytes.Length < ihl then
-                    $"<IPv4 header invalid: ihl={ihl}, len={bytes.Length}>"
-                else
-                    let srcIp = ipv4ToString bytes[12] bytes[13] bytes[14] bytes[15]
-                    let dstIp = ipv4ToString bytes[16] bytes[17] bytes[18] bytes[19]
-                    let proto = bytes[9]
+            | 4 -> summarizeIPv4Packet bytes
+            | 6 -> summarizeIPv6Packet bytes
+            | _ -> $"<Unknown IP version={v}, len={bytes.Length}>"
 
-                    let srcPort, dstPort =
-                        if (proto = 6uy || proto = 17uy) && bytes.Length >= ihl + 4 then
-                            // TCP or UDP ports at start of L4 header
-                            let shp = readUInt16BE bytes ihl
-                            let dhp = readUInt16BE bytes (ihl + 2)
-                            int shp, int dhp
-                        else
-                            0, 0
-
-                    // If UDP and looks like DNS, try to decode DNS header + qname
-                    if proto = 17uy && bytes.Length >= ihl + 8 then
-                        let udpLen = int (readUInt16BE bytes (ihl + 4))
-                        let payloadOffset = ihl + 8
-                        let payloadLenByIp = bytes.Length - payloadOffset
-                        let payloadLenByUdp = max 0 (udpLen - 8)
-                        let payloadLen = min payloadLenByIp payloadLenByUdp
-
-                        if payloadLen > 0 && (srcPort = 53 || dstPort = 53) then
-                            let udpPayload = Array.sub bytes payloadOffset payloadLen
-                            $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, len={bytes.Length} {trySummarizeDns udpPayload}"
-                        else
-                            $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, len={bytes.Length}"
-                    else
-                        $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, len={bytes.Length}"
-            | 6 ->
-                // IPv6
-                if bytes.Length < 40 then
-                    $"<IPv6 packet too short: {bytes.Length} bytes>"
-                else
-                    let srcIp = System.Net.IPAddress(bytes[8..23])
-                    let dstIp = System.Net.IPAddress(bytes[24..39])
-                    let nextHeader = bytes[6]
-
-                    // Parse ports only for UDP/TCP
-                    let srcPort, dstPort =
-                        if nextHeader = 6uy || nextHeader = 17uy then
-                            let offs = 40
-                            if bytes.Length >= offs + 4 then
-                                let shp = b2u16 bytes[offs] bytes[offs + 1]
-                                let dhp = b2u16 bytes[offs + 2] bytes[offs + 3]
-                                int shp, int dhp
-                            else 0, 0
-                        else 0, 0
-
-                    $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
-            | _ ->
-                $"<Unknown IP version={v}, len={bytes.Length}>"
-                
-                
-    type Logger
-        with                 
+    
+    type Logger with
         static member logTracePackets (packets : byte[][], getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             if Logger.shouldLog TraceLog then
                 packets
                 |> Array.map (fun e -> Logger.logTrace (fun () -> $"{getMessage()}'%A{(summarizePacket e)}'."), callerName)
-                |> ignore                
+                |> ignore
