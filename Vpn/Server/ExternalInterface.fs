@@ -192,18 +192,11 @@ module ExternalInterface =
 
                     try
                         let sent = rawSocket.SendTo(packet, remoteEndPoint)
+                        Logger.logTrace (fun () -> $"Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
                         ()
-
-                        // Logger.logTrace (fun () ->
-                        //     let proto = getProtocol packet |> Option.defaultValue 0uy
-                        //     let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                        //     $"ExternalGateway.sendOutbound: Sent {sent} bytes, proto={proto}, dst={dstIp}, src={srcIp}")
                     with
-                    | ex ->
-                        Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"
-
-                | None ->
-                    Logger.logWarn "ExternalGateway.sendOutbound: Could not extract destination IP, dropping packet"
+                    | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"
+                | None -> Logger.logWarn "ExternalGateway.sendOutbound: Could not extract destination IP, dropping packet"
 
         /// Stop the external gateway.
         member _.stop() =
