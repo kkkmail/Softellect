@@ -317,5 +317,35 @@ module PacketRouter =
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Adapter not ready"
+                
+        member r.routeFromClient(packet: byte[]) =
+            let v = getIpVersion packet
+
+            match v with
+            | 4 ->
+                match getDestinationIpUInt32 packet with
+                | None ->
+                    Ok () // malformed/too short; ignore
+                | Some destIpUint ->
+                    if isInsideVpnSubnet destIpUint then
+                        // Inside VPN subnet: inject into TUN so the existing router loop can deliver to clients.
+                        match r.injectPacket(packet) with
+                        | Ok () -> Ok ()
+                        | Error msg -> Error msg
+                    else
+                        // Outside VPN subnet: NAT + send out via external interface.
+                        if externalIpUint = 0u then
+                            Error "PacketRouter.routeFromClient: serverPublicIp is 0.0.0.0 (externalIpUint=0) - cannot NAT outbound."
+                        else
+                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                            | Some natPacket ->
+                                Logger.logTrace (fun () -> $"NAT outbound (2): forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")                                
+                                externalGateway.sendOutbound(natPacket)
+                                Ok ()
+                            | None ->
+                                Ok () // dropped by NAT (e.g. too short); ignore
+            | 6 -> Ok () // IPv6 not supported
+            | _ -> Ok () // unknown/empty
+                
 
         member _.isRunning = running

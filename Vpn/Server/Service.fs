@@ -61,6 +61,25 @@ module Service =
             if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
             else Ok ()
             
+        // let processPacket clientId packet =
+        //     // Check if this is a DNS query to the VPN gateway
+        //     match tryParseDnsQuery serverVpnIpUint packet with
+        //     | Some (srcIp, srcPort, dnsPayload) ->
+        //         // Forward DNS query to upstream and enqueue reply
+        //         match forwardDnsQuery serverVpnIpUint srcIp srcPort dnsPayload with
+        //         | Some replyPacket ->
+        //             registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
+        //             Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
+        //         | None ->
+        //             // Timeout/error already logged in DnsProxy, do not inject into TUN
+        //             ()
+        //         Ok ()
+        //     | None ->
+        //         // Not a DNS query to the VPN gateway, inject into TUN as before
+        //         match router.injectPacket(packet) with
+        //         | Ok () -> Ok ()
+        //         | Error msg -> Error (ConfigErr msg)
+    
         let processPacket clientId packet =
             // Check if this is a DNS query to the VPN gateway
             match tryParseDnsQuery serverVpnIpUint packet with
@@ -74,12 +93,13 @@ module Service =
                     // Timeout/error already logged in DnsProxy, do not inject into TUN
                     ()
                 Ok ()
+
             | None ->
-                // Not a DNS query to the VPN gateway, inject into TUN as before
-                match router.injectPacket(packet) with
+                // Non-DNS: route either to VPN clients (inside subnet) or to internet (NAT + external)
+                match router.routeFromClient(packet) with
                 | Ok () -> Ok ()
                 | Error msg -> Error (ConfigErr msg)
-            
+                    
         interface IVpnService with
             member _.authenticate request =
                 Logger.logInfo $"Authentication request from client: {request.clientId.value}"
