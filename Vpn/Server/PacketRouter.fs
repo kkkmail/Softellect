@@ -9,6 +9,7 @@ open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Interop
 open Softellect.Vpn.Server.DnsProxy
+open Softellect.Vpn.Server.IcmpProxy
 open Softellect.Vpn.Server.ExternalInterface
 open Softellect.Vpn.Server.Nat
 
@@ -165,35 +166,41 @@ module PacketRouter =
                                     | None ->
                                         Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
                                 | None ->
-                                    // Not a DNS query to gateway - proceed with normal routing
-                                    match getDestinationIpUInt32 packet with
-                                    | Some destIpUint ->
-                                        if isInsideVpnSubnet destIpUint then
-                                            // Destination is inside VPN subnet - route to VPN client
-                                            match getDestinationIp packet with
-                                            | Some destIp ->
-                                                match getSourceIp packet with
-                                                | Some srcIp ->
-                                                    match findClientByIp destIp with
-                                                    | Some session ->
-                                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
-                                                    | None ->
-                                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
-                                                | None ->
-                                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
-                                            | None ->
-                                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                        else
-                                            // Destination is outside VPN subnet - NAT and forward to external network
-                                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                                            | Some natPacket ->
-                                                externalGateway.sendOutbound(natPacket)
-                                                Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
-                                            | None ->
-                                                Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                    // Not a DNS query - check for ICMP Echo Request to external address
+                                    match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
+                                    | Some icmpPacket ->
+                                        // ICMP Echo Request to external address - send via external gateway
+                                        externalGateway.sendOutbound(icmpPacket)
                                     | None ->
-                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                        // Not ICMP proxy - proceed with normal routing
+                                        match getDestinationIpUInt32 packet with
+                                        | Some destIpUint ->
+                                            if isInsideVpnSubnet destIpUint then
+                                                // Destination is inside VPN subnet - route to VPN client
+                                                match getDestinationIp packet with
+                                                | Some destIp ->
+                                                    match getSourceIp packet with
+                                                    | Some srcIp ->
+                                                        match findClientByIp destIp with
+                                                        | Some session ->
+                                                            registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                                            Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
+                                                        | None ->
+                                                            Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                                    | None ->
+                                                        Logger.logTrace (fun () -> "Could not parse source IP from packet")
+                                                | None ->
+                                                    Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                            else
+                                                // Destination is outside VPN subnet - NAT and forward to external network
+                                                match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                                | Some natPacket ->
+                                                    externalGateway.sendOutbound(natPacket)
+                                                    Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
+                                                | None ->
+                                                    Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                        | None ->
+                                            Logger.logTrace (fun () -> "Could not parse destination IP from packet")
                             | 6 ->
                                 // IPv6 packet - drop (VPN is IPv4-only)
                                 Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
@@ -237,29 +244,47 @@ module PacketRouter =
                     if ipResult.IsSuccess then
                         running <- true
 
-                        // Start external gateway with NAT inbound callback
+                        // Start external gateway with inbound callback (ICMP proxy first, then NAT)
                         externalGateway.start(fun rawPacket ->
                             // Called when external gateway receives a packet from internet
-                            match translateInbound externalIpUint rawPacket with
-                            | Some translated ->
-                                // Enqueue translated packet directly to the VPN client
-                                match getDestinationIpUInt32 translated with
-                                | Some destIpUint ->
-                                    let destIpStr = $"{byte (destIpUint >>> 24)}.{byte (destIpUint >>> 16)}.{byte (destIpUint >>> 8)}.{byte destIpUint}"
-                                    match IpAddress.tryCreate destIpStr with
-                                    | Some destIpAddr ->
-                                        match findClientByIp destIpAddr with
-                                        | Some session ->
-                                            registry.enqueuePacketForClient(session.clientId, translated) |> ignore
-                                            Logger.logTrace (fun () -> $"NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
-                                        | None ->
-                                            Logger.logTrace (fun () -> $"NAT inbound: no client session for destination IP {destIpStr}")
+                            // Check for ICMP Echo Reply first
+                            match IcmpProxy.tryHandleInbound rawPacket with
+                            | Some (clientIpUint, icmpPacket) ->
+                                // ICMP Echo Reply - enqueue to the correct client
+                                let clientIpStr = $"{byte (clientIpUint >>> 24)}.{byte (clientIpUint >>> 16)}.{byte (clientIpUint >>> 8)}.{byte clientIpUint}"
+                                match IpAddress.tryCreate clientIpStr with
+                                | Some clientIpAddr ->
+                                    match findClientByIp clientIpAddr with
+                                    | Some session ->
+                                        registry.enqueuePacketForClient(session.clientId, icmpPacket) |> ignore
+                                        Logger.logTrace (fun () -> $"ICMPPROXY: enqueued reply to client {session.clientId.value}, size={icmpPacket.Length} bytes")
                                     | None ->
-                                        Logger.logTrace (fun () -> $"NAT inbound: failed to parse destination IP {destIpStr}")
+                                        Logger.logTrace (fun () -> $"ICMPPROXY: no client session for IP {clientIpStr}")
                                 | None ->
-                                    Logger.logTrace (fun () -> "NAT inbound: could not extract destination IP from translated packet")
+                                    Logger.logTrace (fun () -> $"ICMPPROXY: failed to parse client IP {clientIpStr}")
                             | None ->
-                                Logger.logTrace (fun () -> "NAT inbound: packet dropped (no mapping)")
+                                // Not ICMP proxy - fall through to NAT
+                                match translateInbound externalIpUint rawPacket with
+                                | Some translated ->
+                                    // Enqueue translated packet directly to the VPN client
+                                    match getDestinationIpUInt32 translated with
+                                    | Some destIpUint ->
+                                        let destIpStr = $"{byte (destIpUint >>> 24)}.{byte (destIpUint >>> 16)}.{byte (destIpUint >>> 8)}.{byte destIpUint}"
+                                        match IpAddress.tryCreate destIpStr with
+                                        | Some destIpAddr ->
+                                            match findClientByIp destIpAddr with
+                                            | Some session ->
+                                                registry.enqueuePacketForClient(session.clientId, translated) |> ignore
+                                                Logger.logTrace (fun () -> $"NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
+                                            | None ->
+                                                Logger.logTrace (fun () -> $"NAT inbound: no client session for destination IP {destIpStr}")
+                                        | None ->
+                                            Logger.logTrace (fun () -> $"NAT inbound: failed to parse destination IP {destIpStr}")
+                                    | None ->
+                                        Logger.logTrace (fun () -> "NAT inbound: could not extract destination IP from translated packet")
+                                | None ->
+                                    // Logger.logTrace (fun () -> "HEAVY LOG - NAT inbound: packet dropped (no mapping)")
+                                    ()
                         )
 
                         let thread = Thread(ThreadStart(receiveLoop))
@@ -333,17 +358,25 @@ module PacketRouter =
                         | Ok () -> Ok ()
                         | Error msg -> Error msg
                     else
-                        // Outside VPN subnet: NAT + send out via external interface.
+                        // Outside VPN subnet: check ICMP proxy first, then NAT + send out via external interface.
                         if externalIpUint = 0u then
                             Error "PacketRouter.routeFromClient: serverPublicIp is 0.0.0.0 (externalIpUint=0) - cannot NAT outbound."
                         else
-                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                            | Some natPacket ->
-                                Logger.logTrace (fun () -> $"NAT outbound (2): forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")                                
-                                externalGateway.sendOutbound(natPacket)
+                            // Check for ICMP Echo Request to external address
+                            match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
+                            | Some icmpPacket ->
+                                // ICMP Echo Request to external address - send via external gateway
+                                externalGateway.sendOutbound(icmpPacket)
                                 Ok ()
                             | None ->
-                                Ok () // dropped by NAT (e.g. too short); ignore
+                                // Not ICMP proxy - use NAT
+                                match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                | Some natPacket ->
+                                    Logger.logTrace (fun () -> $"NAT outbound (2): forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
+                                    externalGateway.sendOutbound(natPacket)
+                                    Ok ()
+                                | None ->
+                                    Ok () // dropped by NAT (e.g. too short); ignore
             | 6 -> Ok () // IPv6 not supported
             | _ -> Ok () // unknown/empty
                 
