@@ -35,8 +35,7 @@ pktmon stop
 pktmon format c:\GitHub\Softellect\!Temp\vpn_dns.etl -o c:\GitHub\Softellect\!Temp\vpn_dns.pcapng
 
 
-======================================================
-
+========================================================
 
 ifIndex InterfaceAlias               AddressFamily ConnectionState
 ------- --------------               ------------- ---------------
@@ -67,3 +66,7 @@ ifIndex InterfaceAlias               AddressFamily ConnectionState
 
 Wireshark - display filter
 dns || (udp.port == 53)
+
+========================================================
+
+curl -v --connect-timeout 10 --max-time 10 http://93.184.216.34/
