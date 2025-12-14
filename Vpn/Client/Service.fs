@@ -142,16 +142,12 @@ module Service =
                             Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
                             Logger.logTracePackets (packets, (fun () -> $"Client sending packet to server: "))
 
-                        for packet in packets do
-                            match wcfClient.sendPacket packet with
-                            | Ok () -> ()
-                            | Error e ->
-                                Logger.logWarn $"Failed to send packet: %A{e}"
+                        match wcfClient.sendPackets packets with
+                        | Ok () -> ()
+                        | Error e -> Logger.logWarn $"Failed to send {packets.Length} packets to server: %A{e}"
 
-                        if packets.Length = 0 then
-                            Thread.Sleep(5)
-                    | _ ->
-                        Thread.Sleep(100)
+                        if packets.Length = 0 then Thread.Sleep(5)
+                    | _ -> Thread.Sleep(100)
                 with
                 | ex ->
                     Logger.logError $"Error in send loop: {ex.Message}"

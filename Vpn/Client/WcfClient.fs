@@ -3,7 +3,6 @@ namespace Softellect.Vpn.Client
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Wcf.Client
-open Softellect.Wcf.Common
 open Softellect.Wcf.Errors
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
@@ -42,11 +41,13 @@ module WcfClient =
                 Logger.logTrace (fun () -> $"authenticate: Sending auth request for client {request.clientId.value}")
                 tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
 
-            member _.sendPacket packet =
-                Logger.logTrace (fun () -> $"sendPacket: Sending packet of size {packet.Length}, packet=%A{(summarizePacket packet)}")
-                let payload = (data.clientAccessInfo.vpnClientId, packet)
-                let result = tryCommunicate getService (fun s b -> s.sendPacket b) toSendError payload
-                Logger.logTrace (fun () -> $"sendPacket: Received: '%A{result}'.")
+            member _.sendPackets packets =
+                let clientId = data.clientAccessInfo.vpnClientId
+                Logger.logTrace (fun () -> $"Sending {packets.Length} packets for client {clientId.value}.")
+                Logger.logTracePackets (packets, (fun () -> $"Sending for client {clientId.value}: "))
+                let payload = (clientId, packets)
+                let result = tryCommunicate getService (fun s b -> s.sendPackets b) toSendError payload
+                Logger.logTrace (fun () -> $"Result: '%A{result}'.")
                 result
 
             member _.receivePackets clientId =

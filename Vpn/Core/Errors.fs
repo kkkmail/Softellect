@@ -52,10 +52,22 @@ module Errors =
 
 
     type VpnError =
+        | VpnAggregateErr of VpnError  * List<VpnError>
         | ConnectionErr of VpnConnectionError
         | ServerErr of VpnServerError
         | ConfigErr of string
         | CryptoErr of Softellect.Sys.Errors.CryptoError
+        
+        static member addError a b =
+            
+            match a, b with
+            | VpnAggregateErr (x, w), VpnAggregateErr (y, z) -> VpnAggregateErr (x, w @ (y :: z))
+            | VpnAggregateErr (x, w), _ -> VpnAggregateErr (x, w @ [b])
+            | _, VpnAggregateErr (y, z) -> VpnAggregateErr (a, y :: z)
+            | _ -> VpnAggregateErr (a, [b])
+
+        static member (+) (a, b) = VpnError.addError a b
+        member a.add b = a + b
 
 
     type VpnResult<'T> = Result<'T, VpnError>
