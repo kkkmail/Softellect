@@ -62,10 +62,6 @@ module ExternalInterface =
         let mutable receiveThread : Thread option = None
         let mutable onPacketCallback : (byte[] -> unit) option = None
 
-        // // Throttled logging state (to avoid log spam)
-        // let mutable lastUdpLog = DateTime.MinValue
-        // let mutable lastTcpLog = DateTime.MinValue
-
         // Raw IP socket for external communication (handles both TCP and UDP)
         // NOTE: Requires administrative privileges on Windows.
         let rawSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.IP)
