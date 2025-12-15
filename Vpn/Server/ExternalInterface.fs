@@ -62,10 +62,6 @@ module ExternalInterface =
         let mutable receiveThread : Thread option = None
         let mutable onPacketCallback : (byte[] -> unit) option = None
 
-        // // Throttled logging state (to avoid log spam)
-        // let mutable lastUdpLog = DateTime.MinValue
-        // let mutable lastTcpLog = DateTime.MinValue
-
         // Raw IP socket for external communication (handles both TCP and UDP)
         // NOTE: Requires administrative privileges on Windows.
         let rawSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.IP)
@@ -87,16 +83,8 @@ module ExternalInterface =
 
                             match protocol with
                             | 17uy -> // UDP
-                                // Throttled logging (max 1 per second) - commented out, using full logging instead
-                                // let now = DateTime.UtcNow
-                                // if (now - lastUdpLog).TotalSeconds > 1.0 then
-                                //     lastUdpLog <- now
-                                //     Logger.logTrace (fun () -> "ExternalGateway: inbound UDP (1/sec)")
-
                                 // Full logging for debugging
-                                let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                let dstIp = getDestinationIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=UDP, src={srcIp}, dst={dstIp}, packet=%A{(summarizePacket packet)}")
+                                Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (UDP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
 
                                 // Forward full IPv4 packet to NAT
                                 match onPacketCallback with
@@ -104,24 +92,24 @@ module ExternalInterface =
                                 | None -> ()
 
                             | 6uy -> // TCP
-                                // Throttled logging (max 1 per second) - commented out, using full logging instead
-                                // let now = DateTime.UtcNow
-                                // if (now - lastTcpLog).TotalSeconds > 1.0 then
-                                //     lastTcpLog <- now
-                                //     Logger.logTrace (fun () -> "ExternalGateway: inbound TCP (1/sec)")
-
                                 // Full logging for debugging
-                                let srcIp = getSourceIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                let dstIp = getDestinationIpAddress packet |> Option.map string |> Option.defaultValue "?"
-                                Logger.logTrace (fun () -> $"ExternalGateway: Received raw IP packet, len={packet.Length}, proto=TCP, src={srcIp}, dst={dstIp}, packet=%A{(summarizePacket packet)}")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (TCP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
 
                                 // Forward full IPv4 packet to NAT
                                 match onPacketCallback with
                                 | Some callback -> callback packet
                                 | None -> ()
 
+                            | 1uy -> // ICMP
+                                // Forward ICMP to callback for ICMP proxy handling
+                                Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (ICMP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+
+                                match onPacketCallback with
+                                | Some callback -> callback packet
+                                | None -> ()
+
                             | _ ->
-                                // Silently drop other protocols (ICMP, etc.)
+                                // Silently drop other protocols
                                 ()
                 with
                 | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
@@ -192,7 +180,7 @@ module ExternalInterface =
 
                     try
                         let sent = rawSocket.SendTo(packet, remoteEndPoint)
-                        Logger.logTrace (fun () -> $"Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
+                        // Logger.logTrace (fun () -> $"HEAVY LOG - Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
                         ()
                     with
                     | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"

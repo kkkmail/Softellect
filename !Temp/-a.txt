@@ -69,60 +69,15 @@ dns || (udp.port == 53)
 
 ========================================================
 
-curl -v --connect-timeout 10 --max-time 10 http://93.184.216.34/
-
-
 curl -v -k --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
 curl -v --connect-timeout 10 --max-time 10 https://8.8.8.8/
 
-powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient('8.8.8.8',443); $s=$c.GetStream(); $w=New-Object IO.StreamWriter($s); $w.NewLine=\"`r`n\"; $w.Write(\"GET / HTTP/1.1`r`nHost: dns.google`r`nConnection: close`r`n`r`n\"); $w.Flush(); $r=New-Object IO.StreamReader($s); $r.ReadToEnd(); $c.Close()"
+========================================================
 
-=====================
+nslookup -timeout=10 microsoft.com 10.66.77.1 > c:\GitHub\Softellect\!Temp\-vpn_dns.txt 2>&1 3>&1 4>&1 5>&1 6>&1
 
-PS C:\GitHub\Softellect> powershell -NoProfile -Command "$c=New-Object Net.Sockets.TcpClient('8.8.8.8',443); $s=$c.GetStream(); $w=New-Object IO.StreamWriter($s); $w.NewLine=\"`r`n\"; $w.Write(\"GET / HTTP/1.1`r`nHost: dns.google`r`nConnection: close`r`n`r`n\"); $w.Flush(); $r=New-Object IO.StreamReader($s); $r.ReadToEnd(); $c.Close()"
-At line:1 char:63
-+ ... New-Object Net.Sockets.TcpClient('8.8.8.8',443); =.GetStream(); =New- ...
-+                                                                  ~
-An expression was expected after '('.
-At line:1 char:94
-+ ... t('8.8.8.8',443); =.GetStream(); =New-Object IO.StreamWriter(); .NewL ...
-+                                                                  ~
-An expression was expected after '('.
-At line:2 char:26
-+ \; .Write(\GET / HTTP/1.1
-+                          ~
-Missing closing ')' in expression.
-At line:6 char:2
-+ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
-+  ~
-Unexpected token ')' in expression or statement.
-At line:6 char:12
-+ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
-+            ~
-An expression was expected after '('.
-At line:6 char:43
-+ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
-+                                           ~
-An expression was expected after '('.
-At line:6 char:57
-+ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
-+                                                         ~
-An expression was expected after '('.
-At line:6 char:67
-+ \); .Flush(); =New-Object IO.StreamReader(); .ReadToEnd(); .Close()
-+                                                                   ~
-An expression was expected after '('.
-    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+========================================================
 
-=================================================
-PS C:\GitHub\Softellect\TestScripts> .\tcp_tls_handshake.ps1
-WriteError: C:\GitHub\Softellect\TestScripts\tcp_tls_handshake.ps1:7
-Line |
-   7 |  $host = "dns.google"   # Host header + SNI name we present in TLS
-     |  ~~~~~~~~~~~~~~~~~~~~
-     | Cannot overwrite variable Host because it is read-only or constant.
 
-ERROR: System.Management.Automation.MethodInvocationException: Exception calling "ReadToEnd" with "0" argument(s): "Unable to read data from the transport connection: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.."
-INNER: System.IO.IOException: Unable to read data from the transport connection: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond..
-PS C:\GitHub\Softellect\TestScripts>
+========================================================

@@ -1,0 +1,13 @@
+Non-authoritative answer:
+Server:  UnKnown
+Address:  10.66.77.1
+
+Name:    microsoft.com
+Addresses:  2603:1010:3:3::5b
+	  2603:1030:b:3::152
+	  2603:1030:20e:3::23c
+	  2603:1020:201:10::10f
+	  2603:1030:c02:8::14
+	  13.107.213.57
+	  13.107.246.57
+
