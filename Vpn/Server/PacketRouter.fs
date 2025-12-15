@@ -207,13 +207,10 @@ module PacketRouter =
                             | _ ->
                                 // Unknown/malformed - drop silently
                                 ()
-                        else
-                            // No packet available, wait a bit
-                            Thread.Sleep(1)
+                        // No sleep - tight producer loop
                     with
                     | ex ->
                         Logger.logError $"Error in receive loop: {ex.Message}"
-                        Thread.Sleep(100)
             | _ ->
                 Logger.logWarn "Adapter not ready for receive loop"
 

@@ -119,7 +119,6 @@ module ExternalInterface =
                 | ex ->
                     if running then
                         Logger.logError $"ExternalGateway receive error: {ex.Message}"
-                        Thread.Sleep(100)
 
         do
             // Configure raw socket for sending complete IP packets (including IP header)
