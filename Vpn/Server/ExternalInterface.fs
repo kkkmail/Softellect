@@ -183,7 +183,7 @@ module ExternalInterface =
                         // Logger.logTrace (fun () -> $"HEAVY LOG - Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
                         ()
                     with
-                    | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"
+                    | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {(summarizePacket packet)}, exception: '{ex.Message}'."
                 | None -> Logger.logWarn "ExternalGateway.sendOutbound: Could not extract destination IP, dropping packet"
 
         /// Stop the external gateway.
