@@ -180,7 +180,7 @@ module ExternalInterface =
 
                     try
                         let sent = rawSocket.SendTo(packet, remoteEndPoint)
-                        Logger.logTrace (fun () -> $"Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
+                        // Logger.logTrace (fun () -> $"HEAVY LOG - Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
                         ()
                     with
                     | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {ex.Message}"

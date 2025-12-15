@@ -196,7 +196,7 @@ module PacketRouter =
                                                 match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
                                                 | Some natPacket ->
                                                     externalGateway.sendOutbound(natPacket)
-                                                    Logger.logTrace (fun () -> $"NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
+                                                    // Logger.logTrace (fun () -> $"HEAVY LOG - NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
                                                 | None ->
                                                     Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
                                         | None ->
