@@ -101,6 +101,9 @@ module ExternalInterface =
                 Logger.logInfo $"ExternalGateway stats: total={total}, passed={passed}, dropShort={dropShort}, dropNotDst={dropNotDst}, dropSrc={dropSrc}, errors={errors}"
                 statsStopwatch.Restart()
 
+        // Helper to queue work on ThreadPool to break inline recursion
+        let queue (f: unit -> unit) = ThreadPool.UnsafeQueueUserWorkItem((fun _ -> f()), null) |> ignore
+
         let rec startReceive () =
             if running then
                 match receiveArgs with
@@ -108,8 +111,8 @@ module ExternalInterface =
                     try
                         let pending = rawSocket.ReceiveAsync(args)
                         if not pending then
-                            // Completed synchronously - process immediately
-                            handleCompleted args
+                            // Completed synchronously - queue to break inline recursion
+                            queue (fun () -> handleCompleted args)
                     with
                     | :? ObjectDisposedException ->
                         () // Socket disposed during shutdown, ignore
@@ -130,7 +133,7 @@ module ExternalInterface =
                     if e.BytesTransferred < 20 then
                         Interlocked.Increment(&droppedTooShort) |> ignore
                         logStatsIfDue()
-                        startReceive()
+                        queue startReceive
                     // Drop if destination IP is NOT the server public IP
                     elif receiveBuffer[16] <> serverIpBytes[0] ||
                          receiveBuffer[17] <> serverIpBytes[1] ||
@@ -138,7 +141,7 @@ module ExternalInterface =
                          receiveBuffer[19] <> serverIpBytes[3] then
                         Interlocked.Increment(&droppedNotDstServerIp) |> ignore
                         logStatsIfDue()
-                        startReceive()
+                        queue startReceive
                     // Drop if source IP IS the server public IP (outbound/self traffic)
                     elif receiveBuffer[12] = serverIpBytes[0] &&
                          receiveBuffer[13] = serverIpBytes[1] &&
@@ -146,7 +149,7 @@ module ExternalInterface =
                          receiveBuffer[15] = serverIpBytes[3] then
                         Interlocked.Increment(&droppedSrcIsServerIp) |> ignore
                         logStatsIfDue()
-                        startReceive()
+                        queue startReceive
                     else
                         // Only now allocate/copy
                         let packet = Array.zeroCreate<byte> e.BytesTransferred
@@ -159,11 +162,11 @@ module ExternalInterface =
                         | None -> ()
 
                         logStatsIfDue()
-                        startReceive()
+                        queue startReceive
 
                 | SocketError.Success ->
-                    // Zero bytes - re-issue receive
-                    startReceive()
+                    // Zero bytes - stop the pump (do NOT re-arm to prevent infinite loop)
+                    running <- false
 
                 | error when isShutdownError error ->
                     // Expected shutdown error
@@ -178,7 +181,7 @@ module ExternalInterface =
                         Logger.logError $"ExternalGateway receive error: {error}"
                     logStatsIfDue()
                     // Re-issue receive on non-shutdown errors if still running
-                    startReceive()
+                    queue startReceive
 
         let onCompletedHandler = EventHandler<SocketAsyncEventArgs>(fun _ e -> handleCompleted e)
 
