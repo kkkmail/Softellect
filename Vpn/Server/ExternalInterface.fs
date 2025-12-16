@@ -59,66 +59,128 @@ module ExternalInterface =
     /// Uses SocketType.Raw with ProtocolType.IP to handle both TCP and UDP uniformly.
     type ExternalGateway(config: ExternalConfig) =
         let mutable running = false
-        let mutable receiveThread : Thread option = None
         let mutable onPacketCallback : (byte[] -> unit) option = None
+        let mutable receiveArgs : SocketAsyncEventArgs option = None
+        let receiveBuffer : byte[] = Array.zeroCreate<byte> 65535
+
+        // Precomputed server public IP bytes for fast comparison
+        let serverIpBytes = config.serverPublicIp.GetAddressBytes()
+
+        // Counters for stats
+        let mutable totalReceived = 0L
+        let mutable passedToCallback = 0L
+        let mutable droppedTooShort = 0L
+        let mutable droppedNotDstServerIp = 0L
+        let mutable droppedSrcIsServerIp = 0L
+        let mutable receiveErrors = 0L
+
+        // Stopwatch for throttled logging
+        let statsStopwatch = System.Diagnostics.Stopwatch()
 
         // Raw IP socket for external communication (handles both TCP and UDP)
         // NOTE: Requires administrative privileges on Windows.
         let rawSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.IP)
 
-        let receiveLoop () =
-            let buffer = Array.zeroCreate<byte> 65535
+        let isShutdownError (error: SocketError) =
+            match error with
+            | SocketError.OperationAborted
+            | SocketError.Interrupted
+            | SocketError.NotSocket
+            | SocketError.ConnectionReset
+            | SocketError.Shutdown -> true
+            | _ -> false
 
-            while running do
-                try
-                    // Use Poll to allow checking the running flag periodically
-                    if rawSocket.Poll(100000, SelectMode.SelectRead) then
-                        let received = rawSocket.Receive(buffer)
-                        if received > 0 then
-                            // Trim to actual packet size
-                            let packet = Array.sub buffer 0 received
+        let logStatsIfDue () =
+            if statsStopwatch.ElapsedMilliseconds >= 5000L then
+                let total = Interlocked.Read(&totalReceived)
+                let passed = Interlocked.Read(&passedToCallback)
+                let dropShort = Interlocked.Read(&droppedTooShort)
+                let dropNotDst = Interlocked.Read(&droppedNotDstServerIp)
+                let dropSrc = Interlocked.Read(&droppedSrcIsServerIp)
+                let errors = Interlocked.Read(&receiveErrors)
+                Logger.logInfo $"ExternalGateway stats: total={total}, passed={passed}, dropShort={dropShort}, dropNotDst={dropNotDst}, dropSrc={dropSrc}, errors={errors}"
+                statsStopwatch.Restart()
 
-                            // Get protocol byte from IPv4 header
-                            let protocol = if packet.Length > 9 then packet[9] else 0uy
+        let rec startReceive () =
+            if running then
+                match receiveArgs with
+                | Some args ->
+                    try
+                        let pending = rawSocket.ReceiveAsync(args)
+                        if not pending then
+                            // Completed synchronously - process immediately
+                            handleCompleted args
+                    with
+                    | :? ObjectDisposedException ->
+                        () // Socket disposed during shutdown, ignore
+                    | ex ->
+                        if running then
+                            Logger.logError $"ExternalGateway startReceive error: {ex.Message}"
+                | None -> ()
 
-                            match protocol with
-                            | 17uy -> // UDP
-                                // Full logging for debugging
-                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (UDP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+        and handleCompleted (e: SocketAsyncEventArgs) =
+            if not running then
+                () // Exit immediately if stopped
+            else
+                match e.SocketError with
+                | SocketError.Success when e.BytesTransferred > 0 ->
+                    Interlocked.Increment(&totalReceived) |> ignore
 
-                                // Forward full IPv4 packet to NAT
-                                match onPacketCallback with
-                                | Some callback -> callback packet
-                                | None -> ()
+                    // Drop if too short for IPv4 header
+                    if e.BytesTransferred < 20 then
+                        Interlocked.Increment(&droppedTooShort) |> ignore
+                        logStatsIfDue()
+                        startReceive()
+                    // Drop if destination IP is NOT the server public IP
+                    elif receiveBuffer[16] <> serverIpBytes[0] ||
+                         receiveBuffer[17] <> serverIpBytes[1] ||
+                         receiveBuffer[18] <> serverIpBytes[2] ||
+                         receiveBuffer[19] <> serverIpBytes[3] then
+                        Interlocked.Increment(&droppedNotDstServerIp) |> ignore
+                        logStatsIfDue()
+                        startReceive()
+                    // Drop if source IP IS the server public IP (outbound/self traffic)
+                    elif receiveBuffer[12] = serverIpBytes[0] &&
+                         receiveBuffer[13] = serverIpBytes[1] &&
+                         receiveBuffer[14] = serverIpBytes[2] &&
+                         receiveBuffer[15] = serverIpBytes[3] then
+                        Interlocked.Increment(&droppedSrcIsServerIp) |> ignore
+                        logStatsIfDue()
+                        startReceive()
+                    else
+                        // Only now allocate/copy
+                        let packet = Array.zeroCreate<byte> e.BytesTransferred
+                        Array.Copy(receiveBuffer, packet, e.BytesTransferred)
+                        Interlocked.Increment(&passedToCallback) |> ignore
 
-                            | 6uy -> // TCP
-                                // Full logging for debugging
-                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (TCP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                        // Invoke callback if present
+                        match onPacketCallback with
+                        | Some callback -> callback packet
+                        | None -> ()
 
-                                // Forward full IPv4 packet to NAT
-                                match onPacketCallback with
-                                | Some callback -> callback packet
-                                | None -> ()
+                        logStatsIfDue()
+                        startReceive()
 
-                            | 1uy -> // ICMP
-                                // Forward ICMP to callback for ICMP proxy handling
-                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (ICMP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                | SocketError.Success ->
+                    // Zero bytes - re-issue receive
+                    startReceive()
 
-                                match onPacketCallback with
-                                | Some callback -> callback packet
-                                | None -> ()
-
-                            | _ ->
-                                // Silently drop other protocols
-                                ()
-                with
-                | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
-                    () // Timeout is expected, continue
-                | :? ObjectDisposedException ->
-                    running <- false
-                | ex ->
+                | error when isShutdownError error ->
+                    // Expected shutdown error
                     if running then
-                        Logger.logError $"ExternalGateway receive error: {ex.Message}"
+                        Logger.logError $"ExternalGateway receive error during run: {error}"
+                    // Don't re-issue receive on shutdown errors
+
+                | error ->
+                    // Unexpected error
+                    if running then
+                        Interlocked.Increment(&receiveErrors) |> ignore
+                        Logger.logError $"ExternalGateway receive error: {error}"
+                    logStatsIfDue()
+                    // Re-issue receive on non-shutdown errors if still running
+                    startReceive()
+
+        let onCompletedHandler = EventHandler<SocketAsyncEventArgs>(fun _ e -> handleCompleted e)
 
         do
             // Configure raw socket for sending complete IP packets (including IP header)
@@ -140,7 +202,6 @@ module ExternalInterface =
             | ex ->
                 Logger.logWarn $"ExternalGateway: IOControl ReceiveAll failed: {ex.Message}. UDP may not work."
 
-            rawSocket.ReceiveTimeout <- 1000
             Logger.logInfo $"ExternalGateway: Raw IP socket bound to {config.serverPublicIp}"
 
         /// Start the background receive loop.
@@ -152,12 +213,16 @@ module ExternalInterface =
             else
                 onPacketCallback <- Some onPacketFromInternet
                 running <- true
+                statsStopwatch.Restart()
 
-                let thread = Thread(ThreadStart(receiveLoop))
-                thread.IsBackground <- true
-                thread.Name <- "ExternalGateway-Receive"
-                thread.Start()
-                receiveThread <- Some thread
+                // Create and configure SocketAsyncEventArgs
+                let args = new SocketAsyncEventArgs()
+                args.SetBuffer(receiveBuffer, 0, receiveBuffer.Length)
+                args.Completed.AddHandler(onCompletedHandler)
+                receiveArgs <- Some args
+
+                // Start the receive pump
+                startReceive ()
 
                 Logger.logInfo "ExternalGateway started (raw IP mode, TCP+UDP)"
 
@@ -189,18 +254,19 @@ module ExternalInterface =
         member _.stop() =
             Logger.logInfo "ExternalGateway stopping"
             running <- false
-
-            match receiveThread with
-            | Some thread ->
-                if thread.IsAlive then
-                    thread.Join(TimeSpan.FromSeconds(5.0)) |> ignore
-                receiveThread <- None
-            | None -> ()
+            onPacketCallback <- None
 
             try
                 rawSocket.Close()
                 rawSocket.Dispose()
             with _ -> ()
+
+            match receiveArgs with
+            | Some args ->
+                args.Completed.RemoveHandler(onCompletedHandler)
+                args.Dispose()
+                receiveArgs <- None
+            | None -> ()
 
             Logger.logInfo "ExternalGateway stopped"
 
