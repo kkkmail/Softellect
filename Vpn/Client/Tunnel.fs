@@ -31,11 +31,12 @@ module Tunnel =
         | TunnelError of string
 
 
-    type Tunnel(config: TunnelConfig) =
+    type Tunnel(config: TunnelConfig, ct: CancellationToken) =
         let mutable adapter : WinTunAdapter option = None
         let mutable tunnelState = Disconnected
         let mutable running = false
         let mutable receiveThread : Thread option = None
+        let mutable readEventWarningLogged = false
 
         // Channel for outbound packets (from TUN adapter to VPN server)
         let outboundChannelOptions = UnboundedChannelOptions(SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false)
@@ -49,25 +50,42 @@ module Tunnel =
         let receiveLoop () =
             match adapter with
             | Some adp when adp.IsSessionActive ->
-                while running do
-                    try
-                        let packet = adp.ReceivePacket()
-                        if not (isNull packet) && packet.Length > 0 then
-                            let v = getIpVersion packet
-                            match v with
-                            | 4 ->
-                                // IPv4 packet - write to channel for sending to VPN server
-                                outboundChannel.Writer.TryWrite(packet) |> ignore
-                                Logger.logTrace (fun () -> $"Tunnel captured IPv4 packet from TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
-                            | 6 ->
-                                // IPv6 packet - drop (VPN is IPv4-only)
-                                Logger.logTrace (fun () -> $"Tunnel: dropping IPv6 packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
-                            | _ ->
-                                // Unknown/malformed - drop silently
+                let readEvent = adp.GetReadWaitHandle()
+                match readEvent with
+                | null ->
+                    if not readEventWarningLogged then
+                        Logger.logWarn "Tunnel: GetReadWaitHandle returned null, exiting receive loop"
+                        readEventWarningLogged <- true
+                | _ ->
+                    let waitHandles = [| readEvent; ct.WaitHandle |]
+                    while running && not ct.IsCancellationRequested do
+                        try
+                            let waitResult = WaitHandle.WaitAny(waitHandles)
+                            if waitResult = 1 || ct.IsCancellationRequested then
+                                // Cancellation signaled - exit loop
                                 ()
-                        // No sleep - tight producer loop
-                    with
-                    | ex -> Logger.logError $"Error in tunnel receive loop: {ex.Message}"
+                            else
+                                // readEvent signaled - drain all available packets
+                                let mutable hasMore = true
+                                while hasMore do
+                                    let packet = adp.ReceivePacket()
+                                    if isNull packet || packet.Length = 0 then
+                                        hasMore <- false
+                                    else
+                                        let v = getIpVersion packet
+                                        match v with
+                                        | 4 ->
+                                            // IPv4 packet - write to channel for sending to VPN server
+                                            outboundChannel.Writer.TryWrite(packet) |> ignore
+                                            Logger.logTrace (fun () -> $"Tunnel captured IPv4 packet from TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
+                                        | 6 ->
+                                            // IPv6 packet - drop (VPN is IPv4-only)
+                                            Logger.logTrace (fun () -> $"Tunnel: dropping IPv6 packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                                        | _ ->
+                                            // Unknown/malformed - drop silently
+                                            ()
+                        with
+                        | ex -> Logger.logError $"Error in tunnel receive loop: {ex.Message}"
             | _ -> Logger.logWarn "Tunnel adapter not ready for receive loop"
 
         member private _.addHostRoute() =

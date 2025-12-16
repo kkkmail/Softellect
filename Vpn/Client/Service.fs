@@ -122,7 +122,7 @@ module Service =
                     physicalInterfaceName = "Wi-Fi"
                 }
 
-            let t = Tunnel(config)
+            let t = Tunnel(config, cts.Token)
 
             match t.start() with
             | Ok () ->

@@ -118,7 +118,7 @@ module Service =
             /// From the server side it is sending packets to a client.
             member _.receivePackets clientId =
                 match registry.tryGetSession(clientId) with
-                | Some _ ->
+                | Some session ->
                     registry.updateActivity(clientId)
                     let packets = registry.dequeuePacketsForClient(clientId, 100)
                     if packets.Length > 0 then
@@ -126,7 +126,17 @@ module Service =
                         Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client: '{clientId.value}', total {totalBytes} bytes")
                         Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
                         Ok (Some packets)
-                    else Ok None
+                    else
+                        // No packets available - wait on semaphore for up to 250 ms
+                        session.packetsAvailable.Wait(250) |> ignore
+                        let packets2 = registry.dequeuePacketsForClient(clientId, 100)
+                        if packets2.Length > 0 then
+                            let totalBytes = packets2 |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Server sending {packets2.Length} packets to client: '{clientId.value}', total {totalBytes} bytes (after wait)")
+                            Logger.logTracePackets (packets2, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
+                            Ok (Some packets2)
+                        else
+                            Ok None
                 | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
