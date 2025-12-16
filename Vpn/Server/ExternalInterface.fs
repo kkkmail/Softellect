@@ -84,7 +84,7 @@ module ExternalInterface =
                             match protocol with
                             | 17uy -> // UDP
                                 // Full logging for debugging
-                                Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (UDP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (UDP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
 
                                 // Forward full IPv4 packet to NAT
                                 match onPacketCallback with
@@ -102,7 +102,7 @@ module ExternalInterface =
 
                             | 1uy -> // ICMP
                                 // Forward ICMP to callback for ICMP proxy handling
-                                Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (ICMP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - ExternalGateway (ICMP): Received raw IP packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
 
                                 match onPacketCallback with
                                 | Some callback -> callback packet
