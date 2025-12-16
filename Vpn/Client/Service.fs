@@ -183,8 +183,7 @@ module Service =
                             Logger.logWarn $"Failed to receive packets: %A{e}"
                     with
                     | :? OperationCanceledException -> ()
-                    | ex ->
-                        Logger.logError $"Error in receive loop: {ex.Message}"
+                    | ex -> Logger.logError $"Error in receive loop: {ex.Message}"
             } :> Task
 
         interface IHostedService with

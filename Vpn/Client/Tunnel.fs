@@ -67,11 +67,9 @@ module Tunnel =
                                 ()
                         // No sleep - tight producer loop
                     with
-                    | ex ->
-                        Logger.logError $"Error in tunnel receive loop: {ex.Message}"
-            | _ ->
-                Logger.logWarn "Tunnel adapter not ready for receive loop"
-                
+                    | ex -> Logger.logError $"Error in tunnel receive loop: {ex.Message}"
+            | _ -> Logger.logWarn "Tunnel adapter not ready for receive loop"
+
         member private _.addHostRoute() =
             let processName = "netsh"
             let deleteCommand = $"interface ipv4 delete route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value}"
@@ -81,7 +79,7 @@ module Tunnel =
             if not deleteResult.IsSuccess then
                 let errMsg = getErrorMessage deleteResult
                 Logger.logWarn $"Failed to execute: '{processName} {deleteCommand}', error: {errMsg}. Proceeding further."
-                
+
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
             Logger.logInfo $"Executing: '{processName} {command}'."
@@ -93,7 +91,7 @@ module Tunnel =
             else
                 Logger.logInfo $"Successfully executed: '{processName} {command}'."
                 Ok ()
-        
+
         member t.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
             tunnelState <- Connecting
@@ -122,13 +120,13 @@ module Tunnel =
                             adapter <- None
                             Error errMsg
                         else
-                            match t.addHostRoute() with                            
+                            match t.addHostRoute() with
                             | Error e ->
                                 tunnelState <- TunnelError e
                                 adp.Dispose()
                                 adapter <- None
                                 Error e
-                            | Ok () ->                                
+                            | Ok () ->
                                 // Add split default routes (0.0.0.0/1 and 128.0.0.0/1) through gateway
                                 let routeMask = Ip4 "128.0.0.0"
                                 let routeMetric = 1

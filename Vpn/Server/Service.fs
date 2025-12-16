@@ -70,9 +70,7 @@ module Service =
                 | Some replyPacket ->
                     registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
                     Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
-                | None ->
-                    // Timeout/error already logged in DnsProxy, do not inject into TUN
-                    ()
+                | None -> () // Timeout/error already logged in DnsProxy, do not inject into TUN
                 Ok ()
 
             | None ->
@@ -128,10 +126,8 @@ module Service =
                         Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client: '{clientId.value}', total {totalBytes} bytes")
                         Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
                         Ok (Some packets)
-                    else
-                        Ok None
-                | None ->
-                    Error (clientId |> SessionExpiredErr |> ServerErr)
+                    else Ok None
+                | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
