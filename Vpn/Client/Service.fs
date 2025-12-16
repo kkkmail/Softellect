@@ -37,9 +37,10 @@ module Service =
         let mutable state = Disconnected
         let mutable tunnel : Tunnel option = None
         let mutable killSwitch : KillSwitch option = None
-        let mutable sendThread : Thread option = None
-        let mutable receiveThread : Thread option = None
+        let mutable sendTask : Task option = None
+        let mutable receiveTask : Task option = None
         let mutable running = false
+        let cts = new CancellationTokenSource()
 
         let wcfClient = createVpnClient data.clientAccessInfo
 
@@ -121,7 +122,7 @@ module Service =
                     physicalInterfaceName = "Wi-Fi"
                 }
 
-            let t = Tunnel(config)
+            let t = Tunnel(config, cts.Token)
 
             match t.start() with
             | Ok () ->
@@ -130,56 +131,60 @@ module Service =
             | Error msg ->
                 Error msg
 
-        let sendLoop () =
-            while running do
-                try
-                    match tunnel with
-                    | Some t when t.isRunning ->
-                        let packets = t.dequeueOutboundPackets(50)
+        let sendLoopAsync (t: Tunnel) =
+            task {
+                while running && not cts.Token.IsCancellationRequested do
+                    try
+                        // Wait for at least one packet using ReadAsync
+                        let! firstPacket = t.outboundPacketReader.ReadAsync(cts.Token).AsTask()
+                        let packets = ResizeArray<byte[]>()
+                        packets.Add(firstPacket)
 
-                        if packets.Length > 0 then
-                            let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
-                            Logger.logTrace (fun () -> $"Client sending {packets.Length} packets to server, total {totalBytes} bytes")
-                            Logger.logTracePackets (packets, (fun () -> $"Client sending packet to server: "))
+                        // Drain all additional available packets using TryRead
+                        let mutable hasMore = true
+                        while hasMore do
+                            match t.outboundPacketReader.TryRead() with
+                            | true, packet -> packets.Add(packet)
+                            | false, _ -> hasMore <- false
 
-                            match wcfClient.sendPackets packets with
-                            | Ok () -> ()
-                            | Error e -> Logger.logWarn $"Failed to send {packets.Length} packets to server: %A{e}"
+                        let packetsArray = packets.ToArray()
+                        let totalBytes = packetsArray |> Array.sumBy (fun p -> p.Length)
+                        Logger.logTrace (fun () -> $"Client sending {packetsArray.Length} packets to server, total {totalBytes} bytes")
+                        Logger.logTracePackets (packetsArray, (fun () -> $"Client sending packet to server: "))
 
-                        if packets.Length = 0 then Thread.Sleep(5)
-                    | _ -> Thread.Sleep(100)
-                with
-                | ex ->
-                    Logger.logError $"Error in send loop: {ex.Message}"
-                    Thread.Sleep(100)
+                        match wcfClient.sendPackets packetsArray with
+                        | Ok () -> ()
+                        | Error e -> Logger.logWarn $"Failed to send {packetsArray.Length} packets to server: %A{e}"
+                    with
+                    | :? OperationCanceledException -> ()
+                    | ex ->
+                        Logger.logError $"Error in send loop: {ex.Message}"
+            } :> Task
 
-        let receiveLoop () =
-            while running do
-                try
-                    match tunnel, state with
-                    | Some t, Connected _ when t.isRunning ->
+        let receiveLoopAsync (t: Tunnel) =
+            task {
+                while running && not cts.Token.IsCancellationRequested do
+                    try
                         match wcfClient.receivePackets data.clientAccessInfo.vpnClientId with
                         | Ok (Some packets) ->
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
                             Logger.logTracePackets (packets, (fun () -> $"Client received packet from server: "))
-                            
+
                             for packet in packets do
                                 match t.injectPacket(packet) with
                                 | Ok () -> ()
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
                         | Ok None ->
-                            Thread.Sleep(10)
+                            // No packets available - immediately call again (WCF provides blocking)
+                            ()
                         | Error e ->
                             Logger.logWarn $"Failed to receive packets: %A{e}"
-                            Thread.Sleep(100)
-                    | _ ->
-                        Thread.Sleep(100)
-                with
-                | ex ->
-                    Logger.logError $"Error in receive loop: {ex.Message}"
-                    Thread.Sleep(100)
+                    with
+                    | :? OperationCanceledException -> ()
+                    | ex -> Logger.logError $"Error in receive loop: {ex.Message}"
+            } :> Task
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
@@ -213,22 +218,18 @@ module Service =
                                 Logger.logError "Kill-switch instance is missing after Enable()"
                                 Task.CompletedTask |> ignore
 
-                            // Only start threads if kill-switch permit succeeded
+                            // Only start tasks if kill-switch permit succeeded
                             match state with
                             | Failed _ -> Task.CompletedTask
                             | _ ->
 
                             running <- true
 
-                            let st = Thread(ThreadStart(sendLoop))
-                            st.IsBackground <- true
-                            st.Start()
-                            sendThread <- Some st
-
-                            let rt = Thread(ThreadStart(receiveLoop))
-                            rt.IsBackground <- true
-                            rt.Start()
-                            receiveThread <- Some rt
+                            match tunnel with
+                            | Some t ->
+                                sendTask <- Some (Task.Run(fun () -> sendLoopAsync t))
+                                receiveTask <- Some (Task.Run(fun () -> receiveLoopAsync t))
+                            | None -> ()
 
                             state <- Connected assignedIp
                             Logger.logInfo $"VPN Client connected with IP: {assignedIp.value}"
@@ -251,17 +252,18 @@ module Service =
             member _.StopAsync(cancellationToken: CancellationToken) =
                 Logger.logInfo "Stopping VPN Client Service..."
                 running <- false
+                cts.Cancel()
 
-                match sendThread with
+                match sendTask with
                 | Some t ->
-                    if t.IsAlive then t.Join(TimeSpan.FromSeconds(5.0)) |> ignore
-                    sendThread <- None
+                    try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
+                    sendTask <- None
                 | None -> ()
 
-                match receiveThread with
+                match receiveTask with
                 | Some t ->
-                    if t.IsAlive then t.Join(TimeSpan.FromSeconds(5.0)) |> ignore
-                    receiveThread <- None
+                    try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
+                    receiveTask <- None
                 | None -> ()
 
                 match tunnel with

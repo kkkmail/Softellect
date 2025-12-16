@@ -21,6 +21,7 @@ module ClientRegistry =
             publicKey : PublicKey
             lastActivity : DateTime
             pendingPackets : ConcurrentQueue<byte[]>
+            packetsAvailable : System.Threading.SemaphoreSlim
         }
 
 
@@ -96,6 +97,7 @@ module ClientRegistry =
                         publicKey = publicKey
                         lastActivity = DateTime.UtcNow
                         pendingPackets = ConcurrentQueue<byte[]>()
+                        packetsAvailable = new System.Threading.SemaphoreSlim(0, System.Int32.MaxValue)
                     }
 
                 sessions.[clientId] <- session
@@ -124,6 +126,7 @@ module ClientRegistry =
             match sessions.TryGetValue(clientId) with
             | true, session ->
                 session.pendingPackets.Enqueue(packet)
+                session.packetsAvailable.Release() |> ignore
                 true
             | false, _ -> false
 

@@ -2,6 +2,7 @@ namespace Softellect.Vpn.Client
 
 open System
 open System.Threading
+open System.Threading.Channels
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
@@ -30,12 +31,16 @@ module Tunnel =
         | TunnelError of string
 
 
-    type Tunnel(config: TunnelConfig) =
+    type Tunnel(config: TunnelConfig, ct: CancellationToken) =
         let mutable adapter : WinTunAdapter option = None
         let mutable tunnelState = Disconnected
         let mutable running = false
         let mutable receiveThread : Thread option = None
-        let packetQueue = System.Collections.Concurrent.ConcurrentQueue<byte[]>()
+        let mutable readEventWarningLogged = false
+
+        // Channel for outbound packets (from TUN adapter to VPN server)
+        let outboundChannelOptions = UnboundedChannelOptions(SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false)
+        let outboundChannel = Channel.CreateUnbounded<byte[]>(outboundChannelOptions)
 
         let getErrorMessage (result: Softellect.Vpn.Interop.Result<Unit>) =
             match result.Error with
@@ -45,31 +50,44 @@ module Tunnel =
         let receiveLoop () =
             match adapter with
             | Some adp when adp.IsSessionActive ->
-                while running do
-                    try
-                        let packet = adp.ReceivePacket()
-                        if not (isNull packet) && packet.Length > 0 then
-                            let v = getIpVersion packet
-                            match v with
-                            | 4 ->
-                                // IPv4 packet - enqueue for sending to VPN server
-                                packetQueue.Enqueue(packet)
-                                Logger.logTrace (fun () -> $"Tunnel captured IPv4 packet from TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
-                            | 6 ->
-                                // IPv6 packet - drop (VPN is IPv4-only)
-                                Logger.logTrace (fun () -> $"Tunnel: dropping IPv6 packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
-                            | _ ->
-                                // Unknown/malformed - drop silently
+                let readEvent = adp.GetReadWaitHandle()
+                match readEvent with
+                | null ->
+                    if not readEventWarningLogged then
+                        Logger.logWarn "Tunnel: GetReadWaitHandle returned null, exiting receive loop"
+                        readEventWarningLogged <- true
+                | _ ->
+                    let waitHandles = [| readEvent; ct.WaitHandle |]
+                    while running && not ct.IsCancellationRequested do
+                        try
+                            let waitResult = WaitHandle.WaitAny(waitHandles)
+                            if waitResult = 1 || ct.IsCancellationRequested then
+                                // Cancellation signaled - exit loop
                                 ()
-                        else
-                            Thread.Sleep(1)
-                    with
-                    | ex ->
-                        Logger.logError $"Error in tunnel receive loop: {ex.Message}"
-                        Thread.Sleep(100)
-            | _ ->
-                Logger.logWarn "Tunnel adapter not ready for receive loop"
-                
+                            else
+                                // readEvent signaled - drain all available packets
+                                let mutable hasMore = true
+                                while hasMore do
+                                    let packet = adp.ReceivePacket()
+                                    if isNull packet || packet.Length = 0 then
+                                        hasMore <- false
+                                    else
+                                        let v = getIpVersion packet
+                                        match v with
+                                        | 4 ->
+                                            // IPv4 packet - write to channel for sending to VPN server
+                                            outboundChannel.Writer.TryWrite(packet) |> ignore
+                                            Logger.logTrace (fun () -> $"Tunnel captured IPv4 packet from TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
+                                        | 6 ->
+                                            // IPv6 packet - drop (VPN is IPv4-only)
+                                            Logger.logTrace (fun () -> $"Tunnel: dropping IPv6 packet, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                                        | _ ->
+                                            // Unknown/malformed - drop silently
+                                            ()
+                        with
+                        | ex -> Logger.logError $"Error in tunnel receive loop: {ex.Message}"
+            | _ -> Logger.logWarn "Tunnel adapter not ready for receive loop"
+
         member private _.addHostRoute() =
             let processName = "netsh"
             let deleteCommand = $"interface ipv4 delete route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value}"
@@ -79,7 +97,7 @@ module Tunnel =
             if not deleteResult.IsSuccess then
                 let errMsg = getErrorMessage deleteResult
                 Logger.logWarn $"Failed to execute: '{processName} {deleteCommand}', error: {errMsg}. Proceeding further."
-                
+
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
             Logger.logInfo $"Executing: '{processName} {command}'."
@@ -91,7 +109,7 @@ module Tunnel =
             else
                 Logger.logInfo $"Successfully executed: '{processName} {command}'."
                 Ok ()
-        
+
         member t.start() =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
             tunnelState <- Connecting
@@ -120,13 +138,13 @@ module Tunnel =
                             adapter <- None
                             Error errMsg
                         else
-                            match t.addHostRoute() with                            
+                            match t.addHostRoute() with
                             | Error e ->
                                 tunnelState <- TunnelError e
                                 adp.Dispose()
                                 adapter <- None
                                 Error e
-                            | Ok () ->                                
+                            | Ok () ->
                                 // Add split default routes (0.0.0.0/1 and 128.0.0.0/1) through gateway
                                 let routeMask = Ip4 "128.0.0.0"
                                 let routeMetric = 1
@@ -212,19 +230,9 @@ module Tunnel =
             | _ ->
                 Error "Tunnel not ready"
 
-        member _.dequeueOutboundPackets(maxPackets: int) =
-            let packets = ResizeArray<byte[]>()
-            let mutable count = 0
-
-            while count < maxPackets do
-                match packetQueue.TryDequeue() with
-                | true, packet ->
-                    packets.Add(packet)
-                    count <- count + 1
-                | false, _ ->
-                    count <- maxPackets
-
-            packets.ToArray()
+        /// Get the channel reader for outbound packets.
+        /// Consumers should use ReadAsync to wait, then TryRead to drain.
+        member _.outboundPacketReader = outboundChannel.Reader
 
         member _.state = tunnelState
         member _.isRunning = running

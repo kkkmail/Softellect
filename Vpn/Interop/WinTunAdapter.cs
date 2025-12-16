@@ -15,6 +15,7 @@ public sealed class WinTunAdapter : IDisposable
     private readonly string _name;
     private bool _disposed;
     private ulong _adapterLuid;
+    private System.Threading.WaitHandle? _readWaitHandle;
 
     public string Name => _name;
     public bool IsSessionActive => _session != IntPtr.Zero;
@@ -91,6 +92,7 @@ public sealed class WinTunAdapter : IDisposable
             return Result<Unit>.Failure($"Failed to start session: {new Win32Exception(error).Message} (Error: {error})");
         }
 
+        _readWaitHandle = null;
         return Result<Unit>.Success(Unit.Value);
     }
 
@@ -99,6 +101,12 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     public void EndSession()
     {
+        if (_readWaitHandle != null)
+        {
+            _readWaitHandle.Dispose();
+            _readWaitHandle = null;
+        }
+
         if (_session != IntPtr.Zero)
         {
             WinTun.WintunEndSession(_session);
@@ -107,12 +115,35 @@ public sealed class WinTunAdapter : IDisposable
     }
 
     /// <summary>
-    /// Gets the wait event handle for incoming packets.
+    /// Gets the wait event handle for incoming packets (native).
     /// </summary>
     /// <returns>Event handle or IntPtr.Zero if no session.</returns>
     public IntPtr GetReadWaitEvent()
     {
         return _session != IntPtr.Zero ? WinTun.WintunGetReadWaitEvent(_session) : IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// Gets a managed WaitHandle for the read event, suitable for WaitHandle.WaitAny.
+    /// </summary>
+    /// <returns>WaitHandle or null if no session.</returns>
+    public System.Threading.WaitHandle? GetReadWaitHandle()
+    {
+        if (_session == IntPtr.Zero)
+            return null;
+
+        if (_readWaitHandle == null)
+        {
+            var nativeHandle = WinTun.WintunGetReadWaitEvent(_session);
+            if (nativeHandle == IntPtr.Zero)
+                return null;
+
+            var ewh = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.ManualReset);
+            ewh.SafeWaitHandle = new Microsoft.Win32.SafeHandles.SafeWaitHandle(nativeHandle, ownsHandle: false);
+            _readWaitHandle = ewh;
+        }
+
+        return _readWaitHandle;
     }
 
     /// <summary>

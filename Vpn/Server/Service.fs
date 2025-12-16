@@ -60,26 +60,7 @@ module Service =
             let timeDiff = DateTime.UtcNow - request.timestamp
             if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
             else Ok ()
-            
-        // let processPacket clientId packet =
-        //     // Check if this is a DNS query to the VPN gateway
-        //     match tryParseDnsQuery serverVpnIpUint packet with
-        //     | Some (srcIp, srcPort, dnsPayload) ->
-        //         // Forward DNS query to upstream and enqueue reply
-        //         match forwardDnsQuery serverVpnIpUint srcIp srcPort dnsPayload with
-        //         | Some replyPacket ->
-        //             registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
-        //             Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
-        //         | None ->
-        //             // Timeout/error already logged in DnsProxy, do not inject into TUN
-        //             ()
-        //         Ok ()
-        //     | None ->
-        //         // Not a DNS query to the VPN gateway, inject into TUN as before
-        //         match router.injectPacket(packet) with
-        //         | Ok () -> Ok ()
-        //         | Error msg -> Error (ConfigErr msg)
-    
+
         let processPacket clientId packet =
             // Check if this is a DNS query to the VPN gateway
             match tryParseDnsQuery serverVpnIpUint packet with
@@ -89,9 +70,7 @@ module Service =
                 | Some replyPacket ->
                     registry.enqueuePacketForClient(clientId, replyPacket) |> ignore
                     Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {clientId.value} len={replyPacket.Length}")
-                | None ->
-                    // Timeout/error already logged in DnsProxy, do not inject into TUN
-                    ()
+                | None -> () // Timeout/error already logged in DnsProxy, do not inject into TUN
                 Ok ()
 
             | None ->
@@ -99,7 +78,7 @@ module Service =
                 match router.routeFromClient(packet) with
                 | Ok () -> Ok ()
                 | Error msg -> Error (ConfigErr msg)
-                    
+
         interface IVpnService with
             member _.authenticate request =
                 Logger.logInfo $"Authentication request from client: {request.clientId.value}"
@@ -131,15 +110,15 @@ module Service =
                         |> Array.map (processPacket clientId)
                         |> List.ofArray
                         |> foldUnitResults VpnError.addError
-                
-                    result                        
+
+                    result
                 | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
             /// This function is called receivePackets to match the client side.
-            /// From the server side it is sending packets to a client.            
+            /// From the server side it is sending packets to a client.
             member _.receivePackets clientId =
                 match registry.tryGetSession(clientId) with
-                | Some _ ->
+                | Some session ->
                     registry.updateActivity(clientId)
                     let packets = registry.dequeuePacketsForClient(clientId, 100)
                     if packets.Length > 0 then
@@ -148,9 +127,17 @@ module Service =
                         Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
                         Ok (Some packets)
                     else
-                        Ok None
-                | None ->
-                    Error (clientId |> SessionExpiredErr |> ServerErr)
+                        // No packets available - wait on semaphore for up to 250 ms
+                        session.packetsAvailable.Wait(250) |> ignore
+                        let packets2 = registry.dequeuePacketsForClient(clientId, 100)
+                        if packets2.Length > 0 then
+                            let totalBytes = packets2 |> Array.sumBy (fun p -> p.Length)
+                            Logger.logTrace (fun () -> $"Server sending {packets2.Length} packets to client: '{clientId.value}', total {totalBytes} bytes (after wait)")
+                            Logger.logTracePackets (packets2, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
+                            Ok (Some packets2)
+                        else
+                            Ok None
+                | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
