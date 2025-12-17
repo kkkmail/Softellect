@@ -16,6 +16,109 @@ open Softellect.Vpn.Server.Nat
 
 module PacketRouter =
 
+    /// Measure elapsed time for an action, updating tick and count accumulators.
+    let inline timed (sw: Stopwatch) (timeAcc: int64 byref) (countAcc: int64 byref) (action: unit -> 'T) : 'T =
+        sw.Restart()
+        let r = action()
+        sw.Stop()
+        timeAcc <- timeAcc + sw.ElapsedTicks
+        countAcc <- countAcc + 1L
+        r
+
+    /// Format percentage as "00.0000" from bucket ticks and calendar ticks.
+    let formatPct (bucketTicks: int64) (calTicks: int64) =
+        if calTicks = 0L then "00.0000"
+        else
+            let pct1e6 = bucketTicks * 1_000_000L / calTicks
+            let whole = pct1e6 / 10_000L
+            let frac = pct1e6 % 10_000L
+            $"%02d{whole}.%04d{frac}"
+
+    /// State for the receive loop: stopwatches, tick/count accumulators, and counters.
+    [<NoEquality; NoComparison>]
+    type ReceiveLoopState =
+        {
+            // Stopwatches (created once, reused)
+            swCalendar : Stopwatch
+            swWait : Stopwatch
+            swDrain : Stopwatch
+            swProcess : Stopwatch
+
+            // Per-interval tick accumulators
+            mutable lastStatsTicks : int64
+            mutable waitTicks : int64
+            mutable drainTicks : int64
+            mutable processTicks : int64
+
+            // Per-interval count accumulators
+            mutable waitCount : int64
+            mutable drainCount : int64
+            mutable processCount : int64
+
+            // Per-interval counters
+            mutable waitWakeups : int64
+            mutable waitTimeouts : int64
+            mutable waitCancels : int64
+            mutable emptyWakeups : int64
+            mutable packetsRx : int64
+        }
+
+    /// Constants for receive loop timing.
+    let [<Literal>] statsIntervalMs = 5000L
+    let [<Literal>] waitTimeoutMs = 250
+    let [<Literal>] maxPacketsPerWakeup = 4096
+    let [<Literal>] cancelCheckEveryPackets = 256
+
+    /// Create initial receive loop state with all stopwatches and accumulators.
+    let mkReceiveLoopState () =
+        {
+            swCalendar = Stopwatch.StartNew()
+            swWait = Stopwatch()
+            swDrain = Stopwatch()
+            swProcess = Stopwatch()
+            lastStatsTicks = 0L
+            waitTicks = 0L
+            drainTicks = 0L
+            processTicks = 0L
+            waitCount = 0L
+            drainCount = 0L
+            processCount = 0L
+            waitWakeups = 0L
+            waitTimeouts = 0L
+            waitCancels = 0L
+            emptyWakeups = 0L
+            packetsRx = 0L
+        }
+
+    /// Reset all per-interval accumulators after logging.
+    let resetInterval (st: ReceiveLoopState) (curCalTicks: int64) =
+        st.lastStatsTicks <- curCalTicks
+        st.waitTicks <- 0L
+        st.drainTicks <- 0L
+        st.processTicks <- 0L
+        st.waitCount <- 0L
+        st.drainCount <- 0L
+        st.processCount <- 0L
+        st.waitWakeups <- 0L
+        st.waitTimeouts <- 0L
+        st.waitCancels <- 0L
+        st.emptyWakeups <- 0L
+        st.packetsRx <- 0L
+
+    /// Log stats if interval elapsed, then reset per-interval accumulators.
+    let logStatsIfNeeded (st: ReceiveLoopState) =
+        let curCalTicks = st.swCalendar.ElapsedTicks
+        let intervalCalTicks = curCalTicks - st.lastStatsTicks
+        let intervalMs = intervalCalTicks * 1000L / Stopwatch.Frequency
+        if intervalMs >= statsIntervalMs then
+            let elapsed = st.swCalendar.Elapsed
+            let calStr = sprintf "%02d:%02d.%03d" (int elapsed.TotalMinutes) elapsed.Seconds elapsed.Milliseconds
+            let waitPct = formatPct st.waitTicks intervalCalTicks
+            let drainPct = formatPct st.drainTicks intervalCalTicks
+            let procPct = formatPct st.processTicks intervalCalTicks
+            Logger.logInfo $"PacketRouter recv: t={calStr} wait={waitPct} drain={drainPct} proc={procPct} | wk={st.waitWakeups} to={st.waitTimeouts} cancel={st.waitCancels} empty={st.emptyWakeups} rx={st.packetsRx}"
+            resetInterval st curCalTicks
+
     /// Convert IP address string to uint32 (network byte order)
     let ipToUInt32 (ip: IpAddress) =
         let parts = ip.value.Split('.')
@@ -137,6 +240,142 @@ module PacketRouter =
             registry.getAllSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
 
+        // Helper: reset the read event if possible (to avoid stuck signaled state)
+        let resetReadEventIfPossible (readEvent: WaitHandle) =
+            match readEvent with
+            | :? EventWaitHandle as ewh ->
+                try ewh.Reset() |> ignore with _ -> ()
+            | _ -> ()
+
+        // Helper: process a single IPv4 packet (DNS proxy, ICMP proxy, NAT, VPN routing)
+        let processPacket (packet: byte[]) =
+            let v = getIpVersion packet
+            match v with
+            | 4 ->
+                // IPv4 packet - check for DNS proxy first, then route based on destination
+                match tryParseDnsQuery serverVpnIpUint packet with
+                | Some (clientIp, clientPort, dnsPayload) ->
+                    // DNS query to VPN gateway - forward to upstream and enqueue reply to client
+                    let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
+                    match IpAddress.tryCreate clientIpStr with
+                    | Some clientIpAddr ->
+                        match findClientByIp clientIpAddr with
+                        | Some session ->
+                            match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
+                            | Some replyPacket ->
+                                // Enqueue DNS reply directly to the client (not into TUN)
+                                registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
+                                Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
+                            | None ->
+                                // Timeout or error - already logged by DnsProxy
+                                ()
+                        | None ->
+                            Logger.logTrace (fun () -> $"DNSPROXY: no client found for source IP {clientIpStr}")
+                    | None ->
+                        Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
+                | None ->
+                    // Not a DNS query - check for ICMP Echo Request to external address
+                    match tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
+                    | Some icmpPacket ->
+                        // ICMP Echo Request to external address - send via external gateway
+                        externalGateway.sendOutbound(icmpPacket)
+                    | None ->
+                        // Not ICMP proxy - proceed with normal routing
+                        match getDestinationIpUInt32 packet with
+                        | Some destIpUint ->
+                            if isInsideVpnSubnet destIpUint then
+                                // Destination is inside VPN subnet - route to VPN client
+                                match getDestinationIp packet with
+                                | Some destIp ->
+                                    match getSourceIp packet with
+                                    | Some srcIp ->
+                                        match findClientByIp destIp with
+                                        | Some session ->
+                                            registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                            Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
+                                        | None ->
+                                            Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                    | None ->
+                                        Logger.logTrace (fun () -> "Could not parse source IP from packet")
+                                | None ->
+                                    Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                            else
+                                // Destination is outside VPN subnet - NAT and forward to external network
+                                match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                | Some natPacket ->
+                                    externalGateway.sendOutbound(natPacket)
+                                | None ->
+                                    Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                        | None ->
+                            Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+            | 6 ->
+                // IPv6 packet - drop (VPN is IPv4-only)
+                Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+            | _ ->
+                // Unknown/malformed - drop silently
+                ()
+
+        // Helper: wait for readEvent or cancellation (timed).
+        let waitForEvent (st: ReceiveLoopState) (waitHandles: WaitHandle[]) =
+            timed st.swWait &st.waitTicks &st.waitCount (fun () ->
+                WaitHandle.WaitAny(waitHandles, waitTimeoutMs))
+
+        // Helper: drain all available packets from WinTun adapter.
+        // Times ReceivePacket calls in drainTicks, processPacket calls in processTicks (non-overlapping).
+        let drainPackets (st: ReceiveLoopState) (adp: WinTunAdapter) (readEvent: WaitHandle) =
+            let mutable processedThisWakeup = 0
+
+            // Time first ReceivePacket call
+            let first = timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket())
+
+            if isNull first || first.Length = 0 then
+                // Spurious wakeup / stuck signaled
+                st.emptyWakeups <- st.emptyWakeups + 1L
+                resetReadEventIfPossible readEvent
+            else
+                // Process first packet
+                timed st.swProcess &st.processTicks &st.processCount (fun () -> processPacket first)
+                st.packetsRx <- st.packetsRx + 1L
+                processedThisWakeup <- processedThisWakeup + 1
+
+                // Drain remaining packets
+                let mutable continueLoop = true
+                while continueLoop do
+                    // Check cap
+                    if processedThisWakeup >= maxPacketsPerWakeup then
+                        resetReadEventIfPossible readEvent
+                        Thread.Yield() |> ignore
+                        continueLoop <- false
+                    // Check cancellation every cancelCheckEveryPackets packets
+                    elif processedThisWakeup % cancelCheckEveryPackets = 0 && cts.Token.IsCancellationRequested then
+                        resetReadEventIfPossible readEvent
+                        continueLoop <- false
+                    else
+                        let packet = timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket())
+
+                        if isNull packet || packet.Length = 0 then
+                            resetReadEventIfPossible readEvent
+                            continueLoop <- false
+                        else
+                            timed st.swProcess &st.processTicks &st.processCount (fun () -> processPacket packet)
+                            st.packetsRx <- st.packetsRx + 1L
+                            processedThisWakeup <- processedThisWakeup + 1
+
+        // Helper: handle the result of WaitAny.
+        let handleWaitResult (st: ReceiveLoopState) (adp: WinTunAdapter) (readEvent: WaitHandle) (waitResult: int) =
+            if waitResult = WaitHandle.WaitTimeout then
+                // Timeout - no event fired
+                st.waitTimeouts <- st.waitTimeouts + 1L
+                logStatsIfNeeded st
+            elif waitResult = 1 || cts.Token.IsCancellationRequested then
+                // Cancellation signaled
+                st.waitCancels <- st.waitCancels + 1L
+            else
+                // readEvent signaled (index 0)
+                st.waitWakeups <- st.waitWakeups + 1L
+                drainPackets st adp readEvent
+                logStatsIfNeeded st
+
         let receiveLoop () =
             match adapter with
             | Some adp when adp.IsSessionActive ->
@@ -148,132 +387,12 @@ module PacketRouter =
                         readEventWarningLogged <- true
                 | _ ->
                     let waitHandles = [| readEvent; cts.Token.WaitHandle |]
-                    let waitTimeoutMs = 250
-
-                    // Stats counters (reset each interval)
-                    let mutable waitWakeups = 0L
-                    let mutable emptyWakeups = 0L
-                    let mutable packetsRx = 0L
-                    let statsStopwatch = Stopwatch.StartNew()
-                    let statsIntervalMs = 5000L
-
-                    let resetReadEventIfPossible () =
-                        match readEvent with
-                        | :? EventWaitHandle as ewh ->
-                            try ewh.Reset() |> ignore with _ -> ()
-                        | _ -> ()
-
-                    let logStatsIfNeeded () =
-                        if statsStopwatch.ElapsedMilliseconds >= statsIntervalMs then
-                            Logger.logInfo $"PacketRouter recv stats: wakeups={waitWakeups}, emptyWakeups={emptyWakeups}, packetsRx={packetsRx}"
-                            waitWakeups <- 0L
-                            emptyWakeups <- 0L
-                            packetsRx <- 0L
-                            statsStopwatch.Restart()
-
-                    let processPacket (packet: byte[]) =
-                        let v = getIpVersion packet
-                        match v with
-                        | 4 ->
-                            // IPv4 packet - check for DNS proxy first, then route based on destination
-                            match tryParseDnsQuery serverVpnIpUint packet with
-                            | Some (clientIp, clientPort, dnsPayload) ->
-                                // DNS query to VPN gateway - forward to upstream and enqueue reply to client
-                                let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
-                                match IpAddress.tryCreate clientIpStr with
-                                | Some clientIpAddr ->
-                                    match findClientByIp clientIpAddr with
-                                    | Some session ->
-                                        match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
-                                        | Some replyPacket ->
-                                            // Enqueue DNS reply directly to the client (not into TUN)
-                                            registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
-                                            Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
-                                        | None ->
-                                            // Timeout or error - already logged by DnsProxy
-                                            ()
-                                    | None ->
-                                        Logger.logTrace (fun () -> $"DNSPROXY: no client found for source IP {clientIpStr}")
-                                | None ->
-                                    Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
-                            | None ->
-                                // Not a DNS query - check for ICMP Echo Request to external address
-                                match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
-                                | Some icmpPacket ->
-                                    // ICMP Echo Request to external address - send via external gateway
-                                    externalGateway.sendOutbound(icmpPacket)
-                                | None ->
-                                    // Not ICMP proxy - proceed with normal routing
-                                    match getDestinationIpUInt32 packet with
-                                    | Some destIpUint ->
-                                        if isInsideVpnSubnet destIpUint then
-                                            // Destination is inside VPN subnet - route to VPN client
-                                            match getDestinationIp packet with
-                                            | Some destIp ->
-                                                match getSourceIp packet with
-                                                | Some srcIp ->
-                                                    match findClientByIp destIp with
-                                                    | Some session ->
-                                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
-                                                    | None ->
-                                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
-                                                | None ->
-                                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
-                                            | None ->
-                                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                        else
-                                            // Destination is outside VPN subnet - NAT and forward to external network
-                                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                                            | Some natPacket ->
-                                                externalGateway.sendOutbound(natPacket)
-                                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
-                                            | None ->
-                                                Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
-                                    | None ->
-                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                        | 6 ->
-                            // IPv6 packet - drop (VPN is IPv4-only)
-                            Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
-                        | _ ->
-                            // Unknown/malformed - drop silently
-                            ()
+                    let st = mkReceiveLoopState()
 
                     while running && not cts.Token.IsCancellationRequested do
                         try
-                            let waitResult = WaitHandle.WaitAny(waitHandles, waitTimeoutMs)
-                            if waitResult = WaitHandle.WaitTimeout then
-                                // No event fired in this period; just continue (allows loop to observe running/cts)
-                                logStatsIfNeeded()
-                            elif waitResult = 1 || cts.Token.IsCancellationRequested then
-                                // Cancellation signaled - exit loop
-                                ()
-                            else
-                                // readEvent signaled (index 0)
-                                waitWakeups <- waitWakeups + 1L
-
-                                // Drain all available packets
-                                let first = adp.ReceivePacket()
-                                if isNull first || first.Length = 0 then
-                                    // Spurious wakeup / stuck signaled: avoid tight spin
-                                    emptyWakeups <- emptyWakeups + 1L
-                                    resetReadEventIfPossible()
-                                else
-                                    // Process first packet
-                                    packetsRx <- packetsRx + 1L
-                                    processPacket first
-
-                                    // Drain remaining packets
-                                    let mutable hasMore = true
-                                    while hasMore do
-                                        let packet = adp.ReceivePacket()
-                                        if isNull packet || packet.Length = 0 then
-                                            hasMore <- false
-                                        else
-                                            packetsRx <- packetsRx + 1L
-                                            processPacket packet
-
-                                logStatsIfNeeded()
+                            let waitResult = waitForEvent st waitHandles
+                            handleWaitResult st adp readEvent waitResult
                         with
                         | ex ->
                             Logger.logError $"Error in receive loop: {ex.Message}"
@@ -310,7 +429,7 @@ module PacketRouter =
                         externalGateway.start(fun rawPacket ->
                             // Called when external gateway receives a packet from internet
                             // Check for ICMP Echo Reply first
-                            match IcmpProxy.tryHandleInbound rawPacket with
+                            match tryHandleInbound rawPacket with
                             | Some (clientIpUint, icmpPacket) ->
                                 // ICMP Echo Reply - enqueue to the correct client
                                 let clientIpStr = $"{byte (clientIpUint >>> 24)}.{byte (clientIpUint >>> 16)}.{byte (clientIpUint >>> 8)}.{byte clientIpUint}"
@@ -426,7 +545,7 @@ module PacketRouter =
                             Error "PacketRouter.routeFromClient: serverPublicIp is 0.0.0.0 (externalIpUint=0) - cannot NAT outbound."
                         else
                             // Check for ICMP Echo Request to external address
-                            match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
+                            match tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
                             | Some icmpPacket ->
                                 // ICMP Echo Request to external address - send via external gateway
                                 externalGateway.sendOutbound(icmpPacket)
