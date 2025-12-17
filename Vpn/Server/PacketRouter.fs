@@ -1,6 +1,7 @@
 namespace Softellect.Vpn.Server
 
 open System
+open System.Diagnostics
 open System.Net
 open System.Threading
 open Softellect.Sys.Logging
@@ -147,91 +148,136 @@ module PacketRouter =
                         readEventWarningLogged <- true
                 | _ ->
                     let waitHandles = [| readEvent; cts.Token.WaitHandle |]
+                    let waitTimeoutMs = 250
+
+                    // Stats counters (reset each interval)
+                    let mutable waitWakeups = 0L
+                    let mutable emptyWakeups = 0L
+                    let mutable packetsRx = 0L
+                    let statsStopwatch = Stopwatch.StartNew()
+                    let statsIntervalMs = 5000L
+
+                    let resetReadEventIfPossible () =
+                        match readEvent with
+                        | :? EventWaitHandle as ewh ->
+                            try ewh.Reset() |> ignore with _ -> ()
+                        | _ -> ()
+
+                    let logStatsIfNeeded () =
+                        if statsStopwatch.ElapsedMilliseconds >= statsIntervalMs then
+                            Logger.logInfo $"PacketRouter recv stats: wakeups={waitWakeups}, emptyWakeups={emptyWakeups}, packetsRx={packetsRx}"
+                            waitWakeups <- 0L
+                            emptyWakeups <- 0L
+                            packetsRx <- 0L
+                            statsStopwatch.Restart()
+
+                    let processPacket (packet: byte[]) =
+                        let v = getIpVersion packet
+                        match v with
+                        | 4 ->
+                            // IPv4 packet - check for DNS proxy first, then route based on destination
+                            match tryParseDnsQuery serverVpnIpUint packet with
+                            | Some (clientIp, clientPort, dnsPayload) ->
+                                // DNS query to VPN gateway - forward to upstream and enqueue reply to client
+                                let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
+                                match IpAddress.tryCreate clientIpStr with
+                                | Some clientIpAddr ->
+                                    match findClientByIp clientIpAddr with
+                                    | Some session ->
+                                        match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
+                                        | Some replyPacket ->
+                                            // Enqueue DNS reply directly to the client (not into TUN)
+                                            registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
+                                            Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
+                                        | None ->
+                                            // Timeout or error - already logged by DnsProxy
+                                            ()
+                                    | None ->
+                                        Logger.logTrace (fun () -> $"DNSPROXY: no client found for source IP {clientIpStr}")
+                                | None ->
+                                    Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
+                            | None ->
+                                // Not a DNS query - check for ICMP Echo Request to external address
+                                match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
+                                | Some icmpPacket ->
+                                    // ICMP Echo Request to external address - send via external gateway
+                                    externalGateway.sendOutbound(icmpPacket)
+                                | None ->
+                                    // Not ICMP proxy - proceed with normal routing
+                                    match getDestinationIpUInt32 packet with
+                                    | Some destIpUint ->
+                                        if isInsideVpnSubnet destIpUint then
+                                            // Destination is inside VPN subnet - route to VPN client
+                                            match getDestinationIp packet with
+                                            | Some destIp ->
+                                                match getSourceIp packet with
+                                                | Some srcIp ->
+                                                    match findClientByIp destIp with
+                                                    | Some session ->
+                                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
+                                                    | None ->
+                                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
+                                                | None ->
+                                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
+                                            | None ->
+                                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                                        else
+                                            // Destination is outside VPN subnet - NAT and forward to external network
+                                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
+                                            | Some natPacket ->
+                                                externalGateway.sendOutbound(natPacket)
+                                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
+                                            | None ->
+                                                Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
+                                    | None ->
+                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
+                        | 6 ->
+                            // IPv6 packet - drop (VPN is IPv4-only)
+                            Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
+                        | _ ->
+                            // Unknown/malformed - drop silently
+                            ()
+
                     while running && not cts.Token.IsCancellationRequested do
                         try
-                            let waitResult = WaitHandle.WaitAny(waitHandles)
-                            if waitResult = 1 || cts.Token.IsCancellationRequested then
+                            let waitResult = WaitHandle.WaitAny(waitHandles, waitTimeoutMs)
+                            if waitResult = WaitHandle.WaitTimeout then
+                                // No event fired in this period; just continue (allows loop to observe running/cts)
+                                logStatsIfNeeded()
+                            elif waitResult = 1 || cts.Token.IsCancellationRequested then
                                 // Cancellation signaled - exit loop
                                 ()
                             else
-                                // readEvent signaled - drain all available packets
-                                let mutable hasMore = true
-                                while hasMore do
-                                    let packet = adp.ReceivePacket()
-                                    if isNull packet || packet.Length = 0 then
-                                        hasMore <- false
-                                    else
-                                        let v = getIpVersion packet
-                                        match v with
-                                        | 4 ->
-                                            // IPv4 packet - check for DNS proxy first, then route based on destination
-                                            match tryParseDnsQuery serverVpnIpUint packet with
-                                            | Some (clientIp, clientPort, dnsPayload) ->
-                                                // DNS query to VPN gateway - forward to upstream and enqueue reply to client
-                                                let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
-                                                match IpAddress.tryCreate clientIpStr with
-                                                | Some clientIpAddr ->
-                                                    match findClientByIp clientIpAddr with
-                                                    | Some session ->
-                                                        match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
-                                                        | Some replyPacket ->
-                                                            // Enqueue DNS reply directly to the client (not into TUN)
-                                                            registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
-                                                            Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
-                                                        | None ->
-                                                            // Timeout or error - already logged by DnsProxy
-                                                            ()
-                                                    | None ->
-                                                        Logger.logTrace (fun () -> $"DNSPROXY: no client found for source IP {clientIpStr}")
-                                                | None ->
-                                                    Logger.logWarn $"DNSPROXY: failed to parse client IP {clientIpStr}"
-                                            | None ->
-                                                // Not a DNS query - check for ICMP Echo Request to external address
-                                                match IcmpProxy.tryHandleOutbound vpnSubnetUint vpnMaskUint externalIpUint packet with
-                                                | Some icmpPacket ->
-                                                    // ICMP Echo Request to external address - send via external gateway
-                                                    externalGateway.sendOutbound(icmpPacket)
-                                                | None ->
-                                                    // Not ICMP proxy - proceed with normal routing
-                                                    match getDestinationIpUInt32 packet with
-                                                    | Some destIpUint ->
-                                                        if isInsideVpnSubnet destIpUint then
-                                                            // Destination is inside VPN subnet - route to VPN client
-                                                            match getDestinationIp packet with
-                                                            | Some destIp ->
-                                                                match getSourceIp packet with
-                                                                | Some srcIp ->
-                                                                    match findClientByIp destIp with
-                                                                    | Some session ->
-                                                                        registry.enqueuePacketForClient(session.clientId, packet) |> ignore
-                                                                        Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
-                                                                    | None ->
-                                                                        Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
-                                                                | None ->
-                                                                    Logger.logTrace (fun () -> "Could not parse source IP from packet")
-                                                            | None ->
-                                                                Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                                        else
-                                                            // Destination is outside VPN subnet - NAT and forward to external network
-                                                            match translateOutbound (vpnSubnetUint, vpnMaskUint) externalIpUint packet with
-                                                            | Some natPacket ->
-                                                                externalGateway.sendOutbound(natPacket)
-                                                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT outbound: forwarding packet to external network, size={natPacket.Length} bytes, natPacket: {(summarizePacket natPacket)}")
-                                                            | None ->
-                                                                Logger.logTrace (fun () -> "NAT outbound: packet dropped (no translation)")
-                                                    | None ->
-                                                        Logger.logTrace (fun () -> "Could not parse destination IP from packet")
-                                        | 6 ->
-                                            // IPv6 packet - drop (VPN is IPv4-only)
-                                            Logger.logTrace (fun () -> $"PacketRouter: dropping IPv6 packet from WinTun, len={packet.Length}, packet=%A{(summarizePacket packet)}")
-                                        | _ ->
-                                            // Unknown/malformed - drop silently
-                                            ()
+                                // readEvent signaled (index 0)
+                                waitWakeups <- waitWakeups + 1L
+
+                                // Drain all available packets
+                                let first = adp.ReceivePacket()
+                                if isNull first || first.Length = 0 then
+                                    // Spurious wakeup / stuck signaled: avoid tight spin
+                                    emptyWakeups <- emptyWakeups + 1L
+                                    resetReadEventIfPossible()
+                                else
+                                    // Process first packet
+                                    packetsRx <- packetsRx + 1L
+                                    processPacket first
+
+                                    // Drain remaining packets
+                                    let mutable hasMore = true
+                                    while hasMore do
+                                        let packet = adp.ReceivePacket()
+                                        if isNull packet || packet.Length = 0 then
+                                            hasMore <- false
+                                        else
+                                            packetsRx <- packetsRx + 1L
+                                            processPacket packet
+
+                                logStatsIfNeeded()
                         with
                         | ex ->
                             Logger.logError $"Error in receive loop: {ex.Message}"
-            | _ ->
-                Logger.logWarn "Adapter not ready for receive loop"
+            | _ -> Logger.logWarn "Adapter not ready for receive loop"
 
         let getErrorMessage (result: Softellect.Vpn.Interop.Result<Unit>) =
             match result.Error with
@@ -359,7 +405,7 @@ module PacketRouter =
                 else Error (getErrorMessage result)
             | _ ->
                 Error "Adapter not ready"
-                
+
         member r.routeFromClient(packet: byte[]) =
             let v = getIpVersion packet
 
@@ -396,6 +442,6 @@ module PacketRouter =
                                     Ok () // dropped by NAT (e.g. too short); ignore
             | 6 -> Ok () // IPv6 not supported
             | _ -> Ok () // unknown/empty
-                
+
 
         member _.isRunning = running
