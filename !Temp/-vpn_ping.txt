@@ -1,11 +1,11 @@
 
 Pinging 8.8.8.8 with 32 bytes of data:
-Reply from 8.8.8.8: bytes=32 time=951ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1454ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1351ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1343ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1304ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1147ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1140ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1144ms TTL=109
 
 Ping statistics for 8.8.8.8:
     Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
 Approximate round trip times in milli-seconds:
-    Minimum = 951ms, Maximum = 1454ms, Average = 1274ms
+    Minimum = 1140ms, Maximum = 1304ms, Average = 1183ms
