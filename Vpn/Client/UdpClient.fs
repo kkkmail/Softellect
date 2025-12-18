@@ -90,11 +90,11 @@ module UdpClient =
 
         let sendAndReceive (datagram: byte[]) : Result<byte[], VpnError> =
             try
-                Logger.logTrace (fun () -> $"Sending datagram to serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, datagram: {(summarizePacket datagram)}, raw datagram: %A{datagram}")
+                // Logger.logTrace (fun () -> $"HEAVY LOG - Sending datagram to serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, datagram: {(summarizePacket datagram)}, raw datagram: %A{datagram}")
                 udpClient.Send(datagram, datagram.Length, serverEndpoint) |> ignore
                 let mutable remoteEp = serverEndpoint
                 let response = udpClient.Receive(&remoteEp)
-                Logger.logTrace (fun () -> $"Received response from serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, response: {(summarizePacket response)}, raw response: %A{response}.")
+                // Logger.logTrace (fun () -> $"HEAVY LOG - Received response from serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, response: {(summarizePacket response)}, raw response: %A{response}.")
                 Ok response
             with
             | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
