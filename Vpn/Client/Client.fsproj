@@ -19,6 +19,7 @@
   <ItemGroup>
     <Compile Include="Tunnel.fs" />
     <Compile Include="WcfClient.fs" />
+    <Compile Include="UdpClient.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

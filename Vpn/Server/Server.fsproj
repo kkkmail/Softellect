@@ -24,6 +24,8 @@
     <Compile Include="IcmpProxy.fs" />
     <Compile Include="PacketRouter.fs" />
     <Compile Include="Service.fs" />
+    <Compile Include="WcfServer.fs" />
+    <Compile Include="UdpServer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

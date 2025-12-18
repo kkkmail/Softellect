@@ -142,7 +142,7 @@ module PacketRouter =
         static member defaultValue =
             {
                 vpnSubnet = VpnSubnet.defaultValue
-                adapterName = adapterName
+                adapterName = AdapterName
                 serverVpnIp = serverVpnIp
                 serverPublicIp = Ip4 "0.0.0.0" // Must be configured with actual public IP
             }
@@ -411,7 +411,7 @@ module PacketRouter =
         member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
-            let createResult = WinTunAdapter.Create(config.adapterName, adapterName, System.Nullable<Guid>())
+            let createResult = WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>())
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value
 

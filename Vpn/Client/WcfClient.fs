@@ -10,23 +10,17 @@ open Softellect.Vpn.Core.ServiceInfo
 
 module WcfClient =
 
-    type VpnWcfClientData =
-        {
-            clientAccessInfo : VpnClientAccessInfo
-        }
-
-
     let private toAuthError (e: WcfError) = e |> AuthWcfErr |> AuthWcfError |> AuthFailedErr |> ConnectionErr
     let private toSendError (e: WcfError) = e |> SendPacketWcfErr |> fun _ -> ConfigErr "Send packet error"
     let private toReceiveError (e: WcfError) = e |> ReceivePacketsWcfErr |> fun _ -> ConfigErr "Receive packets error"
 
 
-    type VpnWcfClient(data: VpnWcfClientData) =
-        let url = data.clientAccessInfo.serverAccessInfo.getUrl()
-        let commType = data.clientAccessInfo.serverAccessInfo.communicationType
+    type VpnWcfClient(data: VpnClientAccessInfo) =
+        let url = data.serverAccessInfo.getUrl()
+        let commType = data.serverAccessInfo.communicationType
 
         do Logger.logInfo $"VpnWcfClient created - URL: '{url}', CommType: '%A{commType}'"
-        do Logger.logInfo $"VpnWcfClient - serverAccessInfo: '%A{data.clientAccessInfo.serverAccessInfo}'"
+        do Logger.logInfo $"VpnWcfClient - serverAccessInfo: '%A{data.serverAccessInfo}'"
 
         let getService() =
             Logger.logTrace (fun () -> $"VpnWcfClient.getService - About to call tryGetWcfService with URL: '{url}', CommType: '%A{commType}'")
@@ -42,7 +36,7 @@ module WcfClient =
                 tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
 
             member _.sendPackets packets =
-                let clientId = data.clientAccessInfo.vpnClientId
+                let clientId = data.vpnClientId
                 Logger.logTrace (fun () -> $"Sending {packets.Length} packets for client {clientId.value}.")
                 Logger.logTracePackets (packets, (fun () -> $"Sending for client {clientId.value}: "))
                 let payload = (clientId, packets)
@@ -53,15 +47,14 @@ module WcfClient =
             member _.receivePackets clientId =
                 Logger.logTrace (fun () -> $"receivePackets: Receiving packets for client {clientId.value}")
                 let result = tryCommunicate getService (fun s b -> s.receivePackets b) toReceiveError clientId
-                
+
                 match result with
                 | Ok (Some r) -> Logger.logTracePackets (r, (fun () -> $"Received for client {clientId.value}: "))
-                | Ok None -> Logger.logTrace (fun () -> "Empty response.") 
-                | Error e -> Logger.logWarn $"ERROR: '{e}'."    
+                | Ok None -> Logger.logTrace (fun () -> "Empty response.")
+                | Error e -> Logger.logWarn $"ERROR: '{e}'."
 
                 result
 
 
-    let createVpnClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
-        let data = { clientAccessInfo = clientAccessInfo }
-        VpnWcfClient(data) :> IVpnClient
+    let createVpnWcfClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
+        VpnWcfClient(clientAccessInfo) :> IVpnClient

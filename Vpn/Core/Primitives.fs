@@ -9,7 +9,21 @@ module Primitives =
     [<Literal>]
     let VpnWcfServiceName = "VpnWcfService"
 
-    let adapterName = "SoftellectVPN"
+
+    [<Literal>]
+    let AdapterName = "SoftellectVPN"
+
+
+    [<Literal>]
+    let ProgramName = "VpnServer"
+
+
+    type VpnTransportProtocol =
+        | WCF_Tunnel
+        | UDP_Tunnel
+        // | TCP_RawSocket
+
+        static member defaultValue = WCF_Tunnel
 
 
     type VpnServerId =
@@ -81,6 +95,7 @@ module Primitives =
         {
             clientName : VpnClientName
             assignedIp : VpnIpAddress
+            vpnTransportProtocol : VpnTransportProtocol
         }
 
         member data.serialize() =

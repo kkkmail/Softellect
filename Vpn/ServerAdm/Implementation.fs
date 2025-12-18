@@ -76,7 +76,7 @@ module Implementation =
             if pkxFiles.Length = 0 then
                 Error $"No public key found in {keyFolder.value}. Generate keys first."
             else
-                let sourceFile = FileName pkxFiles.[0]
+                let sourceFile = FileName pkxFiles[0]
 
                 match tryImportPublicKey sourceFile None with
                 | Ok (keyId, publicKey) ->
@@ -145,6 +145,7 @@ module Implementation =
                             {
                                 clientName = VpnClientName clientName
                                 assignedIp = assignedIp
+                                vpnTransportProtocol = getVpnTransportProtocol()
                             }
                     }
 

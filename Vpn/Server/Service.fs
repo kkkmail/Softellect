@@ -3,12 +3,9 @@ namespace Softellect.Vpn.Server
 open System
 open System.Threading
 open System.Threading.Tasks
-open CoreWCF
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
-open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
-open Softellect.Wcf.Service
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
@@ -18,14 +15,6 @@ open Softellect.Vpn.Server.DnsProxy
 open Softellect.Sys.Rop
 
 module Service =
-
-    type VpnServerData =
-        {
-            serverAccessInfo : VpnServerAccessInfo
-            serverPrivateKey : PrivateKey
-            serverPublicKey : PublicKey
-        }
-
 
     type VpnService(data: VpnServerData) =
         let mutable started = false
@@ -42,7 +31,7 @@ module Service =
         let routerConfig =
             {
                 vpnSubnet = data.serverAccessInfo.vpnSubnet
-                adapterName = adapterName
+                adapterName = AdapterName
                 serverVpnIp = serverVpnIp
                 serverPublicIp = data.serverAccessInfo.serviceAccessInfo.getIpAddress()
             }
@@ -168,21 +157,3 @@ module Service =
                     Task.CompletedTask
 
         member _.Registry = registry
-
-
-    [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
-    type VpnWcfService(service: IVpnService) =
-
-        let toAuthWcfError (e: Softellect.Wcf.Errors.WcfError) = e |> AuthWcfErr |> AuthWcfError |> AuthFailedErr |> ConnectionErr
-        let toSendWcfError (e: Softellect.Wcf.Errors.WcfError) = e |> SendPacketWcfErr |> fun _ -> ConfigErr "Send error"
-        let toReceiveWcfError (e: Softellect.Wcf.Errors.WcfError) = e |> ReceivePacketsWcfErr |> fun _ -> ConfigErr "Receive error"
-
-        interface IVpnWcfService with
-            member _.authenticate data =
-                tryReply service.authenticate toAuthWcfError data
-
-            member _.sendPackets data =
-                tryReply service.sendPackets toSendWcfError data
-
-            member _.receivePackets data =
-                tryReply service.receivePackets toReceiveWcfError data
