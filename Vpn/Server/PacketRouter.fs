@@ -464,7 +464,7 @@ module PacketRouter =
                                     | None ->
                                         Logger.logTrace (fun () -> "NAT inbound: could not extract destination IP from translated packet")
                                 | None ->
-                                    // Logger.logTrace (fun () -> "HEAVY LOG - NAT inbound: packet dropped (no mapping)")
+                                    Logger.logTrace (fun () -> "HEAVY LOG - NAT inbound: packet dropped (no mapping)")
                                     ()
                         )
 

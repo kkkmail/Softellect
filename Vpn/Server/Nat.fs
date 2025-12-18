@@ -439,7 +439,7 @@ module Nat =
                             Some packet
                         | false, _ ->
                             // No mapping – drop
-                            // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, no mapping for extPort={dstPort}, dropping packet")
+                            Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, no mapping for extPort={dstPort}, dropping packet")
                             None
 
                     | Icmp ->
