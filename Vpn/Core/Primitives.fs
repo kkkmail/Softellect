@@ -23,8 +23,6 @@ module Primitives =
         | UDP_Tunnel
         // | TCP_RawSocket
 
-        static member defaultValue = WCF_Tunnel
-
 
     type VpnServerId =
         | VpnServerId of Guid
