@@ -41,16 +41,23 @@ module UdpClient =
         let timeoutTicks = int64 RequestTimeoutMs * Stopwatch.Frequency / 1000L
 
         do
-            // Set a receive timeout so the receive loop can check cancellation periodically.
+            // Bind to an ephemeral local port so Receive() works.
+            udpClient.Client.Bind(IPEndPoint(IPAddress.Any, 0))
+
+            // Connect fixes the remote endpoint and enables Receive() on this socket.
+            udpClient.Connect(serverEndpoint)
+
+            // Keep timeout so the loop can check cancellation periodically.
             udpClient.Client.ReceiveTimeout <- CleanupIntervalMs
-            Logger.logInfo $"VpnUdpClient created - Server: {serverIp}:{serverPort}, ClientId: {clientId.value}"
+
+            Logger.logInfo $"VpnUdpClient created - Server: {serverIp}:{serverPort}, ClientId: {clientId.value}, Local={udpClient.Client.LocalEndPoint}"
 
         /// Receive loop that reads all incoming datagrams and dispatches to pending requests.
         let receiveLoop () =
             Logger.logTrace (fun () -> "VpnUdpClient receive loop started.")
             while not clientCts.Token.IsCancellationRequested do
                 try
-                    let mutable remoteEp = serverEndpoint
+                    let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
                     let data = udpClient.Receive(&remoteEp)
 
                     match tryParseHeader data with
@@ -135,7 +142,7 @@ module UdpClient =
 
             try
                 let datagram = buildDatagram requestMsgType reqClientId requestId payload
-                udpClient.Send(datagram, datagram.Length, serverEndpoint) |> ignore
+                udpClient.Send(datagram, datagram.Length) |> ignore
 
                 // Wait for completion with a hard stop timeout.
                 let hardTimeoutMs = RequestTimeoutMs + CleanupIntervalMs
