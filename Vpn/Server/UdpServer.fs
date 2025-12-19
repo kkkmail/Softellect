@@ -107,7 +107,8 @@ module UdpServer =
                 let state = kvp.Value
                 if nowTicks - state.createdAtTicks > reassemblyTimeoutTicks then
                     reassemblyMap.TryRemove(key) |> ignore
-                    Logger.logTrace (fun () -> $"Server: Timed out reassembly: msgType=0x{let (m,_,_) = key in m:X2}, received {state.receivedCount}/{state.fragCount}")
+                    let (m, _, _) = key
+                    Logger.logTrace (fun () -> $"Server: Timed out reassembly: msgType=0x{m:X2}, received {state.receivedCount}/{state.fragCount}")
 
         let receiveLoop (client: System.Net.Sockets.UdpClient) (ct: CancellationToken) =
             Logger.logInfo $"UDP server receive loop started on port {serverPort}"

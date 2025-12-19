@@ -145,7 +145,8 @@ module UdpClient =
                         let state = kvp.Value
                         if nowTicks - state.createdAtTicks > timeoutTicks then
                             reassemblyMap.TryRemove(key) |> ignore
-                            Logger.logTrace (fun () -> $"Timed out reassembly: msgType=0x{let (m,_,_) = key in m:X2}, received {state.receivedCount}/{state.fragCount}")
+                            let (m, _, _) = key
+                            Logger.logTrace (fun () -> $"Timed out reassembly: msgType=0x{m:X2}, received {state.receivedCount}/{state.fragCount}")
                 with
                 | :? ObjectDisposedException -> ()
                 | ex when clientCts.Token.IsCancellationRequested -> ()
