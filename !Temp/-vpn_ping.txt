@@ -1,11 +1,27 @@
 
 Pinging 8.8.8.8 with 32 bytes of data:
-Reply from 8.8.8.8: bytes=32 time=1304ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1147ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1140ms TTL=109
-Reply from 8.8.8.8: bytes=32 time=1144ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1442ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=615ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=429ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=433ms TTL=109
+Request timed out.
+Reply from 8.8.8.8: bytes=32 time=352ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=706ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=256ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1925ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=2645ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=565ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1366ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=375ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=501ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=285ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=217ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1041ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=377ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=499ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1296ms TTL=109
 
 Ping statistics for 8.8.8.8:
-    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+    Packets: Sent = 20, Received = 19, Lost = 1 (5% loss),
 Approximate round trip times in milli-seconds:
-    Minimum = 1140ms, Maximum = 1304ms, Average = 1183ms
+    Minimum = 217ms, Maximum = 2645ms, Average = 806ms
