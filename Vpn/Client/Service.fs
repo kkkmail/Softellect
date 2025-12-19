@@ -196,8 +196,8 @@ module Service =
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
                         | Ok None ->
-                            // No packets available - backoff to prevent busy polling
-                            Thread.Sleep(ReceiveEmptyBackoffMs)
+                            // No packets available - server long-poll handles the wait.
+                            ()
                         | Error e ->
                             Logger.logWarn $"Failed to receive packets: %A{e}"
                     with

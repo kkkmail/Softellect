@@ -6,6 +6,7 @@ open System.Diagnostics
 open System.Net
 open System.Net.Sockets
 open System.Threading
+open System.Threading.Channels
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.DependencyInjection
@@ -17,11 +18,18 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Vpn.Server.Service
 
 module UdpServer =
 
     /// Reassembly key for server: (msgType, clientId, requestId).
     type private ServerReassemblyKey = byte * VpnClientId * uint32
+
+    /// Work item for the bounded channel.
+    type private WorkItem = byte * VpnClientId * uint32 * byte[] * IPEndPoint
+
+    /// Number of worker tasks.
+    let private workerCount = 16
 
     type VpnUdpHostedService(data: VpnServerData, service: IVpnService) =
         let serverPort = data.serverAccessInfo.serviceAccessInfo.getServicePort().value
@@ -32,10 +40,9 @@ module UdpServer =
 
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
 
-        // Concurrency control for worker tasks.
-        let sendLock = obj()
-        let maxInFlight = 128
-        let inFlight = new SemaphoreSlim(maxInFlight, maxInFlight)
+        // Bounded channel for work items.
+        let channelOptions = BoundedChannelOptions(4096, FullMode = BoundedChannelFullMode.Wait, SingleWriter = true, SingleReader = false)
+        let workChannel = Channel.CreateBounded<WorkItem>(channelOptions)
 
         let processAuthenticate (clientId: VpnClientId) (requestId: uint32) (payload: byte[]) : byte[][] =
             Logger.logTrace (fun () -> $"processAuthenticate: clientId={clientId.value}, requestId={requestId}, payloadLen={payload.Length}")
@@ -62,14 +69,19 @@ module UdpServer =
         let processReceivePackets (clientId: VpnClientId) (requestId: uint32) (payload: byte[]) : byte[][] =
             Logger.logTrace (fun () -> $"processReceivePackets: clientId={clientId.value}, requestId={requestId}, payloadLen={payload.Length}")
 
-            // Deserialize long-poll request parameters (kept for future compatibility).
-            let _receiveRequest =
+            // Deserialize long-poll request parameters.
+            let receiveRequest =
                 match tryDeserialize<ReceivePacketsRequest> wcfSerializationFormat payload with
                 | Ok req -> req
                 | Error _ -> { maxWaitMs = DefaultMaxWaitMs; maxPackets = DefaultMaxPackets }
 
-            // Single call to service - no blocking/polling in UDP server.
-            let result = service.receivePackets clientId
+            // Use wait-aware service if available.
+            let result =
+                match service with
+                | :? IVpnServiceInternal as internalService ->
+                    internalService.ReceivePacketsWithWait(clientId, receiveRequest.maxWaitMs, receiveRequest.maxPackets)
+                | _ ->
+                    service.receivePackets clientId
 
             match trySerialize wcfSerializationFormat result with
             | Ok responsePayload -> buildFragments MsgTypeReceivePacketsResponse clientId requestId responsePayload
@@ -93,92 +105,105 @@ module UdpServer =
                     let (m, _, _) = key
                     Logger.logTrace (fun () -> $"Server: Timed out reassembly: msgType=0x{m:X2}, received {state.receivedCount}/{state.fragCount}")
 
-        let receiveLoop (client: System.Net.Sockets.UdpClient) (ct: CancellationToken) =
-            Logger.logInfo $"UDP server receive loop started on port {serverPort}"
+        /// Worker loop that reads from the bounded channel and processes requests.
+        let workerLoop (client: System.Net.Sockets.UdpClient) (workerId: int) (ct: CancellationToken) =
+            task {
+                Logger.logTrace (fun () -> $"UDP server worker {workerId} started")
 
-            // Worker task that processes a request and sends response off the socket thread.
-            let dispatchWorker (msgType: byte) (clientId: VpnClientId) (requestId: uint32) (logicalPayload: byte[]) (capturedRemoteEp: IPEndPoint) =
-                task {
-                    let! _ = inFlight.WaitAsync(ct)
+                while not ct.IsCancellationRequested do
                     try
+                        let! workItem = workChannel.Reader.ReadAsync(ct).AsTask()
+                        let (msgType, clientId, requestId, logicalPayload, remoteEp) = workItem
+
                         try
-                            Logger.logTrace (fun () -> $"Received: msgType=0x{msgType:X2}, clientId={clientId.value}, requestId={requestId}, payloadLen={logicalPayload.Length}, remoteEp={capturedRemoteEp}")
+                            Logger.logTrace (fun () -> $"Worker {workerId}: Processing msgType=0x{msgType:X2}, clientId={clientId.value}, requestId={requestId}, payloadLen={logicalPayload.Length}, remoteEp={remoteEp}")
 
                             // Update endpoint mapping.
-                            endpointMap[clientId] <- capturedRemoteEp
+                            endpointMap[clientId] <- remoteEp
 
                             // Process request and send all response fragments.
                             let responseFragments = processRequest msgType clientId requestId logicalPayload
 
-                            lock sendLock (fun () ->
-                                for fragment in responseFragments do
-                                    client.Send(fragment, fragment.Length, capturedRemoteEp) |> ignore
-                            )
+                            for fragment in responseFragments do
+                                client.Send(fragment, fragment.Length, remoteEp) |> ignore
 
-                            Logger.logTrace (fun () -> $"Sent: msgType=0x{responseFragments.[0].[0]:X2}, requestId={requestId}, fragments={responseFragments.Length}")
+                            Logger.logTrace (fun () -> $"Worker {workerId}: Sent msgType=0x{responseFragments.[0].[0]:X2}, requestId={requestId}, fragments={responseFragments.Length}")
                         with
                         | ex when ct.IsCancellationRequested -> ()
-                        | ex -> Logger.logError $"Worker error for requestId {requestId}: {ex.Message}"
-                    finally
-                        inFlight.Release() |> ignore
-                } |> ignore
+                        | ex -> Logger.logError $"Worker {workerId} error for requestId {requestId}: {ex.Message}"
+                    with
+                    | :? OperationCanceledException -> ()
+                    | :? ChannelClosedException -> ()
+                    | ex when ct.IsCancellationRequested -> ()
+                    | ex -> Logger.logError $"Worker {workerId} read error: {ex.Message}"
 
-            while not ct.IsCancellationRequested do
-                try
-                    let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
-                    let data = client.Receive(&remoteEp)
+                Logger.logTrace (fun () -> $"UDP server worker {workerId} stopped")
+            } :> Task
 
-                    match tryParseFragmentHeader data with
-                    | Ok (msgType, clientId, requestId, fragIndex, fragCount, fragmentPayload) ->
-                        let key : ServerReassemblyKey = (msgType, clientId, requestId)
+        let receiveLoop (client: System.Net.Sockets.UdpClient) (ct: CancellationToken) =
+            task {
+                Logger.logInfo $"UDP server receive loop started on port {serverPort}"
 
-                        // Capture remoteEp for this request (avoid reusing mutable variable).
-                        let capturedRemoteEp = IPEndPoint(remoteEp.Address, remoteEp.Port)
+                while not ct.IsCancellationRequested do
+                    try
+                        let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
+                        let data = client.Receive(&remoteEp)
 
-                        if fragCount = 1us && fragIndex = 0us then
-                            // Single fragment - dispatch to worker.
-                            dispatchWorker msgType clientId requestId fragmentPayload capturedRemoteEp
-                        else
-                            // Multi-fragment - reassemble.
-                            let nowTicks = Stopwatch.GetTimestamp()
-                            let state = reassemblyMap.GetOrAdd(key, fun _ -> createReassemblyState nowTicks fragCount)
+                        match tryParseFragmentHeader data with
+                        | Ok (msgType, clientId, requestId, fragIndex, fragCount, fragmentPayload) ->
+                            let key : ServerReassemblyKey = (msgType, clientId, requestId)
 
-                            // Validate fragCount matches.
-                            if state.fragCount <> fragCount then
-                                Logger.logTrace (fun () -> $"Server: Fragment count mismatch for requestId {requestId}: expected {state.fragCount}, got {fragCount}")
+                            // Capture remoteEp for this request (avoid reusing mutable variable).
+                            let capturedRemoteEp = IPEndPoint(remoteEp.Address, remoteEp.Port)
+
+                            if fragCount = 1us && fragIndex = 0us then
+                                // Single fragment - enqueue to work channel.
+                                let workItem : WorkItem = (msgType, clientId, requestId, fragmentPayload, capturedRemoteEp)
+                                do! workChannel.Writer.WriteAsync(workItem, ct).AsTask()
                             else
-                                match tryAddFragment state fragIndex fragmentPayload with
-                                | Some logicalPayload ->
-                                    // Reassembly complete - remove from map and dispatch to worker.
-                                    reassemblyMap.TryRemove(key) |> ignore
-                                    dispatchWorker msgType clientId requestId logicalPayload capturedRemoteEp
-                                | None ->
-                                    // More fragments needed.
-                                    ()
-                    | Error () ->
-                        // Invalid header - drop silently.
-                        Logger.logTrace (fun () -> $"Dropped packet with invalid header from {remoteEp}")
+                                // Multi-fragment - reassemble.
+                                let nowTicks = Stopwatch.GetTimestamp()
+                                let state = reassemblyMap.GetOrAdd(key, fun _ -> createReassemblyState nowTicks fragCount)
 
-                    // Periodically cleanup stale reassemblies (piggyback on receive).
-                    cleanupReassemblies ()
-                with
-                | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
-                    // Timeout is expected - allows checking cancellation.
-                    // Also cleanup stale reassemblies on timeout.
-                    cleanupReassemblies ()
-                | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted ->
-                    // Socket was closed during shutdown.
-                    ()
-                | :? SocketException as ex when ex.SocketErrorCode = SocketError.MessageSize ->
-                    // Inbound datagram too large - verify client fragmentation.
-                    Logger.logWarn $"MessageSize: inbound datagram too large — verify client fragmentation; dropping."
-                | ex when ct.IsCancellationRequested ->
-                    // Shutting down.
-                    ()
-                | ex ->
-                    Logger.logError $"UDP receive error: {ex.Message}"
+                                // Validate fragCount matches.
+                                if state.fragCount <> fragCount then
+                                    Logger.logTrace (fun () -> $"Server: Fragment count mismatch for requestId {requestId}: expected {state.fragCount}, got {fragCount}")
+                                else
+                                    match tryAddFragment state fragIndex fragmentPayload with
+                                    | Some logicalPayload ->
+                                        // Reassembly complete - remove from map and enqueue to work channel.
+                                        reassemblyMap.TryRemove(key) |> ignore
+                                        let workItem : WorkItem = (msgType, clientId, requestId, logicalPayload, capturedRemoteEp)
+                                        do! workChannel.Writer.WriteAsync(workItem, ct).AsTask()
+                                    | None ->
+                                        // More fragments needed.
+                                        ()
+                        | Error () ->
+                            // Invalid header - drop silently.
+                            Logger.logTrace (fun () -> $"Dropped packet with invalid header from {remoteEp}")
 
-            Logger.logInfo "UDP server receive loop stopped"
+                        // Periodically cleanup stale reassemblies (piggyback on receive).
+                        cleanupReassemblies ()
+                    with
+                    | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
+                        // Timeout is expected - allows checking cancellation.
+                        // Also cleanup stale reassemblies on timeout.
+                        cleanupReassemblies ()
+                    | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted ->
+                        // Socket was closed during shutdown.
+                        ()
+                    | :? SocketException as ex when ex.SocketErrorCode = SocketError.MessageSize ->
+                        // Inbound datagram too large - verify client fragmentation.
+                        Logger.logWarn $"MessageSize: inbound datagram too large — verify client fragmentation; dropping."
+                    | :? OperationCanceledException -> ()
+                    | ex when ct.IsCancellationRequested ->
+                        // Shutting down.
+                        ()
+                    | ex ->
+                        Logger.logError $"UDP receive error: {ex.Message}"
+
+                Logger.logInfo "UDP server receive loop stopped"
+            } :> Task
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
@@ -190,6 +215,10 @@ module UdpServer =
                 let client = new System.Net.Sockets.UdpClient(serverPort)
                 client.Client.ReceiveTimeout <- ServerReceiveTimeoutMs
                 udpClient <- Some client
+
+                // Start worker tasks.
+                for i = 0 to workerCount - 1 do
+                    Task.Run(fun () -> workerLoop client i cts.Token) |> ignore
 
                 // Start receive loop on background thread.
                 Task.Run(fun () -> receiveLoop client cts.Token) |> ignore

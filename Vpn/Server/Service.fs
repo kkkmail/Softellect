@@ -16,6 +16,10 @@ open Softellect.Sys.Rop
 
 module Service =
 
+    /// Internal interface for wait-aware packet receive (used by UDP server).
+    type IVpnServiceInternal =
+        abstract ReceivePacketsWithWait : VpnClientId * int * int -> Result<byte[][] option, VpnError>
+
     type VpnService(data: VpnServerData) =
         let mutable started = false
 
@@ -105,20 +109,32 @@ module Service =
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
-            member _.receivePackets clientId =
+            /// Uses default wait parameters (250ms, 100 packets).
+            member this.receivePackets clientId =
+                (this :> IVpnServiceInternal).ReceivePacketsWithWait(clientId, 250, 100)
+
+        interface IVpnServiceInternal with
+            /// Receive packets with configurable wait and max packet parameters.
+            member _.ReceivePacketsWithWait(clientId, maxWaitMs, maxPackets) =
+                // Clamp parameters per spec.
+                let clampedMaxPackets = max 1 (min 1024 maxPackets)
+                let clampedMaxWaitMs = max 0 (min 2000 maxWaitMs)
+
                 match registry.tryGetSession(clientId) with
                 | Some session ->
                     registry.updateActivity(clientId)
-                    let packets = registry.dequeuePacketsForClient(clientId, 100)
+
+                    // Attempt immediate dequeue up to maxPackets.
+                    let packets = registry.dequeuePacketsForClient(clientId, clampedMaxPackets)
                     if packets.Length > 0 then
                         let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                         Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client: '{clientId.value}', total {totalBytes} bytes")
                         Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
                         Ok (Some packets)
-                    else
-                        // No packets available - wait on semaphore for up to 250 ms
-                        session.packetsAvailable.Wait(250) |> ignore
-                        let packets2 = registry.dequeuePacketsForClient(clientId, 100)
+                    elif clampedMaxWaitMs > 0 then
+                        // No packets and wait requested - wait on semaphore.
+                        session.packetsAvailable.Wait(clampedMaxWaitMs) |> ignore
+                        let packets2 = registry.dequeuePacketsForClient(clientId, clampedMaxPackets)
                         if packets2.Length > 0 then
                             let totalBytes = packets2 |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Server sending {packets2.Length} packets to client: '{clientId.value}', total {totalBytes} bytes (after wait)")
@@ -126,6 +142,9 @@ module Service =
                             Ok (Some packets2)
                         else
                             Ok None
+                    else
+                        // No wait requested and no packets.
+                        Ok None
                 | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
