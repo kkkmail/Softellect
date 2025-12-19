@@ -22,6 +22,7 @@
     <Compile Include="KeyManagement.fs" />
     <Compile Include="PacketDebug.fs" />
     <Compile Include="ServiceInfo.fs" />
+    <Compile Include="UdpProtocol.fs" />
     <Compile Include="AppSettings.fs" />
   </ItemGroup>
   <ItemGroup>

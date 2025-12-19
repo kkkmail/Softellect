@@ -1,79 +1,30 @@
 namespace Softellect.Vpn.Client
 
 open System
+open System.Collections.Concurrent
+open System.Diagnostics
 open System.Net
 open System.Net.Sockets
+open System.Threading
+open System.Threading.Tasks
 open Softellect.Sys.Core
 open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
-open Softellect.Vpn.Core.PacketDebug
+open Softellect.Vpn.Core.UdpProtocol
 
 module UdpClient =
 
-    // Message types for UDP protocol
-    [<Literal>]
-    let private MsgTypeAuthenticate = 0x01uy
-
-    [<Literal>]
-    let private MsgTypeSendPackets = 0x02uy
-
-    [<Literal>]
-    let private MsgTypeReceivePackets = 0x03uy
-
-    [<Literal>]
-    let private MsgTypeAuthenticateResponse = 0x81uy
-
-    [<Literal>]
-    let private MsgTypeSendPacketsResponse = 0x82uy
-
-    [<Literal>]
-    let private MsgTypeReceivePacketsResponse = 0x83uy
-
-    [<Literal>]
-    let private MsgTypeErrorResponse = 0xFFuy
-
-    [<Literal>]
-    let private HeaderSize = 17 // 1 byte msgType + 16 bytes GUID
-
-    [<Literal>]
-    let private ReceiveTimeoutMs = 2000
-
-
-    let private buildDatagram (msgType: byte) (clientId: VpnClientId) (payload: byte[]) : byte[] =
-        let guidBytes = clientId.value.ToByteArray()
-        let result = Array.zeroCreate (1 + 16 + payload.Length)
-        result.[0] <- msgType
-        Array.Copy(guidBytes, 0, result, 1, 16)
-        Array.Copy(payload, 0, result, 17, payload.Length)
-        result
-
-
-    let private parseResponse (expectedMsgType: byte) (expectedClientId: VpnClientId) (data: byte[]) : Result<byte[], VpnError> =
-        if data.Length < HeaderSize then
-            Error (ConnectionErr (ServerUnreachableErr "Response too short"))
-        else
-            let msgType = data.[0]
-            let guidBytes = data.[1..16]
-            let responseClientId = Guid(guidBytes) |> VpnClientId
-            let payload = if data.Length > HeaderSize then data.[HeaderSize..] else [||]
-
-            if msgType = MsgTypeErrorResponse then
-                let errorMsg =
-                    if payload.Length > 0 then
-                        let len = min payload.Length 1024
-                        System.Text.Encoding.UTF8.GetString(payload, 0, len)
-                    else
-                        "Unknown error"
-                Error (ConfigErr errorMsg)
-            elif msgType <> expectedMsgType then
-                Error (ConfigErr $"Unexpected message type: expected 0x{expectedMsgType:X2}, got 0x{msgType:X2}")
-            elif responseClientId.value <> expectedClientId.value then
-                Error (ConfigErr $"Client ID mismatch in response")
-            else
-                Ok payload
+    /// Record for pending request tracking.
+    type private PendingRequest =
+        {
+            createdAtTicks : int64
+            expectedMsgType : byte
+            clientId : VpnClientId
+            tcs : TaskCompletionSource<byte[]>
+        }
 
 
     type VpnUdpClient(data: VpnClientAccessInfo) =
@@ -83,24 +34,148 @@ module UdpClient =
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
 
         let udpClient = new System.Net.Sockets.UdpClient()
+        let clientCts = new CancellationTokenSource()
+        let pendingRequests = ConcurrentDictionary<uint32, PendingRequest>()
+        let mutable nextRequestIdInt = 0
+
+        let timeoutTicks = int64 RequestTimeoutMs * Stopwatch.Frequency / 1000L
 
         do
-            udpClient.Client.ReceiveTimeout <- ReceiveTimeoutMs
+            // Set a receive timeout so the receive loop can check cancellation periodically.
+            udpClient.Client.ReceiveTimeout <- CleanupIntervalMs
             Logger.logInfo $"VpnUdpClient created - Server: {serverIp}:{serverPort}, ClientId: {clientId.value}"
 
-        let sendAndReceive (datagram: byte[]) : Result<byte[], VpnError> =
+        /// Receive loop that reads all incoming datagrams and dispatches to pending requests.
+        let receiveLoop () =
+            Logger.logTrace (fun () -> "VpnUdpClient receive loop started.")
+            while not clientCts.Token.IsCancellationRequested do
+                try
+                    let mutable remoteEp = serverEndpoint
+                    let data = udpClient.Receive(&remoteEp)
+
+                    match tryParseHeader data with
+                    | Ok (msgType, respClientId, requestId, _payload) ->
+                        match pendingRequests.TryRemove(requestId) with
+                        | true, pending ->
+                            // Complete the pending request with the full raw response.
+                            pending.tcs.TrySetResult(data) |> ignore
+                        | false, _ ->
+                            // Late or duplicate response - drop silently.
+                            Logger.logTrace (fun () -> $"Dropped response with unknown requestId: {requestId}, msgType: 0x{msgType:X2}")
+                    | Error () ->
+                        // Invalid header - drop silently.
+                        Logger.logTrace (fun () -> "Dropped response with invalid header.")
+                with
+                | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
+                    // Timeout is expected - allows checking cancellation and cleanup.
+                    ()
+                | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted ->
+                    // Socket was closed during shutdown.
+                    ()
+                | :? ObjectDisposedException ->
+                    // Socket disposed during shutdown.
+                    ()
+                | ex when clientCts.Token.IsCancellationRequested ->
+                    // Shutting down.
+                    ()
+                | ex ->
+                    Logger.logError $"VpnUdpClient receive error: {ex.Message}"
+
+            Logger.logTrace (fun () -> "VpnUdpClient receive loop stopped.")
+
+        /// Cleanup loop that times out pending requests.
+        let cleanupLoop () =
+            Logger.logTrace (fun () -> "VpnUdpClient cleanup loop started.")
+            while not clientCts.Token.IsCancellationRequested do
+                try
+                    Thread.Sleep(CleanupIntervalMs)
+                    let nowTicks = Stopwatch.GetTimestamp()
+
+                    for kvp in pendingRequests do
+                        let requestId = kvp.Key
+                        let pending = kvp.Value
+                        if nowTicks - pending.createdAtTicks > timeoutTicks then
+                            match pendingRequests.TryRemove(requestId) with
+                            | true, p ->
+                                p.tcs.TrySetException(TimeoutException("Request timed out")) |> ignore
+                                Logger.logTrace (fun () -> $"Timed out requestId: {requestId}")
+                            | false, _ -> ()
+                with
+                | :? ObjectDisposedException -> ()
+                | ex when clientCts.Token.IsCancellationRequested -> ()
+                | ex ->
+                    Logger.logError $"VpnUdpClient cleanup error: {ex.Message}"
+
+            Logger.logTrace (fun () -> "VpnUdpClient cleanup loop stopped.")
+
+        // Start background loops.
+        do
+            Task.Run(receiveLoop) |> ignore
+            Task.Run(cleanupLoop) |> ignore
+
+        /// Allocate a new requestId.
+        let allocateRequestId () : uint32 =
+            uint32 (Interlocked.Increment(&nextRequestIdInt))
+
+        /// Send a request and wait for the response.
+        let sendRequest (requestMsgType: byte) (reqClientId: VpnClientId) (payload: byte[]) : Result<byte[], VpnError> =
+            let requestId = allocateRequestId()
+            let expectedMsgType = expectedResponseType requestMsgType
+            let tcs = TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+            let pending =
+                {
+                    createdAtTicks = Stopwatch.GetTimestamp()
+                    expectedMsgType = expectedMsgType
+                    clientId = reqClientId
+                    tcs = tcs
+                }
+
+            pendingRequests.[requestId] <- pending
+
             try
-                // Logger.logTrace (fun () -> $"HEAVY LOG - Sending datagram to serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, datagram: {(summarizePacket datagram)}, raw datagram: %A{datagram}")
+                let datagram = buildDatagram requestMsgType reqClientId requestId payload
                 udpClient.Send(datagram, datagram.Length, serverEndpoint) |> ignore
-                let mutable remoteEp = serverEndpoint
-                let response = udpClient.Receive(&remoteEp)
-                // Logger.logTrace (fun () -> $"HEAVY LOG - Received response from serverEndpoint: {serverEndpoint.Address}:{serverEndpoint.Port}, response: {(summarizePacket response)}, raw response: %A{response}.")
-                Ok response
+
+                // Wait for completion with a hard stop timeout.
+                let hardTimeoutMs = RequestTimeoutMs + CleanupIntervalMs
+                if tcs.Task.Wait(hardTimeoutMs) then
+                    Ok tcs.Task.Result
+                else
+                    // Hard timeout - remove pending and return error.
+                    pendingRequests.TryRemove(requestId) |> ignore
+                    Error (ConnectionErr ConnectionTimeoutErr)
             with
-            | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
+            | :? AggregateException as ae when (ae.InnerException :? TimeoutException) ->
                 Error (ConnectionErr ConnectionTimeoutErr)
-            | ex ->
+            | :? TimeoutException ->
+                Error (ConnectionErr ConnectionTimeoutErr)
+            | :? SocketException as ex ->
                 Error (ConnectionErr (ServerUnreachableErr ex.Message))
+            | ex ->
+                pendingRequests.TryRemove(requestId) |> ignore
+                Error (ConnectionErr (ServerUnreachableErr ex.Message))
+
+        /// Parse and validate the response.
+        let parseResponse (expectedMsgType: byte) (expectedClientId: VpnClientId) (data: byte[]) : Result<byte[], VpnError> =
+            match tryParseHeader data with
+            | Error () ->
+                Error (ConnectionErr (ServerUnreachableErr "Response too short"))
+            | Ok (msgType, responseClientId, _requestId, payload) ->
+                if msgType = MsgTypeErrorResponse then
+                    let errorMsg =
+                        if payload.Length > 0 then
+                            let len = min payload.Length 1024
+                            System.Text.Encoding.UTF8.GetString(payload, 0, len)
+                        else
+                            "Unknown error"
+                    Error (ConfigErr errorMsg)
+                elif msgType <> expectedMsgType then
+                    Error (ConfigErr $"Unexpected message type: expected 0x{expectedMsgType:X2}, got 0x{msgType:X2}")
+                elif responseClientId.value <> expectedClientId.value then
+                    Error (ConfigErr "Client ID mismatch in response")
+                else
+                    Ok payload
 
         interface IVpnClient with
             member _.authenticate request =
@@ -108,9 +183,7 @@ module UdpClient =
 
                 match trySerialize wcfSerializationFormat request with
                 | Ok payload ->
-                    let datagram = buildDatagram MsgTypeAuthenticate request.clientId payload
-
-                    match sendAndReceive datagram with
+                    match sendRequest MsgTypeAuthenticate request.clientId payload with
                     | Ok responseData ->
                         match parseResponse MsgTypeAuthenticateResponse request.clientId responseData with
                         | Ok responsePayload ->
@@ -124,13 +197,10 @@ module UdpClient =
 
             member _.sendPackets packets =
                 Logger.logTrace (fun () -> $"Sending {packets.Length} packets for client {clientId.value}.")
-                Logger.logTracePackets (packets, (fun () -> $"Sending for client {clientId.value}: "))
 
                 match trySerialize wcfSerializationFormat packets with
                 | Ok payload ->
-                    let datagram = buildDatagram MsgTypeSendPackets clientId payload
-
-                    match sendAndReceive datagram with
+                    match sendRequest MsgTypeSendPackets clientId payload with
                     | Ok responseData ->
                         match parseResponse MsgTypeSendPacketsResponse clientId responseData with
                         | Ok responsePayload ->
@@ -147,31 +217,37 @@ module UdpClient =
             member _.receivePackets reqClientId =
                 Logger.logTrace (fun () -> $"receivePackets: Receiving packets for client {reqClientId.value}")
 
-                // Payload is empty for receivePackets - clientId is in header
-                let datagram = buildDatagram MsgTypeReceivePackets reqClientId [||]
+                // Build the long-poll request payload.
+                let receiveRequest = { maxWaitMs = DefaultMaxWaitMs; maxPackets = DefaultMaxPackets }
 
-                let result =
-                    match sendAndReceive datagram with
-                    | Ok responseData ->
-                        match parseResponse MsgTypeReceivePacketsResponse reqClientId responseData with
-                        | Ok responsePayload ->
-                            match tryDeserialize<VpnPacketsResult> wcfSerializationFormat responsePayload with
-                            | Ok result -> result
-                            | Error e -> Error (ConfigErr $"Deserialization error: {e}")
+                match trySerialize wcfSerializationFormat receiveRequest with
+                | Ok payload ->
+                    let result =
+                        match sendRequest MsgTypeReceivePackets reqClientId payload with
+                        | Ok responseData ->
+                            match parseResponse MsgTypeReceivePacketsResponse reqClientId responseData with
+                            | Ok responsePayload ->
+                                match tryDeserialize<VpnPacketsResult> wcfSerializationFormat responsePayload with
+                                | Ok result -> result
+                                | Error e -> Error (ConfigErr $"Deserialization error: {e}")
+                            | Error e -> Error e
                         | Error e -> Error e
-                    | Error e -> Error e
 
-                match result with
-                | Ok (Some r) -> Logger.logTracePackets (r, (fun () -> $"Received for client {reqClientId.value}: "))
-                | Ok None -> Logger.logTrace (fun () -> "Empty response.")
-                | Error e -> Logger.logWarn $"ERROR: '{e}'."
+                    match result with
+                    | Ok (Some r) -> Logger.logTrace (fun () -> $"Received {r.Length} packets for client {reqClientId.value}")
+                    | Ok None -> Logger.logTrace (fun () -> "Empty response.")
+                    | Error e -> Logger.logWarn $"ERROR: '{e}'."
 
-                result
+                    result
+                | Error e ->
+                    Error (ConfigErr $"Serialization error: {e}")
 
         interface IDisposable with
             member _.Dispose() =
+                clientCts.Cancel()
                 udpClient.Close()
                 udpClient.Dispose()
+                clientCts.Dispose()
 
 
     let createVpnUdpClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
