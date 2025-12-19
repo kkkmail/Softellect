@@ -1,13 +1,11 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 8.8.8.8:443...
-  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0* schannel: disabled automatic use of client certificate
-* schannel: using IP address, SNI is not supported by OS.
-* ALPN: curl offers http/1.1
-  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0* ALPN: server accepted http/1.1
-* Established connection to 8.8.8.8 (8.8.8.8 port 443) from 10.66.77.2 port 53478 
-  0     0    0     0    0     0      0      0 --:--:--  0:00:20 --:--:--     0* using HTTP/1.x
-* schannel: timed out sending data (bytes sent: 0)
-  0     0    0     0    0     0      0      0 --:--:--  0:00:20 --:--:--     0
-* Connection #0 to host 8.8.8.8:443 left intact
-curl: (28) schannel: timed out sending data (bytes sent: 0)
+
+Pinging 8.8.8.8 with 32 bytes of data:
+Reply from 8.8.8.8: bytes=32 time=248ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=530ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=988ms TTL=109
+Reply from 8.8.8.8: bytes=32 time=1421ms TTL=109
+
+Ping statistics for 8.8.8.8:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 248ms, Maximum = 1421ms, Average = 796ms

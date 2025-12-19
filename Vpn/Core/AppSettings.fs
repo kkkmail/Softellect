@@ -8,8 +8,11 @@ open Softellect.Wcf.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
+open Softellect.Wcf.Common
 
 module AppSettings =
+    let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Tunnel
+    // let getVpnTransportProtocol() = VpnTransportProtocol.WCF_Tunnel
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
@@ -22,6 +25,49 @@ module AppSettings =
     let serverPublicKeyPathKey = ConfigKey "ServerPublicKeyPath"
     let localLanExclusionsKey = ConfigKey "LocalLanExclusions"
     // let vpnClientsKey = ConfigKey "VpnClients"
+
+
+    type VpnClientAccessInfo
+        with
+        static member defaultValue =
+            {
+                vpnClientId = VpnClientId.create()
+                vpnServerId = VpnServerId.create()
+                serverAccessInfo =
+                    {
+                        netTcpServiceAddress = ServiceAddress localHost
+                        netTcpServicePort = ServicePort 5080
+                        netTcpServiceName = ServiceName "VpnService"
+                        netTcpSecurityMode = NoSecurity
+                    }
+                    |> NetTcpServiceInfo
+                clientKeyPath = FolderName @"C:\Keys\VpnClient"
+                serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
+                localLanExclusions = LocalLanExclusion.defaultValues
+                vpnTransportProtocol = getVpnTransportProtocol()
+            }
+
+
+    type VpnServerAccessInfo
+        with
+
+        static member defaultValue =
+            {
+                vpnDataVersion = VpnDataVersion.current
+                vpnServerId = VpnServerId.create()
+                serviceAccessInfo =
+                    {
+                        netTcpServiceAddress = ServiceAddress localHost
+                        netTcpServicePort = ServicePort 5080
+                        netTcpServiceName = ServiceName "VpnService"
+                        netTcpSecurityMode = NoSecurity
+                    }
+                    |> NetTcpServiceInfo
+                vpnSubnet = VpnSubnet.defaultValue
+                serverKeyPath = FolderName @"C:\Keys\VpnServer"
+                clientKeysPath = FolderName @"C:\Keys\VpnClient"
+                vpnTransportProtocol = getVpnTransportProtocol()
+            }
 
 
     let private tryParseLocalLanExclusions (s: string) =
@@ -47,6 +93,7 @@ module AppSettings =
                     {
                         clientName = VpnClientName a
                         assignedIp = v
+                        vpnTransportProtocol = getVpnTransportProtocol()
                     }
                     |> Ok
                 | None -> $"Some values in '{s}' are invalid." |> ConfigErr |> Error
@@ -77,6 +124,7 @@ module AppSettings =
                 vpnSubnet = vpnSubnet
                 serverKeyPath = serverKeyPath
                 clientKeysPath = clientKeysPath
+                vpnTransportProtocol = getVpnTransportProtocol()
             }
         | Error e ->
             Logger.logCrit $"loadVpnServerAccessInfo - Cannot load settings. Error: '%A{e}'."
@@ -120,6 +168,7 @@ module AppSettings =
                 clientKeyPath = clientKeyPath
                 serverPublicKeyPath = serverPublicKeyPath
                 localLanExclusions = localLanExclusions
+                vpnTransportProtocol = getVpnTransportProtocol()
             }
         | Error e ->
             Logger.logCrit $"loadVpnClientAccessInfo - Cannot load settings. Error: '%A{e}'."

@@ -5,7 +5,9 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
-open Softellect.Wcf.Program
+open Softellect.Vpn.Core.Primitives
+open Softellect.Vpn.Server.WcfServer
+open Softellect.Vpn.Server.UdpServer
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Core.ServiceInfo
@@ -25,9 +27,9 @@ module Program =
                 Logger.logError $"Server keys not found in {serverKeyPath.value}"
                 Error $"Server keys not found in {serverKeyPath.value}. Use ServerAdm to generate keys."
             else
-                match tryImportPrivateKey (FileName keyFiles.[0]) None with
+                match tryImportPrivateKey (FileName keyFiles[0]) None with
                 | Ok (keyId, privateKey) ->
-                    match tryImportPublicKey (FileName pkxFiles.[0]) (Some keyId) with
+                    match tryImportPublicKey (FileName pkxFiles[0]) (Some keyId) with
                     | Ok (_, publicKey) -> Ok (privateKey, publicKey)
                     | Error e ->
                         Logger.logError $"Failed to import server public key: %A{e}"
@@ -37,7 +39,15 @@ module Program =
                     Error $"Failed to import server private key: %A{e}"
 
 
-    let vpnServerMain programName argv =
+    let getProgram (data : VpnServerData) argv =
+        let getService = fun () -> VpnService(data) :> IVpnService
+
+        match data.serverAccessInfo.vpnTransportProtocol with
+        | WCF_Tunnel -> getWcfProgram data getService argv
+        | UDP_Tunnel -> getUdpProgram data getService argv
+
+
+    let vpnServerMain argv =
         setLogLevel()
         let serverAccessInfo = loadVpnServerAccessInfo()
 
@@ -45,36 +55,15 @@ module Program =
 
         match loadServerKeys serverAccessInfo.serverKeyPath with
         | Ok (privateKey, publicKey) ->
-            let postBuildHandler _ _ =
-                Logger.logInfo $"vpnServerMain - VPN Server started with subnet: {serverAccessInfo.vpnSubnet.value}"
-
-            let saveSettings() =
-                let result = updateVpnServerAccessInfo serverAccessInfo
-                Logger.logInfo $"saveSettings - result: '%A{result}'."
-
-            let projectName = getProjectName() |> Some
-
-            let vpnServiceData =
+            let data =
                 {
                     serverAccessInfo = serverAccessInfo
                     serverPrivateKey = privateKey
                     serverPublicKey = publicKey
                 }
 
-            let programData =
-                {
-                    serviceAccessInfo = serverAccessInfo.serviceAccessInfo
-                    getService = fun () -> new VpnService(vpnServiceData) :> IVpnService
-                    getWcfService = fun service -> new VpnWcfService(service)
-                    saveSettings = saveSettings
-                    configureServices = None
-                    configureServiceLogging = configureServiceLogging projectName
-                    configureLogging = configureLogging projectName
-                    postBuildHandler = Some postBuildHandler
-                }
-
-            wcfMain<IVpnService, IVpnWcfService, VpnWcfService> programName programData argv
-
+            let program = getProgram data argv
+            program()
         | Error msg ->
             Logger.logCrit msg
             Softellect.Sys.ExitErrorCodes.CriticalError

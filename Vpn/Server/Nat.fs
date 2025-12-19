@@ -435,7 +435,7 @@ module Nat =
                             updateIpChecksum packet
                             updateTransportChecksum packet proto
 
-                            Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, extPort={dstPort} -> {internalIp:X8}:{internalPortOrId}")
+                            // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, extPort={dstPort} -> {internalIp:X8}:{internalPortOrId}")
                             Some packet
                         | false, _ ->
                             // No mapping – drop
@@ -465,16 +465,16 @@ module Nat =
                                 updateIpChecksum packet
                                 updateIcmpChecksum packet
 
-                                Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, extId={identifier} -> {internalIp:X8}:id={internalId}")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, extId={identifier} -> {internalIp:X8}:id={internalId}")
 
                                 Some packet
                             | false, _ ->
                                 // No mapping – drop
-                                Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, no mapping for extId={identifier}, dropping packet")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, no mapping for extId={identifier}, dropping packet")
                                 None
                         else
                             // Non-echo-reply ICMP – drop (no mapping possible)
-                            Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, type={icmpType} not echo reply, dropping packet")
+                            // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, type={icmpType} not echo reply, dropping packet")
                             None
 
                     | Other _ ->

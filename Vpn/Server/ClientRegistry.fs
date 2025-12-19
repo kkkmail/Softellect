@@ -35,39 +35,6 @@ module ClientRegistry =
 
     type ClientRegistry(data: ClientRegistryData) =
         let sessions = ConcurrentDictionary<VpnClientId, ClientSession>()
-        // let clientConfigs = ConcurrentDictionary<VpnClientId, VpnClientConfig * PublicKey>()
-
-        // let loadClientsFromAppSettings () =
-        //     let configs = Softellect.Vpn.Core.AppSettings.loadVpnClientConfigs()
-        //     let clientKeysPath = data.serverAccessInfo.clientKeysPath.value
-        //
-        //     Logger.logInfo $"Loading {configs.Length} client(s) from appsettings..."
-        //
-        //     for config in configs do
-        //         let keyId = KeyId config.clientId.value
-        //         let keyFileName = FileName $"{config.clientId.value}.pkx"
-        //         let keyFilePath = keyFileName.combine (FolderName clientKeysPath)
-        //
-        //         if File.Exists keyFilePath.value then
-        //             match tryImportPublicKey keyFilePath (Some keyId) with
-        //             | Ok (_, publicKey) ->
-        //                 clientConfigs.[config.clientId] <- (config, publicKey)
-        //                 Logger.logInfo $"Loaded client: {config.clientName.value} ({config.clientId.value}) -> {config.assignedIp.value}"
-        //             | Error e ->
-        //                 Logger.logWarn $"Failed to load public key for client {config.clientId.value}: %A{e}"
-        //         else
-        //             Logger.logWarn $"Public key file not found for client {config.clientId.value}: {keyFilePath.value}"
-        //
-        // do loadClientsFromAppSettings()
-
-        // member _.registerClient(clientId: VpnClientId, config: VpnClientConfig, publicKey: PublicKey) =
-        //     clientConfigs.[clientId] <- (config, publicKey)
-        //     Logger.logInfo $"Registered client: {clientId.value} with IP {config.clientData.assignedIp.value}"
-        //
-        // member _.tryGetClientConfig(clientId: VpnClientId) =
-        //     match clientConfigs.TryGetValue(clientId) with
-        //     | true, (config, key) -> Some (config, key)
-        //     | false, _ -> None
 
         member private _.tryGetClientConfig(clientId : VpnClientId) =
             let keyId = KeyId clientId.value

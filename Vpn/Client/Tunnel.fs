@@ -114,7 +114,7 @@ module Tunnel =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
             tunnelState <- Connecting
 
-            let createResult = WinTunAdapter.Create(config.adapterName, adapterName, System.Nullable<Guid>())
+            let createResult = WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>())
 
             if createResult.IsSuccess then
                 adapter <- Some createResult.Value

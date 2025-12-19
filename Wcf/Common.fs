@@ -66,7 +66,7 @@ module Common =
 
 
     let getNetTcpServiceUrl (ServiceAddress serviceAddress) (ServicePort servicePort) (ServiceName serviceName) =
-        "net.tcp://" + serviceAddress.value + ":" + (servicePort.ToString()) + "/" + serviceName
+        "net.tcp://" + serviceAddress.value + ":" + servicePort.ToString() + "/" + serviceName
 
 
     /// https://stackoverflow.com/questions/5459697/the-maximum-message-size-quota-for-incoming-messages-65536-has-been-exceeded
@@ -169,6 +169,11 @@ module Common =
             match i with
             | HttpServiceInfo n ->  n.httpServiceAddress.value
             | NetTcpServiceInfo n -> n.netTcpServiceAddress.value
+
+        member i.getServicePort() =
+            match i with
+            | HttpServiceInfo n ->  n.httpServicePort
+            | NetTcpServiceInfo n -> n.netTcpServicePort
 
         member i.communicationType =
             match i with

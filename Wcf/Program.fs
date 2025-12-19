@@ -63,7 +63,7 @@ module Program =
                 services.AddSingleton<'WcfService>(wcfService) |> ignore
 
                 match data.configureServices with
-                | Some configure -> configure services |> ignore
+                | Some configure -> configure services
                 | None -> ()
                 )
 

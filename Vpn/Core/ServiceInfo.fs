@@ -48,24 +48,8 @@ module ServiceInfo =
             vpnSubnet : VpnSubnet
             serverKeyPath : FolderName
             clientKeysPath : FolderName
+            vpnTransportProtocol : VpnTransportProtocol
         }
-
-        static member defaultValue =
-            {
-                vpnDataVersion = VpnDataVersion.current
-                vpnServerId = VpnServerId.create()
-                serviceAccessInfo =
-                    {
-                        netTcpServiceAddress = ServiceAddress localHost
-                        netTcpServicePort = ServicePort 5080
-                        netTcpServiceName = ServiceName "VpnService"
-                        netTcpSecurityMode = NoSecurity
-                    }
-                    |> NetTcpServiceInfo
-                vpnSubnet = VpnSubnet.defaultValue
-                serverKeyPath = FolderName @"C:\Keys\VpnServer"
-                clientKeysPath = FolderName @"C:\Keys\VpnClient"
-            }
 
 
     type VpnClientAccessInfo =
@@ -76,21 +60,13 @@ module ServiceInfo =
             clientKeyPath : FolderName
             serverPublicKeyPath : FolderName
             localLanExclusions : LocalLanExclusion list
+            vpnTransportProtocol : VpnTransportProtocol
         }
 
-        static member defaultValue =
-            {
-                vpnClientId = VpnClientId.create()
-                vpnServerId = VpnServerId.create()
-                serverAccessInfo =
-                    {
-                        netTcpServiceAddress = ServiceAddress localHost
-                        netTcpServicePort = ServicePort 5080
-                        netTcpServiceName = ServiceName "VpnService"
-                        netTcpSecurityMode = NoSecurity
-                    }
-                    |> NetTcpServiceInfo
-                clientKeyPath = FolderName @"C:\Keys\VpnClient"
-                serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
-                localLanExclusions = LocalLanExclusion.defaultValues
-            }
+
+    type VpnServerData =
+        {
+            serverAccessInfo : VpnServerAccessInfo
+            serverPrivateKey : PrivateKey
+            serverPublicKey : PublicKey
+        }

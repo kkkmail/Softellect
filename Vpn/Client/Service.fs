@@ -11,10 +11,21 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Tunnel
 open Softellect.Vpn.Client.WcfClient
+open Softellect.Vpn.Client.UdpClient
 open Softellect.Vpn.Interop
 open Softellect.Vpn.Core.PacketDebug
 
 module Service =
+
+    [<Literal>]
+    let MaxSendPacketsPerCall = 64
+
+    [<Literal>]
+    let MaxSendBytesPerCall = 65536
+
+    [<Literal>]
+    let ReceiveEmptyBackoffMs = 10
+
 
     type VpnClientServiceData =
         {
@@ -33,6 +44,12 @@ module Service =
         | Failed of string
 
 
+    let createVpnClient (data: VpnClientServiceData) : IVpnClient =
+        match data.clientAccessInfo.vpnTransportProtocol with
+        | WCF_Tunnel -> createVpnWcfClient data.clientAccessInfo
+        | UDP_Tunnel -> createVpnUdpClient data.clientAccessInfo
+
+
     type VpnClientService(data: VpnClientServiceData) =
         let mutable state = Disconnected
         let mutable tunnel : Tunnel option = None
@@ -42,7 +59,7 @@ module Service =
         let mutable running = false
         let cts = new CancellationTokenSource()
 
-        let wcfClient = createVpnClient data.clientAccessInfo
+        let vpnClient = createVpnClient data
 
         let getServerIp () =
             match data.clientAccessInfo.serverAccessInfo with
@@ -100,7 +117,7 @@ module Service =
                     nonce = Guid.NewGuid().ToByteArray()
                 }
 
-            match wcfClient.authenticate request with
+            match vpnClient.authenticate request with
             | Ok response ->
                 Logger.logInfo $"Authenticated successfully. Assigned IP: {response.assignedIp.value}"
                 Ok response.assignedIp
@@ -112,7 +129,7 @@ module Service =
             let gatewayIp = serverVpnIp.value
             let config =
                 {
-                    adapterName = adapterName
+                    adapterName = AdapterName
                     assignedIp = assignedIp
                     subnetMask = Ip4 "255.255.255.0"
                     gatewayIp = gatewayIp
@@ -139,20 +156,22 @@ module Service =
                         let! firstPacket = t.outboundPacketReader.ReadAsync(cts.Token).AsTask()
                         let packets = ResizeArray<byte[]>()
                         packets.Add(firstPacket)
+                        let mutable totalBytes = firstPacket.Length
 
-                        // Drain all additional available packets using TryRead
+                        // Drain additional packets, but stop when limits are reached
                         let mutable hasMore = true
-                        while hasMore do
+                        while hasMore && packets.Count < MaxSendPacketsPerCall && totalBytes < MaxSendBytesPerCall do
                             match t.outboundPacketReader.TryRead() with
-                            | true, packet -> packets.Add(packet)
+                            | true, packet ->
+                                packets.Add(packet)
+                                totalBytes <- totalBytes + packet.Length
                             | false, _ -> hasMore <- false
 
                         let packetsArray = packets.ToArray()
-                        let totalBytes = packetsArray |> Array.sumBy (fun p -> p.Length)
                         Logger.logTrace (fun () -> $"Client sending {packetsArray.Length} packets to server, total {totalBytes} bytes")
                         Logger.logTracePackets (packetsArray, (fun () -> $"Client sending packet to server: "))
 
-                        match wcfClient.sendPackets packetsArray with
+                        match vpnClient.sendPackets packetsArray with
                         | Ok () -> ()
                         | Error e -> Logger.logWarn $"Failed to send {packetsArray.Length} packets to server: %A{e}"
                     with
@@ -165,7 +184,7 @@ module Service =
             task {
                 while running && not cts.Token.IsCancellationRequested do
                     try
-                        match wcfClient.receivePackets data.clientAccessInfo.vpnClientId with
+                        match vpnClient.receivePackets data.clientAccessInfo.vpnClientId with
                         | Ok (Some packets) ->
                             let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
                             Logger.logTrace (fun () -> $"Client received {packets.Length} packets from server, total {totalBytes} bytes")
@@ -177,8 +196,8 @@ module Service =
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
                         | Ok None ->
-                            // No packets available - immediately call again (WCF provides blocking)
-                            ()
+                            // No packets available - backoff to prevent busy polling
+                            Thread.Sleep(ReceiveEmptyBackoffMs)
                         | Error e ->
                             Logger.logWarn $"Failed to receive packets: %A{e}"
                     with
