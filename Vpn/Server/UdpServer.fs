@@ -23,10 +23,6 @@ module UdpServer =
     /// Reassembly key for server: (msgType, clientId, requestId).
     type private ServerReassemblyKey = byte * VpnClientId * uint32
 
-    /// Poll sleep interval for long-poll (10ms).
-    [<Literal>]
-    let private PollSleepMs = 10
-
     type VpnUdpHostedService(data: VpnServerData, service: IVpnService) =
         let serverPort = data.serverAccessInfo.serviceAccessInfo.getServicePort().value
         let endpointMap = ConcurrentDictionary<VpnClientId, IPEndPoint>()
@@ -35,6 +31,11 @@ module UdpServer =
         let mutable cancellationTokenSource : CancellationTokenSource option = None
 
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
+
+        // Concurrency control for worker tasks.
+        let sendLock = obj()
+        let maxInFlight = 128
+        let inFlight = new SemaphoreSlim(maxInFlight, maxInFlight)
 
         let processAuthenticate (clientId: VpnClientId) (requestId: uint32) (payload: byte[]) : byte[][] =
             Logger.logTrace (fun () -> $"processAuthenticate: clientId={clientId.value}, requestId={requestId}, payloadLen={payload.Length}")
@@ -61,32 +62,14 @@ module UdpServer =
         let processReceivePackets (clientId: VpnClientId) (requestId: uint32) (payload: byte[]) : byte[][] =
             Logger.logTrace (fun () -> $"processReceivePackets: clientId={clientId.value}, requestId={requestId}, payloadLen={payload.Length}")
 
-            // Deserialize long-poll request parameters.
-            let receiveRequest =
+            // Deserialize long-poll request parameters (kept for future compatibility).
+            let _receiveRequest =
                 match tryDeserialize<ReceivePacketsRequest> wcfSerializationFormat payload with
                 | Ok req -> req
                 | Error _ -> { maxWaitMs = DefaultMaxWaitMs; maxPackets = DefaultMaxPackets }
 
-            // Long-poll with frequent checks instead of sleeping the full duration.
-            let sw = Stopwatch.StartNew()
-            let mutable result = service.receivePackets clientId
-            let mutable shouldContinue = true
-
-            while shouldContinue do
-                match result with
-                | Ok (Some _) ->
-                    // Got packets - stop polling.
-                    shouldContinue <- false
-                | Error _ ->
-                    // Error - stop polling.
-                    shouldContinue <- false
-                | Ok None ->
-                    // No packets yet - check if we should keep polling.
-                    if sw.ElapsedMilliseconds >= int64 receiveRequest.maxWaitMs then
-                        shouldContinue <- false
-                    else
-                        Thread.Sleep(PollSleepMs)
-                        result <- service.receivePackets clientId
+            // Single call to service - no blocking/polling in UDP server.
+            let result = service.receivePackets clientId
 
             match trySerialize wcfSerializationFormat result with
             | Ok responsePayload -> buildFragments MsgTypeReceivePacketsResponse clientId requestId responsePayload
@@ -113,6 +96,33 @@ module UdpServer =
         let receiveLoop (client: System.Net.Sockets.UdpClient) (ct: CancellationToken) =
             Logger.logInfo $"UDP server receive loop started on port {serverPort}"
 
+            // Worker task that processes a request and sends response off the socket thread.
+            let dispatchWorker (msgType: byte) (clientId: VpnClientId) (requestId: uint32) (logicalPayload: byte[]) (capturedRemoteEp: IPEndPoint) =
+                task {
+                    let! _ = inFlight.WaitAsync(ct)
+                    try
+                        try
+                            Logger.logTrace (fun () -> $"Received: msgType=0x{msgType:X2}, clientId={clientId.value}, requestId={requestId}, payloadLen={logicalPayload.Length}, remoteEp={capturedRemoteEp}")
+
+                            // Update endpoint mapping.
+                            endpointMap[clientId] <- capturedRemoteEp
+
+                            // Process request and send all response fragments.
+                            let responseFragments = processRequest msgType clientId requestId logicalPayload
+
+                            lock sendLock (fun () ->
+                                for fragment in responseFragments do
+                                    client.Send(fragment, fragment.Length, capturedRemoteEp) |> ignore
+                            )
+
+                            Logger.logTrace (fun () -> $"Sent: msgType=0x{responseFragments.[0].[0]:X2}, requestId={requestId}, fragments={responseFragments.Length}")
+                        with
+                        | ex when ct.IsCancellationRequested -> ()
+                        | ex -> Logger.logError $"Worker error for requestId {requestId}: {ex.Message}"
+                    finally
+                        inFlight.Release() |> ignore
+                } |> ignore
+
             while not ct.IsCancellationRequested do
                 try
                     let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
@@ -122,22 +132,12 @@ module UdpServer =
                     | Ok (msgType, clientId, requestId, fragIndex, fragCount, fragmentPayload) ->
                         let key : ServerReassemblyKey = (msgType, clientId, requestId)
 
-                        let processAndRespond (logicalPayload: byte[]) =
-                            Logger.logTrace (fun () -> $"Received: msgType=0x{msgType:X2}, clientId={clientId.value}, requestId={requestId}, payloadLen={logicalPayload.Length}, remoteEp={remoteEp}")
-
-                            // Update endpoint mapping.
-                            endpointMap[clientId] <- remoteEp
-
-                            // Process request and send all response fragments.
-                            let responseFragments = processRequest msgType clientId requestId logicalPayload
-                            for fragment in responseFragments do
-                                client.Send(fragment, fragment.Length, remoteEp) |> ignore
-
-                            Logger.logTrace (fun () -> $"Sent: msgType=0x{responseFragments.[0].[0]:X2}, requestId={requestId}, fragments={responseFragments.Length}")
+                        // Capture remoteEp for this request (avoid reusing mutable variable).
+                        let capturedRemoteEp = IPEndPoint(remoteEp.Address, remoteEp.Port)
 
                         if fragCount = 1us && fragIndex = 0us then
-                            // Single fragment - process immediately.
-                            processAndRespond fragmentPayload
+                            // Single fragment - dispatch to worker.
+                            dispatchWorker msgType clientId requestId fragmentPayload capturedRemoteEp
                         else
                             // Multi-fragment - reassemble.
                             let nowTicks = Stopwatch.GetTimestamp()
@@ -149,9 +149,9 @@ module UdpServer =
                             else
                                 match tryAddFragment state fragIndex fragmentPayload with
                                 | Some logicalPayload ->
-                                    // Reassembly complete - remove from map and process.
+                                    // Reassembly complete - remove from map and dispatch to worker.
                                     reassemblyMap.TryRemove(key) |> ignore
-                                    processAndRespond logicalPayload
+                                    dispatchWorker msgType clientId requestId logicalPayload capturedRemoteEp
                                 | None ->
                                     // More fragments needed.
                                     ()
