@@ -167,51 +167,62 @@ module UdpClient =
         let allocateRequestId () : uint32 =
             uint32 (Interlocked.Increment(&nextRequestIdInt))
 
-        /// Send a request and wait for the response.
-        let sendRequest (requestMsgType: byte) (reqClientId: VpnClientId) (payload: byte[]) : Result<ResponseData, VpnError> =
-            let requestId = allocateRequestId()
-            let expectedMsgType = expectedResponseType requestMsgType
-            let tcs = TaskCompletionSource<ResponseData>(TaskCreationOptions.RunContinuationsAsynchronously)
+        /// Async send a request and wait for the response without blocking.
+        let sendRequestAsync (requestMsgType: byte) (reqClientId: VpnClientId) (payload: byte[]) : Task<Result<ResponseData, VpnError>> =
+            task {
+                let requestId = allocateRequestId()
+                let expectedMsgType = expectedResponseType requestMsgType
+                let tcs = TaskCompletionSource<ResponseData>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-            let pending =
-                {
-                    createdAtTicks = Stopwatch.GetTimestamp()
-                    expectedMsgType = expectedMsgType
-                    clientId = reqClientId
-                    tcs = tcs
-                }
+                let pending =
+                    {
+                        createdAtTicks = Stopwatch.GetTimestamp()
+                        expectedMsgType = expectedMsgType
+                        clientId = reqClientId
+                        tcs = tcs
+                    }
 
-            pendingRequests.[requestId] <- pending
+                pendingRequests.[requestId] <- pending
 
-            try
-                // Build and send all fragments with pacing.
-                let fragments = buildFragments requestMsgType reqClientId requestId payload
-                let mutable fragmentCount = 0
-                for fragment in fragments do
-                    udpClient.Send(fragment, fragment.Length) |> ignore
-                    fragmentCount <- fragmentCount + 1
-                    if fragmentCount % FragmentsYieldEvery = 0 then
-                        Thread.Yield() |> ignore
+                try
+                    // Build and send all fragments with pacing.
+                    let fragments = buildFragments requestMsgType reqClientId requestId payload
+                    let mutable fragmentCount = 0
+                    for fragment in fragments do
+                        udpClient.Send(fragment, fragment.Length) |> ignore
+                        fragmentCount <- fragmentCount + 1
+                        if fragmentCount % FragmentsYieldEvery = 0 then
+                            Thread.Yield() |> ignore
 
-                // Wait for completion with a hard stop timeout.
-                let hardTimeoutMs = RequestTimeoutMs + CleanupIntervalMs
-                if tcs.Task.Wait(hardTimeoutMs) then
-                    Ok tcs.Task.Result
-                else
-                    // Hard timeout - remove pending and return error.
+                    // Wait for completion with a hard stop timeout without blocking.
+                    let hardTimeoutMs = RequestTimeoutMs + CleanupIntervalMs
+                    let! completed = Task.WhenAny(tcs.Task, Task.Delay(hardTimeoutMs, clientCts.Token))
+
+                    if Object.ReferenceEquals(completed, tcs.Task) then
+                        return Ok tcs.Task.Result
+                    else
+                        // Hard timeout - remove pending and return error.
+                        pendingRequests.TryRemove(requestId) |> ignore
+                        return Error (ConnectionErr ConnectionTimeoutErr)
+                with
+                | :? AggregateException as ae when (ae.InnerException :? TimeoutException) ->
+                    return Error (ConnectionErr ConnectionTimeoutErr)
+                | :? TimeoutException ->
+                    return Error (ConnectionErr ConnectionTimeoutErr)
+                | :? TaskCanceledException ->
                     pendingRequests.TryRemove(requestId) |> ignore
-                    Error (ConnectionErr ConnectionTimeoutErr)
-            with
-            | :? AggregateException as ae when (ae.InnerException :? TimeoutException) ->
-                Error (ConnectionErr ConnectionTimeoutErr)
-            | :? TimeoutException ->
-                Error (ConnectionErr ConnectionTimeoutErr)
-            | :? SocketException as ex ->
-                pendingRequests.TryRemove(requestId) |> ignore
-                Error (ConnectionErr (ServerUnreachableErr ex.Message))
-            | ex ->
-                pendingRequests.TryRemove(requestId) |> ignore
-                Error (ConnectionErr (ServerUnreachableErr ex.Message))
+                    return Error (ConnectionErr ConnectionTimeoutErr)
+                | :? SocketException as ex ->
+                    pendingRequests.TryRemove(requestId) |> ignore
+                    return Error (ConnectionErr (ServerUnreachableErr ex.Message))
+                | ex ->
+                    pendingRequests.TryRemove(requestId) |> ignore
+                    return Error (ConnectionErr (ServerUnreachableErr ex.Message))
+            }
+
+        /// Send a request and wait for the response (synchronous wrapper).
+        let sendRequest (requestMsgType: byte) (reqClientId: VpnClientId) (payload: byte[]) : Result<ResponseData, VpnError> =
+            (sendRequestAsync requestMsgType reqClientId payload).GetAwaiter().GetResult()
 
         /// Parse and validate the response from ResponseData.
         let parseResponse (expectedMsgType: byte) (expectedClientId: VpnClientId) (responseData: ResponseData) : Result<byte[], VpnError> =
@@ -305,4 +316,4 @@ module UdpClient =
 
 
     let createVpnUdpClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
-        VpnUdpClient(clientAccessInfo) :> IVpnClient
+        new VpnUdpClient(clientAccessInfo) :> IVpnClient
