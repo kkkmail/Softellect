@@ -1,0 +1,42 @@
+#    0.060 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+#    0.187 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+#    0.361 # INFO  # .ctor # "VpnUdpClient created - Server: Ip4 "72.167.224.50":45001, ClientId: 10e38c19-d220-4852-8589-82eca51ade92, Local=192.168.2.92:53571"
+#    0.389 # INFO  # StartAsync # "Starting VPN Client Service..."
+#    0.389 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+#    0.398 # INFO  # enableKillSwitch # "Kill-switch enabled"
+#    0.399 # INFO  # authenticate # "Authenticating with server..."
+#    1.233 # INFO  # authenticate # "Authenticated successfully. Assigned IP: Ip4 "10.66.77.2""
+#    1.237 # INFO  # start # "Starting tunnel with adapter: SoftellectVPN"
+#    2.235 # INFO  # start # "Setting DNS server to: 10.66.77.1"
+#   13.407 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 delete route 72.167.224.50/32 "Wi-Fi" 192.168.2.1'."
+#   13.480 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
+#   13.551 # INFO  # addHostRoute # "Successfully executed: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
+#   13.551 # INFO  # start # "Adding route 0.0.0.0/1 via 10.66.77.1"
+#   13.631 # INFO  # start # "Adding route 128.0.0.0/1 via 10.66.77.1"
+#   13.702 # INFO  # start # "Tunnel started with IP: Ip4 "10.66.77.2""
+#   13.703 # INFO  # StartAsync # "Tunnel started with IP: Ip4 "10.66.77.2""
+#   13.704 # INFO  # StartAsync # "Kill-switch: permitted VPN local address Ip4 "10.66.77.2""
+#   13.706 # INFO  # StartAsync # "VPN Client connected with IP: Ip4 "10.66.77.2""
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+#   18.202 # WARN  # receivePackets # "ERROR: 'ConnectionErr ConnectionTimeoutErr'."
+#   18.202 # WARN  # receiveLoopAsync # "Failed to receive packets: ConnectionErr ConnectionTimeoutErr"
+#   21.627 # WARN  # sendLoopAsync # "Failed to send 21 packets to server: ConnectionErr ConnectionTimeoutErr"
+#   34.043 # WARN  # receivePackets # "ERROR: 'ConnectionErr ConnectionTimeoutErr'."
+#   34.043 # WARN  # receiveLoopAsync # "Failed to receive packets: ConnectionErr ConnectionTimeoutErr"
+#   37.616 # WARN  # receivePackets # "ERROR: 'ConnectionErr ConnectionTimeoutErr'."
+#   37.617 # WARN  # receiveLoopAsync # "Failed to receive packets: ConnectionErr ConnectionTimeoutErr"
+#   53.850 # WARN  # receivePackets # "ERROR: 'ConnectionErr ConnectionTimeoutErr'."
+#   53.851 # WARN  # receiveLoopAsync # "Failed to receive packets: ConnectionErr ConnectionTimeoutErr"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+#   57.646 # INFO  # StopAsync # "Stopping VPN Client Service..."
+#   57.809 # INFO  # stop # "Stopping tunnel"
+#   57.925 # INFO  # stop # "Tunnel stopped"
+#   57.925 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+#   57.927 # INFO  # disableKillSwitch # "Kill-switch disabled"
+#   57.927 # INFO  # StopAsync # "VPN Client Service stopped"
