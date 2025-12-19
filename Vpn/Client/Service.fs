@@ -17,6 +17,16 @@ open Softellect.Vpn.Core.PacketDebug
 
 module Service =
 
+    [<Literal>]
+    let MaxSendPacketsPerCall = 64
+
+    [<Literal>]
+    let MaxSendBytesPerCall = 65536
+
+    [<Literal>]
+    let ReceiveEmptyBackoffMs = 10
+
+
     type VpnClientServiceData =
         {
             clientAccessInfo : VpnClientAccessInfo
@@ -146,16 +156,18 @@ module Service =
                         let! firstPacket = t.outboundPacketReader.ReadAsync(cts.Token).AsTask()
                         let packets = ResizeArray<byte[]>()
                         packets.Add(firstPacket)
+                        let mutable totalBytes = firstPacket.Length
 
-                        // Drain all additional available packets using TryRead
+                        // Drain additional packets, but stop when limits are reached
                         let mutable hasMore = true
-                        while hasMore do
+                        while hasMore && packets.Count < MaxSendPacketsPerCall && totalBytes < MaxSendBytesPerCall do
                             match t.outboundPacketReader.TryRead() with
-                            | true, packet -> packets.Add(packet)
+                            | true, packet ->
+                                packets.Add(packet)
+                                totalBytes <- totalBytes + packet.Length
                             | false, _ -> hasMore <- false
 
                         let packetsArray = packets.ToArray()
-                        let totalBytes = packetsArray |> Array.sumBy (fun p -> p.Length)
                         Logger.logTrace (fun () -> $"Client sending {packetsArray.Length} packets to server, total {totalBytes} bytes")
                         Logger.logTracePackets (packetsArray, (fun () -> $"Client sending packet to server: "))
 
@@ -184,8 +196,8 @@ module Service =
                                 | Error msg ->
                                     Logger.logWarn $"Failed to inject packet: {msg}"
                         | Ok None ->
-                            // No packets available - immediately call again (WCF provides blocking)
-                            ()
+                            // No packets available - backoff to prevent busy polling
+                            Thread.Sleep(ReceiveEmptyBackoffMs)
                         | Error e ->
                             Logger.logWarn $"Failed to receive packets: %A{e}"
                     with

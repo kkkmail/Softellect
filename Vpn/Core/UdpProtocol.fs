@@ -111,19 +111,47 @@ module UdpProtocol =
     /// Build fragments from a logical payload.
     /// Returns an array of datagrams, each containing base header + frag header + fragment payload.
     /// For payloads that fit in a single fragment, returns a single-element array with fragIndex=0, fragCount=1.
+    /// This implementation avoids per-fragment Array.sub allocations by copying directly into datagram buffers.
     let buildFragments (msgType: byte) (clientId: VpnClientId) (requestId: uint32) (payload: byte[]) : byte[][] =
+        let fullHeaderSize = HeaderSize + FragHeaderSize
+        let guidBytes = clientId.value.ToByteArray()
+        let requestIdBytes = BitConverter.GetBytes(requestId)
+
         if payload.Length <= MaxPayloadPerFragment then
-            // Single fragment case.
-            [| buildFragmentDatagram msgType clientId requestId 0us 1us payload |]
+            // Single fragment case - build datagram directly.
+            let result = Array.zeroCreate (fullHeaderSize + payload.Length)
+            result.[0] <- msgType
+            Array.Copy(guidBytes, 0, result, 1, 16)
+            Array.Copy(requestIdBytes, 0, result, 17, 4)
+            // fragIndex = 0
+            result.[21] <- 0uy
+            result.[22] <- 0uy
+            // fragCount = 1
+            result.[23] <- 1uy
+            result.[24] <- 0uy
+            Array.Copy(payload, 0, result, fullHeaderSize, payload.Length)
+            [| result |]
         else
             // Calculate number of fragments needed.
             let fragCount = (payload.Length + MaxPayloadPerFragment - 1) / MaxPayloadPerFragment
             let fragments = Array.zeroCreate fragCount
+            let fragCountBytes = BitConverter.GetBytes(uint16 fragCount)
+
             for i = 0 to fragCount - 1 do
                 let offset = i * MaxPayloadPerFragment
                 let length = min MaxPayloadPerFragment (payload.Length - offset)
-                let fragmentPayload = Array.sub payload offset length
-                fragments.[i] <- buildFragmentDatagram msgType clientId requestId (uint16 i) (uint16 fragCount) fragmentPayload
+                let fragIndexBytes = BitConverter.GetBytes(uint16 i)
+
+                // Allocate datagram buffer and copy header + payload directly (no intermediate Array.sub).
+                let result = Array.zeroCreate (fullHeaderSize + length)
+                result.[0] <- msgType
+                Array.Copy(guidBytes, 0, result, 1, 16)
+                Array.Copy(requestIdBytes, 0, result, 17, 4)
+                Array.Copy(fragIndexBytes, 0, result, 21, 2)
+                Array.Copy(fragCountBytes, 0, result, 23, 2)
+                Array.Copy(payload, offset, result, fullHeaderSize, length)
+                fragments.[i] <- result
+
             fragments
 
 

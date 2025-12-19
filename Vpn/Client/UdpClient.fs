@@ -17,6 +17,9 @@ open Softellect.Vpn.Core.UdpProtocol
 
 module UdpClient =
 
+    [<Literal>]
+    let FragmentsYieldEvery = 32
+
     /// Response data passed through TCS: (msgType, clientId, logicalPayload).
     type private ResponseData = byte * VpnClientId * byte[]
 
@@ -181,10 +184,14 @@ module UdpClient =
             pendingRequests.[requestId] <- pending
 
             try
-                // Build and send all fragments.
+                // Build and send all fragments with pacing.
                 let fragments = buildFragments requestMsgType reqClientId requestId payload
+                let mutable fragmentCount = 0
                 for fragment in fragments do
                     udpClient.Send(fragment, fragment.Length) |> ignore
+                    fragmentCount <- fragmentCount + 1
+                    if fragmentCount % FragmentsYieldEvery = 0 then
+                        Thread.Yield() |> ignore
 
                 // Wait for completion with a hard stop timeout.
                 let hardTimeoutMs = RequestTimeoutMs + CleanupIntervalMs
