@@ -48,11 +48,77 @@ module Service =
         match data.clientAccessInfo.vpnTransportProtocol with
         | WCF_Tunnel -> createVpnWcfClient data.clientAccessInfo
         | UDP_Tunnel -> createVpnUdpClient data.clientAccessInfo
-        | UDP_Push -> createVpnUdpClient data.clientAccessInfo  // Use legacy UDP for auth only
+        // | UDP_Push -> createVpnUdpClient data.clientAccessInfo  // Use legacy UDP for auth only
+        | UDP_Push -> failwith $"You are not supposed to call this method for {nameof UDP_Push}."
+
+
+    let private getServerIp (data: VpnClientServiceData) =
+        match data.clientAccessInfo.serverAccessInfo with
+        | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
+        | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
+
+
+    let private getServerIpAddress (data: VpnClientServiceData) =
+        match data.clientAccessInfo.serverAccessInfo with
+        | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
+        | HttpServiceInfo info -> info.httpServiceAddress.value
+
+
+    let private getServerPort (data: VpnClientServiceData) =
+        match data.clientAccessInfo.serverAccessInfo with
+        | NetTcpServiceInfo info -> info.netTcpServicePort.value
+        | HttpServiceInfo info -> info.httpServicePort.value
+
+
+    let private enableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option ref)=
+        // Logger.logInfo "Kill-switch is turned off..."
+        // Ok ()
+
+        Logger.logInfo "Enabling kill-switch..."
+        let ks = new KillSwitch()
+        let serverIp = getServerIp data
+        let serverPort = getServerPort data
+        let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
+
+        let result = ks.Enable(serverIp, serverPort, exclusions)
+
+        if result.IsSuccess then
+            killSwitch.Value <- Some ks
+            Logger.logInfo "Kill-switch enabled"
+            Ok ()
+        else
+            let errMsg = match result.Error with | null -> "Unknown error" | e -> e
+            Logger.logError $"Failed to enable kill-switch: {errMsg}"
+            ks.Dispose()
+            Error errMsg
+
+
+    let private disableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option ref) =
+        match killSwitch.Value with
+        | Some ks ->
+            Logger.logInfo "Disabling kill-switch..."
+            ks.Disable() |> ignore
+            ks.Dispose()
+            killSwitch.Value <- None
+            Logger.logInfo "Kill-switch disabled"
+        | None -> ()
+
+
+    let getTunnelConfig (data: VpnClientServiceData) gatewayIp assignedIp =
+        {
+            adapterName = AdapterName
+            assignedIp = assignedIp
+            subnetMask = Ip4 "255.255.255.0"
+            gatewayIp = gatewayIp
+            dnsServerIp = gatewayIp
+            serverPublicIp = getServerIpAddress data
+            physicalGatewayIp = Ip4 "192.168.2.1"
+            physicalInterfaceName = "Wi-Fi"
+        }
 
 
     type VpnClientService(data: VpnClientServiceData) =
-        let mutable state = Disconnected
+        let mutable connectionState = Disconnected
         let mutable tunnel : Tunnel option = None
         let mutable killSwitch : KillSwitch option = None
         let mutable sendTask : Task option = None
@@ -61,53 +127,6 @@ module Service =
         let cts = new CancellationTokenSource()
 
         let vpnClient = createVpnClient data
-
-        let getServerIp () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
-            | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
-
-        let getServerIpAddress () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
-            | HttpServiceInfo info -> info.httpServiceAddress.value
-
-        let getServerPort () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServicePort.value
-            | HttpServiceInfo info -> info.httpServicePort.value
-
-        let enableKillSwitch () =
-            // Logger.logInfo "Kill-switch is turned off..."
-            // Ok ()
-
-            Logger.logInfo "Enabling kill-switch..."
-            let ks = new KillSwitch()
-            let serverIp = getServerIp()
-            let serverPort = getServerPort()
-            let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
-
-            let result = ks.Enable(serverIp, serverPort, exclusions)
-
-            if result.IsSuccess then
-                killSwitch <- Some ks
-                Logger.logInfo "Kill-switch enabled"
-                Ok ()
-            else
-                let errMsg = match result.Error with | null -> "Unknown error" | e -> e
-                Logger.logError $"Failed to enable kill-switch: {errMsg}"
-                ks.Dispose()
-                Error errMsg
-
-        let disableKillSwitch () =
-            match killSwitch with
-            | Some ks ->
-                Logger.logInfo "Disabling kill-switch..."
-                ks.Disable() |> ignore
-                ks.Dispose()
-                killSwitch <- None
-                Logger.logInfo "Kill-switch disabled"
-            | None -> ()
 
         let authenticate () =
             Logger.logInfo "Authenticating with server..."
@@ -128,18 +147,7 @@ module Service =
 
         let startTunnel (assignedIp: VpnIpAddress) =
             let gatewayIp = serverVpnIp.value
-            let config =
-                {
-                    adapterName = AdapterName
-                    assignedIp = assignedIp
-                    subnetMask = Ip4 "255.255.255.0"
-                    gatewayIp = gatewayIp
-                    dnsServerIp = gatewayIp
-                    serverPublicIp = getServerIpAddress()
-                    physicalGatewayIp = Ip4 "192.168.2.1"
-                    physicalInterfaceName = "Wi-Fi"
-                }
-
+            let config = getTunnelConfig data gatewayIp assignedIp
             let t = Tunnel(config, cts.Token)
 
             match t.start() with
@@ -211,9 +219,9 @@ module Service =
                 Logger.logInfo "Starting VPN Client Service..."
 
                 // Enable kill-switch FIRST (absolute kill-switch requirement)
-                match enableKillSwitch() with
+                match enableKillSwitch data (ref killSwitch) with
                 | Ok () ->
-                    state <- Connecting
+                    connectionState <- Connecting
 
                     match authenticate() with
                     | Ok assignedIp ->
@@ -230,16 +238,16 @@ module Service =
                                     Logger.logInfo $"Kill-switch: permitted VPN local address {assignedIp.value}"
                                 else
                                     let errMsg = match r.Error with | null -> "Unknown error" | e -> e
-                                    state <- Failed errMsg
+                                    connectionState <- Failed errMsg
                                     Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
                                     Task.CompletedTask |> ignore
                             | None ->
-                                state <- Failed "Kill-switch is not enabled"
+                                connectionState <- Failed "Kill-switch is not enabled"
                                 Logger.logError "Kill-switch instance is missing after Enable()"
                                 Task.CompletedTask |> ignore
 
                             // Only start tasks if the kill-switch permit succeeded
-                            match state with
+                            match connectionState with
                             | Failed _ -> Task.CompletedTask
                             | _ ->
 
@@ -251,21 +259,21 @@ module Service =
                                 receiveTask <- Some (Task.Run(fun () -> receiveLoopAsync t))
                             | None -> ()
 
-                            state <- Connected assignedIp
+                            connectionState <- Connected assignedIp
                             Logger.logInfo $"VPN Client connected with IP: {assignedIp.value}"
                             Task.CompletedTask
                         | Error msg ->
-                            state <- Failed msg
+                            connectionState <- Failed msg
                             Logger.logError $"Failed to start tunnel: {msg}"
                             // Kill-switch remains active - traffic blocked
                             Task.CompletedTask
                     | Error msg ->
-                        state <- Failed msg
+                        connectionState <- Failed msg
                         Logger.logError $"Authentication failed: {msg}"
                         // Kill-switch remains active - traffic blocked
                         Task.CompletedTask
                 | Error msg ->
-                    state <- Failed msg
+                    connectionState <- Failed msg
                     Logger.logError $"Failed to enable kill-switch: {msg}"
                     Task.FromException(Exception($"Failed to enable kill-switch: {msg}"))
 
@@ -293,14 +301,18 @@ module Service =
                 | None -> ()
 
                 // Disable kill-switch LAST
-                disableKillSwitch()
+                disableKillSwitch data (ref killSwitch)
 
-                state <- Disconnected
+                connectionState <- Disconnected
                 Logger.logInfo "VPN Client Service stopped"
                 Task.CompletedTask
 
-        member _.State = state
-        member _.IsKillSwitchActive = killSwitch.IsSome && killSwitch.Value.IsEnabled
+        member _.state = connectionState
+
+        member _.isKillSwitchActive =
+            match killSwitch with
+            | Some k when k.IsEnabled -> true
+            | _ -> false
 
 
     // ==========================================================================
@@ -326,50 +338,6 @@ module Service =
         let mutable running = false
         let cts = new CancellationTokenSource()
 
-        let getServerIp () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
-            | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
-
-        let getServerIpAddress () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
-            | HttpServiceInfo info -> info.httpServiceAddress.value
-
-        let getServerPort () =
-            match data.clientAccessInfo.serverAccessInfo with
-            | NetTcpServiceInfo info -> info.netTcpServicePort.value
-            | HttpServiceInfo info -> info.httpServicePort.value
-
-        let enableKillSwitch () =
-            Logger.logInfo "Enabling kill-switch..."
-            let ks = new KillSwitch()
-            let serverIp = getServerIp()
-            let serverPort = getServerPort()
-            let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
-
-            let result = ks.Enable(serverIp, serverPort, exclusions)
-
-            if result.IsSuccess then
-                killSwitch <- Some ks
-                Logger.logInfo "Kill-switch enabled"
-                Ok ()
-            else
-                let errMsg = match result.Error with | null -> "Unknown error" | e -> e
-                Logger.logError $"Failed to enable kill-switch: {errMsg}"
-                ks.Dispose()
-                Error errMsg
-
-        let disableKillSwitch () =
-            match killSwitch with
-            | Some ks ->
-                Logger.logInfo "Disabling kill-switch..."
-                ks.Disable() |> ignore
-                ks.Dispose()
-                killSwitch <- None
-                Logger.logInfo "Kill-switch disabled"
-            | None -> ()
-
         let authenticate () =
             Logger.logInfo "Push: Authenticating with server..."
             let authClient = createAuthWcfClient data.clientAccessInfo
@@ -391,18 +359,7 @@ module Service =
 
         let startTunnel (assignedIp: VpnIpAddress) =
             let gatewayIp = serverVpnIp.value
-            let config =
-                {
-                    adapterName = AdapterName
-                    assignedIp = assignedIp
-                    subnetMask = Ip4 "255.255.255.0"
-                    gatewayIp = gatewayIp
-                    dnsServerIp = gatewayIp
-                    serverPublicIp = getServerIpAddress()
-                    physicalGatewayIp = Ip4 "192.168.2.1"
-                    physicalInterfaceName = "Wi-Fi"
-                }
-
+            let config = getTunnelConfig data gatewayIp assignedIp
             let t = Tunnel(config, cts.Token)
 
             match t.start() with
@@ -441,7 +398,7 @@ module Service =
                 Logger.logInfo "Starting Push VPN Client Service..."
 
                 // Enable kill-switch FIRST.
-                match enableKillSwitch() with
+                match enableKillSwitch data (ref killSwitch) with
                 | Ok () ->
                     state <- Connecting
 
@@ -535,7 +492,7 @@ module Service =
                 | None -> ()
 
                 // Disable kill-switch LAST.
-                disableKillSwitch()
+                disableKillSwitch data (ref killSwitch)
 
                 state <- Disconnected
                 Logger.logInfo "Push VPN Client Service stopped"

@@ -332,7 +332,6 @@ module UdpClient =
     /// This client uses push semantics: sends packets immediately to the server,
     /// receives packets pushed from the server, no polling.
     type VpnPushUdpClient(data: VpnClientAccessInfo) =
-        // let clientId = data.vpnClientId
         let serverIp = data.serverAccessInfo.getIpAddress()
         let serverPort = data.serverAccessInfo.getServicePort().value
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
@@ -371,7 +370,7 @@ module UdpClient =
             sendSeq <- sendSeq + 1u
             seq
 
-        /// UDP receive loop - receives pushed datagrams from server.
+        /// UDP receive loop - receives pushed datagrams from the server.
         let receiveLoop () =
             Logger.logInfo "Receive loop started."
             while not clientCts.Token.IsCancellationRequested do
@@ -545,5 +544,5 @@ module UdpClient =
                 clientCts.Dispose()
 
 
-    let createVpnPushUdpClient (clientAccessInfo: VpnClientAccessInfo) : VpnPushUdpClient =
+    let createVpnPushUdpClient (clientAccessInfo: VpnClientAccessInfo) =
         new VpnPushUdpClient(clientAccessInfo)

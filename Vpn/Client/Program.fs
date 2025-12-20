@@ -57,6 +57,12 @@ module Program =
                     Logger.logError $"Failed to import server public key: %A{e}"
                     Error $"Failed to import server public key: %A{e}"
 
+    let getClientService (serviceData : VpnClientServiceData) =
+        match serviceData.clientAccessInfo.vpnTransportProtocol with
+        | WCF_Tunnel -> VpnClientService(serviceData) :> IHostedService
+        | UDP_Tunnel -> VpnClientService(serviceData) :> IHostedService
+        | UDP_Push -> VpnPushClientService(serviceData) :> IHostedService
+
 
     let vpnClientMain programName argv =
         setLogLevel()
@@ -84,8 +90,8 @@ module Program =
                             | true -> configureServiceLogging (Some (getProjectName())) logging
                             | false -> configureLogging (Some (getProjectName())) logging)
                         .ConfigureServices(fun hostContext services ->
-                            let service = new VpnClientService(serviceData)
-                            services.AddSingleton<VpnClientService>(service) |> ignore
+                            let service = getClientService serviceData
+                            // services.AddSingleton<IHostedService>(service) |> ignore
                             services.AddSingleton<IHostedService>(service :> IHostedService) |> ignore)
                         .Build()
 
