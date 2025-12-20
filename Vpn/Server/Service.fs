@@ -20,6 +20,71 @@ module Service =
     type IVpnServiceInternal =
         abstract ReceivePacketsWithWait : VpnClientId * int * int -> Result<byte[][] option, VpnError>
 
+
+    type AuthService(data: VpnServerData) =
+        let mutable started = false
+
+        let registryData : ClientRegistryData =
+            {
+                serverAccessInfo = data.serverAccessInfo
+                serverPrivateKey = data.serverPrivateKey
+                serverPublicKey = data.serverPublicKey
+            }
+
+        let registry = ClientRegistry(registryData)
+        let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+
+        /// Verify the timestamp is recent (within 5 minutes)
+        let verifyAuthRequest (request: VpnAuthRequest) =
+            let timeDiff = DateTime.UtcNow - request.timestamp
+            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
+            else Ok ()
+
+        interface IAuthService with
+            member _.authenticate request =
+                Logger.logInfo $"Authentication request from client: {request.clientId.value}"
+
+                match verifyAuthRequest request with
+                | Ok () ->
+                    // Create an auth session.
+                    match registry.createSession(request.clientId) with
+                    | Ok session ->
+                        // Also create push session for push dataplane clients.
+                        registry.createPushSession(request.clientId) |> ignore
+
+                        let response =
+                            {
+                                assignedIp = session.assignedIp
+                                serverPublicIp = serverVpnIp
+                            }
+                        Ok response
+                    | Error e -> Error e
+                | Error e -> Error e
+
+        interface IHostedService with
+            member _.StartAsync(cancellationToken: CancellationToken) =
+                if started then
+                    Logger.logInfo "VPN Service already started"
+                    Task.CompletedTask
+                else
+                    Logger.logInfo "Starting VPN Service..."
+                    started <- true
+                    Logger.logInfo "VPN Service started successfully"
+                    Task.CompletedTask
+
+            member _.StopAsync(cancellationToken: CancellationToken) =
+                if not started then
+                    Logger.logInfo "VPN Service already stopped"
+                    Task.CompletedTask
+                else
+                    Logger.logInfo "Stopping VPN Service..."
+                    started <- false
+                    Logger.logInfo "VPN Service stopped"
+                    Task.CompletedTask
+
+        member _.clientRegistry = registry
+
+
     type VpnService(data: VpnServerData) =
         let mutable started = false
 
@@ -78,8 +143,12 @@ module Service =
 
                 match verifyAuthRequest request with
                 | Ok () ->
+                    // Create a legacy session for backwards compatibility.
                     match registry.createSession(request.clientId) with
                     | Ok session ->
+                        // Also create push session for push dataplane clients.
+                        registry.createPushSession(request.clientId) |> ignore
+
                         let response =
                             {
                                 assignedIp = session.assignedIp
@@ -92,8 +161,12 @@ module Service =
             /// This function is called sendPackets to match the client side.
             /// From the server side it is receiving packets sent by a client.
             member _.sendPackets (clientId, packets) =
-                match registry.tryGetSession(clientId) with
-                | Some _ ->
+                // Check for the push session first, then the legacy session.
+                let hasSession =
+                    registry.tryGetPushSession(clientId).IsSome ||
+                    registry.tryGetSession(clientId).IsSome
+
+                if hasSession then
                     registry.updateActivity(clientId)
                     Logger.logTrace (fun () -> $"Server received {packets.Length} packets from client {clientId.value}.")
                     Logger.logTracePackets (packets, (fun () -> $"Server received packets from client:  '{clientId.value}': "))
@@ -105,7 +178,8 @@ module Service =
                         |> foldUnitResults VpnError.addError
 
                     result
-                | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
+                else
+                    Error (clientId |> SessionExpiredErr |> ServerErr)
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
@@ -175,4 +249,4 @@ module Service =
                     Logger.logInfo "VPN Service stopped"
                     Task.CompletedTask
 
-        member _.Registry = registry
+        member _.clientRegistry = registry

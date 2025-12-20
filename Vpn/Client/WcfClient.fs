@@ -58,3 +58,28 @@ module WcfClient =
 
     let createVpnWcfClient (clientAccessInfo: VpnClientAccessInfo) : IVpnClient =
         VpnWcfClient(clientAccessInfo) :> IVpnClient
+
+
+    type AuthWcfClient(data: VpnClientAccessInfo) =
+        let url = data.serverAccessInfo.getUrl()
+        let commType = data.serverAccessInfo.communicationType
+
+        do Logger.logInfo $"AuthWcfClient created - URL: '{url}', CommType: '%A{commType}'"
+        do Logger.logInfo $"AuthWcfClient - serverAccessInfo: '%A{data.serverAccessInfo}'"
+
+        let getService() =
+            Logger.logTrace (fun () -> $"AuthWcfClient.getService - About to call tryGetWcfService with URL: '{url}', CommType: '%A{commType}'")
+            let result = tryGetWcfService<IAuthWcfService> commType url
+            match result with
+            | Ok _ -> Logger.logTrace (fun () -> "AuthWcfClient.getService - Successfully created WCF service proxy")
+            | Error e -> Logger.logError $"AuthWcfClient.getService - Failed to create WCF service proxy: %A{e}"
+            result
+
+        interface IAuthClient with
+            member _.authenticate request =
+                Logger.logTrace (fun () -> $"authenticate: Sending auth request for client {request.clientId.value}")
+                tryCommunicate getService (fun s b -> s.authenticate b) toAuthError request
+
+
+    let createAuthWcfClient (clientAccessInfo: VpnClientAccessInfo) : IAuthClient =
+        AuthWcfClient(clientAccessInfo) :> IAuthClient
