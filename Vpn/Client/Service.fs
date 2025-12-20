@@ -70,7 +70,7 @@ module Service =
         | HttpServiceInfo info -> info.httpServicePort.value
 
 
-    let private enableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option ref)=
+    let private enableKillSwitch (data: VpnClientServiceData)=
         // Logger.logInfo "Kill-switch is turned off..."
         // Ok ()
 
@@ -83,9 +83,8 @@ module Service =
         let result = ks.Enable(serverIp, serverPort, exclusions)
 
         if result.IsSuccess then
-            killSwitch.Value <- Some ks
             Logger.logInfo "Kill-switch enabled"
-            Ok ()
+            Ok ks
         else
             let errMsg = match result.Error with | null -> "Unknown error" | e -> e
             Logger.logError $"Failed to enable kill-switch: {errMsg}"
@@ -93,13 +92,12 @@ module Service =
             Error errMsg
 
 
-    let private disableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option ref) =
-        match killSwitch.Value with
+    let private disableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option) =
+        match killSwitch with
         | Some ks ->
             Logger.logInfo "Disabling kill-switch..."
             ks.Disable() |> ignore
             ks.Dispose()
-            killSwitch.Value <- None
             Logger.logInfo "Kill-switch disabled"
         | None -> ()
 
@@ -219,15 +217,16 @@ module Service =
                 Logger.logInfo "Starting VPN Client Service..."
 
                 // Enable kill-switch FIRST (absolute kill-switch requirement)
-                match enableKillSwitch data (ref killSwitch) with
-                | Ok () ->
+                match enableKillSwitch data with
+                | Ok ks ->
+                    killSwitch <- Some ks
                     connectionState <- Connecting
 
                     match authenticate() with
                     | Ok assignedIp ->
                         match startTunnel assignedIp with
                         | Ok () ->
-                            Logger.logInfo $"Tunnel started with IP: {assignedIp.value}"
+                            Logger.logInfo $"Tunnel started with IP: '{assignedIp.value.value}'"
 
                             // Permit traffic from VPN local address in kill-switch
                             let assignedIpAddress = assignedIp.value.ipAddress
@@ -301,7 +300,8 @@ module Service =
                 | None -> ()
 
                 // Disable kill-switch LAST
-                disableKillSwitch data (ref killSwitch)
+                disableKillSwitch data killSwitch
+                killSwitch <- None
 
                 connectionState <- Disconnected
                 Logger.logInfo "VPN Client Service stopped"
@@ -358,6 +358,7 @@ module Service =
                 Error $"Authentication error: '%A{e}'."
 
         let startTunnel (assignedIp: VpnIpAddress) =
+            Logger.logInfo $"Starting tunnel with assignedIp: '{assignedIp.value.value}'."
             let gatewayIp = serverVpnIp.value
             let config = getTunnelConfig data gatewayIp assignedIp
             let t = Tunnel(config, cts.Token)
@@ -398,18 +399,20 @@ module Service =
                 Logger.logInfo "Starting Push VPN Client Service..."
 
                 // Enable kill-switch FIRST.
-                match enableKillSwitch data (ref killSwitch) with
-                | Ok () ->
+                match enableKillSwitch data with
+                | Ok ks ->
+                    killSwitch <- Some ks
                     state <- Connecting
 
                     match authenticate() with
                     | Ok assignedIp ->
                         match startTunnel assignedIp with
                         | Ok () ->
-                            Logger.logInfo $"Push: Tunnel started with IP: {assignedIp.value}"
+                            Logger.logInfo $"Push: Tunnel started with IP: '{assignedIp.value.value}'."
 
                             // Permit traffic from VPN local address in kill-switch.
                             let assignedIpAddress = assignedIp.value.ipAddress
+
                             match killSwitch with
                             | Some ks ->
                                 let r = ks.AddPermitFilterForLocalHost(assignedIpAddress, $"Permit VPN Local {assignedIp.value}")
@@ -434,24 +437,24 @@ module Service =
 
                             match tunnel with
                             | Some t ->
-                                // Create and start push UDP client.
+                                Logger.logInfo "Creating and starting push UDP client."
                                 let pc = createVpnPushUdpClient data.clientAccessInfo
 
-                                // Set up direct injection from push client to tunnel.
+                                Logger.logInfo "Setting up direct injection from push client to tunnel."
                                 pc.setPacketInjector(TunnelInjector(t))
 
-                                // Start push client loops.
+                                Logger.logInfo "Starting push client loops."
                                 pc.start()
                                 pushClient <- Some pc
 
-                                // Start send loop (tunnel -> push client).
+                                Logger.logInfo "Starting send loop (tunnel -> push client) - sendLoopAsync."
                                 sendTask <- Some (Task.Run(fun () -> sendLoopAsync t pc))
 
                                 state <- Connected assignedIp
                                 Logger.logInfo $"Push VPN Client connected with IP: {assignedIp.value}"
                             | None ->
-                                state <- Failed "Tunnel not available"
-                                Logger.logError "Tunnel not available after start"
+                                state <- Failed "Push tunnel not available."
+                                Logger.logError "Push tunnel not available after start."
 
                             Task.CompletedTask
                         | Error msg ->
@@ -490,9 +493,9 @@ module Service =
                     t.stop()
                     tunnel <- None
                 | None -> ()
-
                 // Disable kill-switch LAST.
-                disableKillSwitch data (ref killSwitch)
+                disableKillSwitch data killSwitch
+                killSwitch <- None
 
                 state <- Disconnected
                 Logger.logInfo "Push VPN Client Service stopped"
