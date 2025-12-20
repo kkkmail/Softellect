@@ -399,7 +399,9 @@ module UdpServer =
             match registry.tryGetPushSession(clientId) with
             | Some _ ->
                 match service.sendPackets (clientId, [| payload |]) with
-                | Ok () -> ()
+                | Ok () ->
+                    Logger.logInfo $"Push: registry: {registry.GetHashCode()} sent {payload.Length} bytes to '{clientId.value}'."
+                    ()
                 | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{clientId.value}', error: '%A{e}'."
             | None ->
                 pushStats.UnknownClientDrops.Increment()

@@ -55,7 +55,8 @@ module Service =
 
                         match registry.createPushSession(request.clientId) with
                         | Ok p ->
-                            Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}', push session: '%A{p}'."
+                            // , push session: '%A{p.sendSeq}' // - this is too much.
+                            Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}'."
                         | Error e ->
                             Logger.logInfo $"Failed to create push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}', error: '%A{e}'."
 
