@@ -11,8 +11,9 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Wcf.Common
 
 module AppSettings =
-    let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Tunnel
     // let getVpnTransportProtocol() = VpnTransportProtocol.WCF_Tunnel
+    // let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Tunnel
+    let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
