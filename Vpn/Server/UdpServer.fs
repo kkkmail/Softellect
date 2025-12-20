@@ -80,7 +80,7 @@ module UdpServer =
             let result =
                 match service with
                 | :? IVpnServiceInternal as internalService ->
-                    internalService.ReceivePacketsWithWait(clientId, receiveRequest.maxWaitMs, receiveRequest.maxPackets)
+                    internalService.receivePacketsWithWait(clientId, receiveRequest.maxWaitMs, receiveRequest.maxPackets)
                 | _ ->
                     service.receivePackets clientId
 
@@ -285,15 +285,16 @@ module UdpServer =
 
     /// Combined UDP server that handles both legacy (request/response) and push dataplane protocols.
     /// Distinguishes between protocols by checking the magic number at the start of each datagram.
-    type VpnCombinedUdpHostedService(data: VpnServerData, service: IVpnService, registry: ClientRegistry) =
+    type VpnCombinedUdpHostedService(data: VpnServerData, service: IVpnPushService, registry: ClientRegistry) =
     // type VpnCombinedUdpHostedService(data: VpnServerData, registry: ClientRegistry) =
+        do Logger.logInfo $"Using registry: {registry.GetHashCode()}."
+
         let serverPort = data.serverAccessInfo.serviceAccessInfo.getServicePort().value
         let endpointMap = ConcurrentDictionary<VpnClientId, IPEndPoint>()
         let reassemblyMap = ConcurrentDictionary<ServerReassemblyKey, ReassemblyState>()
         let pushStats = ServerPushStats()
         let mutable udpClient : System.Net.Sockets.UdpClient option = None
         let mutable cancellationTokenSource : CancellationTokenSource option = None
-
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
 
         // Bounded channel for legacy work items.
@@ -335,7 +336,7 @@ module UdpServer =
         //     let result =
         //         match service with
         //         | :? IVpnServiceInternal as internalService ->
-        //             internalService.ReceivePacketsWithWait(clientId, receiveRequest.maxWaitMs, receiveRequest.maxPackets)
+        //             internalService.receivePacketsWithWait(clientId, receiveRequest.maxWaitMs, receiveRequest.maxPackets)
         //         | _ ->
         //             service.receivePackets clientId
         //
@@ -399,7 +400,7 @@ module UdpServer =
             | Some _ ->
                 match service.sendPackets (clientId, [| payload |]) with
                 | Ok () -> ()
-                | Error e -> Logger.logWarn $"Push: Failed to process packet from {clientId.value}: %A{e}"
+                | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{clientId.value}', error: '%A{e}'."
             | None ->
                 pushStats.UnknownClientDrops.Increment()
                 Logger.logTrace (fun () -> $"Push: Dropped DATA from unknown client {clientId.value}")
@@ -525,7 +526,6 @@ module UdpServer =
                                     pushStats.NoEndpointDrops.Increment()
                     with
                     | :? OperationCanceledException -> ()
-                    | :? TaskCanceledException -> ()
                     | ex when ct.IsCancellationRequested -> ()
                     | ex ->
                         Logger.logError $"Push UDP send error: {ex.Message}"
@@ -576,7 +576,7 @@ module UdpServer =
                 Task.CompletedTask
 
 
-    let getCombinedUdpHostedService (data: VpnServerData) (service: IVpnService) (registry: ClientRegistry) : IHostedService =
+    let getCombinedUdpHostedService (data: VpnServerData) (service: IVpnPushService) (registry: ClientRegistry) : IHostedService =
         VpnCombinedUdpHostedService(data, service, registry) :> IHostedService
 
 

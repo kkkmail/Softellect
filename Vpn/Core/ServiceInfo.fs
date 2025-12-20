@@ -29,6 +29,12 @@ module ServiceInfo =
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
 
 
+    type IVpnPushService =
+        inherit IHostedService
+        abstract sendPackets : VpnClientId * byte[][] -> VpnUnitResult
+        abstract receivePackets : VpnClientId -> VpnPacketsResult
+
+
     type IVpnService =
         inherit IHostedService
         abstract authenticate : VpnAuthRequest -> VpnAuthResult

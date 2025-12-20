@@ -109,7 +109,7 @@ module ClientRegistry =
             Logger.logInfo $"Removed session for client {clientId.value}"
 
         member _.enqueuePacketForClient(clientId: VpnClientId, packet: byte[]) =
-            // Try push session first (preferred for push dataplane).
+            // Try the push session first (preferred for push dataplane).
             match pushSessions.TryGetValue(clientId) with
             | true, pushSession ->
                 pushSession.pendingPackets.Enqueue(packet)
