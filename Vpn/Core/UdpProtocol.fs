@@ -45,11 +45,6 @@ module UdpProtocol =
     [<Literal>]
     let PushMsgTypeControl = 3uy
 
-    // /// Push header layout:
-    // /// magic (4) + version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) = 32 bytes
-    // [<Literal>]
-    // let PushHeaderSize = 32
-
     /// Push header layout:
     /// version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) = 28 bytes
     [<Literal>]
@@ -152,16 +147,16 @@ module UdpProtocol =
         if data.Length < PushHeaderSize then
             Error ()
         else
-            let version = data.[4]
+            let version = data.[0]
             if version <> PushVersion then
                 Error ()
             else
-                let msgType = data.[5]
-                let flags = BitConverter.ToUInt16(data, 6)
-                let guidBytes = data.[8..23]
+                let msgType = data.[1]
+                let flags = BitConverter.ToUInt16(data, 2)
+                let guidBytes = data.[4..19]
                 let clientId = Guid(guidBytes) |> VpnClientId
-                let seq = BitConverter.ToUInt32(data, 24)
-                let payloadLen = BitConverter.ToUInt16(data, 28)
+                let seq = BitConverter.ToUInt32(data, 20)
+                let payloadLen = BitConverter.ToUInt16(data, 24)
 
                 let expectedLen = PushHeaderSize + int payloadLen
                 if data.Length < expectedLen then
