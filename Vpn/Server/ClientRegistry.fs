@@ -64,7 +64,7 @@ module ClientRegistry =
 
         member _.enqueuePacketForClient(clientId: VpnClientId, packet: byte[]) =
             match pushSessions.TryGetValue(clientId) with
-            | true, pushSession -> pushSession.pendingPackets.Enqueue(packet)
+            | true, pushSession -> pushSession.pendingPackets.enqueue(packet)
             | false, _ -> false
 
         member _.serverPrivateKey = data.serverPrivateKey
@@ -123,7 +123,7 @@ module ClientRegistry =
         member _.enqueuePushPacket(clientId: VpnClientId, packet: byte[]) : bool =
             match pushSessions.TryGetValue(clientId) with
             | true, session ->
-                session.pendingPackets.Enqueue(packet)
+                session.pendingPackets.enqueue(packet)
             | false, _ -> false
 
         /// Get the next send sequence number for a push client.
@@ -139,7 +139,7 @@ module ClientRegistry =
         member _.getPushSessionsWithPendingPackets() : PushClientSession list =
             pushSessions.Values
             |> Seq.filter (fun s ->
-                s.pendingPackets.Count > 0 &&
+                s.pendingPackets.count > 0 &&
                 s.currentEndpoint.IsSome &&
                 (DateTime.UtcNow - s.lastSeen).TotalSeconds < float PushSessionFreshnessSeconds)
             |> Seq.toList

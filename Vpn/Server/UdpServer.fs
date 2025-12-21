@@ -49,7 +49,7 @@ module UdpServer =
                     ()
                 | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{clientId.value}', error: '%A{e}'."
             | None ->
-                pushStats.UnknownClientDrops.Increment()
+                pushStats.unknownClientDrops.increment()
                 Logger.logTrace (fun () -> $"Push: Dropped DATA from unknown client {clientId.value}")
 
         let receiveLoop (client: System.Net.Sockets.UdpClient) (ct: CancellationToken) =
@@ -61,8 +61,8 @@ module UdpServer =
                         let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
                         let data = client.Receive(&remoteEp)
 
-                        pushStats.UdpRxDatagrams.Increment()
-                        pushStats.UdpRxBytes.AddInt(data.Length)
+                        pushStats.udpRxDatagrams.increment()
+                        pushStats.udpRxBytes.addInt(data.Length)
 
                         match tryParsePushHeader data with
                         | Ok (header, payload) ->
@@ -80,13 +80,13 @@ module UdpServer =
                         | Error () -> Logger.logTrace (fun () -> $"Push: Invalid header from {remoteEp}")
                         cleanupReassemblies ()
 
-                        if pushStats.ShouldLog() then
-                            Logger.logInfo (pushStats.GetSummary())
+                        if pushStats.shouldLog() then
+                            Logger.logInfo (pushStats.getSummary())
                     with
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
                         cleanupReassemblies ()
-                        if pushStats.ShouldLog() then
-                            Logger.logInfo (pushStats.GetSummary())
+                        if pushStats.shouldLog() then
+                            Logger.logInfo (pushStats.getSummary())
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted -> ()
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.MessageSize ->
                         Logger.logWarn "MessageSize: inbound datagram too large — verify client fragmentation; dropping."
@@ -112,7 +112,7 @@ module UdpServer =
                             for session in sessions do
                                 match session.currentEndpoint with
                                 | Some endpoint ->
-                                    match session.pendingPackets.TryDequeue() with
+                                    match session.pendingPackets.tryDequeue() with
                                     | Some packet ->
                                         if packet.Length > PushMaxPayload then
                                             Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
@@ -122,14 +122,14 @@ module UdpServer =
 
                                             try
                                                 client.Send(datagram, datagram.Length, endpoint) |> ignore
-                                                pushStats.UdpTxDatagrams.Increment()
-                                                pushStats.UdpTxBytes.AddInt(datagram.Length)
+                                                pushStats.udpTxDatagrams.increment()
+                                                pushStats.udpTxBytes.addInt(datagram.Length)
                                             with
                                             | ex ->
                                                 Logger.logWarn $"Push: Send failed to {endpoint} for {session.clientId.value}: {ex.Message}"
                                     | None -> ()
                                 | None ->
-                                    pushStats.NoEndpointDrops.Increment()
+                                    pushStats.noEndpointDrops.increment()
                     with
                     | :? OperationCanceledException -> ()
                     | ex when ct.IsCancellationRequested -> ()

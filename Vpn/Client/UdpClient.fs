@@ -82,8 +82,8 @@ module UdpClient =
                     let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
                     let data = udpClient.Receive(&remoteEp)
 
-                    clientPushStats.UdpRxDatagrams.Increment()
-                    clientPushStats.UdpRxBytes.AddInt(data.Length)
+                    clientPushStats.UdpRxDatagrams.increment()
+                    clientPushStats.UdpRxBytes.addInt(data.Length)
 
                     match tryParsePushHeader data with
                     | Ok (header, payload) ->
@@ -94,12 +94,12 @@ module UdpClient =
                                 match injector.injectPacket(payload) with
                                 | Ok () -> ()
                                 | Error msg ->
-                                    clientPushStats.DroppedQueueFullInject.Increment()
+                                    clientPushStats.DroppedQueueFullInject.increment()
                                     Logger.logWarn $"Push client: Failed to inject packet: {msg}"
                             | None ->
                                 // Queue for later injection.
-                                if not (inboundPacketQueue.Enqueue(payload)) then
-                                    clientPushStats.DroppedQueueFullInject.Increment()
+                                if not (inboundPacketQueue.enqueue(payload)) then
+                                    clientPushStats.DroppedQueueFullInject.increment()
                         elif header.msgType = PushMsgTypeKeepalive then
                             Logger.logTrace (fun () -> "Push client: Received keepalive from server")
                         else
@@ -131,15 +131,15 @@ module UdpClient =
             while not clientCts.Token.IsCancellationRequested do
                 try
                     // Wait for packets with a short timeout.
-                    if outboundQueue.Wait(10) then
+                    if outboundQueue.wait(10) then
                         // Dequeue and send up to a batch of packets.
                         let mutable hasMore = true
                         while hasMore do
-                            match outboundQueue.TryDequeue() with
+                            match outboundQueue.tryDequeue() with
                             | Some packet ->
                                 // Check MTU.
                                 if packet.Length > PushMaxPayload then
-                                    clientPushStats.DroppedMtu.Increment()
+                                    clientPushStats.DroppedMtu.increment()
                                     Logger.logWarn $"Push client: Dropping oversized packet ({packet.Length} > {PushMaxPayload})"
                                 else
                                     let seq = getNextSeq()
@@ -147,8 +147,8 @@ module UdpClient =
 
                                     try
                                         udpClient.Send(datagram, datagram.Length) |> ignore
-                                        clientPushStats.UdpTxDatagrams.Increment()
-                                        clientPushStats.UdpTxBytes.AddInt(datagram.Length)
+                                        clientPushStats.UdpTxDatagrams.increment()
+                                        clientPushStats.UdpTxBytes.addInt(datagram.Length)
                                     with
                                     | ex ->
                                         Logger.logWarn $"Push client: Send failed: {ex.Message}"
@@ -219,17 +219,17 @@ module UdpClient =
         /// Enqueue a packet for sending to server.
         /// Returns true if enqueued, false if queue rejected (too large).
         member _.enqueueOutbound(packet: byte[]) : bool =
-            clientPushStats.TunRxPackets.Increment()
-            clientPushStats.TunRxBytes.AddInt(packet.Length)
-            if outboundQueue.Enqueue(packet) then
+            clientPushStats.TunRxPackets.increment()
+            clientPushStats.TunRxBytes.addInt(packet.Length)
+            if outboundQueue.enqueue(packet) then
                 true
             else
-                clientPushStats.DroppedQueueFullOutbound.Increment()
+                clientPushStats.DroppedQueueFullOutbound.increment()
                 false
 
         /// Try to dequeue a received packet (for when the injector is not set).
         member _.tryDequeueInbound() : byte[] option =
-            inboundPacketQueue.TryDequeue()
+            inboundPacketQueue.tryDequeue()
 
         /// Get the inbound queue for waiting.
         member _.inboundQueue = inboundPacketQueue

@@ -185,38 +185,38 @@ module UdpProtocol =
     type BoundedPacketQueue(maxBytes: int, maxPackets: int) =
         let queue = Queue<byte[]>()
         let lockObj = obj()
-        let mutable totalBytes = 0
-        let mutable droppedPackets = 0L
-        let mutable droppedBytes = 0L
+        let mutable totalBytesCount = 0
+        let mutable droppedPacketsCount = 0L
+        let mutable droppedBytesCount = 0L
         let signal = new ManualResetEventSlim(false)
 
         /// Enqueue a packet, dropping oldest if necessary (head-drop).
         /// Returns true if packet was enqueued, false if packet was too large.
-        member _.Enqueue(packet: byte[]) : bool =
+        member _.enqueue(packet: byte[]) : bool =
             if packet.Length > maxBytes then
                 // Single packet exceeds max bytes - reject it
                 false
             else
                 lock lockObj (fun () ->
                     // Drop oldest until we have room
-                    while (totalBytes + packet.Length > maxBytes || queue.Count >= maxPackets) && queue.Count > 0 do
+                    while (totalBytesCount + packet.Length > maxBytes || queue.Count >= maxPackets) && queue.Count > 0 do
                         let dropped = queue.Dequeue()
-                        totalBytes <- totalBytes - dropped.Length
-                        droppedPackets <- droppedPackets + 1L
-                        droppedBytes <- droppedBytes + int64 dropped.Length
+                        totalBytesCount <- totalBytesCount - dropped.Length
+                        droppedPacketsCount <- droppedPacketsCount + 1L
+                        droppedBytesCount <- droppedBytesCount + int64 dropped.Length
 
                     queue.Enqueue(packet)
-                    totalBytes <- totalBytes + packet.Length
+                    totalBytesCount <- totalBytesCount + packet.Length
                     signal.Set()
                 )
                 true
 
         /// Try to dequeue a packet without blocking.
-        member _.TryDequeue() : byte[] option =
+        member _.tryDequeue() : byte[] option =
             lock lockObj (fun () ->
                 if queue.Count > 0 then
                     let packet = queue.Dequeue()
-                    totalBytes <- totalBytes - packet.Length
+                    totalBytesCount <- totalBytesCount - packet.Length
                     if queue.Count = 0 then signal.Reset()
                     Some packet
                 else
@@ -224,13 +224,13 @@ module UdpProtocol =
             )
 
         /// Dequeue up to maxCount packets without blocking.
-        member _.DequeueMany(maxCount: int) : byte[][] =
+        member _.dequeueMany(maxCount: int) : byte[][] =
             lock lockObj (fun () ->
                 let count = min maxCount queue.Count
                 let result = Array.zeroCreate count
                 for i = 0 to count - 1 do
                     let packet = queue.Dequeue()
-                    totalBytes <- totalBytes - packet.Length
+                    totalBytesCount <- totalBytesCount - packet.Length
                     result.[i] <- packet
                 if queue.Count = 0 then signal.Reset()
                 result
@@ -238,36 +238,36 @@ module UdpProtocol =
 
         /// Wait for packets to be available with timeout.
         /// Returns true if packets are available, false on timeout.
-        member _.Wait(timeoutMs: int) : bool =
+        member _.wait(timeoutMs: int) : bool =
             signal.Wait(timeoutMs)
 
         /// Get the wait handle for async wait.
-        member _.WaitHandle = signal.WaitHandle
+        member _.waitHandle = signal.WaitHandle
 
-        member _.Count =
+        member _.count =
             lock lockObj (fun () -> queue.Count)
 
         member _.TotalBytes =
-            lock lockObj (fun () -> totalBytes)
+            lock lockObj (fun () -> totalBytesCount)
 
-        member _.DroppedPackets = Interlocked.Read(&droppedPackets)
-        member _.DroppedBytes = Interlocked.Read(&droppedBytes)
+        member _.droppedPackets = Interlocked.Read(&droppedPacketsCount)
+        member _.droppedBytes = Interlocked.Read(&droppedBytesCount)
 
         /// Reset drop counters (for stats interval reset).
-        member _.ResetDropCounters() =
-            Interlocked.Exchange(&droppedPackets, 0L) |> ignore
-            Interlocked.Exchange(&droppedBytes, 0L) |> ignore
+        member _.resetDropCounters() =
+            Interlocked.Exchange(&droppedPacketsCount, 0L) |> ignore
+            Interlocked.Exchange(&droppedBytesCount, 0L) |> ignore
 
 
     /// Atomic counter for observability.
     type AtomicCounter() =
-        let mutable value = 0L
+        let mutable valueCounter = 0L
 
-        member _.Increment() = Interlocked.Increment(&value) |> ignore
-        member _.Add(n: int64) = Interlocked.Add(&value, n) |> ignore
-        member _.AddInt(n: int) = Interlocked.Add(&value, int64 n) |> ignore
-        member _.Value = Interlocked.Read(&value)
-        member _.Reset() = Interlocked.Exchange(&value, 0L)
+        member _.increment() = Interlocked.Increment(&valueCounter) |> ignore
+        member _.add(n: int64) = Interlocked.Add(&valueCounter, n) |> ignore
+        member _.addInt(n: int) = Interlocked.Add(&valueCounter, int64 n) |> ignore
+        member _.value = Interlocked.Read(&valueCounter)
+        member _.reset() = Interlocked.Exchange(&valueCounter, 0L)
 
 
     /// Client-side observability counters.
@@ -305,34 +305,30 @@ module UdpProtocol =
 
         /// Get stats summary string.
         member this.GetSummary() =
-            sprintf "CLIENT PUSH STATS: tun_rx=%d/%dB udp_tx=%d/%dB udp_rx=%d/%dB dropped(mtu=%d outQ=%d injQ=%d)"
-                tunRxPackets.Value tunRxBytes.Value
-                udpTxDatagrams.Value udpTxBytes.Value
-                udpRxDatagrams.Value udpRxBytes.Value
-                droppedMtu.Value droppedQueueFullOutbound.Value droppedQueueFullInject.Value
+            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPackets.value}/%d{tunRxBytes.value}B udp_tx=%d{udpTxDatagrams.value}/%d{udpTxBytes.value}B udp_rx=%d{udpRxDatagrams.value}/%d{udpRxBytes.value}B dropped(mtu=%d{droppedMtu.value} outQ=%d{droppedQueueFullOutbound.value} injQ=%d{droppedQueueFullInject.value})"
 
 
     /// Server-side observability counters.
     type ServerPushStats() =
-        let udpRxDatagrams = AtomicCounter()
-        let udpRxBytes = AtomicCounter()
-        let udpTxDatagrams = AtomicCounter()
-        let udpTxBytes = AtomicCounter()
-        let unknownClientDrops = AtomicCounter()
-        let noEndpointDrops = AtomicCounter()
-        let queueFullDrops = AtomicCounter()
+        let udpRxDatagramsCounter = AtomicCounter()
+        let udpRxBytesCounter = AtomicCounter()
+        let udpTxDatagramsCounter = AtomicCounter()
+        let udpTxBytesCounter = AtomicCounter()
+        let unknownClientDropsCounter = AtomicCounter()
+        let noEndpointDropsCounter = AtomicCounter()
+        let queueFullDropsCounter = AtomicCounter()
         let mutable lastLogTicks = Stopwatch.GetTimestamp()
 
-        member _.UdpRxDatagrams = udpRxDatagrams
-        member _.UdpRxBytes = udpRxBytes
-        member _.UdpTxDatagrams = udpTxDatagrams
-        member _.UdpTxBytes = udpTxBytes
-        member _.UnknownClientDrops = unknownClientDrops
-        member _.NoEndpointDrops = noEndpointDrops
-        member _.QueueFullDrops = queueFullDrops
+        member _.udpRxDatagrams = udpRxDatagramsCounter
+        member _.udpRxBytes = udpRxBytesCounter
+        member _.udpTxDatagrams = udpTxDatagramsCounter
+        member _.udpTxBytes = udpTxBytesCounter
+        member _.unknownClientDrops = unknownClientDropsCounter
+        member _.noEndpointDrops = noEndpointDropsCounter
+        member _.queueFullDrops = queueFullDropsCounter
 
         /// Check if stats should be logged (every PushStatsIntervalMs).
-        member _.ShouldLog() =
+        member _.shouldLog() =
             let now = Stopwatch.GetTimestamp()
             let intervalTicks = int64 PushStatsIntervalMs * Stopwatch.Frequency / 1000L
             if now - lastLogTicks >= intervalTicks then
@@ -342,5 +338,5 @@ module UdpProtocol =
                 false
 
         /// Get stats summary string.
-        member this.GetSummary() =
-            $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagrams.Value}/%d{udpRxBytes.Value}B udp_tx=%d{udpTxDatagrams.Value}/%d{udpTxBytes.Value}B dropped(unknown=%d{unknownClientDrops.Value} noEp=%d{noEndpointDrops.Value} qFull=%d{queueFullDrops.Value})"
+        member this.getSummary() =
+            $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B dropped(unknown=%d{unknownClientDropsCounter.value} noEp=%d{noEndpointDropsCounter.value} qFull=%d{queueFullDropsCounter.value})"
