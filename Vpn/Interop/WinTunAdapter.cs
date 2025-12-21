@@ -247,7 +247,7 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="arguments">Command arguments (without 'netsh' prefix).</param>
     /// <param name="operationName">Name of the operation for error messages.</param>
     /// <returns>Result indicating success or failure with stderr text.</returns>
-    private static Result<Unit> RunNetsh(string arguments, string operationName)
+    public static Result<Unit> RunNetsh(string arguments, string operationName)
     {
         return RunCommand("netsh", arguments, operationName);
     }
