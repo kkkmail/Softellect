@@ -7,6 +7,7 @@ open System.Threading
 
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
+open Softellect.Vpn.Core.UdpProtocol
 
 /// User-space external interface for sending/receiving raw IPv4 packets to/from the real internet.
 /// This module handles both TCP and UDP traffic by working at the raw IP packet level.
@@ -91,7 +92,7 @@ module ExternalInterface =
             | _ -> false
 
         let logStatsIfDue () =
-            if statsStopwatch.ElapsedMilliseconds >= 5000L then
+            if statsStopwatch.ElapsedMilliseconds >= PushStatsIntervalMs then
                 let total = Interlocked.Read(&totalReceived)
                 let passed = Interlocked.Read(&passedToCallback)
                 let dropShort = Interlocked.Read(&droppedTooShort)
@@ -250,7 +251,10 @@ module ExternalInterface =
                         // Logger.logTrace (fun () -> $"HEAVY LOG - Sent {sent} bytes to rawSocket, packet: {(summarizePacket packet)}.")
                         ()
                     with
-                    | ex -> Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {(summarizePacket packet)}, exception: '{ex.Message}'."
+                    | ex ->
+                        // TODO kk:20251221 - Disable sending to 255.255.255.255 instead.
+                        if getDstIp4 packet <> "255.255.255.255" then
+                            Logger.logError $"ExternalGateway.sendOutbound: Failed to send packet: {(summarizePacket packet)}, exception: '{ex.Message}'."
                 | None -> Logger.logWarn "ExternalGateway.sendOutbound: Could not extract destination IP, dropping packet"
 
         /// Stop the external gateway.

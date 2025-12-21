@@ -173,13 +173,11 @@ module UdpClient =
                             udpClient.Send(datagram, datagram.Length) |> ignore
                             Logger.logTrace (fun () -> $"Push client: Sent keepalive seq={seq}")
                         with
-                        | ex ->
-                            Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
+                        | ex -> Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
                 with
                 | :? ObjectDisposedException -> ()
                 | _ when clientCts.Token.IsCancellationRequested -> ()
-                | ex ->
-                    Logger.logError $"Keepalive error: {ex.Message}"
+                | ex -> Logger.logError $"Keepalive error: {ex.Message}"
 
             Logger.logInfo "Keepalive loop stopped."
 

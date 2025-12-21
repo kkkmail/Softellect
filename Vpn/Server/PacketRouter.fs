@@ -65,7 +65,7 @@ module PacketRouter =
         }
 
     /// Constants for receive loop timing.
-    let [<Literal>] statsIntervalMs = 5000L
+    let [<Literal>] statsIntervalMs = PushStatsIntervalMs
     let [<Literal>] waitTimeoutMs = 250
     let [<Literal>] maxPacketsPerWakeup = 4096
     let [<Literal>] cancelCheckEveryPackets = 256
@@ -113,7 +113,7 @@ module PacketRouter =
         let intervalMs = intervalCalTicks * 1000L / Stopwatch.Frequency
         if intervalMs >= statsIntervalMs then
             let elapsed = st.swCalendar.Elapsed
-            let calStr = sprintf "%02d:%02d.%03d" (int elapsed.TotalMinutes) elapsed.Seconds elapsed.Milliseconds
+            let calStr = $"%02d{int elapsed.TotalMinutes}:%02d{elapsed.Seconds}.%03d{elapsed.Milliseconds}"
             let waitPct = formatPct st.waitTicks intervalCalTicks
             let drainPct = formatPct st.drainTicks intervalCalTicks
             let procPct = formatPct st.processTicks intervalCalTicks
