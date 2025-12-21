@@ -144,7 +144,7 @@ module UdpServer =
                                                     Some (client.SendAsync(datagram, datagram.Length, endpoint)))
 
                                         let! _ = Task.WhenAll(sends)
-                                        pushStats.udpTxDatagrams.addInt(packets.Length) // if you add such helper
+                                        pushStats.udpTxDatagrams.addInt(packets.Length)
 
                                 | None -> pushStats.noEndpointDrops.increment()
                     with
