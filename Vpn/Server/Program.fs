@@ -42,11 +42,7 @@ module Program =
 
 
     let getProgram (data : VpnServerData) argv =
-        let getService() = VpnService(data)
-
         match data.serverAccessInfo.vpnTransportProtocol with
-        | WCF_Tunnel -> getWcfProgram data (fun () -> getService () :> IVpnService) argv
-        | UDP_Tunnel -> getUdpProgram data (fun () -> getService () :> IVpnService) argv
         | UDP_Push ->
             let authService = AuthService(data)
             let service = VpnPushService(data, authService.clientRegistry)

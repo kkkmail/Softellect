@@ -237,7 +237,7 @@ module PacketRouter =
                 None
 
         let findClientByIp (ip: IpAddress) =
-            registry.getAllSessions()
+            registry.getAllPushSessions()
             |> List.tryFind (fun s -> s.assignedIp.value.Equals(ip))
 
         // Helper: reset the read event if possible (to avoid stuck signaled state)

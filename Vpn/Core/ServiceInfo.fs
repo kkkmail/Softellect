@@ -18,12 +18,6 @@ module ServiceInfo =
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
 
 
-    type IVpnClient =
-        abstract authenticate : VpnAuthRequest -> VpnAuthResult
-        abstract sendPackets : byte[][] -> VpnUnitResult
-        abstract receivePackets : VpnClientId -> VpnPacketsResult
-
-
     type IAuthService =
         inherit IHostedService
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
@@ -35,31 +29,11 @@ module ServiceInfo =
         abstract receivePackets : VpnClientId -> VpnPacketsResult
 
 
-    type IVpnService =
-        inherit IHostedService
-        abstract authenticate : VpnAuthRequest -> VpnAuthResult
-        abstract sendPackets : VpnClientId * byte[][] -> VpnUnitResult
-        abstract receivePackets : VpnClientId -> VpnPacketsResult
-
-
     [<ServiceContract(ConfigurationName = AuthServiceName)>]
     type IAuthWcfService =
 
         [<OperationContract(Name = "authenticate")>]
         abstract authenticate : data:byte[] -> byte[]
-
-
-    [<ServiceContract(ConfigurationName = VpnWcfServiceName)>]
-    type IVpnWcfService =
-
-        [<OperationContract(Name = "authenticate")>]
-        abstract authenticate : data:byte[] -> byte[]
-
-        [<OperationContract(Name = "sendPackets")>]
-        abstract sendPackets : data:byte[] -> byte[]
-
-        [<OperationContract(Name = "receivePackets")>]
-        abstract receivePackets : data:byte[] -> byte[]
 
 
     type VpnServerAccessInfo =

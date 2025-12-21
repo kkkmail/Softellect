@@ -14,19 +14,6 @@ open Softellect.Vpn.Core.UdpProtocol
 
 module ClientRegistry =
 
-    /// Client session for the old polling-based dataplane.
-    type ClientSession =
-        {
-            clientId : VpnClientId
-            clientName : VpnClientName
-            assignedIp : VpnIpAddress
-            publicKey : PublicKey
-            lastActivity : DateTime
-            pendingPackets : ConcurrentQueue<byte[]>
-            packetsAvailable : System.Threading.SemaphoreSlim
-        }
-
-
     /// Client session for the push-based dataplane (spec 037).
     type PushClientSession =
         {
@@ -38,6 +25,7 @@ module ClientRegistry =
             mutable currentEndpoint : IPEndPoint option
             pendingPackets : BoundedPacketQueue
             mutable sendSeq : uint32
+            mutable lastActivity : DateTime
         }
 
 
@@ -50,9 +38,6 @@ module ClientRegistry =
 
 
     type ClientRegistry(data: ClientRegistryData) =
-        let sessions = ConcurrentDictionary<VpnClientId, ClientSession>()
-
-        /// Push sessions dictionary
         let pushSessions = ConcurrentDictionary<VpnClientId, PushClientSession>()
 
         member private _.tryGetClientConfig(clientId : VpnClientId) =
@@ -72,84 +57,18 @@ module ClientRegistry =
                 Logger.logWarn $"Failed to load public key for client {clientId.value}: '%A{e}'."
                 $"Failed to load public key for client {clientId.value}: '%A{e}'" |> ConfigErr |> Error
 
-        member r.createSession(clientId: VpnClientId) : Result<ClientSession, VpnError> =
-            match r.tryGetClientConfig(clientId) with
-            | Ok (config, publicKey) ->
-                let session =
-                    {
-                        clientId = clientId
-                        clientName = config.clientName
-                        assignedIp = config.assignedIp
-                        publicKey = publicKey
-                        lastActivity = DateTime.UtcNow
-                        pendingPackets = ConcurrentQueue<byte[]>()
-                        packetsAvailable = new System.Threading.SemaphoreSlim(0, Int32.MaxValue)
-                    }
-
-                sessions[clientId] <- session
-                Logger.logInfo $"Created session for client {clientId.value}"
-                Ok session
-            | Error e ->
-                Logger.logWarn $"Client not found: '{clientId.value}', error: '%A{e}'."
-                clientId |> ClientNotFoundErr |> AuthFailedErr |> ConnectionErr |> Error
-
-        member _.tryGetSession(clientId: VpnClientId) =
-            match sessions.TryGetValue(clientId) with
-            | true, session -> Some session
-            | false, _ -> None
-
         member _.updateActivity(clientId: VpnClientId) =
-            match sessions.TryGetValue(clientId) with
-            | true, session ->
-                sessions[clientId] <- { session with lastActivity = DateTime.UtcNow }
+            match pushSessions.TryGetValue(clientId) with
+            | true, session -> session.lastActivity <- DateTime.UtcNow
             | false, _ -> ()
 
-        member _.removeSession(clientId: VpnClientId) =
-            sessions.TryRemove(clientId) |> ignore
-            Logger.logInfo $"Removed session for client {clientId.value}"
-
         member _.enqueuePacketForClient(clientId: VpnClientId, packet: byte[]) =
-            // Try the push session first (preferred for push dataplane).
             match pushSessions.TryGetValue(clientId) with
-            | true, pushSession ->
-                pushSession.pendingPackets.Enqueue(packet)
-            | false, _ ->
-                // Fall back to legacy session.
-                match sessions.TryGetValue(clientId) with
-                | true, session ->
-                    session.pendingPackets.Enqueue(packet)
-                    session.packetsAvailable.Release() |> ignore
-                    true
-                | false, _ ->
-                    false
-
-        member _.dequeuePacketsForClient(clientId: VpnClientId, maxPackets: int) =
-            match sessions.TryGetValue(clientId) with
-            | true, session ->
-                let packets = ResizeArray<byte[]>()
-                let mutable count = 0
-
-                while count < maxPackets do
-                    match session.pendingPackets.TryDequeue() with
-                    | true, packet ->
-                        packets.Add(packet)
-                        count <- count + 1
-                    | false, _ ->
-                        count <- maxPackets // Exit loop
-
-                packets.ToArray()
-            | false, _ -> [||]
-
-        member _.getAllSessions() =
-            sessions.Values |> Seq.toList
+            | true, pushSession -> pushSession.pendingPackets.Enqueue(packet)
+            | false, _ -> false
 
         member _.serverPrivateKey = data.serverPrivateKey
         member _.serverPublicKey = data.serverPublicKey
-
-
-        // ==================================================================
-        // PUSH DATAPLANE METHODS (spec 037)
-        // ==================================================================
 
         /// Create a push session for a client.
         member r.createPushSession(clientId: VpnClientId) : Result<PushClientSession, VpnError> =
@@ -165,6 +84,7 @@ module ClientRegistry =
                         currentEndpoint = None
                         pendingPackets = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
                         sendSeq = 0u
+                        lastActivity = DateTime.UtcNow
                     }
 
                 pushSessions[clientId] <- session

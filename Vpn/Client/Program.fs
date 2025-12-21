@@ -59,8 +59,6 @@ module Program =
 
     let getClientService (serviceData : VpnClientServiceData) =
         match serviceData.clientAccessInfo.vpnTransportProtocol with
-        | WCF_Tunnel -> VpnClientService(serviceData) :> IHostedService
-        | UDP_Tunnel -> VpnClientService(serviceData) :> IHostedService
         | UDP_Push -> VpnPushClientService(serviceData) :> IHostedService
 
 
