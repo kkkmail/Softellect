@@ -175,5 +175,5 @@ module UdpServer =
                 Task.CompletedTask
 
 
-    let getCombinedUdpHostedService (data: VpnServerData) (service: IVpnPushService) (registry: ClientRegistry) : IHostedService =
-        VpnCombinedUdpHostedService(data, service, registry) :> IHostedService
+    let getCombinedUdpHostedService (data: VpnServerData) (service: IVpnPushService) (registry: ClientRegistry) =
+        VpnCombinedUdpHostedService(data, service, registry)

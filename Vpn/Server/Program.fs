@@ -48,8 +48,9 @@ module Program =
             let service = VpnPushService(data, authService.clientRegistry)
 
             let configureServices (serviceCollection : IServiceCollection) =
+                serviceCollection.AddSingleton<IHostedService>(service :> IHostedService) |> ignore
                 let combinedUdpHostedService = getCombinedUdpHostedService data service authService.clientRegistry
-                serviceCollection.AddSingleton<IHostedService>(combinedUdpHostedService) |> ignore
+                serviceCollection.AddSingleton<IHostedService>(combinedUdpHostedService :> IHostedService) |> ignore
 
             let getAuthService() = authService
             getAuthWcfProgram data getAuthService argv (Some configureServices)
