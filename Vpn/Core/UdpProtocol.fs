@@ -8,8 +8,20 @@ open Softellect.Vpn.Core.Primitives
 
 module UdpProtocol =
 
+    /// Push header layout:
+    /// version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) = 28 bytes
     [<Literal>]
-    let MtuSize = 1300
+    let PushHeaderSize = 28
+
+    /// MTU for push dataplane (conservative to avoid fragmentation)
+    [<Literal>]
+    // let PushMtu = 1380
+    let PushMtu = 1530
+
+    /// Must be smaller than or equal to PushMtu - PushHeaderSize.
+    [<Literal>]
+    // let MtuSize = 1300
+    let MtuSize = 1500
 
     [<Literal>]
     let CleanupIntervalMs = 250
@@ -18,7 +30,7 @@ module UdpProtocol =
     let ServerReceiveTimeoutMs = 250
 
     [<Literal>]
-    let SendBufferSize = 4 * 1024 * 1024
+    let SendBufferSize = 16 * 1024 * 1024
 
     [<Literal>]
     let ServerReassemblyTimeoutMs = 2000
@@ -51,17 +63,8 @@ module UdpProtocol =
     [<Literal>]
     let PushMsgTypeControl = 3uy
 
-    /// Push header layout:
-    /// version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) = 28 bytes
-    [<Literal>]
-    let PushHeaderSize = 28
-
-    /// MTU for push dataplane (conservative to avoid fragmentation)
-    [<Literal>]
-    let PushMtu = 1380
-
     /// Maximum payload per push datagram
-    let PushMaxPayload = PushMtu - PushHeaderSize  // 1348
+    let PushMaxPayload = PushMtu - PushHeaderSize
 
     /// Keepalive interval in milliseconds
     [<Literal>]
@@ -84,7 +87,7 @@ module UdpProtocol =
 
 
     /// Build a push dataplane datagram.
-    /// Wire layout: magic (4) + version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) + payload
+    /// Wire layout: version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) + payload
     let buildPushDatagram (msgType: byte) (clientId: VpnClientId) (seq: uint32) (payload: byte[]) : byte[] =
         let payloadLen = payload.Length
         if payloadLen > PushMaxPayload then
