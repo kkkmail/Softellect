@@ -18,6 +18,9 @@ module UdpProtocol =
     let ServerReceiveTimeoutMs = 250
 
     [<Literal>]
+    let SendBufferSize = 4 * 1024 * 1024
+
+    [<Literal>]
     let ServerReassemblyTimeoutMs = 2000
 
     // /// Key for a reassembly map: (msgType, clientId, requestId).
@@ -77,7 +80,7 @@ module UdpProtocol =
 
     /// Stats logging interval in milliseconds
     [<Literal>]
-    let PushStatsIntervalMs = 60_000
+    let PushStatsIntervalMs = 30_000
 
 
     /// Build a push dataplane datagram.

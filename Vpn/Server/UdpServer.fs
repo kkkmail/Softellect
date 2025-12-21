@@ -116,20 +116,36 @@ module UdpServer =
                                     let packets = session.pendingPackets.dequeueMany(MaxSendPacketsPerCall)
                                     if packets.Length = 0 then ()
                                     else
-                                        Logger.logTrace (fun () -> $"Push: dequeued {packets.Length} packets.")
-                                        for packet in packets do
-                                            if packet.Length > PushMaxPayload then
-                                                Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
-                                            else
-                                                let seq = registry.getNextPushSeq(session.clientId)
-                                                let datagram = buildPushData session.clientId seq packet
+                                        // Logger.logTrace (fun () -> $"Push: dequeued {packets.Length} packets.")
+                                        // for packet in packets do
+                                        //     if packet.Length > PushMaxPayload then
+                                        //         Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
+                                        //     else
+                                        //         let seq = registry.getNextPushSeq(session.clientId)
+                                        //         let datagram = buildPushData session.clientId seq packet
+                                        //
+                                        //         try
+                                        //             client.Send(datagram, datagram.Length, endpoint) |> ignore
+                                        //             // let! _ = client.SendAsync(datagram, datagram.Length, endpoint)
+                                        //             pushStats.udpTxDatagrams.increment()
+                                        //             pushStats.udpTxBytes.addInt(datagram.Length)
+                                        //         with
+                                        //         | ex -> Logger.logWarn $"Push: Send failed to {endpoint} for {session.clientId.value}: {ex.Message}"
 
-                                                try
-                                                    client.Send(datagram, datagram.Length, endpoint) |> ignore
-                                                    pushStats.udpTxDatagrams.increment()
-                                                    pushStats.udpTxBytes.addInt(datagram.Length)
-                                                with
-                                                | ex -> Logger.logWarn $"Push: Send failed to {endpoint} for {session.clientId.value}: {ex.Message}"
+                                        let sends =
+                                            packets
+                                            |> Seq.choose (fun packet ->
+                                                if packet.Length > PushMaxPayload then
+                                                    Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
+                                                    None
+                                                else
+                                                    let seq = registry.getNextPushSeq(session.clientId)
+                                                    let datagram = buildPushData session.clientId seq packet
+                                                    Some (client.SendAsync(datagram, datagram.Length, endpoint)))
+
+                                        let! _ = Task.WhenAll(sends)
+                                        pushStats.udpTxDatagrams.addInt(packets.Length) // if you add such helper
+
                                 | None -> pushStats.noEndpointDrops.increment()
                     with
                     | :? OperationCanceledException -> ()
@@ -148,6 +164,7 @@ module UdpServer =
 
                 let client = new UdpClient(serverPort)
                 client.Client.ReceiveTimeout <- ServerReceiveTimeoutMs
+                client.Client.SendBufferSize <- SendBufferSize
                 udpClient <- Some client
 
                 Task.Run(fun () -> receiveLoop client cts.Token) |> ignore
