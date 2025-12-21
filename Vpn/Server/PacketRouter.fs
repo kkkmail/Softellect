@@ -420,7 +420,7 @@ module PacketRouter =
                 if sessionResult.IsSuccess then
                     // Set the IP address on the adapter
                     let serverIp = config.serverVpnIp.value
-                    let subnetMask = Ip4 "255.255.255.0"
+                    let subnetMask = IpAddress.subnetMask24
 
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
                     let mtuResult = createResult.Value.SetMtu(MtuSize)

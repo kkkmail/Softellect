@@ -98,7 +98,7 @@ module Service =
         {
             adapterName = AdapterName
             assignedIp = assignedIp
-            subnetMask = Ip4 "255.255.255.0"
+            subnetMask = IpAddress.subnetMask24
             gatewayIp = gatewayIp
             dnsServerIp = gatewayIp
             serverPublicIp = getServerIpAddress data

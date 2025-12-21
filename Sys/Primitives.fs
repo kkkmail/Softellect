@@ -60,6 +60,8 @@ module Primitives =
             | Ip4 v -> v
             | Ip6 v -> v
 
+        static member subnetMask24 = Ip4 "255.255.255.0"
+
         member a.ipAddress = a.value |> IPAddress.Parse
 
         static member tryCreate (s : string) =
