@@ -1,20 +1,20 @@
 Connecting to host 167.206.8.148, port 5201
 Reverse mode, remote host 167.206.8.148 is sending
-[  5] local 10.66.77.2 port 62286 connected to 167.206.8.148 port 5201
+[  5] local 10.66.77.2 port 54157 connected to 167.206.8.148 port 5201
 [ ID] Interval           Transfer     Bitrate
-[  5]   0.00-1.14   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   1.14-2.01   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   2.01-3.00   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   3.00-4.00   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   4.00-5.01   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   5.01-6.00   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   6.00-7.00   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   7.00-8.02   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   8.02-9.01   sec  0.00 Bytes  0.00 bits/sec                  
-[  5]   9.01-10.01  sec  0.00 Bytes  0.00 bits/sec                  
+[  5]   0.00-1.01   sec   128 KBytes  1.03 Mbits/sec                  
+[  5]   1.01-2.00   sec   512 KBytes  4.24 Mbits/sec                  
+[  5]   2.00-3.00   sec   768 KBytes  6.29 Mbits/sec                  
+[  5]   3.00-4.00   sec   768 KBytes  6.30 Mbits/sec                  
+[  5]   4.00-5.01   sec   640 KBytes  5.23 Mbits/sec                  
+[  5]   5.01-6.00   sec   640 KBytes  5.27 Mbits/sec                  
+[  5]   6.00-7.00   sec   640 KBytes  5.22 Mbits/sec                  
+[  5]   7.00-8.00   sec   256 KBytes  2.10 Mbits/sec                  
+[  5]   8.00-9.00   sec   384 KBytes  3.15 Mbits/sec                  
+[  5]   9.00-10.00  sec   384 KBytes  3.13 Mbits/sec                  
 - - - - - - - - - - - - - - - - - - - - - - - - -
 [ ID] Interval           Transfer     Bitrate         Retr
-[  5]   0.00-11.41  sec   409 KBytes   294 Kbits/sec    3            sender
-[  5]   0.00-10.01  sec  0.00 Bytes  0.00 bits/sec                  receiver
+[  5]   0.00-10.26  sec  5.99 MBytes  4.90 Mbits/sec   70            sender
+[  5]   0.00-10.00  sec  5.00 MBytes  4.19 Mbits/sec                  receiver
 
 iperf Done.
