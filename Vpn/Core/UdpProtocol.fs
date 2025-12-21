@@ -17,7 +17,7 @@ module UdpProtocol =
     [<Literal>]
     let ServerReassemblyTimeoutMs = 2000
 
-    // /// Key for reassembly map: (msgType, clientId, requestId).
+    // /// Key for a reassembly map: (msgType, clientId, requestId).
     // type ReassemblyKey = byte * VpnClientId * uint32
 
     /// State for an in-progress reassembly.
@@ -88,14 +88,14 @@ module UdpProtocol =
         let guidBytes = clientId.value.ToByteArray()
 
         // version (1 byte)
-        result.[0] <- PushVersion
+        result[0] <- PushVersion
 
         // msgType (1 byte)
-        result.[1] <- msgType
+        result[1] <- msgType
 
         // flags (2 bytes) - reserved, set to 0
-        result.[2] <- 0uy
-        result.[3] <- 0uy
+        result[2] <- 0uy
+        result[3] <- 0uy
 
         // clientId (16 bytes)
         Array.Copy(guidBytes, 0, result, 4, 16)
@@ -109,8 +109,8 @@ module UdpProtocol =
         Array.Copy(payloadLenBytes, 0, result, 24, 2)
 
         // reserved (2 bytes)
-        result.[26] <- 0uy
-        result.[27] <- 0uy
+        result[26] <- 0uy
+        result[27] <- 0uy
 
         // payload
         if payloadLen > 0 then
@@ -147,13 +147,13 @@ module UdpProtocol =
         if data.Length < PushHeaderSize then
             Error ()
         else
-            let version = data.[0]
+            let version = data[0]
             if version <> PushVersion then
                 Error ()
             else
-                let msgType = data.[1]
+                let msgType = data[1]
                 let flags = BitConverter.ToUInt16(data, 2)
-                let guidBytes = data.[4..19]
+                let guidBytes = data[4..19]
                 let clientId = Guid(guidBytes) |> VpnClientId
                 let seq = BitConverter.ToUInt32(data, 20)
                 let payloadLen = BitConverter.ToUInt16(data, 24)
@@ -231,7 +231,7 @@ module UdpProtocol =
                 for i = 0 to count - 1 do
                     let packet = queue.Dequeue()
                     totalBytesCount <- totalBytesCount - packet.Length
-                    result.[i] <- packet
+                    result[i] <- packet
                 if queue.Count = 0 then signal.Reset()
                 result
             )
@@ -272,40 +272,40 @@ module UdpProtocol =
 
     /// Client-side observability counters.
     type ClientPushStats() =
-        let tunRxPackets = AtomicCounter()
-        let tunRxBytes = AtomicCounter()
-        let udpTxDatagrams = AtomicCounter()
-        let udpTxBytes = AtomicCounter()
-        let udpRxDatagrams = AtomicCounter()
-        let udpRxBytes = AtomicCounter()
-        let droppedMtu = AtomicCounter()
-        let droppedQueueFullOutbound = AtomicCounter()
-        let droppedQueueFullInject = AtomicCounter()
-        let mutable lastLogTicks = Stopwatch.GetTimestamp()
+        let tunRxPacketsCounter = AtomicCounter()
+        let tunRxBytesCounter = AtomicCounter()
+        let udpTxDatagramsCounter = AtomicCounter()
+        let udpTxBytesCounter = AtomicCounter()
+        let udpRxDatagramsCounter = AtomicCounter()
+        let udpRxBytesCounter = AtomicCounter()
+        let droppedMtuCounter = AtomicCounter()
+        let droppedQueueFullOutboundCounter = AtomicCounter()
+        let droppedQueueFullInjectCounter = AtomicCounter()
+        let mutable lastLogTicksCounter = Stopwatch.GetTimestamp()
 
-        member _.TunRxPackets = tunRxPackets
-        member _.TunRxBytes = tunRxBytes
-        member _.UdpTxDatagrams = udpTxDatagrams
-        member _.UdpTxBytes = udpTxBytes
-        member _.UdpRxDatagrams = udpRxDatagrams
-        member _.UdpRxBytes = udpRxBytes
-        member _.DroppedMtu = droppedMtu
-        member _.DroppedQueueFullOutbound = droppedQueueFullOutbound
-        member _.DroppedQueueFullInject = droppedQueueFullInject
+        member _.tunRxPackets = tunRxPacketsCounter
+        member _.tunRxBytes = tunRxBytesCounter
+        member _.udpTxDatagrams = udpTxDatagramsCounter
+        member _.udpTxBytes = udpTxBytesCounter
+        member _.udpRxDatagrams = udpRxDatagramsCounter
+        member _.udpRxBytes = udpRxBytesCounter
+        member _.droppedMtu = droppedMtuCounter
+        member _.droppedQueueFullOutbound = droppedQueueFullOutboundCounter
+        member _.droppedQueueFullInject = droppedQueueFullInjectCounter
 
         /// Check if stats should be logged (every PushStatsIntervalMs).
-        member _.ShouldLog() =
+        member _.shouldLog() =
             let now = Stopwatch.GetTimestamp()
             let intervalTicks = int64 PushStatsIntervalMs * Stopwatch.Frequency / 1000L
-            if now - lastLogTicks >= intervalTicks then
-                lastLogTicks <- now
+            if now - lastLogTicksCounter >= intervalTicks then
+                lastLogTicksCounter <- now
                 true
             else
                 false
 
         /// Get stats summary string.
-        member this.GetSummary() =
-            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPackets.value}/%d{tunRxBytes.value}B udp_tx=%d{udpTxDatagrams.value}/%d{udpTxBytes.value}B udp_rx=%d{udpRxDatagrams.value}/%d{udpRxBytes.value}B dropped(mtu=%d{droppedMtu.value} outQ=%d{droppedQueueFullOutbound.value} injQ=%d{droppedQueueFullInject.value})"
+        member this.getSummary() =
+            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPacketsCounter.value}/%d{tunRxBytesCounter.value}B udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B dropped(mtu=%d{droppedMtuCounter.value} outQ=%d{droppedQueueFullOutboundCounter.value} injQ=%d{droppedQueueFullInjectCounter.value})"
 
 
     /// Server-side observability counters.

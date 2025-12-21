@@ -40,7 +40,7 @@ module UdpClient =
         let serverIp = data.serverAccessInfo.getIpAddress()
         let serverPort = data.serverAccessInfo.getServicePort().value
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
-        let udpClient = new System.Net.Sockets.UdpClient()
+        let udpClient = new UdpClient()
         let clientCts = new CancellationTokenSource()
         let clientPushStats = ClientPushStats()
 
@@ -82,8 +82,8 @@ module UdpClient =
                     let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
                     let data = udpClient.Receive(&remoteEp)
 
-                    clientPushStats.UdpRxDatagrams.increment()
-                    clientPushStats.UdpRxBytes.addInt(data.Length)
+                    clientPushStats.udpRxDatagrams.increment()
+                    clientPushStats.udpRxBytes.addInt(data.Length)
 
                     match tryParsePushHeader data with
                     | Ok (header, payload) ->
@@ -94,12 +94,12 @@ module UdpClient =
                                 match injector.injectPacket(payload) with
                                 | Ok () -> ()
                                 | Error msg ->
-                                    clientPushStats.DroppedQueueFullInject.increment()
+                                    clientPushStats.droppedQueueFullInject.increment()
                                     Logger.logWarn $"Push client: Failed to inject packet: {msg}"
                             | None ->
                                 // Queue for later injection.
                                 if not (inboundPacketQueue.enqueue(payload)) then
-                                    clientPushStats.DroppedQueueFullInject.increment()
+                                    clientPushStats.droppedQueueFullInject.increment()
                         elif header.msgType = PushMsgTypeKeepalive then
                             Logger.logTrace (fun () -> "Push client: Received keepalive from server")
                         else
@@ -108,24 +108,23 @@ module UdpClient =
                         Logger.logTrace (fun () -> "Push client: Invalid push header received")
 
                     // Log stats periodically.
-                    if clientPushStats.ShouldLog() then
-                        Logger.logInfo (clientPushStats.GetSummary())
+                    if clientPushStats.shouldLog() then
+                        Logger.logInfo (clientPushStats.getSummary())
                 with
                 | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
                     // Timeout is expected - allows checking cancellation.
-                    if clientPushStats.ShouldLog() then
-                        Logger.logInfo (clientPushStats.GetSummary())
+                    if clientPushStats.shouldLog() then
+                        Logger.logInfo (clientPushStats.getSummary())
                 | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted ->
                     // Socket was closed during shutdown.
                     ()
                 | :? ObjectDisposedException -> ()
-                | ex when clientCts.Token.IsCancellationRequested -> ()
-                | ex ->
-                    Logger.logError $"Receive error: {ex.Message}"
+                | _ when clientCts.Token.IsCancellationRequested -> ()
+                | ex -> Logger.logError $"Receive error: {ex.Message}"
 
             Logger.logInfo "Receive loop stopped."
 
-        /// UDP send loop - sends queued packets to server.
+        /// UDP send loop - sends queued packets to the server.
         let sendLoop () =
             Logger.logInfo "Send loop started."
             while not clientCts.Token.IsCancellationRequested do
@@ -134,12 +133,13 @@ module UdpClient =
                     if outboundQueue.wait(10) then
                         // Dequeue and send up to a batch of packets.
                         let mutable hasMore = true
+
                         while hasMore do
                             match outboundQueue.tryDequeue() with
                             | Some packet ->
                                 // Check MTU.
                                 if packet.Length > PushMaxPayload then
-                                    clientPushStats.DroppedMtu.increment()
+                                    clientPushStats.droppedMtu.increment()
                                     Logger.logWarn $"Push client: Dropping oversized packet ({packet.Length} > {PushMaxPayload})"
                                 else
                                     let seq = getNextSeq()
@@ -147,18 +147,15 @@ module UdpClient =
 
                                     try
                                         udpClient.Send(datagram, datagram.Length) |> ignore
-                                        clientPushStats.UdpTxDatagrams.increment()
-                                        clientPushStats.UdpTxBytes.addInt(datagram.Length)
+                                        clientPushStats.udpTxDatagrams.increment()
+                                        clientPushStats.udpTxBytes.addInt(datagram.Length)
                                     with
-                                    | ex ->
-                                        Logger.logWarn $"Push client: Send failed: {ex.Message}"
-                            | None ->
-                                hasMore <- false
+                                    | ex -> Logger.logWarn $"Push client: Send failed: {ex.Message}"
+                            | None -> hasMore <- false
                 with
                 | :? ObjectDisposedException -> ()
-                | ex when clientCts.Token.IsCancellationRequested -> ()
-                | ex ->
-                    Logger.logError $"Send error: {ex.Message}"
+                | _ when clientCts.Token.IsCancellationRequested -> ()
+                | ex -> Logger.logError $"Send error: {ex.Message}"
 
             Logger.logInfo "Send loop stopped."
 
@@ -180,7 +177,7 @@ module UdpClient =
                             Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
                 with
                 | :? ObjectDisposedException -> ()
-                | ex when clientCts.Token.IsCancellationRequested -> ()
+                | _ when clientCts.Token.IsCancellationRequested -> ()
                 | ex ->
                     Logger.logError $"Keepalive error: {ex.Message}"
 
@@ -212,19 +209,19 @@ module UdpClient =
 
             Logger.logInfo "Stopped"
 
-        /// Set the packet injector for direct injection into tunnel.
+        /// Set the packet injector for direct injection into the tunnel.
         member _.setPacketInjector(injector: IPacketInjector) =
             packetInjector <- Some injector
 
-        /// Enqueue a packet for sending to server.
+        /// Enqueue a packet for sending to the server.
         /// Returns true if enqueued, false if queue rejected (too large).
         member _.enqueueOutbound(packet: byte[]) : bool =
-            clientPushStats.TunRxPackets.increment()
-            clientPushStats.TunRxBytes.addInt(packet.Length)
+            clientPushStats.tunRxPackets.increment()
+            clientPushStats.tunRxBytes.addInt(packet.Length)
             if outboundQueue.enqueue(packet) then
                 true
             else
-                clientPushStats.DroppedQueueFullOutbound.increment()
+                clientPushStats.droppedQueueFullOutbound.increment()
                 false
 
         /// Try to dequeue a received packet (for when the injector is not set).
