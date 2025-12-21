@@ -7,6 +7,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
+open Softellect.Vpn.Core.UdpProtocol
 open Softellect.Vpn.Interop
 
 module Tunnel =
@@ -124,6 +125,8 @@ module Tunnel =
 
                 if sessionResult.IsSuccess then
                     let ipResult = adp.SetIpAddress(config.assignedIp.value, config.subnetMask)
+                    let mtuResult = createResult.Value.SetMtu(MtuSize)
+                    Logger.logInfo $"Client - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}."
 
                     if ipResult.IsSuccess then
                         // Configure DNS on the adapter

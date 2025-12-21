@@ -1,5 +1,6 @@
 ﻿namespace Softellect.Sys
 
+open System
 open System.Diagnostics
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
@@ -104,11 +105,13 @@ module Logging =
                 // Build the full line *before* taking the lock to minimize lock duration.
                 // IMPORTANT: format to a single string so we only do one Console write.
                 let elapsedSeconds = double stopwatch.ElapsedMilliseconds / 1_000.0
-                let line = $"#{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
+                let ts = DateTime.Now
+                let s = ts.ToString("yyyyMMdd_HHmmss.fff")
+                let line = $"# {s} #{elapsedSeconds,9:F3} # {level.logName} # {callerName} # %A{message}"
 
                 // WriteLine is a single call; no interleaving now.
-                lock logGate (fun () -> System.Console.WriteLine(line))
-        
+                lock logGate (fun () -> Console.WriteLine(line))
+
         /// Minimum log level for filtering messages.
         static let mutable minLogLevel = DebugLog
 

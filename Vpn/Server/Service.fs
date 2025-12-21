@@ -16,11 +16,10 @@ open Softellect.Sys.Rop
 
 module Service =
 
-    /// Internal interface for wait-aware packet receive (used by UDP server).
-    type IVpnServiceInternal =
-        abstract ReceivePacketsWithWait : VpnClientId * int * int -> Result<byte[][] option, VpnError>
+    /// Maximum number of packets to drain per receivePackets call.
+    let [<Literal>] MaxReceivePacketsPerCall = 256
 
-    type VpnService(data: VpnServerData) =
+    type AuthService(data: VpnServerData) =
         let mutable started = false
 
         let registryData : ClientRegistryData =
@@ -31,6 +30,60 @@ module Service =
             }
 
         let registry = ClientRegistry(registryData)
+        do Logger.logInfo $"Created registry: {registry.GetHashCode()}."
+        let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+
+        /// Verify the timestamp is recent (within 5 minutes)
+        let verifyAuthRequest (request: VpnAuthRequest) =
+            let timeDiff = DateTime.UtcNow - request.timestamp
+            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
+            else Ok ()
+
+        interface IAuthService with
+            member _.authenticate request =
+                Logger.logInfo $"Authentication request from client: {request.clientId.value}"
+
+                match verifyAuthRequest request with
+                | Ok () ->
+                    match registry.createPushSession(request.clientId) with
+                    | Ok session ->
+                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}'."
+
+                        let response =
+                            {
+                                assignedIp = session.assignedIp
+                                serverPublicIp = serverVpnIp
+                            }
+                        Ok response
+                    | Error e -> Error e
+                | Error e -> Error e
+
+        interface IHostedService with
+            member _.StartAsync(cancellationToken: CancellationToken) =
+                if started then
+                    Logger.logInfo "VPN Service already started"
+                    Task.CompletedTask
+                else
+                    Logger.logInfo "Starting VPN Service..."
+                    started <- true
+                    Logger.logInfo "VPN Service started successfully"
+                    Task.CompletedTask
+
+            member _.StopAsync(cancellationToken: CancellationToken) =
+                if not started then
+                    Logger.logInfo "VPN Service already stopped"
+                    Task.CompletedTask
+                else
+                    Logger.logInfo "Stopping VPN Service..."
+                    started <- false
+                    Logger.logInfo "VPN Service stopped"
+                    Task.CompletedTask
+
+        member _.clientRegistry = registry
+
+
+    type VpnPushService(data: VpnServerData, registry : ClientRegistry) =
+        let mutable started = false
 
         let routerConfig =
             {
@@ -47,12 +100,6 @@ module Service =
         let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
         let toSendError f = f |> ConfigErr
         let toReceiveError f = f |> ConfigErr
-
-        /// Verify the timestamp is recent (within 5 minutes)
-        let verifyAuthRequest (request: VpnAuthRequest) =
-            let timeDiff = DateTime.UtcNow - request.timestamp
-            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
-            else Ok ()
 
         let processPacket clientId packet =
             // Check if this is a DNS query to the VPN gateway
@@ -72,28 +119,14 @@ module Service =
                 | Ok () -> Ok ()
                 | Error msg -> Error (ConfigErr msg)
 
-        interface IVpnService with
-            member _.authenticate request =
-                Logger.logInfo $"Authentication request from client: {request.clientId.value}"
-
-                match verifyAuthRequest request with
-                | Ok () ->
-                    match registry.createSession(request.clientId) with
-                    | Ok session ->
-                        let response =
-                            {
-                                assignedIp = session.assignedIp
-                                serverPublicIp = serverVpnIp
-                            }
-                        Ok response
-                    | Error e -> Error e
-                | Error e -> Error e
+        interface IVpnPushService with
 
             /// This function is called sendPackets to match the client side.
             /// From the server side it is receiving packets sent by a client.
             member _.sendPackets (clientId, packets) =
-                match registry.tryGetSession(clientId) with
-                | Some _ ->
+                let hasSession = registry.tryGetPushSession(clientId).IsSome
+
+                if hasSession then
                     registry.updateActivity(clientId)
                     Logger.logTrace (fun () -> $"Server received {packets.Length} packets from client {clientId.value}.")
                     Logger.logTracePackets (packets, (fun () -> $"Server received packets from client:  '{clientId.value}': "))
@@ -105,47 +138,27 @@ module Service =
                         |> foldUnitResults VpnError.addError
 
                     result
-                | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
+                else
+                    Logger.logInfo $"Failed to find push session in registry: {registry.GetHashCode()} for client: '{clientId.value}'."
+                    Error (clientId |> SessionExpiredErr |> ServerErr)
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
-            /// Uses default wait parameters (250ms, 100 packets).
-            member this.receivePackets clientId =
-                (this :> IVpnServiceInternal).ReceivePacketsWithWait(clientId, 250, 100)
-
-        interface IVpnServiceInternal with
-            /// Receive packets with configurable wait and max packet parameters.
-            member _.ReceivePacketsWithWait(clientId, maxWaitMs, maxPackets) =
-                // Clamp parameters per spec.
-                let clampedMaxPackets = max 1 (min 1024 maxPackets)
-                let clampedMaxWaitMs = max 0 (min 2000 maxWaitMs)
-
-                match registry.tryGetSession(clientId) with
+            member _.receivePackets clientId =
+                match registry.tryGetPushSession(clientId) with
                 | Some session ->
                     registry.updateActivity(clientId)
+                    let packets = session.pendingPackets.dequeueMany(MaxReceivePacketsPerCall)
 
-                    // Attempt immediate dequeue up to maxPackets.
-                    let packets = registry.dequeuePacketsForClient(clientId, clampedMaxPackets)
-                    if packets.Length > 0 then
-                        let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
-                        Logger.logTrace (fun () -> $"Server sending {packets.Length} packets to client: '{clientId.value}', total {totalBytes} bytes")
-                        Logger.logTracePackets (packets, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
-                        Ok (Some packets)
-                    elif clampedMaxWaitMs > 0 then
-                        // No packets and wait requested - wait on semaphore.
-                        session.packetsAvailable.Wait(clampedMaxWaitMs) |> ignore
-                        let packets2 = registry.dequeuePacketsForClient(clientId, clampedMaxPackets)
-                        if packets2.Length > 0 then
-                            let totalBytes = packets2 |> Array.sumBy (fun p -> p.Length)
-                            Logger.logTrace (fun () -> $"Server sending {packets2.Length} packets to client: '{clientId.value}', total {totalBytes} bytes (after wait)")
-                            Logger.logTracePackets (packets2, (fun () -> $"Server sending packet to client:  '{clientId.value}': "))
-                            Ok (Some packets2)
-                        else
-                            Ok None
-                    else
-                        // No wait requested and no packets.
+                    if packets.Length = 0 then
                         Ok None
-                | None -> Error (clientId |> SessionExpiredErr |> ServerErr)
+                    else
+                        let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                        Logger.logTrace (fun () -> $"receivePackets: drained {packets.Length} packets ({totalBytes} bytes) for client {clientId.value}")
+                        Ok (Some packets)
+                | None ->
+                    Logger.logInfo $"receivePackets: no push session for client '{clientId.value}'."
+                    Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
@@ -175,4 +188,4 @@ module Service =
                     Logger.logInfo "VPN Service stopped"
                     Task.CompletedTask
 
-        member _.Registry = registry
+        member _.clientRegistry = registry

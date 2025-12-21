@@ -11,6 +11,10 @@ module Primitives =
 
 
     [<Literal>]
+    let AuthServiceName = "AuthService"
+
+
+    [<Literal>]
     let AdapterName = "SoftellectVPN"
 
 
@@ -19,9 +23,7 @@ module Primitives =
 
 
     type VpnTransportProtocol =
-        | WCF_Tunnel
-        | UDP_Tunnel
-        // | TCP_RawSocket
+        | UDP_Push
 
 
     type VpnServerId =

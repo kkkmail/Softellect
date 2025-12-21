@@ -1,6 +1,8 @@
 namespace Softellect.Vpn.Server
 
 open System.IO
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
@@ -40,11 +42,18 @@ module Program =
 
 
     let getProgram (data : VpnServerData) argv =
-        let getService = fun () -> VpnService(data) :> IVpnService
-
         match data.serverAccessInfo.vpnTransportProtocol with
-        | WCF_Tunnel -> getWcfProgram data getService argv
-        | UDP_Tunnel -> getUdpProgram data getService argv
+        | UDP_Push ->
+            let authService = AuthService(data)
+            let service = VpnPushService(data, authService.clientRegistry)
+
+            let configureServices (serviceCollection : IServiceCollection) =
+                serviceCollection.AddSingleton<IHostedService>(service :> IHostedService) |> ignore
+                let combinedUdpHostedService = getCombinedUdpHostedService data service authService.clientRegistry
+                serviceCollection.AddSingleton<IHostedService>(combinedUdpHostedService :> IHostedService) |> ignore
+
+            let getAuthService() = authService
+            getAuthWcfProgram data getAuthService argv (Some configureServices)
 
 
     let vpnServerMain argv =
