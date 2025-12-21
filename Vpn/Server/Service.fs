@@ -16,6 +16,9 @@ open Softellect.Sys.Rop
 
 module Service =
 
+    /// Maximum number of packets to drain per receivePackets call.
+    let [<Literal>] MaxReceivePacketsPerCall = 256
+
     type AuthService(data: VpnServerData) =
         let mutable started = false
 
@@ -141,8 +144,21 @@ module Service =
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
-            member this.receivePackets clientId =
-                failwith $"FUBAR for clientId: '{clientId.value}'."
+            member _.receivePackets clientId =
+                match registry.tryGetPushSession(clientId) with
+                | Some session ->
+                    registry.updateActivity(clientId)
+                    let packets = session.pendingPackets.dequeueMany(MaxReceivePacketsPerCall)
+
+                    if packets.Length = 0 then
+                        Ok None
+                    else
+                        let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
+                        Logger.logTrace (fun () -> $"receivePackets: drained {packets.Length} packets ({totalBytes} bytes) for client {clientId.value}")
+                        Ok (Some packets)
+                | None ->
+                    Logger.logInfo $"receivePackets: no push session for client '{clientId.value}'."
+                    Error (clientId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
