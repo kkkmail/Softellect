@@ -8,6 +8,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
+open Softellect.Vpn.Core.UdpProtocol
 open Softellect.Vpn.Interop
 open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.IcmpProxy
@@ -422,6 +423,9 @@ module PacketRouter =
                     let subnetMask = Ip4 "255.255.255.0"
 
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
+                    let mtuResult = createResult.Value.SetMtu(MtuSize)
+                    Logger.logInfo $"Server - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}."
+
                     if ipResult.IsSuccess then
                         running <- true
 

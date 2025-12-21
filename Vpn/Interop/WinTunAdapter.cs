@@ -366,6 +366,24 @@ public sealed class WinTunAdapter : IDisposable
             "set interface metric");
     }
 
+    /// <summary>
+    /// Sets the MTU on this adapter using netsh.
+    /// </summary>
+    /// <param name="mtu">MTU value in bytes.</param>
+    /// <returns>Result indicating success or failure.</returns>
+    public Result<Unit> SetMtu(int mtu)
+    {
+        if (mtu < 576 || mtu > 9000)
+            return Result<Unit>.Failure($"Invalid MTU: {mtu}");
+
+        // "subinterface" is the correct netsh target for MTU.
+        // Name must match the interface name as shown by:
+        //   netsh interface ipv4 show subinterfaces
+        return RunNetsh(
+            $"interface ipv4 set subinterface \"{_name}\" mtu={mtu} store=persistent",
+            "set MTU");
+    }
+
     public void Dispose()
     {
         if (_disposed)

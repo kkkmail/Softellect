@@ -9,6 +9,9 @@ open Softellect.Vpn.Core.Primitives
 module UdpProtocol =
 
     [<Literal>]
+    let MtuSize = 1300
+
+    [<Literal>]
     let CleanupIntervalMs = 250
 
     [<Literal>]
