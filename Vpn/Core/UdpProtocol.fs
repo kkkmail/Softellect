@@ -77,7 +77,7 @@ module UdpProtocol =
 
     /// Stats logging interval in milliseconds
     [<Literal>]
-    let PushStatsIntervalMs = 5000
+    let PushStatsIntervalMs = 60_000
 
 
     /// Build a push dataplane datagram.

@@ -17,7 +17,14 @@ open Softellect.Sys.Rop
 module Service =
 
     /// Maximum number of packets to drain per receivePackets call.
-    let [<Literal>] MaxReceivePacketsPerCall = 256
+    [<Literal>]
+    let MaxReceivePacketsPerCall = 256
+
+
+    /// Maximum number of packets to drain per receivePackets call.
+    [<Literal>]
+    let MaxSendPacketsPerCall = 256
+
 
     type AuthService(data: VpnServerData) =
         let mutable started = false

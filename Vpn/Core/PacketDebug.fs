@@ -13,26 +13,26 @@ module PacketDebug =
         if packet.Length = 0 then 0
         else int packet[0] >>> 4
 
-    
+
     let inline b2u16 (a: byte) (b: byte) = (uint16 a <<< 8) ||| uint16 b
 
-    
+
     let inline readUInt16BE (buf: byte[]) (offset: int) =
         b2u16 buf[offset] buf[offset + 1]
 
-    
+
     let inline readUInt32BE (buf: byte[]) (offset: int) =
         (uint32 buf[offset] <<< 24) ||| (uint32 buf[offset + 1] <<< 16) ||| (uint32 buf[offset + 2] <<< 8) ||| uint32 buf[offset + 3]
 
-    
+
     let inline ipv4ToString (a: byte) (b: byte) (c: byte) (d: byte) =
         $"{a}.{b}.{c}.{d}"
 
-    
+
     let inline isAsciiPrintable (b: byte) =
         b >= 32uy && b <= 126uy
 
-    
+
     let private tryParseDnsName (payload: byte[]) (startOffset: int) =
         // Parse QNAME (labels) from DNS question section.
         // Returns (name, nextOffset) or ("<err>", startOffset) on failure.
@@ -87,7 +87,7 @@ module PacketDebug =
         with _ ->
             "<dns-qname-ex>", startOffset
 
-    
+
     let private trySummarizeDns (udpPayload: byte[]) =
         // DNS header is 12 bytes
         if udpPayload.Length < 12 then
@@ -136,7 +136,7 @@ module PacketDebug =
             else
                 $"DNS q txid=0x{txid:X4} qd={qd} an={an} ns={ns} ar={ar}{namePart}"
 
-    
+
     let private tcpFlagsToString (flags: byte) =
         let addIf (cond: bool) (s: string) (acc: ResizeArray<string>) =
             if cond then acc.Add(s)
@@ -150,7 +150,7 @@ module PacketDebug =
         addIf ((flags &&& 0x20uy) <> 0uy) "urg" a
         if a.Count = 0 then "none" else String.Join("|", a)
 
-    
+
     /// ICMP
     let private summarizeIPv4ICMP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
         if bytes.Length < ihl + 4 then $"IPv4 ICMP: {srcIp} → {dstIp}, <icmp-too-short>, len={bytes.Length}"
@@ -176,8 +176,8 @@ module PacketDebug =
                 | _ -> $"type={icmpType}"
 
             $"IPv4 ICMP: {srcIp} → {dstIp}, {typeName}, code={icmpCode},{echoExtra} ipPayload={ipPayloadLen}, len={bytes.Length}"
-        
-    
+
+
     // /// IPv4 - TCP
     // let private summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
     //     if bytes.Length < ihl + 20 then $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <tcp-too-short>, len={bytes.Length}"
@@ -192,7 +192,7 @@ module PacketDebug =
     //         let appLen = max 0 (ipPayloadLen - tcpHdrLen)
     //
     //         $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}"
-        
+
     /// IPv4 - TCP
     let private summarizeIPv4TCP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
         if bytes.Length < ihl + 20 then
@@ -216,7 +216,7 @@ module PacketDebug =
                     else
                         let sbHex = System.Text.StringBuilder(n * 3)
                         let sbAsc = System.Text.StringBuilder(n)
-                        
+
                         for i in 0 .. (n - 1) do
                             let b = bytes[payloadOff + i]
                             sbHex.AppendFormat("{0:X2}", b) |> ignore
@@ -225,15 +225,15 @@ module PacketDebug =
                         $" pshDump[{n}]=<{sbHex}> ascii=<{sbAsc}>"
 
             let payloadOff = tcpOff + tcpHdrLen
-            
+
             let pshDump =
                 if isPsh && appLen > 0 && tcpHdrLen >= 20 then
                     hexdumpFirst64 payloadOff
                 else ""
 
             $"IPv4 TCP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, flags={tcpFlagsToString flags}, seq={seq}, ack={ack}, win={win}, ipPayload={ipPayloadLen}, tcpHdr={tcpHdrLen}, app={appLen}, len={bytes.Length}{pshDump}"
-        
-    
+
+
     /// IPv4 - UDP
     let private summarizeIPv4UDP srcIp srcPort dstIp dstPort ihl ipPayloadLen (bytes: byte[]) =
         if bytes.Length < ihl + 8 then $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, <udp-too-short>, len={bytes.Length}"
@@ -250,7 +250,11 @@ module PacketDebug =
             else
                 $"IPv4 UDP: {srcIp}:{srcPort} → {dstIp}:{dstPort}, udpLen={udpLen}, ipPayload={ipPayloadLen}, len={bytes.Length}"
 
-        
+    let getDstIp4 (bytes: byte[]) =
+        if bytes.Length >= 20 then ipv4ToString bytes[16] bytes[17] bytes[18] bytes[19]
+        else String.Empty
+
+
     /// IPv4
     let private summarizeIPv4Packet (bytes: byte[]) =
         let ihl = int (bytes[0] &&& 0x0Fuy) * 4
@@ -283,8 +287,8 @@ module PacketDebug =
             | _ ->
                 // Other IPv4
                 $"IPv4: {srcIp}:{srcPort} → {dstIp}:{dstPort}, proto={proto}, ipPayload={ipPayloadLen}, len={bytes.Length}"
-    
-    
+
+
     /// IPv6 (minimal)
     let private summarizeIPv6Packet (bytes: byte[]) =
         if bytes.Length < 40 then
@@ -305,8 +309,8 @@ module PacketDebug =
                 else 0, 0
 
             $"IPv6: {srcIp}:{srcPort} → {dstIp}:{dstPort}, next={nextHeader}, len={bytes.Length}"
-    
-    
+
+
     let summarizePacket (bytes: byte[]) =
         if isNull bytes then "<null packet>"
         elif bytes.Length < 20 then $"<packet too short: {bytes.Length} bytes>"
@@ -317,7 +321,7 @@ module PacketDebug =
             | 6 -> summarizeIPv6Packet bytes
             | _ -> $"<Unknown IP version={v}, len={bytes.Length}>"
 
-    
+
     type Logger with
         static member logTracePackets (packets : byte[][], getMessage: unit -> obj, [<CallerMemberName; Optional; DefaultParameterValue("")>] ?callerName) =
             if Logger.shouldLog TraceLog then
