@@ -83,8 +83,8 @@ module Service =
 
     /// kk:20240824 - We'd want to have a constraint "and 'Service :> 'IWcfService" but F# does not allow it as of this date.
     /// kk:20240824 - As of this date it seems impossible to use just one generic parameter 'IWcfService while in reality it is what we actually use.
-    ///     This is probably due to the fact that here we need to bind a WFC interface ('IWcfService) with a concrete implementation ('Service)
-    ///      and so providing just an interface is not enough from CoreWCF point of view. Revisit once / if this changes.
+    ///     This is probably because here we need to bind a WFC interface ('IWcfService) with a concrete implementation ('Service)
+    ///      and so providing just an interface is not enough from the CoreWCF point of view. Revisit once / if this changes.
     type WcfStartup<'IWcfService, 'WcfService when 'IWcfService : not struct and 'WcfService : not struct>(d : ServiceAccessInfo) =
         let createServiceModel (builder : IServiceBuilder) =
             let w (b : IServiceBuilder) =
@@ -106,7 +106,9 @@ module Service =
         member _.ConfigureServices(services : IServiceCollection) =
             do
                 services.AddServiceModelServices() |> ignore
-                services.AddTransient<'WcfService>() |> ignore
+
+                // TODO kk:2025122 - This seems to be a fuck up. Commenting out to see if this resolves the registration issues.
+                // services.AddTransient<'WcfService>() |> ignore
 
         member _.Configure(app : IApplicationBuilder, _ : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
