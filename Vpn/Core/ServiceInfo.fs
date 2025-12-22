@@ -59,6 +59,8 @@ module ServiceInfo =
             vpnTransportProtocol : VpnTransportProtocol
             physicalGatewayIp : IpAddress
             physicalInterfaceName : string
+            useEncryption : bool
+            encryptionType : EncryptionType
         }
 
 
@@ -66,5 +68,14 @@ module ServiceInfo =
         {
             serverAccessInfo : VpnServerAccessInfo
             serverPrivateKey : PrivateKey
+            serverPublicKey : PublicKey
+        }
+
+
+    type VpnClientServiceData =
+        {
+            clientAccessInfo : VpnClientAccessInfo
+            clientPrivateKey : PrivateKey
+            clientPublicKey : PublicKey
             serverPublicKey : PublicKey
         }

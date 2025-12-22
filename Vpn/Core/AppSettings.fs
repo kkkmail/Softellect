@@ -25,6 +25,8 @@ module AppSettings =
     let localLanExclusionsKey = ConfigKey "LocalLanExclusions"
     let physicalGatewayIpKey = ConfigKey "PhysicalGatewayIp"
     let physicalInterfaceNameKey = ConfigKey "PhysicalInterfaceName"
+    let useEncryptionKey = ConfigKey "UseEncryption"
+    let encryptionTypeKey = ConfigKey "EncryptionType"
 
     let defaultPhysicalGatewayIp = Ip4 "192.168.1.1"
     let defaultPhysicalInterfaceName = "Wi-Fi"
@@ -50,6 +52,8 @@ module AppSettings =
                 vpnTransportProtocol = getVpnTransportProtocol()
                 physicalGatewayIp = defaultPhysicalGatewayIp
                 physicalInterfaceName = defaultPhysicalInterfaceName
+                useEncryption = false
+                encryptionType = EncryptionType.defaultValue
             }
 
 
@@ -95,10 +99,22 @@ module AppSettings =
             | Some a, Some b ->
                 match b |> VpnIpAddress.tryCreate with
                 | Some v ->
+                    let useEncryption =
+                        match p |> Map.tryFind (nameof VpnClientData.marker.useEncryption) with
+                        | Some s -> s.ToLower() = "true"
+                        | None -> false
+
+                    let encryptionType =
+                        match p |> Map.tryFind (nameof VpnClientData.marker.encryptionType) with
+                        | Some s -> EncryptionType.create s
+                        | None -> EncryptionType.defaultValue
+
                     {
                         clientName = VpnClientName a
                         assignedIp = v
                         vpnTransportProtocol = getVpnTransportProtocol()
+                        useEncryption = useEncryption
+                        encryptionType = encryptionType
                     }
                     |> Ok
                 | None -> $"Some values in '{s}' are invalid." |> ConfigErr |> Error
@@ -184,6 +200,17 @@ module AppSettings =
                 else
                     s
 
+            let useEncryption =
+                let s = provider.getStringOrDefault useEncryptionKey ""
+                s.ToLower() = "true"
+
+            let encryptionType =
+                let s = provider.getStringOrDefault encryptionTypeKey ""
+                if String.IsNullOrWhiteSpace s then
+                    EncryptionType.defaultValue
+                else
+                    EncryptionType.create s
+
             {
                 vpnClientId = clientId
                 vpnServerId = vpnServerId
@@ -194,6 +221,8 @@ module AppSettings =
                 vpnTransportProtocol = getVpnTransportProtocol()
                 physicalGatewayIp = physicalGatewayIp
                 physicalInterfaceName = physicalInterfaceName
+                useEncryption = useEncryption
+                encryptionType = encryptionType
             }
         | Error e ->
             Logger.logCrit $"loadVpnClientAccessInfo - Cannot load settings. Error: '%A{e}'."

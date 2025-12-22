@@ -8,6 +8,7 @@ open Softellect.Sys.AppSettings
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.KeyManagement
+open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Service
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting

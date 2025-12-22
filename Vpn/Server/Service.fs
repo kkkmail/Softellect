@@ -54,12 +54,14 @@ module Service =
                 | Ok () ->
                     match registry.createPushSession(request.clientId) with
                     | Ok session ->
-                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}'."
+                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId={session.sessionId.value}."
 
                         let response =
                             {
                                 assignedIp = session.assignedIp
                                 serverPublicIp = serverVpnIp
+                                sessionId = session.sessionId
+                                sessionAesKey = session.sessionAesKey
                             }
                         Ok response
                     | Error e -> Error e

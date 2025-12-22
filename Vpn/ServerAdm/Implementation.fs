@@ -146,6 +146,8 @@ module Implementation =
                                 clientName = VpnClientName clientName
                                 assignedIp = assignedIp
                                 vpnTransportProtocol = getVpnTransportProtocol()
+                                useEncryption = true
+                                encryptionType = EncryptionType.defaultValue
                             }
                     }
 

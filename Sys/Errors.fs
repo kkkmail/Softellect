@@ -84,7 +84,9 @@ module Errors =
     type CryptoError =
         | SignDataExn of exn
         | TryEncryptAesExn of exn
+        | TryEncryptAesKeyExn of exn
         | TryDecryptAesExn of exn
+        | TryDecryptAesKeyExn of exn
         | TryEncryptRsaExn of exn
         | TryDecryptRsaExn of exn
         | VerifySignatureExn of exn
