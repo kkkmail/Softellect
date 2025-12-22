@@ -15,12 +15,12 @@ module UdpProtocol =
 
     /// MTU for push dataplane (conservative to avoid fragmentation)
     [<Literal>]
-    let PushMtu = 1380
+    // let PushMtu = 1380
+    let PushMtu = 1680
 
     /// Must be smaller than or equal to PushMtu - PushClientIdSize - 1 (for command byte).
     [<Literal>]
-    // let MtuSize = 1300
-    let MtuSize = 1000
+    let MtuSize = 1300
 
     [<Literal>]
     let CleanupIntervalMs = 250
