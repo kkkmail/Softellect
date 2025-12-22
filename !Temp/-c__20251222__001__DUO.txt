@@ -1,57 +1,50 @@
-# 20251222_134011.238 #    0.058 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
-# 20251222_134011.276 #    0.097 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
-# 20251222_134011.344 #    0.164 # INFO  # StartAsync # "Starting Push VPN Client Service..."
-# 20251222_134011.344 #    0.164 # INFO  # enableKillSwitch # "Enabling kill-switch..."
-# 20251222_134011.353 #    0.174 # INFO  # enableKillSwitch # "Kill-switch enabled"
-# 20251222_134011.354 #    0.174 # INFO  # authenticate # "Push: Authenticating with server..."
-# 20251222_134011.359 #    0.179 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
-# 20251222_134011.368 #    0.188 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+# 20251222_165132.318 #    0.068 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+# 20251222_165132.512 #    0.262 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251222_165132.695 #    0.445 # INFO  # StartAsync # "Starting Push VPN Client Service..."
+# 20251222_165132.696 #    0.445 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251222_165132.706 #    0.456 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251222_165132.707 #    0.457 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251222_165132.714 #    0.464 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251222_165132.726 #    0.476 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
                     netTcpServicePort = ServicePort 45001
                     netTcpServiceName = ServiceName "VpnService"
                     netTcpSecurityMode = NoSecurity }'"
-# 20251222_134013.711 #    2.532 # INFO  # authenticate # "Push: Authenticated successfully. Assigned IP: Ip4 "10.66.77.2""
-# 20251222_134013.712 #    2.532 # INFO  # startTunnel # "Starting tunnel with assignedIp: '10.66.77.2'."
-# 20251222_134013.714 #    2.534 # INFO  # start # "Starting tunnel with adapter: SoftellectVPN"
-# 20251222_134014.492 #    3.312 # INFO  # start # "Client - ipResult: True, mtuResult: True."
-# 20251222_134014.492 #    3.312 # INFO  # start # "Setting DNS server to: 10.66.77.1"
-# 20251222_134025.648 #   14.468 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 delete route 72.167.224.50/32 "Wi-Fi" 192.168.2.1'."
-# 20251222_134025.717 #   14.537 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
-# 20251222_134025.801 #   14.621 # INFO  # addHostRoute # "Successfully executed: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
-# 20251222_134025.801 #   14.621 # INFO  # start # "Adding route 0.0.0.0/1 via 10.66.77.1"
-# 20251222_134025.872 #   14.692 # INFO  # start # "Adding route 128.0.0.0/1 via 10.66.77.1"
-# 20251222_134025.942 #   14.763 # INFO  # start # "Tunnel started with IP: Ip4 "10.66.77.2""
-# 20251222_134025.942 #   14.763 # INFO  # StartAsync # "Push: Tunnel started with IP: '10.66.77.2'."
-# 20251222_134025.943 #   14.764 # INFO  # StartAsync # "Kill-switch: permitted VPN local address Ip4 "10.66.77.2""
-# 20251222_134025.943 #   14.764 # INFO  # StartAsync # "Creating and starting push UDP client."
-# 20251222_134025.945 #   14.766 # INFO  # .ctor # "Created - Server: Ip4 "72.167.224.50":45001, ClientId: 10e38c19-d220-4852-8589-82eca51ade92, UseEncryption: True, Local=192.168.2.92:64532"
-# 20251222_134025.945 #   14.766 # INFO  # StartAsync # "Setting up direct injection from push client to tunnel."
-# 20251222_134025.945 #   14.766 # INFO  # StartAsync # "Starting push client loops."
-# 20251222_134025.946 #   14.766 # INFO  # start # "Started"
-# 20251222_134025.946 #   14.766 # INFO  # StartAsync # "Starting send loop (tunnel -> push client) - sendLoopAsync."
-# 20251222_134025.946 #   14.767 # INFO  # StartAsync # "Push VPN Client connected with IP: Ip4 "10.66.77.2""
-# 20251222_134025.947 #   14.767 # INFO  # keepaliveLoop # "Keepalive loop started."
-# 20251222_134025.947 #   14.768 # INFO  # sendLoop # "Send loop started."
+# 20251222_165135.258 #    3.008 # ERROR # authenticate # "AuthWcfClient: WCF call failed: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'."
+# 20251222_165135.280 #    3.030 # ERROR # authenticate # "Push: Authentication error"
+# 20251222_165135.283 #    3.033 # ERROR # StartAsync # "Push: Authentication failed: Authentication error: 'ConnectionErr
+  (AuthFailedErr
+     (AuthWcfError
+        (AuthWcfErr
+           (WcfExn
+              System.ServiceModel.FaultException`1[System.ServiceModel.ExceptionDetail]: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'. (Fault Detail is equal to An ExceptionDetail, likely created by IncludeExceptionDetailInFaults=true, whose value is:
+System.InvalidOperationException: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain, ParameterInfo[] parameters, Boolean throwIfCallSiteNotFound)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateConstructorCallSite(ResultCache lifetime, ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, Int32 slot)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateCallSite(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.GetCallSite(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.CreateServiceAccessor(ServiceIdentifier serviceIdentifier)
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.ScopedServiceProviderExtension.GetService(Type serviceType)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.GetInstanceFromDIWithLegacyFallback(InstanceContext instanceContext)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.GetInstance(InstanceContext instanceContext, Message message)
+   at CoreWCF.Dispatcher.InstanceBehavior.GetInstance(InstanceContext instanceContext, Message request)
+   at CoreWCF.InstanceContext.GetServiceInstance(Message message)
+   at CoreWCF.Dispatcher.InstanceBehavior.EnsureServiceInstance(MessageRpc rpc)
+   at CoreWCF.Dispatcher.ImmutableDispatchRuntime.ProcessMessageAsync(MessageRpc rpc)
+   at CoreWCF.Dispatcher.MessageRpc.ProcessAsync(Boolean isOperationContextSet)).))))'."
 info: Microsoft.Hosting.Lifetime[0]
       Application started. Press Ctrl+C to shut down.
-# 20251222_134025.948 #   14.769 # INFO  # receiveLoop # "Receive loop started."
 info: Microsoft.Hosting.Lifetime[0]
       Hosting environment: Production
 info: Microsoft.Hosting.Lifetime[0]
       Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
-# 20251222_134056.166 #   44.986 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=1024/217839B udp_tx=1024/1815776B udp_rx=841/1650752B dropped(mtu=0 outQ=0 injQ=0)"
-# 20251222_134126.209 #   75.029 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=1928/431976B udp_tx=1928/3440672B udp_rx=1947/4427888B dropped(mtu=0 outQ=0 injQ=0)"
-# 20251222_134156.217 #  105.037 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=3012/634758B udp_tx=3010/5331408B udp_rx=3083/7159824B dropped(mtu=0 outQ=0 injQ=0)"
-# 20251222_134226.242 #  135.062 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=4449/1033626B udp_tx=4448/7974160B udp_rx=4393/10350400B dropped(mtu=0 outQ=0 injQ=0)"
-# 20251222_134256.266 #  165.087 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=5468/1185712B udp_tx=5466/9713376B udp_rx=5566/13154608B dropped(mtu=0 outQ=0 injQ=0)"
 info: Microsoft.Hosting.Lifetime[0]
       Application is shutting down...
-# 20251222_134316.574 #  185.394 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
-# 20251222_134316.587 #  185.408 # INFO  # sendLoop # "Send loop stopped."
-# 20251222_134316.669 #  185.490 # INFO  # receiveLoop # "Receive loop stopped."
-# 20251222_134318.681 #  187.502 # INFO  # stop # "Stopped"
-# 20251222_134318.682 #  187.502 # INFO  # stop # "Stopped"
-# 20251222_134318.683 #  187.503 # INFO  # stop # "Stopping tunnel"
-# 20251222_134318.940 #  187.760 # INFO  # stop # "Tunnel stopped"
-# 20251222_134318.940 #  187.761 # INFO  # disableKillSwitch # "Disabling kill-switch..."
-# 20251222_134319.438 #  188.259 # INFO  # disableKillSwitch # "Kill-switch disabled"
-# 20251222_134319.438 #  188.259 # INFO  # StopAsync # "Push VPN Client Service stopped"
+# 20251222_165200.532 #   28.281 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251222_165200.532 #   28.282 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251222_165200.534 #   28.283 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251222_165200.534 #   28.283 # INFO  # StopAsync # "Push VPN Client Service stopped"
