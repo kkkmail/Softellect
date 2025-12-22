@@ -16,6 +16,13 @@ module Crypto =
     let private toError e = e |> CryptoErr |> Error
 
 
+    type AesKey =
+        {
+            key : byte[]
+            iv : byte[]
+        }
+
+
     /// Signs the data using the sender's private key.
     let signData (data: byte[]) (PrivateKey privateKey) =
         try
@@ -39,6 +46,28 @@ module Crypto =
             | false -> VerifySignatureFailedError |> CryptoErr |> Error
         with
         | ex -> ex |> VerifySignatureExn |> CryptoErr |> Error
+
+
+    /// Encrypts large data by AES for the data.
+    let tryEncryptAesKey (data: byte[]) (aesKey : AesKey) =
+        try
+            use aes = Aes.Create()
+            aes.Key <- aesKey.key
+            aes.IV <- aesKey.iv
+
+            // Encrypt the data using AES
+            use encryptor = aes.CreateEncryptor()
+
+            let encryptedData =
+                use ms = new MemoryStream()
+                use cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write)
+                cs.Write(data, 0, data.Length)
+                cs.FlushFinalBlock()
+                ms.ToArray()
+
+            Ok encryptedData
+        with
+        | ex -> ex |> TryEncryptAesKeyExn |> CryptoErr |> Error
 
 
     /// Encrypts large data by using RSA for the symmetric key and AES for the data.
@@ -71,6 +100,28 @@ module Crypto =
             Ok result
         with
         | ex -> ex |> TryEncryptAesExn |> CryptoErr |> Error
+
+
+    /// Decrypts data with AES.
+    let tryDecryptAesKey (aesData: byte[]) (aesKey : AesKey) =
+        try
+            // Decrypt the data using AES
+            use aes = Aes.Create()
+            aes.Key <- aesKey.key
+            aes.IV <- aesKey.iv
+
+            use decryptor = aes.CreateDecryptor()
+
+            let decryptedData =
+                use ms = new MemoryStream()
+                use cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Write)
+                cs.Write(aesData, 0, aesData.Length)
+                cs.FlushFinalBlock()
+                ms.ToArray()
+
+            Ok decryptedData
+        with
+        | ex -> ex |> TryDecryptAesKeyExn |> CryptoErr |> Error
 
 
     /// Decrypts data by first decrypting the symmetric key and IV with RSA, then decrypting the data with AES.
