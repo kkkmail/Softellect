@@ -34,7 +34,7 @@ module Implementation =
         | Ok () ->
             // Use the client ID as the key ID
             let keyId = KeyId ctx.clientAccessInfo.vpnClientId.value
-            let (publicKey, privateKey) = generateKey keyId
+            let publicKey, privateKey = generateKey keyId
 
             match tryExportPrivateKey keyFolder privateKey force with
             | Ok privateKeyFile ->
@@ -79,7 +79,7 @@ module Implementation =
             if pkxFiles.Length = 0 then
                 Error $"No public key found in {keyFolder.value}. Generate keys first."
             else
-                let sourceFile = FileName pkxFiles.[0]
+                let sourceFile = FileName pkxFiles[0]
 
                 match tryImportPublicKey sourceFile None with
                 | Ok (keyId, publicKey) ->
@@ -232,8 +232,8 @@ module Implementation =
             let hasDefaultRoute = parts |> Array.exists (fun p -> p = "0.0.0.0/0")
             if hasDefaultRoute && parts.Length >= 6 then
                 // Last part is gateway IP, second to last is interface index
-                let gateway = parts.[parts.Length - 1]
-                let interfaceIdx = parts.[parts.Length - 2]
+                let gateway = parts[parts.Length - 1]
+                let interfaceIdx = parts[parts.Length - 2]
                 match Int32.TryParse(interfaceIdx) with
                 | true, idx -> Some (idx, gateway)
                 | false, _ ->
@@ -249,7 +249,7 @@ module Implementation =
                             | true, v when v > 0 && v < 1000 -> Some v
                             | _ -> None)
                         if idxCandidates.Length > 0 then
-                            Some (idxCandidates.[0], ipParts.[ipParts.Length - 1])
+                            Some (idxCandidates[0], ipParts[ipParts.Length - 1])
                         else None
                     else None
             else None)
@@ -266,7 +266,7 @@ module Implementation =
             |> Array.tryPick (fun line ->
                 let parts = line.Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
                 if parts.Length >= 5 then
-                    match Int32.TryParse(parts.[0]) with
+                    match Int32.TryParse(parts[0]) with
                     | true, idx when idx = interfaceIdx ->
                         // Interface name is the last part (may contain spaces, so take everything after State)
                         // Find "connected" or similar state words, name is after
@@ -276,7 +276,7 @@ module Implementation =
                         | Some si when si < parts.Length - 1 ->
                             let nameParts = parts |> Array.skip (si + 1)
                             Some (String.Join(" ", nameParts))
-                        | _ -> Some parts.[parts.Length - 1]
+                        | _ -> Some parts[parts.Length - 1]
                     | _ -> None
                 else None)
             |> Option.map Ok
