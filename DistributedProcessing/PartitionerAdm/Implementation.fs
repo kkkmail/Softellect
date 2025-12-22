@@ -283,7 +283,7 @@ module Implementation =
             Logger.logInfo $"Extracting current migration state using '{exe}' to '{outputFilePath}'"
 
             match tryExecuteFile (FileName exe) commandLine with
-            | Ok exitCode ->
+            | Ok (exitCode, _) ->
                 if exitCode = 0 then
                     if File.Exists outputFilePath then Logger.logInfo $"Successfully extracted migration state to '{outputFilePath}'."
                     else failwith $"Migration executable ran successfully but output file '{outputFilePath}' was not created."

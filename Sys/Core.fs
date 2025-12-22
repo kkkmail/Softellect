@@ -649,8 +649,12 @@ module Core =
             startInfo.UseShellExecute <- false
 
             use p = Process.Start(startInfo)
+            let stdout = p.StandardOutput.ReadToEnd()
+            let stderr = p.StandardError.ReadToEnd()
             p.WaitForExit()
-            Ok p.ExitCode
+
+            if p.ExitCode = 0 then Ok (p.ExitCode, stdout)
+            else ExecuteFileErr (p.ExitCode, stderr) |> Error
         with
         | e -> ExecuteFileExn e |> Error
 

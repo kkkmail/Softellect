@@ -102,8 +102,8 @@ module Service =
             gatewayIp = gatewayIp
             dnsServerIp = gatewayIp
             serverPublicIp = getServerIpAddress data
-            physicalGatewayIp = Ip4 "192.168.2.1"
-            physicalInterfaceName = "Wi-Fi"
+            physicalGatewayIp = data.clientAccessInfo.physicalGatewayIp
+            physicalInterfaceName = data.clientAccessInfo.physicalInterfaceName
         }
 
 
