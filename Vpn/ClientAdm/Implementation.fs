@@ -1,7 +1,6 @@
 namespace Softellect.Vpn.ClientAdm
 
 open System
-open System.Diagnostics
 open System.IO
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
@@ -219,25 +218,6 @@ module Implementation =
                 Error $"Failed to update configuration: %A{e}"
 
 
-    let private runCommand (processName: string) (arguments: string) =
-        try
-            let psi = ProcessStartInfo(processName, arguments)
-            psi.RedirectStandardOutput <- true
-            psi.RedirectStandardError <- true
-            psi.UseShellExecute <- false
-            psi.CreateNoWindow <- true
-
-            use proc = Process.Start(psi)
-            let stdout = proc.StandardOutput.ReadToEnd()
-            let stderr = proc.StandardError.ReadToEnd()
-            proc.WaitForExit()
-
-            if proc.ExitCode = 0 then Ok stdout
-            else Error $"Exit code {proc.ExitCode}: {stderr}"
-        with
-        | ex -> Error $"Failed to run '{processName}': {ex.Message}"
-
-
     let private tryParseDefaultRoute (routeOutput: string) =
         // Parse output of: netsh interface ipv4 show route
         // Looking for a line with destination 0.0.0.0/0
@@ -279,8 +259,8 @@ module Implementation =
         // Parse output of: netsh interface ipv4 show interfaces
         // Format: Idx     Met         MTU          State                Name
         //           6      25        1500  connected     Wi-Fi
-        match runCommand "netsh" "interface ipv4 show interfaces" with
-        | Ok output ->
+        match tryExecuteFile (FileName "netsh") "interface ipv4 show interfaces" with
+        | Ok (_, output) ->
             let lines = output.Split([| '\r'; '\n' |], StringSplitOptions.RemoveEmptyEntries)
             lines
             |> Array.tryPick (fun line ->
@@ -301,14 +281,14 @@ module Implementation =
                 else None)
             |> Option.map Ok
             |> Option.defaultValue (Error $"Interface with index {interfaceIdx} not found")
-        | Error e -> Error e
+        | Error e -> Error $"%A{e}"
 
 
     let detectPhysicalNetwork (_ctx: ClientAdmContext) =
         Logger.logInfo "Detecting physical network configuration..."
 
-        match runCommand "netsh" "interface ipv4 show route" with
-        | Ok routeOutput ->
+        match tryExecuteFile (FileName "netsh") "interface ipv4 show route" with
+        | Ok (_, routeOutput) ->
             match tryParseDefaultRoute routeOutput with
             | Some (interfaceIdx, gatewayIp) ->
                 Logger.logInfo $"Detected default gateway: {gatewayIp} (interface index: {interfaceIdx})"
@@ -338,5 +318,5 @@ module Implementation =
                 Logger.logError "Could not find default route (0.0.0.0/0) in routing table"
                 Error "Could not find default route (0.0.0.0/0) in routing table"
         | Error e ->
-            Logger.logError $"Failed to get routing table: {e}"
-            Error $"Failed to get routing table: {e}"
+            Logger.logError $"Failed to get routing table: %A{e}"
+            Error $"Failed to get routing table: %A{e}"

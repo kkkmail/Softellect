@@ -27,7 +27,7 @@ module Program =
                         | ImportServerKey args -> importServerKey ctx (args.GetAllResults())
                         | Status args -> status ctx (args.GetAllResults())
                         | SetServer args -> setServer ctx (args.GetAllResults())
-                        | DetectPhysicalNetwork -> detectPhysicalNetwork ctx
+                        | DetectPhysicalNetwork _ -> detectPhysicalNetwork ctx
                     )
 
             retVal |> List.iter (fun x ->

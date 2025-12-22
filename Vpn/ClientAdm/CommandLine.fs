@@ -63,13 +63,24 @@ module CommandLine =
 
 
     and
+        [<CliPrefix(CliPrefix.Dash)>]
+        DetectPhysicalNetworkArgs =
+        | [<Hidden>] Placeholder
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | Placeholder -> ""
+
+
+    and
         VpnClientAdmArgs =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ImportServerKey of ParseResults<ImportServerKeyArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] Status of ParseResults<StatusArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] SetServer of ParseResults<SetServerArgs>
-        | [<Unique>] [<CliPrefix(CliPrefix.None)>] DetectPhysicalNetwork
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] DetectPhysicalNetwork of ParseResults<DetectPhysicalNetworkArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -79,4 +90,4 @@ module CommandLine =
                 | ImportServerKey _ -> "imports server's public key."
                 | Status _ -> "shows current VPN client configuration and status."
                 | SetServer _ -> "configures VPN server address and port."
-                | DetectPhysicalNetwork -> "detects physical network route and writes to appsettings.json."
+                | DetectPhysicalNetwork _ -> "detects physical network route and writes to appsettings.json."

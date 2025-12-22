@@ -647,6 +647,9 @@ module Core =
             startInfo.FileName <- fileName
             startInfo.Arguments <- commandLine
             startInfo.UseShellExecute <- false
+            startInfo.RedirectStandardOutput <- true
+            startInfo.RedirectStandardError <- true
+            startInfo.CreateNoWindow <- true
 
             use p = Process.Start(startInfo)
             let stdout = p.StandardOutput.ReadToEnd()
