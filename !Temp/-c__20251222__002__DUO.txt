@@ -1,0 +1,61 @@
+# 20251222_170925.814 #    0.057 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'TraceLog'."
+# 20251222_170925.835 #    0.078 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+# 20251222_170925.850 #    0.093 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251222_170925.852 #    0.095 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.key"'."
+# 20251222_170925.857 #    0.100 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"', fullPath = '"C:\Keys\VpnClient\10e38c19-d220-4852-8589-82eca51ade92.pkx"'."
+# 20251222_170925.859 #    0.101 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"', fullPath = '"C:\Keys\VpnServer\fb22de75-91c0-4adc-8d17-87078ea226a4.pkx"'."
+# 20251222_170925.887 #    0.130 # TRACE # tryGetFullFileName # "tryGetFullFileName: fileName = '"appsettings.json"', fullPath = '"C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0\appsettings.json"'."
+# 20251222_170925.914 #    0.157 # INFO  # StartAsync # "Starting Push VPN Client Service..."
+# 20251222_170925.914 #    0.157 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251222_170925.924 #    0.167 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251222_170925.925 #    0.167 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251222_170925.930 #    0.173 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251222_170925.940 #    0.183 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251222_170925.943 #    0.185 # TRACE # authenticate # "authenticate: Sending encrypted auth request for client 10e38c19-d220-4852-8589-82eca51ade92"
+# 20251222_170926.053 #    0.296 # TRACE # tryEncryptAndSign # "tryEncryptAndSign: Using AES"
+# 20251222_170926.087 #    0.330 # TRACE # getService # "AuthWcfClient.getService - About to call tryGetWcfService with URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251222_170926.089 #    0.332 # TRACE # tryGetWcfService # "tryGetWcfService - t: 'NetTcpCommunication NoSecurity', url: '"net.tcp://72.167.224.50:45001/VpnService"'."
+# 20251222_170926.100 #    0.343 # TRACE # tryGetWcfService # "tryGetWcfService - binding: 'NetTcpBinding System.ServiceModel.NetTcpBinding', address: 'net.tcp://72.167.224.50:45001/VpnService'."
+# 20251222_170926.177 #    0.420 # TRACE # getService # "AuthWcfClient.getService - Successfully created WCF service proxy"
+# 20251222_170927.695 #    1.938 # ERROR # authenticate # "AuthWcfClient: WCF call failed: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'."
+# 20251222_170927.714 #    1.957 # ERROR # authenticate # "Push: Authentication error"
+# 20251222_170927.717 #    1.960 # ERROR # StartAsync # "Push: Authentication failed: Authentication error: 'ConnectionErr
+  (AuthFailedErr
+     (AuthWcfError
+        (AuthWcfErr
+           (WcfExn
+              System.ServiceModel.FaultException`1[System.ServiceModel.ExceptionDetail]: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'. (Fault Detail is equal to An ExceptionDetail, likely created by IncludeExceptionDetailInFaults=true, whose value is:
+System.InvalidOperationException: Unable to resolve service for type 'Softellect.Vpn.Core.ServiceInfo+VpnServerData' while attempting to activate 'Softellect.Vpn.Server.WcfServer+AuthWcfService'.
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateArgumentCallSites(ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain, ParameterInfo[] parameters, Boolean throwIfCallSiteNotFound)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateConstructorCallSite(ResultCache lifetime, ServiceIdentifier serviceIdentifier, Type implementationType, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, Int32 slot)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.TryCreateExact(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.CreateCallSite(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.GetCallSite(ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.CreateServiceAccessor(ServiceIdentifier serviceIdentifier)
+   at System.Collections.Concurrent.ConcurrentDictionary`2.GetOrAdd(TKey key, Func`2 valueFactory)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider.GetService(ServiceIdentifier serviceIdentifier, ServiceProviderEngineScope serviceProviderEngineScope)
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope.GetService(Type serviceType)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.ScopedServiceProviderExtension.GetService(Type serviceType)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.GetInstanceFromDIWithLegacyFallback(InstanceContext instanceContext)
+   at CoreWCF.Dispatcher.DependencyInjectionWithLegacyFallbackInstanceProvider.GetInstance(InstanceContext instanceContext, Message message)
+   at CoreWCF.Dispatcher.InstanceBehavior.GetInstance(InstanceContext instanceContext, Message request)
+   at CoreWCF.InstanceContext.GetServiceInstance(Message message)
+   at CoreWCF.Dispatcher.InstanceBehavior.EnsureServiceInstance(MessageRpc rpc)
+   at CoreWCF.Dispatcher.ImmutableDispatchRuntime.ProcessMessageAsync(MessageRpc rpc)
+   at CoreWCF.Dispatcher.MessageRpc.ProcessAsync(Boolean isOperationContextSet)).))))'."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+# 20251222_170945.007 #   19.250 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251222_170945.007 #   19.250 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251222_170945.009 #   19.251 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251222_170945.009 #   19.252 # INFO  # StopAsync # "Push VPN Client Service stopped"
