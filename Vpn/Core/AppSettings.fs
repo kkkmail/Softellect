@@ -11,8 +11,6 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Wcf.Common
 
 module AppSettings =
-    // let getVpnTransportProtocol() = VpnTransportProtocol.WCF_Tunnel
-    // let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Tunnel
     let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
@@ -25,7 +23,11 @@ module AppSettings =
     let clientKeyPathKey = ConfigKey "ClientKeyPath"
     let serverPublicKeyPathKey = ConfigKey "ServerPublicKeyPath"
     let localLanExclusionsKey = ConfigKey "LocalLanExclusions"
-    // let vpnClientsKey = ConfigKey "VpnClients"
+    let physicalGatewayIpKey = ConfigKey "PhysicalGatewayIp"
+    let physicalInterfaceNameKey = ConfigKey "PhysicalInterfaceName"
+
+    let defaultPhysicalGatewayIp = Ip4 "192.168.1.1"
+    let defaultPhysicalInterfaceName = "Wi-Fi"
 
 
     type VpnClientAccessInfo
@@ -46,6 +48,8 @@ module AppSettings =
                 serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
                 localLanExclusions = LocalLanExclusion.defaultValues
                 vpnTransportProtocol = getVpnTransportProtocol()
+                physicalGatewayIp = defaultPhysicalGatewayIp
+                physicalInterfaceName = defaultPhysicalInterfaceName
             }
 
 
@@ -162,6 +166,24 @@ module AppSettings =
                 else
                     tryParseLocalLanExclusions s
 
+            let physicalGatewayIp =
+                let s = provider.getStringOrDefault physicalGatewayIpKey ""
+                if String.IsNullOrWhiteSpace s then
+                    defaultPhysicalGatewayIp
+                else
+                    match IpAddress.tryCreate s with
+                    | Some ip -> ip
+                    | None ->
+                        Logger.logWarn $"loadVpnClientAccessInfo - Invalid PhysicalGatewayIp '{s}', using default."
+                        defaultPhysicalGatewayIp
+
+            let physicalInterfaceName =
+                let s = provider.getStringOrDefault physicalInterfaceNameKey ""
+                if String.IsNullOrWhiteSpace s then
+                    defaultPhysicalInterfaceName
+                else
+                    s
+
             {
                 vpnClientId = clientId
                 vpnServerId = vpnServerId
@@ -170,6 +192,8 @@ module AppSettings =
                 serverPublicKeyPath = serverPublicKeyPath
                 localLanExclusions = localLanExclusions
                 vpnTransportProtocol = getVpnTransportProtocol()
+                physicalGatewayIp = physicalGatewayIp
+                physicalInterfaceName = physicalInterfaceName
             }
         | Error e ->
             Logger.logCrit $"loadVpnClientAccessInfo - Cannot load settings. Error: '%A{e}'."
@@ -209,12 +233,28 @@ module AppSettings =
                 |> String.concat ";"
 
             provider.trySet localLanExclusionsKey exclusionsStr |> ignore
+            provider.trySet physicalGatewayIpKey info.physicalGatewayIp.value |> ignore
+            provider.trySet physicalInterfaceNameKey info.physicalInterfaceName |> ignore
 
             match provider.trySave() with
             | Ok () -> Ok ()
             | Error e -> toErr $"Failed to save settings: %A{e}"
         | Error e ->
             Logger.logError $"updateVpnClientAccessInfo: ERROR - %A{e}."
+            toErr $"Failed to create settings provider: %A{e}"
+
+
+    let tryWritePhysicalNetworkConfig (gatewayIp: IpAddress) (interfaceName: string) =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            provider.trySet physicalGatewayIpKey gatewayIp.value |> ignore
+            provider.trySet physicalInterfaceNameKey interfaceName |> ignore
+
+            match provider.trySave() with
+            | Ok () -> Ok ()
+            | Error e -> toErr $"Failed to save settings: %A{e}"
+        | Error e ->
+            Logger.logError $"tryWritePhysicalNetworkConfig: ERROR - %A{e}."
             toErr $"Failed to create settings provider: %A{e}"
 
 

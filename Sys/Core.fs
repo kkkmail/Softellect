@@ -647,10 +647,17 @@ module Core =
             startInfo.FileName <- fileName
             startInfo.Arguments <- commandLine
             startInfo.UseShellExecute <- false
+            startInfo.RedirectStandardOutput <- true
+            startInfo.RedirectStandardError <- true
+            startInfo.CreateNoWindow <- true
 
             use p = Process.Start(startInfo)
+            let stdout = p.StandardOutput.ReadToEnd()
+            let stderr = p.StandardError.ReadToEnd()
             p.WaitForExit()
-            Ok p.ExitCode
+
+            if p.ExitCode = 0 then Ok (p.ExitCode, stdout)
+            else ExecuteFileErr (p.ExitCode, stderr) |> Error
         with
         | e -> ExecuteFileExn e |> Error
 

@@ -41,6 +41,7 @@ module Errors =
 
     type FileError =
         | ExecuteFileExn of exn
+        | ExecuteFileErr of int * string
         | GeneralFileExn of exn
         | GetFolderNameExn of exn
         | GetFileNameExn of exn

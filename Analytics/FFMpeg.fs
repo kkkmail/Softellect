@@ -113,7 +113,7 @@ module FFMpeg =
                         |> joinStrings " "
 
                     match tryExecuteFile d.ffmpegExecutable ffmpegArgs with
-                    | Ok r ->
+                    | Ok (r, _) ->
                         Logger.logInfo $"createAnimation - ffmpeg result: %A{r}."
 
                         match r with

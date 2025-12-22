@@ -98,12 +98,12 @@ module Service =
         {
             adapterName = AdapterName
             assignedIp = assignedIp
-            subnetMask = Ip4 "255.255.255.0"
+            subnetMask = IpAddress.subnetMask24
             gatewayIp = gatewayIp
             dnsServerIp = gatewayIp
             serverPublicIp = getServerIpAddress data
-            physicalGatewayIp = Ip4 "192.168.2.1"
-            physicalInterfaceName = "Wi-Fi"
+            physicalGatewayIp = data.clientAccessInfo.physicalGatewayIp
+            physicalInterfaceName = data.clientAccessInfo.physicalInterfaceName
         }
 
 

@@ -34,7 +34,7 @@ module Implementation =
         | Ok () ->
             // Use the client ID as the key ID
             let keyId = KeyId ctx.clientAccessInfo.vpnClientId.value
-            let (publicKey, privateKey) = generateKey keyId
+            let publicKey, privateKey = generateKey keyId
 
             match tryExportPrivateKey keyFolder privateKey force with
             | Ok privateKeyFile ->
@@ -79,7 +79,7 @@ module Implementation =
             if pkxFiles.Length = 0 then
                 Error $"No public key found in {keyFolder.value}. Generate keys first."
             else
-                let sourceFile = FileName pkxFiles.[0]
+                let sourceFile = FileName pkxFiles[0]
 
                 match tryImportPublicKey sourceFile None with
                 | Ok (keyId, publicKey) ->
@@ -216,3 +216,107 @@ module Implementation =
             | Error e ->
                 Logger.logError $"Failed to update configuration: %A{e}"
                 Error $"Failed to update configuration: %A{e}"
+
+
+    let private tryParseDefaultRoute (routeOutput: string) =
+        // Parse output of: netsh interface ipv4 show route
+        // Looking for a line with destination 0.0.0.0/0
+        // Format: Publish  Type      Met  Prefix                    Idx  Gateway/Interface Name
+        //         No       Manual    1    0.0.0.0/0                   6  192.168.2.1
+        let lines = routeOutput.Split([| '\r'; '\n' |], StringSplitOptions.RemoveEmptyEntries)
+
+        lines
+        |> Array.tryPick (fun line ->
+            let parts = line.Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+            // Look for 0.0.0.0/0 in the line
+            let hasDefaultRoute = parts |> Array.exists (fun p -> p = "0.0.0.0/0")
+            if hasDefaultRoute && parts.Length >= 6 then
+                // Last part is gateway IP, second to last is interface index
+                let gateway = parts[parts.Length - 1]
+                let interfaceIdx = parts[parts.Length - 2]
+                match Int32.TryParse(interfaceIdx) with
+                | true, idx -> Some (idx, gateway)
+                | false, _ ->
+                    // Maybe gateway is at different position, try to find IP-like strings
+                    let ipParts = parts |> Array.filter (fun p ->
+                        match IpAddress.tryCreate p with
+                        | Some _ -> true
+                        | None -> false)
+                    if ipParts.Length > 0 then
+                        // Try to get interface index from parts before gateway
+                        let idxCandidates = parts |> Array.choose (fun p ->
+                            match Int32.TryParse(p) with
+                            | true, v when v > 0 && v < 1000 -> Some v
+                            | _ -> None)
+                        if idxCandidates.Length > 0 then
+                            Some (idxCandidates[0], ipParts[ipParts.Length - 1])
+                        else None
+                    else None
+            else None)
+
+
+    let private tryGetInterfaceName (interfaceIdx: int) =
+        // Parse output of: netsh interface ipv4 show interfaces
+        // Format: Idx     Met         MTU          State                Name
+        //           6      25        1500  connected     Wi-Fi
+        match tryExecuteFile (FileName "netsh") "interface ipv4 show interfaces" with
+        | Ok (_, output) ->
+            let lines = output.Split([| '\r'; '\n' |], StringSplitOptions.RemoveEmptyEntries)
+            lines
+            |> Array.tryPick (fun line ->
+                let parts = line.Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+                if parts.Length >= 5 then
+                    match Int32.TryParse(parts[0]) with
+                    | true, idx when idx = interfaceIdx ->
+                        // Interface name is the last part (may contain spaces, so take everything after State)
+                        // Find "connected" or similar state words, name is after
+                        let stateIdx = parts |> Array.tryFindIndex (fun p ->
+                            p.ToLower() = "connected" || p.ToLower() = "disconnected")
+                        match stateIdx with
+                        | Some si when si < parts.Length - 1 ->
+                            let nameParts = parts |> Array.skip (si + 1)
+                            Some (String.Join(" ", nameParts))
+                        | _ -> Some parts[parts.Length - 1]
+                    | _ -> None
+                else None)
+            |> Option.map Ok
+            |> Option.defaultValue (Error $"Interface with index {interfaceIdx} not found")
+        | Error e -> Error $"%A{e}"
+
+
+    let detectPhysicalNetwork (_ctx: ClientAdmContext) =
+        Logger.logInfo "Detecting physical network configuration..."
+
+        match tryExecuteFile (FileName "netsh") "interface ipv4 show route" with
+        | Ok (_, routeOutput) ->
+            match tryParseDefaultRoute routeOutput with
+            | Some (interfaceIdx, gatewayIp) ->
+                Logger.logInfo $"Detected default gateway: {gatewayIp} (interface index: {interfaceIdx})"
+
+                match tryGetInterfaceName interfaceIdx with
+                | Ok interfaceName ->
+                    Logger.logInfo $"Detected interface name: {interfaceName}"
+
+                    match IpAddress.tryCreate gatewayIp with
+                    | Some ip ->
+                        Logger.logInfo $"Writing to appsettings.json: PhysicalGatewayIp={gatewayIp}, PhysicalInterfaceName={interfaceName}"
+
+                        match tryWritePhysicalNetworkConfig ip interfaceName with
+                        | Ok () ->
+                            Logger.logInfo "Physical network configuration saved successfully."
+                            Ok $"Detected and saved: PhysicalGatewayIp={gatewayIp}, PhysicalInterfaceName={interfaceName}"
+                        | Error e ->
+                            Logger.logError $"Failed to write config: %A{e}"
+                            Error $"Failed to write config: %A{e}"
+                    | None ->
+                        Logger.logError $"Invalid gateway IP format: {gatewayIp}"
+                        Error $"Invalid gateway IP format: {gatewayIp}"
+                | Error e ->
+                    Logger.logError $"Failed to get interface name: {e}"
+                    Error $"Failed to get interface name: {e}"
+            | None ->
+                Logger.logError "Could not find default route (0.0.0.0/0) in routing table"
+                Error "Could not find default route (0.0.0.0/0) in routing table"
+        | Error e ->
+            Logger.logError $"Failed to get routing table: %A{e}"
+            Error $"Failed to get routing table: %A{e}"

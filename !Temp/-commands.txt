@@ -1,0 +1,83 @@
+Get-NetRoute -DestinationPrefix 0.0.0.0/0 | Sort-Object RouteMetric,InterfaceMetric | Select-Object -First 1 ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric
+
+ifIndex         : 4
+InterfaceAlias  : Wi-Fi
+NextHop         : 192.168.2.1
+RouteMetric     : 0
+InterfaceMetric : 55
+
+
+Get-NetRoute -DestinationPrefix 72.167.224.50/32 | Format-List ifIndex,InterfaceAlias,NextHop,RouteMetric,InterfaceMetric,PolicyStore
+ifIndex         : 4
+InterfaceAlias  : Wi-Fi
+NextHop         : 192.168.2.1
+RouteMetric     : 1
+InterfaceMetric : 55
+
+nslookup microsoft.com 10.66.77.1 > c:\GitHub\Softellect\!Temp\-vpn.txt 2>&1 3>&1 4>&1 5>&1 6>&1
+
+
+========================================================
+
+Get-NetIPInterface | Sort-Object ifIndex | Format-Table ifIndex,InterfaceAlias,AddressFamily,ConnectionState
+
+
+pktmon filter remove
+pktmon filter add -i <IFINDEX>
+pktmon filter add -p 53
+pktmon start --etw -p 0 --file-name c:\GitHub\Softellect\!Temp\vpn_dns.etl
+
+
+nslookup -timeout=10 dns.msftncsi.com 10.66.77.1
+
+
+pktmon stop
+pktmon format c:\GitHub\Softellect\!Temp\vpn_dns.etl -o c:\GitHub\Softellect\!Temp\vpn_dns.pcapng
+
+
+========================================================
+
+ifIndex InterfaceAlias               AddressFamily ConnectionState
+------- --------------               ------------- ---------------
+      1 Loopback Pseudo-Interface 1           IPv6       Connected
+      1 Loopback Pseudo-Interface 1           IPv4       Connected
+      4 Wi-Fi                                 IPv4       Connected
+      4 Wi-Fi                                 IPv6       Connected
+      7 Local Area Connection 3               IPv4    Disconnected
+      7 Local Area Connection 3               IPv6    Disconnected
+     11 Local Area Connection                 IPv6    Disconnected
+     11 Local Area Connection                 IPv4    Disconnected
+     12 Local Area Connection* 3              IPv4    Disconnected
+     12 Local Area Connection* 3              IPv6    Disconnected
+     16 Ethernet 3                            IPv6    Disconnected
+     16 Ethernet 3                            IPv4    Disconnected
+     19 Local Area Connection 4               IPv6    Disconnected
+     19 Local Area Connection 4               IPv4    Disconnected
+     20 Ethernet 4                            IPv4    Disconnected
+     20 Ethernet 4                            IPv6    Disconnected
+     22 OpenVPN Data Channel Offload          IPv4    Disconnected
+     22 OpenVPN Data Channel Offload          IPv6    Disconnected
+     27 Local Area Connection* 4              IPv6    Disconnected
+     27 Local Area Connection* 4              IPv4    Disconnected
+     82 SoftellectVPN                         IPv6       Connected
+     82 SoftellectVPN                         IPv4       Connected
+
+
+
+Wireshark - display filter
+dns || (udp.port == 53)
+
+========================================================
+
+curl -v -k --connect-timeout 10 --max-time 10 https://8.8.8.8/
+
+curl -v --connect-timeout 10 --max-time 10 https://8.8.8.8/
+
+========================================================
+
+nslookup -timeout=10 microsoft.com 10.66.77.1 > c:\GitHub\Softellect\!Temp\-vpn_dns.txt 2>&1 3>&1 4>&1 5>&1 6>&1
+
+========================================================
+
+
+========================================================
