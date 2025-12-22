@@ -19,7 +19,8 @@ module UdpProtocol =
 
     /// Must be smaller than or equal to PushMtu - PushClientIdSize - 1 (for command byte).
     [<Literal>]
-    let MtuSize = 1300
+    // let MtuSize = 1300
+    let MtuSize = 1000
 
     [<Literal>]
     let CleanupIntervalMs = 250
