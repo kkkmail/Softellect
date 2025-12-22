@@ -9,6 +9,8 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
+open Softellect.Sys.Primitives
+open Softellect.Sys.Crypto
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
@@ -17,7 +19,7 @@ open Softellect.Vpn.Server.Service
 
 module UdpServer =
 
-    /// Reassembly key for server: (msgType, clientId, requestId).
+    /// Reassembly key for server: (cmd, clientId, requestId).
     type private ServerReassemblyKey = byte * VpnClientId * uint32
 
 
@@ -25,6 +27,7 @@ module UdpServer =
         do Logger.logInfo $"Using registry: {registry.GetHashCode()}."
 
         let serverPort = data.serverAccessInfo.serviceAccessInfo.getServicePort().value
+        let serverPrivateKey = data.serverPrivateKey
         let reassemblyMap = ConcurrentDictionary<ServerReassemblyKey, ReassemblyState>()
         let pushStats = ServerPushStats()
         let mutable udpClient : UdpClient option = None
@@ -39,14 +42,19 @@ module UdpServer =
                 if nowTicks - state.createdAtTicks > reassemblyTimeoutTicks then
                     reassemblyMap.TryRemove(key) |> ignore
                     let m, _, _ = key
-                    Logger.logTrace (fun () -> $"Server: Timed out reassembly: msgType=0x{m:X2}, received {state.receivedCount}/{state.fragCount}")
+                    Logger.logTrace (fun () -> $"Server: Timed out reassembly: cmd=0x{m:X2}, received {state.receivedCount}/{state.fragCount}")
 
-        let processPushDataPacket (clientId: VpnClientId) (payload: byte[]) =
+        /// Kick a client session with error logging (once per client).
+        let kickSession (clientId: VpnClientId) (reason: string) =
+            Logger.logError $"Kicking client {clientId.value}: {reason}"
+            registry.removePushSession(clientId)
+
+        let processPushDataPacket (clientId: VpnClientId) (packetData: byte[]) =
             match registry.tryGetPushSession(clientId) with
             | Some _ ->
-                match service.sendPackets (clientId, [| payload |]) with
+                match service.sendPackets (clientId, [| packetData |]) with
                 | Ok () ->
-                    Logger.logTrace (fun () -> $"Push: registry: {registry.GetHashCode()} sent {payload.Length} bytes to '{clientId.value}'.")
+                    Logger.logTrace (fun () -> $"Push: registry: {registry.GetHashCode()} sent {packetData.Length} bytes to '{clientId.value}'.")
                     ()
                 | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{clientId.value}', error: '%A{e}'."
             | None ->
@@ -60,25 +68,51 @@ module UdpServer =
                 while not ct.IsCancellationRequested do
                     try
                         let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
-                        let data = client.Receive(&remoteEp)
+                        let rawData = client.Receive(&remoteEp)
 
                         pushStats.udpRxDatagrams.increment()
-                        pushStats.udpRxBytes.addInt(data.Length)
+                        pushStats.udpRxBytes.addInt(rawData.Length)
 
-                        match tryParsePushHeader data with
-                        | Ok (header, payload) ->
-                            let clientId = header.clientId
+                        match tryParsePushDatagram rawData with
+                        | Ok (clientId, payloadBytes) ->
                             let capturedEp = IPEndPoint(remoteEp.Address, remoteEp.Port)
-                            registry.updatePushEndpoint(clientId, capturedEp)
 
-                            match header.msgType with
-                            | msgType when msgType = PushMsgTypeData ->
-                                processPushDataPacket clientId payload
-                            | msgType when msgType = PushMsgTypeKeepalive ->
-                                Logger.logTrace (fun () -> $"Push: Keepalive from {clientId.value} at {capturedEp}")
-                            | msgType ->
-                                Logger.logTrace (fun () -> $"Push: Unknown msgType 0x{msgType:X2} from {clientId.value}")
-                        | Error () -> Logger.logTrace (fun () -> $"Push: Invalid header from {remoteEp}")
+                            match registry.tryGetPushSession(clientId) with
+                            | Some session ->
+                                registry.updatePushEndpoint(clientId, capturedEp)
+
+                                // Decrypt if session expects encryption
+                                let plaintextResult =
+                                    if session.useEncryption then
+                                        match tryDecryptAndVerify session.encryptionType payloadBytes serverPrivateKey session.publicKey with
+                                        | Ok decrypted -> Ok decrypted
+                                        | Error e ->
+                                            kickSession clientId $"Decryption/verification failed: %A{e}"
+                                            Error ()
+                                    else
+                                        Ok payloadBytes
+
+                                match plaintextResult with
+                                | Ok plaintextPayload ->
+                                    match tryParsePayload plaintextPayload with
+                                    | Ok (cmd, cmdData) ->
+                                        match cmd with
+                                        | c when c = PushCmdData ->
+                                            processPushDataPacket clientId cmdData
+                                        | c when c = PushCmdKeepalive ->
+                                            Logger.logTrace (fun () -> $"Push: Keepalive from {clientId.value} at {capturedEp}")
+                                        | c ->
+                                            Logger.logTrace (fun () -> $"Push: Unknown cmd 0x{c:X2} from {clientId.value}")
+                                    | Error () ->
+                                        if session.useEncryption then
+                                            kickSession clientId "Failed to parse decrypted payload"
+                                        else
+                                            Logger.logTrace (fun () -> $"Push: Invalid payload from {clientId.value}")
+                                | Error () -> ()  // Already kicked
+                            | None ->
+                                pushStats.unknownClientDrops.increment()
+                                Logger.logTrace (fun () -> $"Push: Dropped packet from unknown client {clientId.value}")
+                        | Error () -> Logger.logTrace (fun () -> $"Push: Invalid datagram from {remoteEp}")
                         cleanupReassemblies ()
 
                         if pushStats.shouldLog() then
@@ -116,32 +150,37 @@ module UdpServer =
                                     let packets = session.pendingPackets.dequeueMany(MaxSendPacketsPerCall)
                                     if packets.Length = 0 then ()
                                     else
-                                        // Logger.logTrace (fun () -> $"Push: dequeued {packets.Length} packets.")
-                                        // for packet in packets do
-                                        //     if packet.Length > PushMaxPayload then
-                                        //         Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
-                                        //     else
-                                        //         let seq = registry.getNextPushSeq(session.clientId)
-                                        //         let datagram = buildPushData session.clientId seq packet
-                                        //
-                                        //         try
-                                        //             client.Send(datagram, datagram.Length, endpoint) |> ignore
-                                        //             // let! _ = client.SendAsync(datagram, datagram.Length, endpoint)
-                                        //             pushStats.udpTxDatagrams.increment()
-                                        //             pushStats.udpTxBytes.addInt(datagram.Length)
-                                        //         with
-                                        //         | ex -> Logger.logWarn $"Push: Send failed to {endpoint} for {session.clientId.value}: {ex.Message}"
+                                        let mutable sessionKicked = false
 
                                         let sends =
                                             packets
                                             |> Seq.choose (fun packet ->
-                                                if packet.Length > PushMaxPayload then
-                                                    Logger.logWarn $"Push: Dropping oversized packet ({packet.Length} > {PushMaxPayload}) for {session.clientId.value}"
-                                                    None
+                                                if sessionKicked then None
                                                 else
-                                                    let seq = registry.getNextPushSeq(session.clientId)
-                                                    let datagram = buildPushData session.clientId seq packet
-                                                    Some (client.SendAsync(datagram, datagram.Length, endpoint)))
+                                                    // Build plaintext payload with command
+                                                    let plaintextPayload = buildPayload PushCmdData packet
+
+                                                    // Encrypt if session expects encryption
+                                                    let finalPayloadResult =
+                                                        if session.useEncryption then
+                                                            match tryEncryptAndSign session.encryptionType plaintextPayload serverPrivateKey session.publicKey with
+                                                            | Ok encrypted -> Ok encrypted
+                                                            | Error e ->
+                                                                kickSession session.clientId $"Encryption failed: %A{e}"
+                                                                sessionKicked <- true
+                                                                Error ()
+                                                        else
+                                                            Ok plaintextPayload
+
+                                                    match finalPayloadResult with
+                                                    | Ok finalPayload ->
+                                                        if finalPayload.Length > PushMaxPayload then
+                                                            Logger.logWarn $"Push: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload}) for {session.clientId.value}"
+                                                            None
+                                                        else
+                                                            let datagram = buildPushDatagram session.clientId finalPayload
+                                                            Some (client.SendAsync(datagram, datagram.Length, endpoint))
+                                                    | Error () -> None)
 
                                         let! _ = Task.WhenAll(sends)
                                         pushStats.udpTxDatagrams.addInt(packets.Length)

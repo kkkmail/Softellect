@@ -96,10 +96,16 @@ module Primitives =
             clientName : VpnClientName
             assignedIp : VpnIpAddress
             vpnTransportProtocol : VpnTransportProtocol
+            useEncryption : bool
+            encryptionType : EncryptionType
         }
 
         member data.serialize() =
-            $"{nameof(data.clientName)}{ValueSeparator}{data.clientName.value}{ListSeparator}{nameof(data.assignedIp)}{ValueSeparator}{data.assignedIp.value.value}"
+            let baseStr = $"{nameof(data.clientName)}{ValueSeparator}{data.clientName.value}{ListSeparator}{nameof(data.assignedIp)}{ValueSeparator}{data.assignedIp.value.value}{ListSeparator}{nameof(data.useEncryption)}{ValueSeparator}{data.useEncryption}"
+            if data.useEncryption then
+                $"{baseStr}{ListSeparator}{nameof(data.encryptionType)}{ValueSeparator}{data.encryptionType}"
+            else
+                baseStr
 
 
     type VpnClientConfig =

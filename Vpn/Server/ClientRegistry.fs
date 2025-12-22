@@ -21,6 +21,8 @@ module ClientRegistry =
             clientName : VpnClientName
             assignedIp : VpnIpAddress
             publicKey : PublicKey
+            useEncryption : bool
+            encryptionType : EncryptionType
             mutable lastSeen : DateTime
             mutable currentEndpoint : IPEndPoint option
             pendingPackets : BoundedPacketQueue
@@ -80,6 +82,8 @@ module ClientRegistry =
                         clientName = config.clientName
                         assignedIp = config.assignedIp
                         publicKey = publicKey
+                        useEncryption = config.useEncryption
+                        encryptionType = config.encryptionType
                         lastSeen = DateTime.UtcNow
                         currentEndpoint = None
                         pendingPackets = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
@@ -88,7 +92,7 @@ module ClientRegistry =
                     }
 
                 pushSessions[clientId] <- session
-                Logger.logInfo $"Created push session for client {clientId.value}"
+                Logger.logInfo $"Created push session for client {clientId.value} (useEncryption={config.useEncryption})"
                 Ok session
             | Error e ->
                 Logger.logWarn $"Push client not found: '{clientId.value}', error: '%A{e}'."

@@ -8,20 +8,18 @@ open Softellect.Vpn.Core.Primitives
 
 module UdpProtocol =
 
-    /// Push header layout:
-    /// version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) = 28 bytes
+    /// New push header layout (spec 040):
+    /// clientId (16 bytes) only - everything else is in the payload
     [<Literal>]
-    let PushHeaderSize = 28
+    let PushClientIdSize = 16
 
     /// MTU for push dataplane (conservative to avoid fragmentation)
     [<Literal>]
     let PushMtu = 1380
-    // let PushMtu = 1530
 
-    /// Must be smaller than or equal to PushMtu - PushHeaderSize.
+    /// Must be smaller than or equal to PushMtu - PushClientIdSize - 1 (for command byte).
     [<Literal>]
     let MtuSize = 1300
-    // let MtuSize = 1500
 
     [<Literal>]
     let CleanupIntervalMs = 250
@@ -49,22 +47,18 @@ module UdpProtocol =
         }
 
 
-    /// Push protocol version
+    /// Push command types (inside payload, first byte)
     [<Literal>]
-    let PushVersion = 1uy
-
-    /// Push message types
-    [<Literal>]
-    let PushMsgTypeData = 1uy
+    let PushCmdData = 1uy
 
     [<Literal>]
-    let PushMsgTypeKeepalive = 2uy
+    let PushCmdKeepalive = 2uy
 
     [<Literal>]
-    let PushMsgTypeControl = 3uy
+    let PushCmdControl = 3uy
 
-    /// Maximum payload per push datagram
-    let PushMaxPayload = PushMtu - PushHeaderSize
+    /// Maximum payload per push datagram (after clientId prefix)
+    let PushMaxPayload = PushMtu - PushClientIdSize
 
     /// Keepalive interval in milliseconds
     [<Literal>]
@@ -86,107 +80,84 @@ module UdpProtocol =
     let PushStatsIntervalMs = 30_000
 
 
-    /// Build a push dataplane datagram.
-    /// Wire layout: version (1) + msgType (1) + flags (2) + clientId (16) + seq (4) + payloadLen (2) + reserved (2) + payload
-    let buildPushDatagram (msgType: byte) (clientId: VpnClientId) (seq: uint32) (payload: byte[]) : byte[] =
+    // ============================================================
+    // NEW DATAGRAM FORMAT (spec 040):
+    // [0..15]   = clientId GUID bytes (16 bytes, UNENCRYPTED)
+    // [16..end] = payload bytes (PLAINTEXT or ENCRYPTED blob)
+    //
+    // Payload format (when plaintext or after decryption):
+    // [0]       = command byte (PushCmdData, PushCmdKeepalive, etc.)
+    // [1..end]  = command-specific data
+    // ============================================================
+
+    /// Build a push datagram with the new format.
+    /// Wire layout: clientId (16 bytes) + payload
+    let buildPushDatagram (clientId: VpnClientId) (payload: byte[]) : byte[] =
         let payloadLen = payload.Length
         if payloadLen > PushMaxPayload then
             failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
 
-        let result = Array.zeroCreate (PushHeaderSize + payloadLen)
+        let result = Array.zeroCreate (PushClientIdSize + payloadLen)
         let guidBytes = clientId.value.ToByteArray()
 
-        // version (1 byte)
-        result[0] <- PushVersion
-
-        // msgType (1 byte)
-        result[1] <- msgType
-
-        // flags (2 bytes) - reserved, set to 0
-        result[2] <- 0uy
-        result[3] <- 0uy
-
         // clientId (16 bytes)
-        Array.Copy(guidBytes, 0, result, 4, 16)
-
-        // seq (4 bytes, little-endian)
-        let seqBytes = BitConverter.GetBytes(seq)
-        Array.Copy(seqBytes, 0, result, 20, 4)
-
-        // payloadLen (2 bytes, little-endian)
-        let payloadLenBytes = BitConverter.GetBytes(uint16 payloadLen)
-        Array.Copy(payloadLenBytes, 0, result, 24, 2)
-
-        // reserved (2 bytes)
-        result[26] <- 0uy
-        result[27] <- 0uy
+        Array.Copy(guidBytes, 0, result, 0, 16)
 
         // payload
         if payloadLen > 0 then
-            Array.Copy(payload, 0, result, PushHeaderSize, payloadLen)
+            Array.Copy(payload, 0, result, PushClientIdSize, payloadLen)
 
         result
 
 
-    /// Build a push keepalive datagram (no payload).
-    let buildPushKeepalive (clientId: VpnClientId) (seq: uint32) : byte[] =
-        buildPushDatagram PushMsgTypeKeepalive clientId seq [||]
+    /// Build a plaintext payload with command byte prefix.
+    let buildPayload (cmd: byte) (data: byte[]) : byte[] =
+        let result = Array.zeroCreate (1 + data.Length)
+        result[0] <- cmd
+        if data.Length > 0 then
+            Array.Copy(data, 0, result, 1, data.Length)
+        result
+
+
+    /// Build a push keepalive datagram (command byte only, no data).
+    let buildPushKeepalive (clientId: VpnClientId) : byte[] =
+        let payload = buildPayload PushCmdKeepalive [||]
+        buildPushDatagram clientId payload
 
 
     /// Build a push data datagram.
-    let buildPushData (clientId: VpnClientId) (seq: uint32) (payload: byte[]) : byte[] =
-        buildPushDatagram PushMsgTypeData clientId seq payload
+    let buildPushData (clientId: VpnClientId) (data: byte[]) : byte[] =
+        let payload = buildPayload PushCmdData data
+        buildPushDatagram clientId payload
 
 
-    /// Parsed push header
-    type PushHeader =
-        {
-            version : byte
-            msgType : byte
-            flags : uint16
-            clientId : VpnClientId
-            seq : uint32
-            payloadLen : uint16
-        }
-
-
-    /// Try to parse a push datagram header.
-    /// Returns Ok (header, payload) or Error () if invalid.
-    let tryParsePushHeader (data: byte[]) : Result<PushHeader * byte[], unit> =
-        if data.Length < PushHeaderSize then
+    /// Try to parse a push datagram.
+    /// Returns Ok (clientId, payloadBytes) or Error () if invalid.
+    let tryParsePushDatagram (data: byte[]) : Result<VpnClientId * byte[], unit> =
+        if data.Length < PushClientIdSize then
             Error ()
         else
-            let version = data[0]
-            if version <> PushVersion then
-                Error ()
-            else
-                let msgType = data[1]
-                let flags = BitConverter.ToUInt16(data, 2)
-                let guidBytes = data[4..19]
-                let clientId = Guid(guidBytes) |> VpnClientId
-                let seq = BitConverter.ToUInt32(data, 20)
-                let payloadLen = BitConverter.ToUInt16(data, 24)
+            let guidBytes = data[0..15]
+            let clientId = Guid(guidBytes) |> VpnClientId
+            let payload =
+                if data.Length > PushClientIdSize then
+                    Array.sub data PushClientIdSize (data.Length - PushClientIdSize)
+                else [||]
+            Ok (clientId, payload)
 
-                let expectedLen = PushHeaderSize + int payloadLen
-                if data.Length < expectedLen then
-                    Error ()
-                else
-                    let payload =
-                        if payloadLen > 0us then
-                            Array.sub data PushHeaderSize (int payloadLen)
-                        else [||]
 
-                    let header =
-                        {
-                            version = version
-                            msgType = msgType
-                            flags = flags
-                            clientId = clientId
-                            seq = seq
-                            payloadLen = payloadLen
-                        }
-
-                    Ok (header, payload)
+    /// Try to parse plaintext payload into (command, data).
+    /// Returns Ok (cmd, data) or Error () if payload is empty.
+    let tryParsePayload (payload: byte[]) : Result<byte * byte[], unit> =
+        if payload.Length < 1 then
+            Error ()
+        else
+            let cmd = payload[0]
+            let data =
+                if payload.Length > 1 then
+                    Array.sub payload 1 (payload.Length - 1)
+                else [||]
+            Ok (cmd, data)
 
 
     /// A thread-safe bounded packet queue with byte and packet limits.

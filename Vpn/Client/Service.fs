@@ -27,15 +27,6 @@ module Service =
     let ReceiveEmptyBackoffMs = 10
 
 
-    type VpnClientServiceData =
-        {
-            clientAccessInfo : VpnClientAccessInfo
-            clientPrivateKey : PrivateKey
-            clientPublicKey : PublicKey
-            serverPublicKey : PublicKey
-        }
-
-
     type VpnClientConnectionState =
         | Disconnected
         | Connecting
@@ -224,7 +215,7 @@ module Service =
                             match tunnel with
                             | Some t ->
                                 Logger.logInfo "Creating and starting push UDP client."
-                                let pc = createVpnPushUdpClient data.clientAccessInfo
+                                let pc = createVpnPushUdpClient data
 
                                 Logger.logInfo "Setting up direct injection from push client to tunnel."
                                 pc.setPacketInjector(TunnelInjector(t))

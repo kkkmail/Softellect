@@ -6,6 +6,7 @@ open System.Net.Sockets
 open System.Threading
 open System.Threading.Tasks
 open Softellect.Sys.Logging
+open Softellect.Sys.Crypto
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
@@ -15,14 +16,14 @@ module UdpClient =
     [<Literal>]
     let FragmentsYieldEvery = 32
 
-    /// Response data passed through TCS: (msgType, clientId, logicalPayload).
+    /// Response data passed through TCS: (cmd, clientId, logicalPayload).
     type private ResponseData = byte * VpnClientId * byte[]
 
     /// Record for pending request tracking.
     type private PendingRequest =
         {
             createdAtTicks : int64
-            expectedMsgType : byte
+            expectedCmd : byte
             clientId : VpnClientId
             tcs : TaskCompletionSource<ResponseData>
         }
@@ -36,13 +37,21 @@ module UdpClient =
     /// Push dataplane UDP client.
     /// This client uses push semantics: sends packets immediately to the server,
     /// receives packets pushed from the server, no polling.
-    type VpnPushUdpClient(data: VpnClientAccessInfo) =
-        let serverIp = data.serverAccessInfo.getIpAddress()
-        let serverPort = data.serverAccessInfo.getServicePort().value
+    type VpnPushUdpClient(data: VpnClientServiceData) =
+        let clientAccessInfo = data.clientAccessInfo
+        let serverIp = clientAccessInfo.serverAccessInfo.getIpAddress()
+        let serverPort = clientAccessInfo.serverAccessInfo.getServicePort().value
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
         let udpClient = new UdpClient()
         let clientCts = new CancellationTokenSource()
         let clientPushStats = ClientPushStats()
+
+        // Encryption config
+        let useEncryption = clientAccessInfo.useEncryption
+        let encryptionType = clientAccessInfo.encryptionType
+        let clientPrivateKey = data.clientPrivateKey
+        let serverPublicKey = data.serverPublicKey
+        let vpnClientId = clientAccessInfo.vpnClientId
 
         // Bounded queue for outbound packets (from TUN to server).
         let outboundQueue = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
@@ -50,7 +59,6 @@ module UdpClient =
         // Bounded queue for inbound packets (from server to TUN).
         let inboundPacketQueue = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
 
-        let mutable sendSeq = 0u
         let mutable packetInjector : IPacketInjector option = None
         let mutable receiveTask : Task option = None
         let mutable sendTask : Task option = None
@@ -66,13 +74,30 @@ module UdpClient =
             // Set receive timeout for periodic checks.
             udpClient.Client.ReceiveTimeout <- CleanupIntervalMs
 
-            Logger.logInfo $"Created - Server: {serverIp}:{serverPort}, ClientId: {data.vpnClientId.value}, Local={udpClient.Client.LocalEndPoint}"
+            Logger.logInfo $"Created - Server: {serverIp}:{serverPort}, ClientId: {vpnClientId.value}, UseEncryption: {useEncryption}, Local={udpClient.Client.LocalEndPoint}"
 
-        /// Get next send sequence number.
-        let getNextSeq () =
-            let seq = sendSeq
-            sendSeq <- sendSeq + 1u
-            seq
+        /// Encrypt payload if encryption is enabled.
+        let encryptPayload (plaintextPayload: byte[]) : Result<byte[], string> =
+            if useEncryption then
+                match tryEncryptAndSign encryptionType plaintextPayload clientPrivateKey serverPublicKey with
+                | Ok encrypted -> Ok encrypted
+                | Error e -> Error $"Encryption failed: %A{e}"
+            else
+                Ok plaintextPayload
+
+        /// Decrypt payload if encryption is enabled.
+        let decryptPayload (payloadBytes: byte[]) : Result<byte[], string> =
+            if useEncryption then
+                match tryDecryptAndVerify encryptionType payloadBytes data.clientPrivateKey serverPublicKey with
+                | Ok decrypted -> Ok decrypted
+                | Error e -> Error $"Decryption failed: %A{e}"
+            else
+                Ok payloadBytes
+
+        /// Critical failure - log and crash.
+        let criticalFailure (msg: string) =
+            Logger.logCrit $"CRITICAL: {msg} - Client will terminate."
+            Environment.Exit(1)
 
         /// UDP receive loop - receives pushed datagrams from the server.
         let receiveLoop () =
@@ -80,32 +105,48 @@ module UdpClient =
             while not clientCts.Token.IsCancellationRequested do
                 try
                     let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
-                    let data = udpClient.Receive(&remoteEp)
+                    let rawData = udpClient.Receive(&remoteEp)
 
                     clientPushStats.udpRxDatagrams.increment()
-                    clientPushStats.udpRxBytes.addInt(data.Length)
+                    clientPushStats.udpRxBytes.addInt(rawData.Length)
 
-                    match tryParsePushHeader data with
-                    | Ok (header, payload) ->
-                        if header.msgType = PushMsgTypeData && payload.Length > 0 then
-                            // Inject directly if injector is available, otherwise queue.
-                            match packetInjector with
-                            | Some injector ->
-                                match injector.injectPacket(payload) with
-                                | Ok () -> ()
-                                | Error msg ->
-                                    clientPushStats.droppedQueueFullInject.increment()
-                                    Logger.logWarn $"Push client: Failed to inject packet: {msg}"
-                            | None ->
-                                // Queue for later injection.
-                                if not (inboundPacketQueue.enqueue(payload)) then
-                                    clientPushStats.droppedQueueFullInject.increment()
-                        elif header.msgType = PushMsgTypeKeepalive then
-                            Logger.logTrace (fun () -> "Push client: Received keepalive from server")
+                    match tryParsePushDatagram rawData with
+                    | Ok (receivedClientId, payloadBytes) ->
+                        // Verify clientId matches
+                        if receivedClientId.value <> vpnClientId.value then
+                            criticalFailure $"ClientId mismatch: expected {vpnClientId.value}, got {receivedClientId.value}"
                         else
-                            Logger.logTrace (fun () -> $"Push client: Unknown msgType 0x{header.msgType:X2}")
+                            // Decrypt if needed
+                            match decryptPayload payloadBytes with
+                            | Ok plaintextPayload ->
+                                match tryParsePayload plaintextPayload with
+                                | Ok (cmd, cmdData) ->
+                                    if cmd = PushCmdData && cmdData.Length > 0 then
+                                        // Inject directly if injector is available, otherwise queue.
+                                        match packetInjector with
+                                        | Some injector ->
+                                            match injector.injectPacket(cmdData) with
+                                            | Ok () -> ()
+                                            | Error msg ->
+                                                clientPushStats.droppedQueueFullInject.increment()
+                                                Logger.logWarn $"Push client: Failed to inject packet: {msg}"
+                                        | None ->
+                                            // Queue for later injection.
+                                            if not (inboundPacketQueue.enqueue(cmdData)) then
+                                                clientPushStats.droppedQueueFullInject.increment()
+                                    elif cmd = PushCmdKeepalive then
+                                        Logger.logTrace (fun () -> "Push client: Received keepalive from server")
+                                    else
+                                        Logger.logTrace (fun () -> $"Push client: Unknown cmd 0x{cmd:X2}")
+                                | Error () ->
+                                    if useEncryption then
+                                        criticalFailure "Failed to parse decrypted payload"
+                                    else
+                                        Logger.logTrace (fun () -> "Push client: Invalid payload format")
+                            | Error msg ->
+                                criticalFailure msg
                     | Error () ->
-                        Logger.logTrace (fun () -> "Push client: Invalid push header received")
+                        Logger.logTrace (fun () -> "Push client: Invalid push datagram received")
 
                     // Log stats periodically.
                     if clientPushStats.shouldLog() then
@@ -137,20 +178,27 @@ module UdpClient =
                         while hasMore do
                             match outboundQueue.tryDequeue() with
                             | Some packet ->
-                                // Check MTU.
-                                if packet.Length > PushMaxPayload then
-                                    clientPushStats.droppedMtu.increment()
-                                    Logger.logWarn $"Push client: Dropping oversized packet ({packet.Length} > {PushMaxPayload})"
-                                else
-                                    let seq = getNextSeq()
-                                    let datagram = buildPushData data.vpnClientId seq packet
+                                // Build plaintext payload with command
+                                let plaintextPayload = buildPayload PushCmdData packet
 
-                                    try
-                                        udpClient.Send(datagram, datagram.Length) |> ignore
-                                        clientPushStats.udpTxDatagrams.increment()
-                                        clientPushStats.udpTxBytes.addInt(datagram.Length)
-                                    with
-                                    | ex -> Logger.logWarn $"Push client: Send failed: {ex.Message}"
+                                // Encrypt if needed
+                                match encryptPayload plaintextPayload with
+                                | Ok finalPayload ->
+                                    // Check MTU after encryption
+                                    if finalPayload.Length > PushMaxPayload then
+                                        clientPushStats.droppedMtu.increment()
+                                        Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
+                                    else
+                                        let datagram = buildPushDatagram vpnClientId finalPayload
+
+                                        try
+                                            udpClient.Send(datagram, datagram.Length) |> ignore
+                                            clientPushStats.udpTxDatagrams.increment()
+                                            clientPushStats.udpTxBytes.addInt(datagram.Length)
+                                        with
+                                        | ex -> Logger.logWarn $"Push client: Send failed: {ex.Message}"
+                                | Error msg ->
+                                    criticalFailure msg
                             | None -> hasMore <- false
                 with
                 | :? ObjectDisposedException -> ()
@@ -166,14 +214,21 @@ module UdpClient =
                 try
                     Thread.Sleep(PushKeepaliveIntervalMs)
                     if not clientCts.Token.IsCancellationRequested then
-                        let seq = getNextSeq()
-                        let datagram = buildPushKeepalive data.vpnClientId seq
+                        // Build plaintext keepalive payload
+                        let plaintextPayload = buildPayload PushCmdKeepalive [||]
 
-                        try
-                            udpClient.Send(datagram, datagram.Length) |> ignore
-                            Logger.logTrace (fun () -> $"Push client: Sent keepalive seq={seq}")
-                        with
-                        | ex -> Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
+                        // Encrypt if needed
+                        match encryptPayload plaintextPayload with
+                        | Ok finalPayload ->
+                            let datagram = buildPushDatagram vpnClientId finalPayload
+
+                            try
+                                udpClient.Send(datagram, datagram.Length) |> ignore
+                                Logger.logTrace (fun () -> "Push client: Sent keepalive")
+                            with
+                            | ex -> Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
+                        | Error msg ->
+                            criticalFailure msg
                 with
                 | :? ObjectDisposedException -> ()
                 | _ when clientCts.Token.IsCancellationRequested -> ()
@@ -233,7 +288,7 @@ module UdpClient =
         member _.stats = clientPushStats
 
         /// Get client ID.
-        member _.clientId = data.vpnClientId
+        member _.clientId = vpnClientId
 
         interface IDisposable with
             member this.Dispose() =
@@ -243,5 +298,5 @@ module UdpClient =
                 clientCts.Dispose()
 
 
-    let createVpnPushUdpClient (clientAccessInfo: VpnClientAccessInfo) =
-        new VpnPushUdpClient(clientAccessInfo)
+    let createVpnPushUdpClient (serviceData: VpnClientServiceData) =
+        new VpnPushUdpClient(serviceData)
