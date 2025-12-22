@@ -33,7 +33,7 @@ module Program =
 
 
     /// IService is the underlying service that does the actual work.
-    /// IWcfService is the WCF service interface that is exposed to the client.
+    /// IWcfService is the WCF service interface exposed to the client.
     /// WcfService is the implementation of the WCF service.
     let private createHostBuilder<'IService, 'IWcfService, 'WcfService
         when 'IService :> IHostedService and 'IService : not struct

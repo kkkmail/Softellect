@@ -106,13 +106,13 @@ module WcfServer =
         let projectName = getProjectName() |> Some
 
         // Create a factory function that captures serverData
-        let createWcfService (service: IAuthService) = AuthWcfService(service, data)
+        let getWcfService (service: IAuthService) = AuthWcfService(service, data)
 
         let programData =
             {
                 getService = fun () -> getService() :> IAuthService
                 serviceAccessInfo = data.serverAccessInfo.serviceAccessInfo
-                getWcfService = createWcfService
+                getWcfService = getWcfService
                 saveSettings = saveSettings
                 configureServices = configureServices
                 configureServiceLogging = configureServiceLogging projectName
