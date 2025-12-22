@@ -131,10 +131,20 @@ module Primitives =
         }
 
 
+    type VpnSessionId =
+        | VpnSessionId of byte
+
+        member this.value = let (VpnSessionId v) = this in v
+
+        static member serverReserved = VpnSessionId 0uy
+
+
     type VpnAuthResponse =
         {
             assignedIp : VpnIpAddress
             serverPublicIp : VpnIpAddress
+            sessionId : VpnSessionId
+            sessionAesKey : byte[]
         }
 
 

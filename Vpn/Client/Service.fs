@@ -117,7 +117,7 @@ module Service =
 
         let authenticate () =
             Logger.logInfo "Push: Authenticating with server..."
-            let authClient = createAuthWcfClient data.clientAccessInfo
+            let authClient = createAuthWcfClient data
 
             let request =
                 {
@@ -128,8 +128,8 @@ module Service =
 
             match authClient.authenticate request with
             | Ok response ->
-                Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}"
-                Ok response.assignedIp
+                Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}, SessionId: {response.sessionId.value}"
+                Ok response
             | Error e ->
                 Logger.logError "Push: Authentication error"
                 Error $"Authentication error: '%A{e}'."
@@ -182,7 +182,9 @@ module Service =
                     connectionState <- Connecting
 
                     match authenticate() with
-                    | Ok assignedIp ->
+                    | Ok authResponse ->
+                        let assignedIp = authResponse.assignedIp
+
                         match startTunnel assignedIp with
                         | Ok () ->
                             Logger.logInfo $"Push: Tunnel started with IP: '{assignedIp.value.value}'."
@@ -215,7 +217,7 @@ module Service =
                             match tunnel with
                             | Some t ->
                                 Logger.logInfo "Creating and starting push UDP client."
-                                let pc = createVpnPushUdpClient data
+                                let pc = createVpnPushUdpClient data authResponse.sessionId authResponse.sessionAesKey
 
                                 Logger.logInfo "Setting up direct injection from push client to tunnel."
                                 pc.setPacketInjector(TunnelInjector(t))

@@ -34,10 +34,10 @@ module UdpClient =
         abstract injectPacket: byte[] -> Result<unit, string>
 
 
-    /// Push dataplane UDP client.
-    /// This client uses push semantics: sends packets immediately to the server,
-    /// receives packets pushed from the server, no polling.
-    type VpnPushUdpClient(data: VpnClientServiceData) =
+    /// Push dataplane UDP client (spec 041).
+    /// Uses per-packet AES encryption with session key and nonce-based key derivation.
+    /// Wire format: [sessionId: 1 byte][nonce: 16 bytes][payload]
+    type VpnPushUdpClient(data: VpnClientServiceData, sessionId: VpnSessionId, sessionAesKey: byte[]) =
         let clientAccessInfo = data.clientAccessInfo
         let serverIp = clientAccessInfo.serverAccessInfo.getIpAddress()
         let serverPort = clientAccessInfo.serverAccessInfo.getServicePort().value
@@ -48,9 +48,6 @@ module UdpClient =
 
         // Encryption config
         let useEncryption = clientAccessInfo.useEncryption
-        let encryptionType = clientAccessInfo.encryptionType
-        let clientPrivateKey = data.clientPrivateKey
-        let serverPublicKey = data.serverPublicKey
         let vpnClientId = clientAccessInfo.vpnClientId
 
         // Bounded queue for outbound packets (from TUN to server).
@@ -74,27 +71,29 @@ module UdpClient =
             // Set receive timeout for periodic checks.
             udpClient.Client.ReceiveTimeout <- CleanupIntervalMs
 
-            Logger.logInfo $"Created - Server: {serverIp}:{serverPort}, ClientId: {vpnClientId.value}, UseEncryption: {useEncryption}, Local={udpClient.Client.LocalEndPoint}"
+            Logger.logInfo $"Created - Server: {serverIp}:{serverPort}, ClientId: {vpnClientId.value}, SessionId: {sessionId.value}, UseEncryption: {useEncryption}, Local={udpClient.Client.LocalEndPoint}"
 
-        /// Encrypt payload if encryption is enabled.
-        let encryptPayload (plaintextPayload: byte[]) : Result<byte[], string> =
+        /// Encrypt payload using per-packet AES key derivation.
+        let encryptPayload (plaintextPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
             if useEncryption then
-                match tryEncryptAndSign encryptionType plaintextPayload clientPrivateKey serverPublicKey with
+                let aesKey = derivePacketAesKey sessionAesKey nonce
+                match tryEncryptAesKey plaintextPayload aesKey with
                 | Ok encrypted -> Ok encrypted
-                | Error e -> Error $"Encryption failed: %A{e}"
+                | Error e -> Error $"AES encryption failed: %A{e}"
             else
                 Ok plaintextPayload
 
-        /// Decrypt payload if encryption is enabled.
-        let decryptPayload (payloadBytes: byte[]) : Result<byte[], string> =
+        /// Decrypt payload using per-packet AES key derivation.
+        let decryptPayload (encryptedPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
             if useEncryption then
-                match tryDecryptAndVerify encryptionType payloadBytes data.clientPrivateKey serverPublicKey with
+                let aesKey = derivePacketAesKey sessionAesKey nonce
+                match tryDecryptAesKey encryptedPayload aesKey with
                 | Ok decrypted -> Ok decrypted
-                | Error e -> Error $"Decryption failed: %A{e}"
+                | Error e -> Error $"AES decryption failed: %A{e}"
             else
-                Ok payloadBytes
+                Ok encryptedPayload
 
-        /// Critical failure - log and crash.
+        /// Critical failure - log and crash (spec 041 requirement).
         let criticalFailure (msg: string) =
             Logger.logCrit $"CRITICAL: {msg} - Client will terminate."
             Environment.Exit(1)
@@ -111,13 +110,13 @@ module UdpClient =
                     clientPushStats.udpRxBytes.addInt(rawData.Length)
 
                     match tryParsePushDatagram rawData with
-                    | Ok (receivedClientId, payloadBytes) ->
-                        // Verify clientId matches
-                        if receivedClientId.value <> vpnClientId.value then
-                            criticalFailure $"ClientId mismatch: expected {vpnClientId.value}, got {receivedClientId.value}"
+                    | Ok (receivedSessionId, nonce, payloadBytes) ->
+                        // Verify sessionId matches
+                        if receivedSessionId <> sessionId.value then
+                            criticalFailure $"SessionId mismatch: expected {sessionId.value}, got {receivedSessionId}"
                         else
                             // Decrypt if needed
-                            match decryptPayload payloadBytes with
+                            match decryptPayload payloadBytes nonce with
                             | Ok plaintextPayload ->
                                 match tryParsePayload plaintextPayload with
                                 | Ok (cmd, cmdData) ->
@@ -178,18 +177,21 @@ module UdpClient =
                         while hasMore do
                             match outboundQueue.tryDequeue() with
                             | Some packet ->
+                                // Generate nonce for this packet
+                                let nonce = Guid.NewGuid()
+
                                 // Build plaintext payload with command
                                 let plaintextPayload = buildPayload PushCmdData packet
 
                                 // Encrypt if needed
-                                match encryptPayload plaintextPayload with
+                                match encryptPayload plaintextPayload nonce with
                                 | Ok finalPayload ->
                                     // Check MTU after encryption
                                     if finalPayload.Length > PushMaxPayload then
                                         clientPushStats.droppedMtu.increment()
                                         Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
                                     else
-                                        let datagram = buildPushDatagram vpnClientId finalPayload
+                                        let datagram = buildPushDatagramV2 sessionId nonce finalPayload
 
                                         try
                                             udpClient.Send(datagram, datagram.Length) |> ignore
@@ -214,13 +216,16 @@ module UdpClient =
                 try
                     Thread.Sleep(PushKeepaliveIntervalMs)
                     if not clientCts.Token.IsCancellationRequested then
+                        // Generate nonce for this packet
+                        let nonce = Guid.NewGuid()
+
                         // Build plaintext keepalive payload
                         let plaintextPayload = buildPayload PushCmdKeepalive [||]
 
                         // Encrypt if needed
-                        match encryptPayload plaintextPayload with
+                        match encryptPayload plaintextPayload nonce with
                         | Ok finalPayload ->
-                            let datagram = buildPushDatagram vpnClientId finalPayload
+                            let datagram = buildPushDatagramV2 sessionId nonce finalPayload
 
                             try
                                 udpClient.Send(datagram, datagram.Length) |> ignore
@@ -290,6 +295,9 @@ module UdpClient =
         /// Get client ID.
         member _.clientId = vpnClientId
 
+        /// Get session ID.
+        member _.sessionIdValue = sessionId
+
         interface IDisposable with
             member this.Dispose() =
                 this.stop()
@@ -298,5 +306,5 @@ module UdpClient =
                 clientCts.Dispose()
 
 
-    let createVpnPushUdpClient (serviceData: VpnClientServiceData) =
-        new VpnPushUdpClient(serviceData)
+    let createVpnPushUdpClient (serviceData: VpnClientServiceData) (sessionId: VpnSessionId) (sessionAesKey: byte[]) =
+        new VpnPushUdpClient(serviceData, sessionId, sessionAesKey)

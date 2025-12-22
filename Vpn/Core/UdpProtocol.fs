@@ -3,20 +3,33 @@ namespace Softellect.Vpn.Core
 open System
 open System.Collections.Generic
 open System.Diagnostics
+open System.Security.Cryptography
 open System.Threading
+open Softellect.Sys.Crypto
 open Softellect.Vpn.Core.Primitives
 
 module UdpProtocol =
 
-    /// New push header layout (spec 040):
-    /// clientId (16 bytes) only - everything else is in the payload
+    /// New push header layout (spec 041):
+    /// sessionId (1 byte) + nonce (16 bytes) + payload
+    [<Literal>]
+    let PushSessionIdSize = 1
+
+    [<Literal>]
+    let PushNonceSize = 16
+
+    /// Total header size: sessionId (1) + nonce (16) = 17 bytes
+    [<Literal>]
+    let PushHeaderSize = 17
+
+    /// Legacy: clientId size (kept for reference during transition)
     [<Literal>]
     let PushClientIdSize = 16
 
     /// MTU for push dataplane (conservative to avoid fragmentation)
     [<Literal>]
-    // let PushMtu = 1380
-    let PushMtu = 2900
+    let PushMtu = 1380
+    // let PushMtu = 2900
 
     /// Must be smaller than or equal to PushMtu - PushClientIdSize - 1 (for command byte).
     [<Literal>]
@@ -58,8 +71,8 @@ module UdpProtocol =
     [<Literal>]
     let PushCmdControl = 3uy
 
-    /// Maximum payload per push datagram (after clientId prefix)
-    let PushMaxPayload = PushMtu - PushClientIdSize
+    /// Maximum payload per push datagram (after header)
+    let PushMaxPayload = PushMtu - PushHeaderSize
 
     /// Keepalive interval in milliseconds
     [<Literal>]
@@ -82,16 +95,73 @@ module UdpProtocol =
 
 
     // ============================================================
-    // NEW DATAGRAM FORMAT (spec 040):
-    // [0..15]   = clientId GUID bytes (16 bytes, UNENCRYPTED)
-    // [16..end] = payload bytes (PLAINTEXT or ENCRYPTED blob)
+    // DATAGRAM FORMAT (spec 041):
+    // [0]       = sessionId (1 byte, UNENCRYPTED)
+    // [1..16]   = nonce GUID bytes (16 bytes, UNENCRYPTED)
+    // [17..end] = payload bytes (PLAINTEXT or AES-ENCRYPTED)
     //
     // Payload format (when plaintext or after decryption):
     // [0]       = command byte (PushCmdData, PushCmdKeepalive, etc.)
     // [1..end]  = command-specific data
     // ============================================================
 
-    /// Build a push datagram with the new format.
+    /// Derive a per-packet AES key from session key and nonce using HMAC-SHA256.
+    /// Uses domain separation: 0x01 suffix for the key, 0x02 suffix for IV.
+    let derivePacketAesKey (sessionAesKey: byte[]) (nonce: Guid) : AesKey =
+        let nonceBytes = nonce.ToByteArray()
+        use hmac = new HMACSHA256(sessionAesKey)
+
+        // Derive key: HMAC-SHA256(sessionAesKey, nonceBytes || 0x01)
+        let keyInput = Array.append nonceBytes [| 0x01uy |]
+        let keyMaterial = hmac.ComputeHash(keyInput)
+
+        // Derive IV: HMAC-SHA256(sessionAesKey, nonceBytes || 0x02)[0..15]
+        let ivInput = Array.append nonceBytes [| 0x02uy |]
+        let ivMaterial = hmac.ComputeHash(ivInput)
+
+        { key = keyMaterial; iv = ivMaterial[0..15] }
+
+
+    /// Build a push datagram with the new format (spec 041).
+    /// Wire layout: sessionId (1 byte) + nonce (16 bytes) + payload
+    let buildPushDatagramV2 (sessionId: VpnSessionId) (nonce: Guid) (payload: byte[]) : byte[] =
+        let payloadLen = payload.Length
+        if payloadLen > PushMaxPayload then
+            failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
+
+        let result = Array.zeroCreate (PushHeaderSize + payloadLen)
+
+        // sessionId (1 byte)
+        result[0] <- sessionId.value
+
+        // nonce (16 bytes)
+        let nonceBytes = nonce.ToByteArray()
+        Array.Copy(nonceBytes, 0, result, PushSessionIdSize, PushNonceSize)
+
+        // payload
+        if payloadLen > 0 then
+            Array.Copy(payload, 0, result, PushHeaderSize, payloadLen)
+
+        result
+
+
+    /// Try to parse a push datagram (spec 041).
+    /// Returns Ok (sessionId, nonce, payloadBytes) or Error () if invalid.
+    let tryParsePushDatagram (data: byte[]) : Result<byte * Guid * byte[], unit> =
+        if data.Length < PushHeaderSize then
+            Error ()
+        else
+            let sessionId = data[0]
+            let nonceBytes = data[1..16]
+            let nonce = Guid(nonceBytes)
+            let payload =
+                if data.Length > PushHeaderSize then
+                    Array.sub data PushHeaderSize (data.Length - PushHeaderSize)
+                else [||]
+            Ok (sessionId, nonce, payload)
+
+
+    /// Build a push datagram with the legacy format (spec 040).
     /// Wire layout: clientId (16 bytes) + payload
     let buildPushDatagram (clientId: VpnClientId) (payload: byte[]) : byte[] =
         let payloadLen = payload.Length
@@ -111,7 +181,7 @@ module UdpProtocol =
         result
 
 
-    /// Build a plaintext payload with command byte prefix.
+    /// Build a plaintext payload with a command byte prefix.
     let buildPayload (cmd: byte) (data: byte[]) : byte[] =
         let result = Array.zeroCreate (1 + data.Length)
         result[0] <- cmd
@@ -132,23 +202,8 @@ module UdpProtocol =
         buildPushDatagram clientId payload
 
 
-    /// Try to parse a push datagram.
-    /// Returns Ok (clientId, payloadBytes) or Error () if invalid.
-    let tryParsePushDatagram (data: byte[]) : Result<VpnClientId * byte[], unit> =
-        if data.Length < PushClientIdSize then
-            Error ()
-        else
-            let guidBytes = data[0..15]
-            let clientId = Guid(guidBytes) |> VpnClientId
-            let payload =
-                if data.Length > PushClientIdSize then
-                    Array.sub data PushClientIdSize (data.Length - PushClientIdSize)
-                else [||]
-            Ok (clientId, payload)
-
-
     /// Try to parse plaintext payload into (command, data).
-    /// Returns Ok (cmd, data) or Error () if payload is empty.
+    /// Returns Ok (cmd, data) or Error () if the payload is empty.
     let tryParsePayload (payload: byte[]) : Result<byte * byte[], unit> =
         if payload.Length < 1 then
             Error ()
@@ -171,7 +226,7 @@ module UdpProtocol =
         let mutable droppedBytesCount = 0L
         let signal = new ManualResetEventSlim(false)
 
-        /// Enqueue a packet, dropping oldest if necessary (head-drop).
+        /// Enqueue a packet, dropping the oldest if necessary (head-drop).
         /// Returns true if packet was enqueued, false if packet was too large.
         member _.enqueue(packet: byte[]) : bool =
             if packet.Length > maxBytes then

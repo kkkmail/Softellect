@@ -3,6 +3,7 @@ namespace Softellect.Vpn.Server
 open System
 open System.Collections.Concurrent
 open System.Net
+open System.Security.Cryptography
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.Logging
@@ -14,10 +15,16 @@ open Softellect.Vpn.Core.UdpProtocol
 
 module ClientRegistry =
 
-    /// Client session for the push-based dataplane (spec 037).
+    /// AES session key size in bytes (256-bit key).
+    [<Literal>]
+    let SessionAesKeySize = 32
+
+    /// Client session for the push-based dataplane (spec 041).
     type PushClientSession =
         {
             clientId : VpnClientId
+            sessionId : VpnSessionId
+            sessionAesKey : byte[]
             clientName : VpnClientName
             assignedIp : VpnIpAddress
             publicKey : PublicKey
@@ -41,6 +48,36 @@ module ClientRegistry =
 
     type ClientRegistry(data: ClientRegistryData) =
         let pushSessions = ConcurrentDictionary<VpnClientId, PushClientSession>()
+        let sessionsBySessionId = ConcurrentDictionary<byte, PushClientSession>()
+        let mutable nextSessionId = 1uy
+        let sessionIdLock = obj()
+
+        /// Allocate the next available session ID (1-255).
+        let allocateSessionId () =
+            lock sessionIdLock (fun () ->
+                let startId = nextSessionId
+                let mutable found = false
+                let mutable result = 0uy
+
+                while not found do
+                    if not (sessionsBySessionId.ContainsKey(nextSessionId)) then
+                        result <- nextSessionId
+                        found <- true
+
+                    nextSessionId <- if nextSessionId = 255uy then 1uy else nextSessionId + 1uy
+
+                    if nextSessionId = startId && not found then
+                        failwith "No available session IDs (all 255 slots in use)"
+
+                result
+            )
+
+        /// Generate a cryptographically random AES session key.
+        let generateSessionAesKey () =
+            let key = Array.zeroCreate SessionAesKeySize
+            use rng = RandomNumberGenerator.Create()
+            rng.GetBytes(key)
+            key
 
         member private _.tryGetClientConfig(clientId : VpnClientId) =
             let keyId = KeyId clientId.value
@@ -76,9 +113,14 @@ module ClientRegistry =
         member r.createPushSession(clientId: VpnClientId) : Result<PushClientSession, VpnError> =
             match r.tryGetClientConfig(clientId) with
             | Ok (config, publicKey) ->
+                let sessionId = allocateSessionId() |> VpnSessionId
+                let sessionAesKey = generateSessionAesKey()
+
                 let session =
                     {
                         clientId = clientId
+                        sessionId = sessionId
+                        sessionAesKey = sessionAesKey
                         clientName = config.clientName
                         assignedIp = config.assignedIp
                         publicKey = publicKey
@@ -92,15 +134,22 @@ module ClientRegistry =
                     }
 
                 pushSessions[clientId] <- session
-                Logger.logInfo $"Created push session for client {clientId.value} (useEncryption={config.useEncryption})"
+                sessionsBySessionId[sessionId.value] <- session
+                Logger.logInfo $"Created push session for client {clientId.value} with sessionId={sessionId.value} (useEncryption={config.useEncryption})"
                 Ok session
             | Error e ->
                 Logger.logWarn $"Push client not found: '{clientId.value}', error: '%A{e}'."
                 clientId |> ClientNotFoundErr |> AuthFailedErr |> ConnectionErr |> Error
 
-        /// Try to get an existing push session.
+        /// Try to get an existing push session by clientId.
         member _.tryGetPushSession(clientId: VpnClientId) : PushClientSession option =
             match pushSessions.TryGetValue(clientId) with
+            | true, session -> Some session
+            | false, _ -> None
+
+        /// Try to get an existing push session by sessionId.
+        member _.tryGetPushSessionBySessionId(sessionId: byte) : PushClientSession option =
+            match sessionsBySessionId.TryGetValue(sessionId) with
             | true, session -> Some session
             | false, _ -> None
 
@@ -150,8 +199,12 @@ module ClientRegistry =
 
         /// Remove a push session.
         member _.removePushSession(clientId: VpnClientId) =
-            pushSessions.TryRemove(clientId) |> ignore
-            Logger.logInfo $"Removed push session for client {clientId.value}"
+            match pushSessions.TryRemove(clientId) with
+            | true, session ->
+                sessionsBySessionId.TryRemove(session.sessionId.value) |> ignore
+                Logger.logInfo $"Removed push session for client {clientId.value} (sessionId={session.sessionId.value})"
+            | false, _ ->
+                Logger.logInfo $"Attempted to remove non-existent push session for client {clientId.value}"
 
         /// Get all push sessions.
         member _.getAllPushSessions() =

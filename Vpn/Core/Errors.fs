@@ -19,6 +19,7 @@ module Errors =
         | AuthExpiredErr
         | KeyNotFoundErr of KeyId
         | AuthWcfError of VpnWcfError
+        | AuthCryptoErr
 
 
     type VpnTunnelError =
