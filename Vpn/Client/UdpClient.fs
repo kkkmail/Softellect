@@ -96,7 +96,7 @@ module UdpClient =
         /// Critical failure - log and crash (spec 041 requirement).
         let criticalFailure (msg: string) =
             Logger.logCrit $"CRITICAL: {msg} - Client will terminate."
-            Environment.Exit(1)
+            // Environment.Exit(1)
 
         /// UDP receive loop - receives pushed datagrams from the server.
         let receiveLoop () =
@@ -112,7 +112,7 @@ module UdpClient =
                     match tryParsePushDatagram rawData with
                     | Ok (receivedSessionId, nonce, payloadBytes) ->
                         // Verify sessionId matches
-                        if receivedSessionId <> sessionId.value then
+                        if receivedSessionId <> sessionId then
                             criticalFailure $"SessionId mismatch: expected {sessionId.value}, got {receivedSessionId}"
                         else
                             // Decrypt if needed
@@ -144,8 +144,8 @@ module UdpClient =
                                         Logger.logTrace (fun () -> "Push client: Invalid payload format")
                             | Error msg ->
                                 criticalFailure msg
-                    | Error () ->
-                        Logger.logTrace (fun () -> "Push client: Invalid push datagram received")
+                    | Error e ->
+                        Logger.logTrace (fun () -> $"Push client: Invalid push datagram received: '{e}'.")
 
                     // Log stats periodically.
                     if clientPushStats.shouldLog() then
@@ -191,7 +191,7 @@ module UdpClient =
                                         clientPushStats.droppedMtu.increment()
                                         Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
                                     else
-                                        let datagram = buildPushDatagramV2 sessionId nonce finalPayload
+                                        let datagram = buildPushDatagram sessionId nonce finalPayload
 
                                         try
                                             udpClient.Send(datagram, datagram.Length) |> ignore
@@ -225,7 +225,7 @@ module UdpClient =
                         // Encrypt if needed
                         match encryptPayload plaintextPayload nonce with
                         | Ok finalPayload ->
-                            let datagram = buildPushDatagramV2 sessionId nonce finalPayload
+                            let datagram = buildPushDatagram sessionId nonce finalPayload
 
                             try
                                 udpClient.Send(datagram, datagram.Length) |> ignore

@@ -265,7 +265,7 @@ module PacketRouter =
                             match forwardDnsQuery serverVpnIpUint clientIp clientPort dnsPayload with
                             | Some replyPacket ->
                                 // Enqueue DNS reply directly to the client (not into TUN)
-                                registry.enqueuePacketForClient(session.clientId, replyPacket) |> ignore
+                                registry.enqueuePacketForClient(session.sessionId, replyPacket) |> ignore
                                 Logger.logTrace (fun () -> $"DNSPROXY: enqueued reply to client {session.clientId.value}, len={replyPacket.Length}")
                             | None ->
                                 // Timeout or error - already logged by DnsProxy
@@ -292,7 +292,7 @@ module PacketRouter =
                                     | Some srcIp ->
                                         match findClientByIp destIp with
                                         | Some session ->
-                                            registry.enqueuePacketForClient(session.clientId, packet) |> ignore
+                                            registry.enqueuePacketForClient(session.sessionId, packet) |> ignore
                                             Logger.logTrace (fun () -> $"Routing packet: src={srcIp}, dst={destIp}, size={packet.Length} bytes -> client {session.clientId.value}, packet=%A{(summarizePacket packet)}")
                                         | None ->
                                             Logger.logTrace (fun () -> $"No client found for destination IP: {destIp}")
@@ -441,7 +441,7 @@ module PacketRouter =
                                 | Some clientIpAddr ->
                                     match findClientByIp clientIpAddr with
                                     | Some session ->
-                                        registry.enqueuePacketForClient(session.clientId, icmpPacket) |> ignore
+                                        registry.enqueuePacketForClient(session.sessionId, icmpPacket) |> ignore
                                         Logger.logTrace (fun () -> $"ICMPPROXY: enqueued reply to client {session.clientId.value}, size={icmpPacket.Length} bytes")
                                     | None ->
                                         Logger.logTrace (fun () -> $"ICMPPROXY: no client session for IP {clientIpStr}")
@@ -459,7 +459,7 @@ module PacketRouter =
                                         | Some destIpAddr ->
                                             match findClientByIp destIpAddr with
                                             | Some session ->
-                                                registry.enqueuePacketForClient(session.clientId, translated) |> ignore
+                                                registry.enqueuePacketForClient(session.sessionId, translated) |> ignore
                                                 // Logger.logTrace (fun () -> $"HEAVY LOG - NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
                                             | None ->
                                                 Logger.logTrace (fun () -> $"NAT inbound: no client session for destination IP {destIpStr}")

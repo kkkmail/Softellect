@@ -132,42 +132,42 @@ module Service =
 
             /// This function is called sendPackets to match the client side.
             /// From the server side it is receiving packets sent by a client.
-            member _.sendPackets (clientId, packets) =
-                let hasSession = registry.tryGetPushSession(clientId).IsSome
+            member _.sendPackets (sessionId : VpnSessionId, packets) =
+                let hasSession = registry.tryGetPushSession(sessionId).IsSome
 
                 if hasSession then
-                    registry.updateActivity(clientId)
-                    Logger.logTrace (fun () -> $"Server received {packets.Length} packets from client {clientId.value}.")
-                    Logger.logTracePackets (packets, (fun () -> $"Server received packets from client:  '{clientId.value}': "))
+                    registry.updateActivity(sessionId)
+                    Logger.logTrace (fun () -> $"Server received {packets.Length} packets from client {sessionId.value}.")
+                    Logger.logTracePackets (packets, (fun () -> $"Server received packets from client:  '{sessionId.value}': "))
 
                     let result =
                         packets
-                        |> Array.map (processPacket clientId)
+                        |> Array.map (processPacket sessionId)
                         |> List.ofArray
                         |> foldUnitResults VpnError.addError
 
                     result
                 else
-                    Logger.logInfo $"Failed to find push session in registry: {registry.GetHashCode()} for client: '{clientId.value}'."
-                    Error (clientId |> SessionExpiredErr |> ServerErr)
+                    Logger.logInfo $"Failed to find push session in registry: {registry.GetHashCode()} for session: '{sessionId.value}'."
+                    Error (sessionId |> SessionExpiredErr |> ServerErr)
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
-            member _.receivePackets clientId =
-                match registry.tryGetPushSession(clientId) with
+            member _.receivePackets (sessionId : VpnSessionId) =
+                match registry.tryGetPushSession(sessionId) with
                 | Some session ->
-                    registry.updateActivity(clientId)
+                    registry.updateActivity(sessionId)
                     let packets = session.pendingPackets.dequeueMany(MaxReceivePacketsPerCall)
 
                     if packets.Length = 0 then
                         Ok None
                     else
                         let totalBytes = packets |> Array.sumBy (fun p -> p.Length)
-                        Logger.logTrace (fun () -> $"receivePackets: drained {packets.Length} packets ({totalBytes} bytes) for client {clientId.value}")
+                        Logger.logTrace (fun () -> $"receivePackets: drained {packets.Length} packets ({totalBytes} bytes) for session {sessionId.value}")
                         Ok (Some packets)
                 | None ->
-                    Logger.logInfo $"receivePackets: no push session for client '{clientId.value}'."
-                    Error (clientId |> SessionExpiredErr |> ServerErr)
+                    Logger.logInfo $"receivePackets: no push session for session '{sessionId.value}'."
+                    Error (sessionId |> SessionExpiredErr |> ServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =

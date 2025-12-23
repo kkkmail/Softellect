@@ -20,6 +20,7 @@ module Errors =
         | KeyNotFoundErr of KeyId
         | AuthWcfError of VpnWcfError
         | AuthCryptoErr
+        | NoAvailableSessionsErr
 
 
     type VpnTunnelError =
@@ -48,7 +49,7 @@ module Errors =
     type VpnServerError =
         | ClientAuthErr of VpnAuthError
         | PacketForwardErr of string
-        | SessionExpiredErr of VpnClientId
+        | SessionExpiredErr of VpnSessionId
         | ClientNotRegisteredErr of VpnClientId
 
 
@@ -58,9 +59,9 @@ module Errors =
         | ServerErr of VpnServerError
         | ConfigErr of string
         | CryptoErr of Softellect.Sys.Errors.CryptoError
-        
+
         static member addError a b =
-            
+
             match a, b with
             | VpnAggregateErr (x, w), VpnAggregateErr (y, z) -> VpnAggregateErr (x, w @ (y :: z))
             | VpnAggregateErr (x, w), _ -> VpnAggregateErr (x, w @ [b])

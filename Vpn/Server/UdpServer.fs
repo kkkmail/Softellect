@@ -36,7 +36,7 @@ module UdpServer =
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
 
         // Track kicked sessions to avoid repeated logging (spec 041: log error once)
-        let kickedSessions = ConcurrentDictionary<byte, DateTime>()
+        let kickedSessions = ConcurrentDictionary<VpnSessionId, DateTime>()
 
         let cleanupReassemblies () =
             let nowTicks = Stopwatch.GetTimestamp()
@@ -50,12 +50,12 @@ module UdpServer =
 
         /// Kick a client session with error logging (once per client, per spec 041).
         let kickSession (session: PushClientSession) (reason: string) =
-            let sessionId = session.sessionId.value
+            let sessionId = session.sessionId
             if kickedSessions.TryAdd(sessionId, DateTime.UtcNow) then
-                Logger.logError $"Kicking client {session.clientId.value} (sessionId={sessionId}): {reason}"
-            registry.removePushSession(session.clientId)
+                Logger.logError $"Kicking client: '{session.clientId.value}' sessionId: {sessionId}, reason: '{reason}'."
+            registry.removePushSession(session.sessionId)
 
-        /// Encrypt payload using per-packet AES key derivation.
+        /// Encrypt the payload using per-packet AES key derivation.
         let encryptPayload (session: PushClientSession) (plaintextPayload: byte[]) (nonce: Guid) : Result<byte[], unit> =
             if session.useEncryption then
                 let aesKey = derivePacketAesKey session.sessionAesKey nonce
@@ -67,7 +67,7 @@ module UdpServer =
             else
                 Ok plaintextPayload
 
-        /// Decrypt payload using per-packet AES key derivation.
+        /// Decrypt the payload using per-packet AES key derivation.
         let decryptPayload (session: PushClientSession) (encryptedPayload: byte[]) (nonce: Guid) : Result<byte[], unit> =
             if session.useEncryption then
                 let aesKey = derivePacketAesKey session.sessionAesKey nonce
@@ -79,17 +79,17 @@ module UdpServer =
             else
                 Ok encryptedPayload
 
-        let processPushDataPacket (clientId: VpnClientId) (packetData: byte[]) =
-            match registry.tryGetPushSession(clientId) with
-            | Some _ ->
-                match service.sendPackets (clientId, [| packetData |]) with
+        let processPushDataPacket (sessionId: VpnSessionId) (packetData: byte[]) =
+            match registry.tryGetPushSession sessionId with
+            | Some session ->
+                match service.sendPackets (session.sessionId, [| packetData |]) with
                 | Ok () ->
-                    Logger.logTrace (fun () -> $"Push: registry: {registry.GetHashCode()} sent {packetData.Length} bytes to '{clientId.value}'.")
+                    Logger.logTrace (fun () -> $"Push: registry: {registry.GetHashCode()} sent {packetData.Length} bytes to '{sessionId.value}'.")
                     ()
-                | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{clientId.value}', error: '%A{e}'."
+                | Error e -> Logger.logWarn $"Push: registry: {registry.GetHashCode()} failed to process packet from '{session.clientId.value}', error: '%A{e}'."
             | None ->
                 pushStats.unknownClientDrops.increment()
-                Logger.logTrace (fun () -> $"Push: Dropped DATA from unknown client {clientId.value}")
+                Logger.logTrace (fun () -> $"Push: Dropped DATA from unknown session {sessionId.value}.")
 
         let receiveLoop (client: UdpClient) (ct: CancellationToken) =
             task {
@@ -111,9 +111,9 @@ module UdpServer =
                             if kickedSessions.ContainsKey(sessionId) then
                                 () // Silently drop - already logged once
                             else
-                                match registry.tryGetPushSessionBySessionId(sessionId) with
+                                match registry.tryGetPushSession(sessionId) with
                                 | Some session ->
-                                    registry.updatePushEndpoint(session.clientId, capturedEp)
+                                    registry.updatePushEndpoint(session.sessionId, capturedEp)
 
                                     // Decrypt if the session expects encryption
                                     match decryptPayload session payloadBytes nonce with
@@ -122,7 +122,7 @@ module UdpServer =
                                         | Ok (cmd, cmdData) ->
                                             match cmd with
                                             | c when c = PushCmdData ->
-                                                processPushDataPacket session.clientId cmdData
+                                                processPushDataPacket session.sessionId cmdData
                                             | c when c = PushCmdKeepalive ->
                                                 Logger.logTrace (fun () -> $"Push: Keepalive from {session.clientId.value} (sessionId={sessionId}) at {capturedEp}")
                                             | c ->
@@ -136,7 +136,7 @@ module UdpServer =
                                 | None ->
                                     pushStats.unknownClientDrops.increment()
                                     Logger.logTrace (fun () -> $"Push: Dropped packet from unknown sessionId={sessionId}")
-                        | Error () -> Logger.logTrace (fun () -> $"Push: Invalid datagram from {remoteEp}")
+                        | Error e -> Logger.logTrace (fun () -> $"Push: Invalid datagram from {remoteEp}, error: '{e}'.")
                         cleanupReassemblies ()
 
                         if pushStats.shouldLog() then
@@ -170,7 +170,7 @@ module UdpServer =
                         else
                             for session in sessions do
                                 // Skip if session was kicked
-                                if kickedSessions.ContainsKey(session.sessionId.value) then
+                                if kickedSessions.ContainsKey(session.sessionId) then
                                     ()
                                 else
                                     match session.currentEndpoint with
@@ -198,7 +198,7 @@ module UdpServer =
                                                                 Logger.logWarn $"Push: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload}) for {session.clientId.value}"
                                                                 None
                                                             else
-                                                                let datagram = buildPushDatagramV2 session.sessionId nonce finalPayload
+                                                                let datagram = buildPushDatagram session.sessionId nonce finalPayload
                                                                 Some (client.SendAsync(datagram, datagram.Length, endpoint))
                                                         | Error () ->
                                                             sessionKicked <- true

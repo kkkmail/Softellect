@@ -25,8 +25,8 @@ module ServiceInfo =
 
     type IVpnPushService =
         inherit IHostedService
-        abstract sendPackets : VpnClientId * byte[][] -> VpnUnitResult
-        abstract receivePackets : VpnClientId -> VpnPacketsResult
+        abstract sendPackets : VpnSessionId * byte[][] -> VpnUnitResult
+        abstract receivePackets : VpnSessionId -> VpnPacketsResult
 
 
     [<ServiceContract(ConfigurationName = AuthServiceName)>]
