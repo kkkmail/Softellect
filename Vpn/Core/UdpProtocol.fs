@@ -122,21 +122,72 @@ module UdpProtocol =
         { key = keyMaterial; iv = ivMaterial[0..15] }
 
 
+    /// Packs a byte and Guid into a 17-byte array
+    let private packByteAndGuid (VpnSessionId b) (g: Guid) : byte[] =
+        let guidBytes = g.ToByteArray()
+
+        // XOR of all 17 bytes
+        let xorValue =
+            guidBytes
+            |> Array.fold (fun acc x -> acc ^^^ x) b
+
+        let pos = int (xorValue % 17uy)
+
+        let result = Array.zeroCreate<byte> 17
+
+        // place the byte
+        result[pos] <- b
+
+        // fill the remaining positions with GUID bytes in order
+        let mutable gi = 0
+        for i = 0 to 16 do
+            if i <> pos then
+                result[i] <- guidBytes[gi]
+                gi <- gi + 1
+
+        result
+
+
+    /// Unpacks a byte and Guid from a 17-byte array
+    let private unpackByteAndGuid (data: byte[]) =
+        if data.Length < 17 then
+            Error "Input array must be at least 17 bytes"
+        else
+            // XOR of all 17 bytes
+            let xorValue =
+                data |> Array.reduce (^^^)
+
+            let pos = int (xorValue % 17uy)
+
+            let b = data[pos]
+
+            // extract GUID bytes in order
+            let guidBytes =
+                data
+                |> Array.mapi (fun i x -> i, x)
+                |> Array.filter (fun (i, _) -> i <> pos)
+                |> Array.map snd
+
+            Ok (VpnSessionId b, Guid(guidBytes))
+
+
     /// Build a push datagram with the new format (spec 041).
     /// Wire layout: sessionId (1 byte) + nonce (16 bytes) + payload
-    let buildPushDatagramV2 (sessionId: VpnSessionId) (nonce: Guid) (payload: byte[]) : byte[] =
+    let buildPushDatagram (sessionId: VpnSessionId) (nonce: Guid) (payload: byte[]) : byte[] =
         let payloadLen = payload.Length
         if payloadLen > PushMaxPayload then
             failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
 
         let result = Array.zeroCreate (PushHeaderSize + payloadLen)
+        let packedArray = packByteAndGuid sessionId nonce
+        Array.Copy(packedArray, 0, result, 0, PushHeaderSize)
 
-        // sessionId (1 byte)
-        result[0] <- sessionId.value
-
-        // nonce (16 bytes)
-        let nonceBytes = nonce.ToByteArray()
-        Array.Copy(nonceBytes, 0, result, PushSessionIdSize, PushNonceSize)
+        // // sessionId (1 byte)
+        // result[0] <- sessionId.value
+        //
+        // // nonce (16 bytes)
+        // let nonceBytes = nonce.ToByteArray()
+        // Array.Copy(nonceBytes, 0, result, PushSessionIdSize, PushNonceSize)
 
         // payload
         if payloadLen > 0 then
@@ -147,38 +198,40 @@ module UdpProtocol =
 
     /// Try to parse a push datagram (spec 041).
     /// Returns Ok (sessionId, nonce, payloadBytes) or Error () if invalid.
-    let tryParsePushDatagram (data: byte[]) : Result<byte * Guid * byte[], unit> =
+    let tryParsePushDatagram (data: byte[]) =
         if data.Length < PushHeaderSize then
-            Error ()
+            Error $"data.Length: {data.Length} is too small"
         else
-            let sessionId = data[0]
-            let nonceBytes = data[1..16]
-            let nonce = Guid(nonceBytes)
-            let payload =
-                if data.Length > PushHeaderSize then
-                    Array.sub data PushHeaderSize (data.Length - PushHeaderSize)
-                else [||]
-            Ok (sessionId, nonce, payload)
+            match unpackByteAndGuid data with
+            | Ok (sessionId, nonce) ->
+                // let sessionId = data[0] |> VpnSessionId
+                // let nonceBytes = data[1..16]
+                // let nonce = Guid(nonceBytes)
+                let payload =
+                    if data.Length > PushHeaderSize then
+                        Array.sub data PushHeaderSize (data.Length - PushHeaderSize)
+                    else [||]
+                Ok (sessionId, nonce, payload)
+            | Error e -> Error $"%A{e}"
 
-
-    /// Build a push datagram with the legacy format (spec 040).
-    /// Wire layout: clientId (16 bytes) + payload
-    let buildPushDatagram (clientId: VpnClientId) (payload: byte[]) : byte[] =
-        let payloadLen = payload.Length
-        if payloadLen > PushMaxPayload then
-            failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
-
-        let result = Array.zeroCreate (PushClientIdSize + payloadLen)
-        let guidBytes = clientId.value.ToByteArray()
-
-        // clientId (16 bytes)
-        Array.Copy(guidBytes, 0, result, 0, 16)
-
-        // payload
-        if payloadLen > 0 then
-            Array.Copy(payload, 0, result, PushClientIdSize, payloadLen)
-
-        result
+    // /// Build a push datagram with the legacy format (spec 040).
+    // /// Wire layout: clientId (16 bytes) + payload
+    // let buildPushDatagram (clientId: VpnClientId) (payload: byte[]) : byte[] =
+    //     let payloadLen = payload.Length
+    //     if payloadLen > PushMaxPayload then
+    //         failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
+    //
+    //     let result = Array.zeroCreate (PushClientIdSize + payloadLen)
+    //     let guidBytes = clientId.value.ToByteArray()
+    //
+    //     // clientId (16 bytes)
+    //     Array.Copy(guidBytes, 0, result, 0, 16)
+    //
+    //     // payload
+    //     if payloadLen > 0 then
+    //         Array.Copy(payload, 0, result, PushClientIdSize, payloadLen)
+    //
+    //     result
 
 
     /// Build a plaintext payload with a command byte prefix.
@@ -190,16 +243,16 @@ module UdpProtocol =
         result
 
 
-    /// Build a push keepalive datagram (command byte only, no data).
-    let buildPushKeepalive (clientId: VpnClientId) : byte[] =
-        let payload = buildPayload PushCmdKeepalive [||]
-        buildPushDatagram clientId payload
+    // /// Build a push keepalive datagram (command byte only, no data).
+    // let buildPushKeepalive (clientId: VpnClientId) : byte[] =
+    //     let payload = buildPayload PushCmdKeepalive [||]
+    //     buildPushDatagram clientId payload
 
 
-    /// Build a push data datagram.
-    let buildPushData (clientId: VpnClientId) (data: byte[]) : byte[] =
-        let payload = buildPayload PushCmdData data
-        buildPushDatagram clientId payload
+    // /// Build a push data datagram.
+    // let buildPushData (clientId: VpnClientId) (data: byte[]) : byte[] =
+    //     let payload = buildPayload PushCmdData data
+    //     buildPushDatagram clientId payload
 
 
     /// Try to parse plaintext payload into (command, data).
