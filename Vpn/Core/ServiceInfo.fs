@@ -14,13 +14,18 @@ module ServiceInfo =
     type VpnAuthResult = Result<VpnAuthResponse, VpnError>
 
 
+    type VpnPingResult = Result<unit, VpnError>
+
+
     type IAuthClient =
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
+        abstract pingSession : VpnPingRequest -> VpnPingResult
 
 
     type IAuthService =
         inherit IHostedService
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
+        abstract pingSession : VpnPingRequest -> VpnPingResult
 
 
     type IVpnPushService =
@@ -35,6 +40,9 @@ module ServiceInfo =
         [<OperationContract(Name = "authenticate")>]
         abstract authenticate : data:byte[] -> byte[]
 
+        [<OperationContract(Name = "pingSession")>]
+        abstract pingSession : data:byte[] -> byte[]
+
 
     type VpnServerAccessInfo =
         {
@@ -45,6 +53,7 @@ module ServiceInfo =
             serverKeyPath : FolderName
             clientKeysPath : FolderName
             vpnTransportProtocol : VpnTransportProtocol
+            encryptionType : EncryptionType
         }
 
 

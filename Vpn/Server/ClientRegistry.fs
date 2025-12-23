@@ -106,7 +106,7 @@ module ClientRegistry =
                     if nextSessionId = startId && not found then
                         err <- true
 
-                if err then NoAvailableSessionsErr |> AuthFailedErr |> ConnectionErr |> Error
+                if err then NoAvailableSessionsErr |> VpnAuthErr |> VpnConnectionErr |> Error
                 else Ok result
             )
 
@@ -180,7 +180,7 @@ module ClientRegistry =
 
             | Error e ->
                 Logger.logWarn $"Push client not found: '{clientId.value}', error: '%A{e}'."
-                clientId |> ClientNotFoundErr |> AuthFailedErr |> ConnectionErr |> Error
+                clientId |> ClientNotFoundErr |> VpnAuthErr |> VpnConnectionErr |> Error
 
         /// Try to get an existing push session by sessionId.
         member _.tryGetPushSession(sessionId : VpnSessionId) : PushClientSession option =

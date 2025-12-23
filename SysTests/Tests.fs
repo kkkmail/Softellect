@@ -238,7 +238,7 @@ module CoreTests =
         rnd.NextBytes(data)
 
         let encryptedData =
-            match tryEncryptAndSign AES data senderPrivateKey recipientPublicKey with
+            match trySignAndEncrypt AES data senderPrivateKey recipientPublicKey with
             | Ok d -> d
             | Error e -> failwith $"Error: %A{e}"
 
@@ -261,7 +261,7 @@ module CoreTests =
         rnd.NextBytes(data)
 
         let encryptedData =
-            match tryEncryptAndSign RSA data senderPrivateKey recipientPublicKey with
+            match trySignAndEncrypt RSA data senderPrivateKey recipientPublicKey with
             | Ok d -> d
             | Error e -> failwith $"Error: %A{e}"
 

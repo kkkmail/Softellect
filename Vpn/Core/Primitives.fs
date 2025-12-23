@@ -22,6 +22,11 @@ module Primitives =
     let ProgramName = "VpnServer"
 
 
+    /// Size of clientId prefix in encrypted auth messages.
+    [<Literal>]
+    let ClientIdPrefixSize = 16
+
+
     type VpnTransportProtocol =
         | UDP_Push
 
@@ -137,6 +142,14 @@ module Primitives =
         member this.value = let (VpnSessionId v) = this in v
 
         static member serverReserved = VpnSessionId 0uy
+
+
+    type VpnPingRequest =
+        {
+            clientId : VpnClientId
+            sessionId : VpnSessionId
+            timestamp : DateTime
+        }
 
 
     type VpnAuthResponse =

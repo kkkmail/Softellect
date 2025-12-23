@@ -34,10 +34,16 @@ module UdpClient =
         abstract injectPacket: byte[] -> Result<unit, string>
 
 
-    /// Push dataplane UDP client (spec 041).
+    /// Backoff delay when auth is not available (ms).
+    [<Literal>]
+    let NoAuthBackoffMs = 100
+
+
+    /// Push dataplane UDP client (spec 041/042).
     /// Uses per-packet AES encryption with session key and nonce-based key derivation.
     /// Wire format: [sessionId: 1 byte][nonce: 16 bytes][payload]
-    type VpnPushUdpClient(data: VpnClientServiceData, sessionId: VpnSessionId, sessionAesKey: byte[]) =
+    /// Per spec 042: Does not store session data. Uses getAuth() on each iteration.
+    type VpnPushUdpClient(data: VpnClientServiceData, getAuth: unit -> VpnAuthResponse option) =
         let clientAccessInfo = data.clientAccessInfo
         let serverIp = clientAccessInfo.serverAccessInfo.getIpAddress()
         let serverPort = clientAccessInfo.serverAccessInfo.getServicePort().value
@@ -71,10 +77,10 @@ module UdpClient =
             // Set receive timeout for periodic checks.
             udpClient.Client.ReceiveTimeout <- CleanupIntervalMs
 
-            Logger.logInfo $"Created - Server: {serverIp}:{serverPort}, ClientId: {vpnClientId.value}, SessionId: {sessionId.value}, UseEncryption: {useEncryption}, Local={udpClient.Client.LocalEndPoint}"
+            Logger.logInfo $"VpnPushUdpClient created - Server: {serverIp}:{serverPort}, ClientId: {vpnClientId.value}, UseEncryption: {useEncryption}, Local={udpClient.Client.LocalEndPoint}"
 
         /// Encrypt payload using per-packet AES key derivation.
-        let encryptPayload (plaintextPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
+        let encryptPayload (sessionAesKey: byte[]) (plaintextPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
             if useEncryption then
                 let aesKey = derivePacketAesKey sessionAesKey nonce
                 match tryEncryptAesKey plaintextPayload aesKey with
@@ -84,7 +90,7 @@ module UdpClient =
                 Ok plaintextPayload
 
         /// Decrypt payload using per-packet AES key derivation.
-        let decryptPayload (encryptedPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
+        let decryptPayload (sessionAesKey: byte[]) (encryptedPayload: byte[]) (nonce: Guid) : Result<byte[], string> =
             if useEncryption then
                 let aesKey = derivePacketAesKey sessionAesKey nonce
                 match tryDecryptAesKey encryptedPayload aesKey with
@@ -93,66 +99,68 @@ module UdpClient =
             else
                 Ok encryptedPayload
 
-        /// Critical failure - log and crash (spec 041 requirement).
-        let criticalFailure (msg: string) =
-            Logger.logCrit $"CRITICAL: {msg} - Client will terminate."
-            // Environment.Exit(1)
-
         /// UDP receive loop - receives pushed datagrams from the server.
+        /// Per spec 042: calls getAuth() on each iteration; skips if None.
         let receiveLoop () =
             Logger.logInfo "Receive loop started."
             while not clientCts.Token.IsCancellationRequested do
                 try
-                    let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
-                    let rawData = udpClient.Receive(&remoteEp)
+                    // Get current auth snapshot
+                    match getAuth() with
+                    | None ->
+                        // No auth available - backoff and retry
+                        Thread.Sleep(NoAuthBackoffMs)
+                    | Some auth ->
+                        let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
+                        let rawData = udpClient.Receive(&remoteEp)
 
-                    clientPushStats.udpRxDatagrams.increment()
-                    clientPushStats.udpRxBytes.addInt(rawData.Length)
+                        clientPushStats.udpRxDatagrams.increment()
+                        clientPushStats.udpRxBytes.addInt(rawData.Length)
 
-                    match tryParsePushDatagram rawData with
-                    | Ok (receivedSessionId, nonce, payloadBytes) ->
-                        // Verify sessionId matches
-                        if receivedSessionId <> sessionId then
-                            criticalFailure $"SessionId mismatch: expected {sessionId.value}, got {receivedSessionId}"
-                        else
-                            // Decrypt if needed
-                            match decryptPayload payloadBytes nonce with
-                            | Ok plaintextPayload ->
-                                match tryParsePayload plaintextPayload with
-                                | Ok (cmd, cmdData) ->
-                                    if cmd = PushCmdData && cmdData.Length > 0 then
-                                        // Inject directly if injector is available, otherwise queue.
-                                        match packetInjector with
-                                        | Some injector ->
-                                            match injector.injectPacket(cmdData) with
-                                            | Ok () -> ()
-                                            | Error msg ->
-                                                clientPushStats.droppedQueueFullInject.increment()
-                                                Logger.logWarn $"Push client: Failed to inject packet: {msg}"
-                                        | None ->
-                                            // Queue for later injection.
-                                            if not (inboundPacketQueue.enqueue(cmdData)) then
-                                                clientPushStats.droppedQueueFullInject.increment()
-                                    elif cmd = PushCmdKeepalive then
-                                        Logger.logTrace (fun () -> "Push client: Received keepalive from server")
-                                    else
-                                        Logger.logTrace (fun () -> $"Push client: Unknown cmd 0x{cmd:X2}")
-                                | Error () ->
-                                    if useEncryption then
-                                        criticalFailure "Failed to parse decrypted payload"
-                                    else
-                                        Logger.logTrace (fun () -> "Push client: Invalid payload format")
-                            | Error msg ->
-                                criticalFailure msg
-                    | Error e ->
-                        Logger.logTrace (fun () -> $"Push client: Invalid push datagram received: '{e}'.")
+                        match tryParsePushDatagram rawData with
+                        | Ok (receivedSessionId, nonce, payloadBytes) ->
+                            // Verify sessionId matches current auth
+                            if receivedSessionId <> auth.sessionId then
+                                // Session mismatch - log and ignore (may be stale packet from old session)
+                                Logger.logWarn $"Push client: SessionId mismatch: expected {auth.sessionId.value}, got {receivedSessionId.value} - ignoring packet"
+                            else
+                                // Decrypt if needed using current auth's session key
+                                match decryptPayload auth.sessionAesKey payloadBytes nonce with
+                                | Ok plaintextPayload ->
+                                    match tryParsePayload plaintextPayload with
+                                    | Ok (cmd, cmdData) ->
+                                        if cmd = PushCmdData && cmdData.Length > 0 then
+                                            // Inject directly if injector is available, otherwise queue.
+                                            match packetInjector with
+                                            | Some injector ->
+                                                match injector.injectPacket(cmdData) with
+                                                | Ok () -> ()
+                                                | Error msg ->
+                                                    clientPushStats.droppedQueueFullInject.increment()
+                                                    Logger.logWarn $"Push client: Failed to inject packet: {msg}"
+                                            | None ->
+                                                // Queue for later injection.
+                                                if not (inboundPacketQueue.enqueue(cmdData)) then
+                                                    clientPushStats.droppedQueueFullInject.increment()
+                                        elif cmd = PushCmdKeepalive then
+                                            Logger.logTrace (fun () -> "Push client: Received keepalive from server")
+                                        else
+                                            Logger.logTrace (fun () -> $"Push client: Unknown cmd 0x{cmd:X2}")
+                                    | Error () ->
+                                        // Invalid payload format - log and continue (spec 042: don't exit)
+                                        Logger.logWarn "Push client: Invalid payload format after decryption"
+                                | Error msg ->
+                                    // Decryption failed - log and continue (spec 042: don't exit)
+                                    Logger.logWarn $"Push client: Decryption failed: {msg}"
+                        | Error e ->
+                            Logger.logTrace (fun () -> $"Push client: Invalid push datagram received: '{e}'.")
 
-                    // Log stats periodically.
-                    if clientPushStats.shouldLog() then
-                        Logger.logInfo (clientPushStats.getSummary())
+                        // Log stats periodically.
+                        if clientPushStats.shouldLog() then
+                            Logger.logInfo (clientPushStats.getSummary())
                 with
                 | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
-                    // Timeout is expected - allows checking cancellation.
+                    // Timeout is expected - allows checking cancellation and auth changes.
                     if clientPushStats.shouldLog() then
                         Logger.logInfo (clientPushStats.getSummary())
                 | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted ->
@@ -165,43 +173,51 @@ module UdpClient =
             Logger.logInfo "Receive loop stopped."
 
         /// UDP send loop - sends queued packets to the server.
+        /// Per spec 042: calls getAuth() on each iteration; skips if None.
         let sendLoop () =
             Logger.logInfo "Send loop started."
             while not clientCts.Token.IsCancellationRequested do
                 try
-                    // Wait for packets with a short timeout.
-                    if outboundQueue.wait(10) then
-                        // Dequeue and send up to a batch of packets.
-                        let mutable hasMore = true
+                    // Get current auth snapshot
+                    match getAuth() with
+                    | None ->
+                        // No auth available - backoff and retry
+                        Thread.Sleep(NoAuthBackoffMs)
+                    | Some auth ->
+                        // Wait for packets with a short timeout.
+                        if outboundQueue.wait(10) then
+                            // Dequeue and send up to a batch of packets.
+                            let mutable hasMore = true
 
-                        while hasMore do
-                            match outboundQueue.tryDequeue() with
-                            | Some packet ->
-                                // Generate nonce for this packet
-                                let nonce = Guid.NewGuid()
+                            while hasMore do
+                                match outboundQueue.tryDequeue() with
+                                | Some packet ->
+                                    // Generate nonce for this packet
+                                    let nonce = Guid.NewGuid()
 
-                                // Build plaintext payload with command
-                                let plaintextPayload = buildPayload PushCmdData packet
+                                    // Build plaintext payload with command
+                                    let plaintextPayload = buildPayload PushCmdData packet
 
-                                // Encrypt if needed
-                                match encryptPayload plaintextPayload nonce with
-                                | Ok finalPayload ->
-                                    // Check MTU after encryption
-                                    if finalPayload.Length > PushMaxPayload then
-                                        clientPushStats.droppedMtu.increment()
-                                        Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
-                                    else
-                                        let datagram = buildPushDatagram sessionId nonce finalPayload
+                                    // Encrypt if needed using current auth's session key
+                                    match encryptPayload auth.sessionAesKey plaintextPayload nonce with
+                                    | Ok finalPayload ->
+                                        // Check MTU after encryption
+                                        if finalPayload.Length > PushMaxPayload then
+                                            clientPushStats.droppedMtu.increment()
+                                            Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
+                                        else
+                                            let datagram = buildPushDatagram auth.sessionId nonce finalPayload
 
-                                        try
-                                            udpClient.Send(datagram, datagram.Length) |> ignore
-                                            clientPushStats.udpTxDatagrams.increment()
-                                            clientPushStats.udpTxBytes.addInt(datagram.Length)
-                                        with
-                                        | ex -> Logger.logWarn $"Push client: Send failed: {ex.Message}"
-                                | Error msg ->
-                                    criticalFailure msg
-                            | None -> hasMore <- false
+                                            try
+                                                udpClient.Send(datagram, datagram.Length) |> ignore
+                                                clientPushStats.udpTxDatagrams.increment()
+                                                clientPushStats.udpTxBytes.addInt(datagram.Length)
+                                            with
+                                            | ex -> Logger.logWarn $"Push client: Send failed: {ex.Message}"
+                                    | Error msg ->
+                                        // Encryption failed - log and continue (spec 042: don't exit)
+                                        Logger.logWarn $"Push client: Encryption failed: {msg}"
+                                | None -> hasMore <- false
                 with
                 | :? ObjectDisposedException -> ()
                 | _ when clientCts.Token.IsCancellationRequested -> ()
@@ -210,30 +226,38 @@ module UdpClient =
             Logger.logInfo "Send loop stopped."
 
         /// Keepalive loop - sends periodic keepalives to maintain NAT mapping.
+        /// Per spec 042: calls getAuth() on each iteration; skips if None.
         let keepaliveLoop () =
             Logger.logInfo "Keepalive loop started."
             while not clientCts.Token.IsCancellationRequested do
                 try
                     Thread.Sleep(PushKeepaliveIntervalMs)
                     if not clientCts.Token.IsCancellationRequested then
-                        // Generate nonce for this packet
-                        let nonce = Guid.NewGuid()
+                        // Get current auth snapshot
+                        match getAuth() with
+                        | None ->
+                            // No auth available - skip keepalive (will retry next interval)
+                            ()
+                        | Some auth ->
+                            // Generate nonce for this packet
+                            let nonce = Guid.NewGuid()
 
-                        // Build plaintext keepalive payload
-                        let plaintextPayload = buildPayload PushCmdKeepalive [||]
+                            // Build plaintext keepalive payload
+                            let plaintextPayload = buildPayload PushCmdKeepalive [||]
 
-                        // Encrypt if needed
-                        match encryptPayload plaintextPayload nonce with
-                        | Ok finalPayload ->
-                            let datagram = buildPushDatagram sessionId nonce finalPayload
+                            // Encrypt if needed using current auth's session key
+                            match encryptPayload auth.sessionAesKey plaintextPayload nonce with
+                            | Ok finalPayload ->
+                                let datagram = buildPushDatagram auth.sessionId nonce finalPayload
 
-                            try
-                                udpClient.Send(datagram, datagram.Length) |> ignore
-                                Logger.logTrace (fun () -> "Push client: Sent keepalive")
-                            with
-                            | ex -> Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
-                        | Error msg ->
-                            criticalFailure msg
+                                try
+                                    udpClient.Send(datagram, datagram.Length) |> ignore
+                                    Logger.logTrace (fun () -> "Push client: Sent keepalive")
+                                with
+                                | ex -> Logger.logWarn $"Push client: Keepalive send failed: {ex.Message}"
+                            | Error msg ->
+                                // Encryption failed - log and continue (spec 042: don't exit)
+                                Logger.logWarn $"Push client: Keepalive encryption failed: {msg}"
                 with
                 | :? ObjectDisposedException -> ()
                 | _ when clientCts.Token.IsCancellationRequested -> ()
@@ -295,9 +319,6 @@ module UdpClient =
         /// Get client ID.
         member _.clientId = vpnClientId
 
-        /// Get session ID.
-        member _.sessionIdValue = sessionId
-
         interface IDisposable with
             member this.Dispose() =
                 this.stop()
@@ -306,5 +327,5 @@ module UdpClient =
                 clientCts.Dispose()
 
 
-    let createVpnPushUdpClient (serviceData: VpnClientServiceData) (sessionId: VpnSessionId) (sessionAesKey: byte[]) =
-        new VpnPushUdpClient(serviceData, sessionId, sessionAesKey)
+    let createVpnPushUdpClient (serviceData: VpnClientServiceData) (getAuth: unit -> VpnAuthResponse option) =
+        new VpnPushUdpClient(serviceData, getAuth)
