@@ -148,25 +148,31 @@ module UdpProtocol =
         result
 
 
-    /// Unpacks a byte and Guid from a 17-byte array
+    /// Unpacks a session id byte and Guid from the first 17 bytes of an array (payload may follow)
     let private unpackByteAndGuid (data: byte[]) =
         if data.Length < 17 then
             Error "Input array must be at least 17 bytes"
         else
-            // XOR of all 17 bytes
-            let xorValue =
-                data |> Array.reduce (^^^)
+            // Only the first 17 bytes participate in the scheme.
+            // data[0..16] = (sessionId + 16 guid bytes, with sessionId placed at pos)
+            let header = data.AsSpan(0, 17)
+
+            // XOR of the 17 header bytes
+            let mutable xorValue = 0uy
+            for i = 0 to 16 do
+                xorValue <- xorValue ^^^ header[i]
 
             let pos = int (xorValue % 17uy)
 
-            let b = data[pos]
+            let b = header[pos]
 
-            // extract GUID bytes in order
-            let guidBytes =
-                data
-                |> Array.mapi (fun i x -> i, x)
-                |> Array.filter (fun (i, _) -> i <> pos)
-                |> Array.map snd
+            // Extract exactly 16 GUID bytes from the header, skipping pos, preserving order
+            let guidBytes = Array.zeroCreate<byte> 16
+            let mutable gi = 0
+            for i = 0 to 16 do
+                if i <> pos then
+                    guidBytes[gi] <- header[i]
+                    gi <- gi + 1
 
             Ok (VpnSessionId b, Guid(guidBytes))
 
