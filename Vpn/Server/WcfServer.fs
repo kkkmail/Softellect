@@ -51,7 +51,7 @@ module WcfServer =
 
                 match tryLoadClientPublicKey serverData clientId with
                 | Some key ->
-                    // Verify signature on the FULL decrypted data (which includes clientIdBytes).
+                    // Verify the signature on the FULL decrypted data (which includes clientIdBytes).
                     match tryVerify r key with
                     | Ok verified ->
                         // After verification, 'verified' contains [clientIdBytes; requestBytes].

@@ -15,28 +15,24 @@ open Microsoft.Extensions.Hosting
 
 module Program =
 
-    let private loadClientKeys (clientKeyPath: FolderName) =
+    let private loadClientKeys (clientKeyPath: FolderName) (clientId : VpnClientId) =
         if not (Directory.Exists clientKeyPath.value) then
             Logger.logError $"Client key folder not found: {clientKeyPath.value}"
             Error $"Client key folder not found: {clientKeyPath.value}. Use ClientAdm to generate keys."
         else
-            let keyFiles = Directory.GetFiles(clientKeyPath.value, "*.key")
-            let pkxFiles = Directory.GetFiles(clientKeyPath.value, "*.pkx")
+            let keyFilePath = (FileName $"{clientId.value}.key").combine clientKeyPath
+            let pkxFilePath = (FileName $"{clientId.value}.pkx").combine clientKeyPath
 
-            if keyFiles.Length = 0 || pkxFiles.Length = 0 then
-                Logger.logError $"Client keys not found in {clientKeyPath.value}"
-                Error $"Client keys not found in {clientKeyPath.value}. Use ClientAdm to generate keys."
-            else
-                match tryImportPrivateKey (FileName keyFiles.[0]) None with
-                | Ok (keyId, privateKey) ->
-                    match tryImportPublicKey (FileName pkxFiles.[0]) (Some keyId) with
-                    | Ok (_, publicKey) -> Ok (privateKey, publicKey)
-                    | Error e ->
-                        Logger.logError $"Failed to import client public key: %A{e}"
-                        Error $"Failed to import client public key: %A{e}"
+            match tryImportPrivateKey keyFilePath None with
+            | Ok (keyId, privateKey) ->
+                match tryImportPublicKey pkxFilePath (Some keyId) with
+                | Ok (_, publicKey) -> Ok (privateKey, publicKey)
                 | Error e ->
-                    Logger.logError $"Failed to import client private key: %A{e}"
-                    Error $"Failed to import client private key: %A{e}"
+                    Logger.logError $"Failed to import client public key: %A{e}"
+                    Error $"Failed to import client public key: %A{e}"
+            | Error e ->
+                Logger.logError $"Failed to import client private key: %A{e}"
+                Error $"Failed to import client private key: %A{e}"
 
 
     let private loadServerPublicKey (serverPublicKeyPath: FolderName) (vpnServerId: VpnServerId) =
@@ -45,14 +41,14 @@ module Program =
             Error $"Server public key folder not found: {serverPublicKeyPath.value}"
         else
             let keyId = KeyId vpnServerId.value
-            let keyFileName = FileName $"{vpnServerId.value}.pkx"
-            let keyFilePath = keyFileName.combine serverPublicKeyPath
+            let pkxFileName = FileName $"{vpnServerId.value}.pkx"
+            let pkxFilePath = pkxFileName.combine serverPublicKeyPath
 
-            if not (File.Exists keyFilePath.value) then
-                Logger.logError $"Server public key file not found: {keyFilePath.value}"
-                Error $"Server public key file not found: {keyFilePath.value}"
+            if not (File.Exists pkxFilePath.value) then
+                Logger.logError $"Server public key file not found: {pkxFilePath.value}"
+                Error $"Server public key file not found: {pkxFilePath.value}"
             else
-                match tryImportPublicKey keyFilePath (Some keyId) with
+                match tryImportPublicKey pkxFilePath (Some keyId) with
                 | Ok (_, publicKey) -> Ok publicKey
                 | Error e ->
                     Logger.logError $"Failed to import server public key: %A{e}"
@@ -69,7 +65,7 @@ module Program =
 
         Logger.logInfo $"vpnClientMain - clientAccessInfo.vpnClientId = '{clientAccessInfo.vpnClientId.value}'."
 
-        match loadClientKeys clientAccessInfo.clientKeyPath with
+        match loadClientKeys clientAccessInfo.clientKeyPath clientAccessInfo.vpnClientId with
         | Ok (clientPrivateKey, clientPublicKey) ->
             match loadServerPublicKey clientAccessInfo.serverPublicKeyPath clientAccessInfo.vpnServerId with
             | Ok serverPublicKey ->
