@@ -38,12 +38,12 @@ module Service =
 
         let registry = ClientRegistry(registryData)
         do Logger.logInfo $"Created registry: {registry.GetHashCode()}."
-        let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+        let toAuthError f = f |> AuthWcfErr |> VpnWcfErr |> ClientAuthErr
 
         /// Verify the timestamp is recent (within 5 minutes)
         let verifyAuthRequest (request: VpnAuthRequest) =
             let timeDiff = DateTime.UtcNow - request.timestamp
-            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> AuthFailedErr |> ConnectionErr)
+            if timeDiff.TotalMinutes > 5.0 then Error (AuthExpiredErr |> VpnAuthErr |> VpnConnectionErr)
             else Ok ()
 
         interface IAuthService with
@@ -66,6 +66,15 @@ module Service =
                         Ok response
                     | Error e -> Error e
                 | Error e -> Error e
+
+            member _.pingSession request =
+                match registry.tryGetPushSession(request.sessionId) with
+                | Some session when session.clientId = request.clientId ->
+                    registry.updateActivity(request.sessionId)
+                    Ok ()
+                | _ ->
+                    Logger.logInfo $"pingSession: session not found or clientId mismatch for client '{request.clientId.value}', sessionId={request.sessionId.value}"
+                    Error (request.sessionId |> SessionExpiredErr |> VpnServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =
@@ -106,7 +115,7 @@ module Service =
 
         let serverVpnIpUint = ipToUInt32 routerConfig.serverVpnIp.value
 
-        let toAuthError f = f |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+        let toAuthError f = f |> AuthWcfErr |> VpnWcfErr |> ClientAuthErr
         let toSendError f = f |> ConfigErr
         let toReceiveError f = f |> ConfigErr
 
@@ -149,7 +158,7 @@ module Service =
                     result
                 else
                     Logger.logInfo $"Failed to find push session in registry: {registry.GetHashCode()} for session: '{sessionId.value}'."
-                    Error (sessionId |> SessionExpiredErr |> ServerErr)
+                    Error (sessionId |> SessionExpiredErr |> VpnServerErr)
 
             /// This function is called receivePackets to match the client side.
             /// From the server side it is sending packets to a client.
@@ -167,7 +176,7 @@ module Service =
                         Ok (Some packets)
                 | None ->
                     Logger.logInfo $"receivePackets: no push session for session '{sessionId.value}'."
-                    Error (sessionId |> SessionExpiredErr |> ServerErr)
+                    Error (sessionId |> SessionExpiredErr |> VpnServerErr)
 
         interface IHostedService with
             member _.StartAsync(cancellationToken: CancellationToken) =

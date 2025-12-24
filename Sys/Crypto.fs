@@ -295,31 +295,38 @@ module Crypto =
 
 
     /// Encrypts and signs the data.
-    let tryEncryptAndSign (e : EncryptionType) data senderPrivateKey recipientPublicKey =
+    let trySignAndEncrypt (e : EncryptionType) data senderPrivateKey recipientPublicKey =
         Logger.logTrace (fun () -> $"tryEncryptAndSign: Using %A{e}")
         let tryEncrypt = e.encryptor
 
         match signData data senderPrivateKey with
-        | Ok signature -> tryEncrypt (Array.concat [signature; data]) recipientPublicKey
+        | Ok signature -> tryEncrypt (Array.concat [data; signature]) recipientPublicKey
         | Error e -> Error e
+
+
+    /// Verifies and removes the signature.
+    let tryVerify (combinedData : byte[]) (senderPublicKey : PublicKey) =
+        use rsa = RSA.Create()
+        rsa.FromXmlString(senderPublicKey.value)
+        let signatureLength = rsa.KeySize / 8
+        let originalData = combinedData[..combinedData.Length - signatureLength - 1]  // Data is FIRST
+        let signature = combinedData[combinedData.Length - signatureLength..]         // Signature is LAST
+
+        match verifySignature originalData signature senderPublicKey with
+        | Ok () -> Ok originalData
+        | Error e -> Error e
+
+
+    let tryDecrypt (e : EncryptionType) encryptedData recipientPrivateKey =
+        e.decryptor encryptedData recipientPrivateKey
 
 
     /// Decrypts and verifies the signed data.
     let tryDecryptAndVerify (e : EncryptionType) encryptedData recipientPrivateKey (senderPublicKey : PublicKey) =
         Logger.logTrace (fun () -> $"tryDecryptAndVerify: Using %A{e}")
-        let tryDecrypt = e.decryptor
 
-        match tryDecrypt encryptedData recipientPrivateKey with
-        | Ok (combinedData : byte[]) ->
-            use rsa = RSA.Create()
-            rsa.FromXmlString(senderPublicKey.value)
-            let signatureLength = rsa.KeySize / 8
-            let signature = combinedData[..signatureLength - 1]
-            let originalData = combinedData[signatureLength..]
-
-            match verifySignature originalData signature senderPublicKey with
-            | Ok () -> Ok originalData
-            | Error e -> Error e
+        match tryDecrypt e encryptedData recipientPrivateKey with
+        | Ok (combinedData : byte[]) -> tryVerify combinedData senderPublicKey
         | Error e -> Error e
 
 

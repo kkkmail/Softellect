@@ -1,5 +1,6 @@
 namespace Softellect.Vpn.Core
 
+open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Errors
 open Softellect.Vpn.Core.Primitives
@@ -8,8 +9,7 @@ module Errors =
 
     type VpnWcfError =
         | AuthWcfErr of WcfError
-        | SendPacketWcfErr of WcfError
-        | ReceivePacketsWcfErr of WcfError
+        | PingWcfErr of WcfError
 
 
     type VpnAuthError =
@@ -18,9 +18,11 @@ module Errors =
         | InvalidSignatureErr
         | AuthExpiredErr
         | KeyNotFoundErr of KeyId
-        | AuthWcfError of VpnWcfError
+        | VpnWcfErr of VpnWcfError
         | AuthCryptoErr
         | NoAvailableSessionsErr
+        | SerializationErr of SerializationError
+        | SysErr of SysError
 
 
     type VpnTunnelError =
@@ -41,7 +43,7 @@ module Errors =
     type VpnConnectionError =
         | ServerUnreachableErr of string
         | ConnectionTimeoutErr
-        | AuthFailedErr of VpnAuthError
+        | VpnAuthErr of VpnAuthError
         | TunnelErr of VpnTunnelError
         | KillSwitchErr of VpnKillSwitchError
 
@@ -55,10 +57,11 @@ module Errors =
 
     type VpnError =
         | VpnAggregateErr of VpnError  * List<VpnError>
-        | ConnectionErr of VpnConnectionError
-        | ServerErr of VpnServerError
+        | VpnConnectionErr of VpnConnectionError
+        | VpnServerErr of VpnServerError
         | ConfigErr of string
-        | CryptoErr of Softellect.Sys.Errors.CryptoError
+        | CryptoErr of CryptoError
+        | SnafyErr of string // TODO kk:20251223 - Follow the trail, then propagate through the error hierarchy properly.
 
         static member addError a b =
 

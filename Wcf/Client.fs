@@ -10,7 +10,7 @@ open Softellect.Wcf.Common
 
 module Client =
 
-    /// ! Do not try consolidating with Servise. Different namespaces are used !
+    /// ! Do not try consolidating with Service. Different namespaces are used !
     /// This SecurityMode lives in System.ServiceModel namespace.
     type WcfSecurityMode
         with

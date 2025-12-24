@@ -9,6 +9,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
+open Softellect.Wcf.Common
 open Softellect.Wcf.Service
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
@@ -17,81 +18,100 @@ open Softellect.Wcf.Errors
 
 module WcfServer =
 
-    let toAuthWcfError (e: WcfError) = e |> AuthWcfErr |> AuthWcfError |> AuthFailedErr |> ConnectionErr
+    // let toAuthWcfError (e: WcfError) = e |> AuthWcfErr |> AuthWcfError |> AuthFailedErr |> ConnectionErr
 
-    /// Size of clientId prefix in encrypted auth messages.
-    [<Literal>]
-    let ClientIdPrefixSize = 16
+
+    /// Try to load a client's public key by clientId.
+    let tryLoadClientPublicKey (serverData: VpnServerData) (clientId: VpnClientId) =
+        let keyId = KeyId clientId.value
+        let keyFileName = FileName $"{clientId.value}.pkx"
+        let keyFilePath = keyFileName.combine serverData.serverAccessInfo.clientKeysPath
+
+        match tryImportPublicKey keyFilePath (Some keyId) with
+        | Ok (_, publicKey) -> Some publicKey
+        | Error e ->
+            Logger.logWarn $"AuthWcfService: Failed to load public key for client {clientId.value}: '%A{e}'"
+            None
+
+
+    let inline private tryDecryptAndVerifyRequest<'T> (serverData: VpnServerData) (data : byte[]) verifier : Result<'T * PublicKey, VpnError> =
+        Logger.logInfo $"Calling tryDecrypt with encryptionType: '%A{serverData.serverAccessInfo.encryptionType}'."
+
+        match tryDecrypt serverData.serverAccessInfo.encryptionType data serverData.serverPrivateKey with
+        | Ok r ->
+            if r.Length < ClientIdPrefixSize then
+                SnafyErr $"r.Length: {r.Length} is less than expected: {ClientIdPrefixSize}." |> Error
+            else
+                // Extract clientId from the BEGINNING of decrypted data (before verification).
+                // The signature was computed over [clientIdBytes; requestBytes], so we need to
+                // verify the FULL data first, then extract the payload.
+                let clientIdBytes = r[0..ClientIdPrefixSize - 1]
+                let clientId = Guid(clientIdBytes) |> VpnClientId
+                Logger.logInfo $"Extracted clientId: '{clientId.value}' from clientIdBytes: '%A{clientIdBytes}'."
+
+                match tryLoadClientPublicKey serverData clientId with
+                | Some key ->
+                    // Verify signature on the FULL decrypted data (which includes clientIdBytes).
+                    match tryVerify r key with
+                    | Ok verified ->
+                        // After verification, 'verified' contains [clientIdBytes; requestBytes].
+                        // Extract the requestBytes by skipping clientIdBytes.
+                        let requestBytes = Array.sub verified ClientIdPrefixSize (verified.Length - ClientIdPrefixSize)
+                        match tryDeserialize<'T> wcfSerializationFormat requestBytes with
+                        | Ok result ->
+                            match verifier clientId result with
+                            | true -> Ok (result, key)
+                            | false -> SnafyErr $"Verification for client: '{clientId.value}' failed." |> Error
+                        | Error e -> SnafyErr $"tryDeserialize for client: '{clientId.value}' failed, error: '%A{e}'." |> Error
+                    | Error e -> SnafyErr $"tryVerify for client: '{clientId.value}' failed, error: '%A{e}'." |> Error
+                | None -> SnafyErr $"tryLoadClientPublicKey for the client: '{clientId.value}' failed." |> Error
+        | Error e -> SnafyErr $"tryDecrypt failed, error: '%A{e}'." |> Error
+
+
+    let inline private trySignAndEncryptResponse (serverData: VpnServerData) clientKey response : Result<byte[], VpnError> =
+        match trySerialize wcfSerializationFormat response with
+        | Ok responseBytes ->
+            match trySignAndEncrypt serverData.serverAccessInfo.encryptionType responseBytes serverData.serverPrivateKey clientKey with
+            | Ok r -> Ok r
+            | Error e -> SnafyErr $"trySignAndEncrypt failed, error: '%A{e}'." |> Error
+        | Error e -> SnafyErr $"trySerialize failed, error: '%A{e}'." |> Error
 
 
     /// Encrypted auth service that wraps authentication with encryption/signing.
-    /// Wire format for request: [clientId: 16 bytes][encrypted+signed VpnAuthRequest]
-    /// Wire format for response: [encrypted+signed Result<VpnAuthResponse, VpnError>]
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
-    type AuthWcfService(service: IAuthService, serverData: VpnServerData) =
-        let serverPrivateKey = serverData.serverPrivateKey
-        let clientKeysPath = serverData.serverAccessInfo.clientKeysPath
+    type AuthWcfService (service: IAuthService, serverData: VpnServerData) =
+        let toAuthenticateError (e: WcfError) : VpnError = e |> AuthWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
+        let toPingSessionError (e: WcfError) : VpnError = e |> PingWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
 
-        /// Try to load a client's public key by clientId.
-        let tryLoadClientPublicKey (clientId: VpnClientId) =
-            let keyId = KeyId clientId.value
-            let keyFileName = FileName $"{clientId.value}.pkx"
-            let keyFilePath = keyFileName.combine clientKeysPath
+        let authenticateImpl data =
+            let verifier c (r : VpnAuthRequest) = r.clientId = c
 
-            match tryImportPublicKey keyFilePath (Some keyId) with
-            | Ok (_, publicKey) -> Some publicKey
-            | Error e ->
-                Logger.logWarn $"AuthWcfService: Failed to load public key for client {clientId.value}: '%A{e}'"
-                None
+            match tryDecryptAndVerifyRequest<VpnAuthRequest> serverData data verifier with
+            | Ok (r, k) ->
+                match service.authenticate r with
+                | Ok authResponse ->
+                    match trySignAndEncryptResponse serverData k authResponse with
+                    | Ok s -> Ok s
+                    | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                | Error e -> Error e
+            | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
+
+        let pingSessionImpl data =
+            let verifier c (r : VpnPingRequest) = r.clientId = c
+
+            match tryDecryptAndVerifyRequest<VpnPingRequest> serverData data verifier with
+            | Ok (r, k) ->
+                match service.pingSession r with
+                | Ok pingResponse ->
+                    match trySignAndEncryptResponse serverData k pingResponse with
+                    | Ok s -> Ok s
+                    | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                | Error e -> Error e
+            | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
 
         interface IAuthWcfService with
-            member _.authenticate data =
-                // Wire format: [clientId: 16 bytes][encrypted+signed payload]
-                if data.Length < ClientIdPrefixSize then
-                    Logger.logError "AuthWcfService: Received data too short for clientId prefix"
-                    [||]
-                else
-                    // Extract clientId from unencrypted prefix
-                    let clientIdBytes = data.[0..ClientIdPrefixSize - 1]
-                    let clientId = Guid(clientIdBytes) |> VpnClientId
-                    let encryptedPayload = Array.sub data ClientIdPrefixSize (data.Length - ClientIdPrefixSize)
-
-                    Logger.logTrace (fun () -> $"AuthWcfService: Processing auth request from client {clientId.value}")
-
-                    match tryLoadClientPublicKey clientId with
-                    | Some clientPublicKey ->
-                        // Decrypt and verify the request
-                        match tryDecryptAndVerify EncryptionType.AES encryptedPayload serverPrivateKey clientPublicKey with
-                        | Ok decryptedBytes ->
-                            // Deserialize the request
-                            match tryDeserialize BinaryZippedFormat decryptedBytes with
-                            | Ok (request: VpnAuthRequest) ->
-                                // Process the authentication
-                                let result = service.authenticate request
-
-                                // Serialize the response
-                                match trySerialize BinaryZippedFormat result with
-                                | Ok responseBytes ->
-                                    // Encrypt and sign the response
-                                    match tryEncryptAndSign EncryptionType.AES responseBytes serverPrivateKey clientPublicKey with
-                                    | Ok encryptedResponse ->
-                                        Logger.logTrace (fun () -> $"AuthWcfService: Successfully processed auth for client {clientId.value}")
-                                        encryptedResponse
-                                    | Error e ->
-                                        Logger.logError $"AuthWcfService: Failed to encrypt response for client {clientId.value}: '%A{e}'"
-                                        [||]
-                                | Error e ->
-                                    Logger.logError $"AuthWcfService: Failed to serialize response: '%A{e}'"
-                                    [||]
-                            | Error e ->
-                                Logger.logError $"AuthWcfService: Failed to deserialize request from client {clientId.value}: '%A{e}'"
-                                [||]
-                        | Error e ->
-                            Logger.logError $"AuthWcfService: Failed to decrypt/verify request from client {clientId.value}: '%A{e}'"
-                            [||]
-                    | None ->
-                        Logger.logError $"AuthWcfService: Unknown client {clientId.value} - no public key found"
-                        [||]
+            member _.authenticate data = tryReply authenticateImpl toAuthenticateError data
+            member _.pingSession data = tryReply pingSessionImpl toPingSessionError data
 
 
     /// AuthWcfService is injected into host first. Any additional services must be injected via configureServices.

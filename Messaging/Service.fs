@@ -114,7 +114,7 @@ module Service =
                     Task.CompletedTask
                 | Error e ->
                     Logger.logInfo $"Error during stop: %A{e}."
-                    Task.CompletedTask // Log the error, but complete the task to allow the shutdown process to continue.
+                    Task.CompletedTask // Log the error but complete the task to allow the shutdown process to continue.
 
 
     let mutable private serviceCount = 0L

@@ -12,6 +12,8 @@ open Softellect.Wcf.Common
 
 module AppSettings =
     let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
+    let getEncryptionType() = AES
+
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
@@ -76,6 +78,7 @@ module AppSettings =
                 serverKeyPath = FolderName @"C:\Keys\VpnServer"
                 clientKeysPath = FolderName @"C:\Keys\VpnClient"
                 vpnTransportProtocol = getVpnTransportProtocol()
+                encryptionType = getEncryptionType()
             }
 
 
@@ -146,6 +149,7 @@ module AppSettings =
                 serverKeyPath = serverKeyPath
                 clientKeysPath = clientKeysPath
                 vpnTransportProtocol = getVpnTransportProtocol()
+                encryptionType = getEncryptionType()
             }
         | Error e ->
             Logger.logCrit $"loadVpnServerAccessInfo - Cannot load settings. Error: '%A{e}'."

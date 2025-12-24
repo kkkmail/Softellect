@@ -36,7 +36,7 @@ module Implementation =
         | Ok (Some p1), Ok (Some w1), Ok data ->
             Logger.logInfo $"tryEncryptSolver: encrypting - {data.Length:N0} bytes."
 
-            match tryEncryptAndSign i.solverEncryptionType data p1 w1 with
+            match trySignAndEncrypt i.solverEncryptionType data p1 w1 with
             | Ok r ->
                 Logger.logInfo $"tryEncryptSolver: encrypted - {r.Length:N0} bytes."
                 r |> EncryptedSolver |> Ok

@@ -26,6 +26,14 @@ module Service =
     [<Literal>]
     let ReceiveEmptyBackoffMs = 10
 
+    /// Health check interval in ms (spec 042: 30 seconds between successful checks).
+    [<Literal>]
+    let HealthCheckIntervalMs = 30000
+
+    /// Maximum health check backoff in ms (spec 042: cap at 5 minutes).
+    [<Literal>]
+    let MaxHealthCheckBackoffMs = 300000
+
 
     type VpnClientConnectionState =
         | Disconnected
@@ -104,35 +112,75 @@ module Service =
             member _.injectPacket(packet) = tunnel.injectPacket(packet)
 
 
-    /// VPN client service using push dataplane.
-    /// Uses push semantics: no polling, server pushes packets directly.
+    /// VPN client service using push dataplane (spec 042).
+    /// Implements client resilience via atomic auth snapshot.
+    /// - StartAsync is lightweight and non-blocking
+    /// - Supervisor loop handles auth, health checks, and recovery
+    /// - UDP plane runs once and never restarts
+    /// - Client never exits due to transient failures
     type VpnPushClientService(data: VpnClientServiceData) =
         let mutable connectionState = Disconnected
         let mutable tunnel : Tunnel option = None
         let mutable killSwitch : KillSwitch option = None
         let mutable pushClient : VpnPushUdpClient option = None
         let mutable sendTask : Task option = None
+        let mutable supervisorTask : Task option = None
         let mutable running = false
         let cts = new CancellationTokenSource()
+
+        // Spec 042: Single mutable auth snapshot - THE source of truth for UDP plane
+        let mutable currentAuth : VpnAuthResponse option = None
+        let authLock = obj()
+
+        /// Atomically get the current auth snapshot.
+        let getAuth () =
+            lock authLock (fun () -> currentAuth)
+
+        /// Atomically swap the auth snapshot.
+        let setAuth (auth: VpnAuthResponse option) =
+            lock authLock (fun () -> currentAuth <- auth)
 
         let authenticate () =
             Logger.logInfo "Push: Authenticating with server..."
             let authClient = createAuthWcfClient data
 
-            let request =
+            let request : VpnAuthRequest =
                 {
                     clientId = data.clientAccessInfo.vpnClientId
                     timestamp = DateTime.UtcNow
                     nonce = Guid.NewGuid().ToByteArray()
                 }
 
-            match authClient.authenticate request with
-            | Ok response ->
-                Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}, SessionId: {response.sessionId.value}"
-                Ok response
-            | Error e ->
-                Logger.logError "Push: Authentication error"
-                Error $"Authentication error: '%A{e}'."
+            try
+                match authClient.authenticate request with
+                | Ok response ->
+                    Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}, SessionId: {response.sessionId.value}"
+                    Ok response
+                | Error e ->
+                    Logger.logWarn $"Push: Authentication failed: '%A{e}'"
+                    Error $"Authentication error: '%A{e}'."
+            with
+            | ex ->
+                Logger.logWarn $"Push: Authentication exception: {ex.Message}"
+                Error $"Authentication exception: {ex.Message}"
+
+        /// Ping the server to check if the session is still valid.
+        let pingSession (auth: VpnAuthResponse) =
+            let authClient = createAuthWcfClient data
+
+            let request : VpnPingRequest =
+                {
+                    clientId = data.clientAccessInfo.vpnClientId
+                    sessionId = auth.sessionId
+                    timestamp = DateTime.UtcNow
+                }
+
+            try
+                match authClient.pingSession request with
+                | Ok () -> true
+                | Error _ -> false
+            with
+            | _ -> false
 
         let startTunnel (assignedIp: VpnIpAddress) =
             Logger.logInfo $"Starting tunnel with assignedIp: '{assignedIp.value.value}'."
@@ -143,7 +191,7 @@ module Service =
             match t.start() with
             | Ok () ->
                 tunnel <- Some t
-                Ok ()
+                Ok t
             | Error msg ->
                 Error msg
 
@@ -168,83 +216,139 @@ module Service =
                     with
                     | :? OperationCanceledException -> ()
                     | ex ->
+                        // Spec 042: Don't exit on errors, just log
                         Logger.logError $"Push: Error in send loop: {ex.Message}"
             } :> Task
 
-        interface IHostedService with
-            member _.StartAsync(cancellationToken: CancellationToken) =
-                Logger.logInfo "Starting Push VPN Client Service..."
+        /// Spec 042: Supervisor loop - handles authentication and health checks.
+        /// Runs forever until stopped. Never exits due to transient failures.
+        let supervisorLoopAsync () =
+            task {
+                let mutable tunnelStarted = false
+                let mutable udpStarted = false
+                let mutable currentBackoffMs = HealthCheckIntervalMs
+                let mutable authFailedOnce = false
 
-                // Enable kill-switch FIRST.
+                while running && not cts.Token.IsCancellationRequested do
+                    try
+                        match getAuth() with
+                        | None ->
+                            // No auth - need to authenticate
+                            connectionState <- Connecting
+
+                            match authenticate() with
+                            | Ok authResponse ->
+                                // Atomically swap the auth snapshot
+                                setAuth (Some authResponse)
+                                authFailedOnce <- false
+                                currentBackoffMs <- HealthCheckIntervalMs
+
+                                // Start tunnel if not started (first successful auth)
+                                if not tunnelStarted then
+                                    match startTunnel authResponse.assignedIp with
+                                    | Ok t ->
+                                        Logger.logInfo $"Push: Tunnel started with IP: '{authResponse.assignedIp.value.value}'."
+
+                                        // Permit traffic from VPN local address in kill-switch
+                                        match killSwitch with
+                                        | Some ks ->
+                                            let r = ks.AddPermitFilterForLocalHost(authResponse.assignedIp.value.ipAddress, $"Permit VPN Local {authResponse.assignedIp.value}")
+                                            if r.IsSuccess then
+                                                Logger.logInfo $"Kill-switch: permitted VPN local address {authResponse.assignedIp.value}"
+                                                tunnelStarted <- true
+                                            else
+                                                let errMsg = match r.Error with | null -> "Unknown error" | e -> e
+                                                Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
+                                        | None ->
+                                            Logger.logError "Kill-switch instance is missing"
+                                    | Error msg ->
+                                        Logger.logError $"Push: Failed to start tunnel: {msg}"
+
+                                // Start UDP client if tunnel started and UDP not started
+                                if tunnelStarted && not udpStarted then
+                                    match tunnel with
+                                    | Some t ->
+                                        Logger.logInfo "Creating and starting push UDP client."
+                                        let pc = createVpnPushUdpClient data getAuth
+
+                                        Logger.logInfo "Setting up direct injection from push client to tunnel."
+                                        pc.setPacketInjector(TunnelInjector(t))
+
+                                        Logger.logInfo "Starting push client loops."
+                                        pc.start()
+                                        pushClient <- Some pc
+
+                                        Logger.logInfo "Starting send loop (tunnel -> push client)."
+                                        sendTask <- Some (Task.Run(fun () -> sendLoopAsync t pc))
+
+                                        udpStarted <- true
+                                    | None -> ()
+
+                                if tunnelStarted && udpStarted then
+                                    connectionState <- Connected authResponse.assignedIp
+                                    Logger.logInfo $"Push VPN Client connected with IP: {authResponse.assignedIp.value}"
+
+                            | Error _ ->
+                                // Spec 042: Log auth failure once, then info occasionally
+                                if not authFailedOnce then
+                                    Logger.logWarn "Push: Authentication failed, will retry with backoff"
+                                    authFailedOnce <- true
+
+                                // Exponential backoff
+                                do! Task.Delay(currentBackoffMs, cts.Token)
+                                currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
+
+                        | Some auth ->
+                            // Have auth - do health check
+                            do! Task.Delay(currentBackoffMs, cts.Token)
+
+                            let sessionValid = pingSession auth
+
+                            if sessionValid then
+                                // Reset backoff on success
+                                currentBackoffMs <- HealthCheckIntervalMs
+                            else
+                                // Session expired - need to re-authenticate
+                                Logger.logInfo "Push: Session expired, re-authenticating..."
+                                connectionState <- Reconnecting
+                                // Clear auth to trigger re-authentication on next iteration
+                                // Spec 042: Do NOT stop UDP - it will just skip when getAuth() returns None
+                                setAuth None
+                                currentBackoffMs <- HealthCheckIntervalMs
+                    with
+                    | :? OperationCanceledException -> ()
+                    | :? TaskCanceledException -> ()
+                    | ex ->
+                        // Spec 042: Never exit on exceptions, just log and continue
+                        Logger.logError $"Push: Supervisor loop error: {ex.Message}"
+                        do! Task.Delay(currentBackoffMs, cts.Token)
+                        currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
+            } :> Task
+
+        interface IHostedService with
+            /// Spec 042: StartAsync MUST be lightweight and non-blocking.
+            /// Only enables kill-switch and starts supervisor loop.
+            member _.StartAsync(cancellationToken: CancellationToken) =
+                Logger.logInfo "Starting Push VPN Client Service (spec 042)..."
+
+                // Enable kill-switch FIRST - this is a critical startup requirement
                 match enableKillSwitch data with
                 | Ok ks ->
                     killSwitch <- Some ks
-                    connectionState <- Connecting
+                    running <- true
 
-                    match authenticate() with
-                    | Ok authResponse ->
-                        let assignedIp = authResponse.assignedIp
+                    // Initialize currentAuth = None (spec 042)
+                    setAuth None
 
-                        match startTunnel assignedIp with
-                        | Ok () ->
-                            Logger.logInfo $"Push: Tunnel started with IP: '{assignedIp.value.value}'."
+                    // Start supervisor loop in background (spec 042)
+                    Logger.logInfo "Starting supervisor loop..."
+                    supervisorTask <- Some (Task.Run(supervisorLoopAsync))
 
-                            // Permit traffic from VPN local address in kill-switch.
-                            let assignedIpAddress = assignedIp.value.ipAddress
+                    // Return immediately (spec 042: non-blocking)
+                    Task.CompletedTask
 
-                            match killSwitch with
-                            | Some ks ->
-                                let r = ks.AddPermitFilterForLocalHost(assignedIpAddress, $"Permit VPN Local {assignedIp.value}")
-                                if r.IsSuccess then
-                                    Logger.logInfo $"Kill-switch: permitted VPN local address {assignedIp.value}"
-                                else
-                                    let errMsg = match r.Error with | null -> "Unknown error" | e -> e
-                                    connectionState <- Failed errMsg
-                                    Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
-                                    Task.CompletedTask |> ignore
-                            | None ->
-                                connectionState <- Failed "Kill-switch is not enabled"
-                                Logger.logError "Kill-switch instance is missing after Enable()"
-                                Task.CompletedTask |> ignore
-
-                            // Only start push client if kill-switch permit succeeded.
-                            match connectionState with
-                            | Failed _ -> Task.CompletedTask
-                            | _ ->
-
-                            running <- true
-
-                            match tunnel with
-                            | Some t ->
-                                Logger.logInfo "Creating and starting push UDP client."
-                                let pc = createVpnPushUdpClient data authResponse.sessionId authResponse.sessionAesKey
-
-                                Logger.logInfo "Setting up direct injection from push client to tunnel."
-                                pc.setPacketInjector(TunnelInjector(t))
-
-                                Logger.logInfo "Starting push client loops."
-                                pc.start()
-                                pushClient <- Some pc
-
-                                Logger.logInfo "Starting send loop (tunnel -> push client) - sendLoopAsync."
-                                sendTask <- Some (Task.Run(fun () -> sendLoopAsync t pc))
-
-                                connectionState <- Connected assignedIp
-                                Logger.logInfo $"Push VPN Client connected with IP: {assignedIp.value}"
-                            | None ->
-                                connectionState <- Failed "Push tunnel not available."
-                                Logger.logError "Push tunnel not available after start."
-
-                            Task.CompletedTask
-                        | Error msg ->
-                            connectionState <- Failed msg
-                            Logger.logError $"Push: Failed to start tunnel: {msg}"
-                            Task.CompletedTask
-                    | Error msg ->
-                        connectionState <- Failed msg
-                        Logger.logError $"Push: Authentication failed: {msg}"
-                        Task.CompletedTask
                 | Error msg ->
+                    // Kill-switch failure is a CRITICAL startup failure (spec 042)
                     connectionState <- Failed msg
                     Logger.logError $"Push: Failed to enable kill-switch: {msg}"
                     Task.FromException(Exception($"Failed to enable kill-switch: {msg}"))
@@ -254,12 +358,21 @@ module Service =
                 running <- false
                 cts.Cancel()
 
+                // Wait for supervisor task
+                match supervisorTask with
+                | Some t ->
+                    try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
+                    supervisorTask <- None
+                | None -> ()
+
+                // Wait for send task
                 match sendTask with
                 | Some t ->
                     try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
                     sendTask <- None
                 | None -> ()
 
+                // Stop and dispose push client
                 match pushClient with
                 | Some pc ->
                     pc.stop()
@@ -267,12 +380,14 @@ module Service =
                     pushClient <- None
                 | None -> ()
 
+                // Stop tunnel
                 match tunnel with
                 | Some t ->
                     t.stop()
                     tunnel <- None
                 | None -> ()
-                // Disable kill-switch LAST.
+
+                // Disable kill-switch LAST
                 disableKillSwitch data killSwitch
                 killSwitch <- None
 
