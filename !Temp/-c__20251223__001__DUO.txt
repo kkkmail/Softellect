@@ -1,0 +1,53 @@
+# 20251223_065939.738 #    0.065 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+# 20251223_065939.892 #    0.220 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_065940.071 #    0.399 # INFO  # StartAsync # "Starting Push VPN Client Service..."
+# 20251223_065940.072 #    0.399 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251223_065940.081 #    0.408 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251223_065940.081 #    0.409 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251223_065940.087 #    0.414 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_065940.096 #    0.423 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_065943.526 #    3.853 # INFO  # authenticate # "Push: Authenticated successfully. Assigned IP: Ip4 "10.66.77.2", SessionId: 1"
+# 20251223_065943.526 #    3.853 # INFO  # startTunnel # "Starting tunnel with assignedIp: '10.66.77.2'."
+# 20251223_065943.528 #    3.856 # INFO  # start # "Starting tunnel with adapter: SoftellectVPN"
+# 20251223_065944.483 #    4.810 # INFO  # start # "Client - ipResult: True, mtuResult: True."
+# 20251223_065944.483 #    4.810 # INFO  # start # "Setting DNS server to: 10.66.77.1"
+# 20251223_065955.658 #   15.985 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 delete route 72.167.224.50/32 "Wi-Fi" 192.168.2.1'."
+# 20251223_065955.732 #   16.059 # INFO  # addHostRoute # "Executing: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
+# 20251223_065955.813 #   16.140 # INFO  # addHostRoute # "Successfully executed: 'netsh interface ipv4 add route 72.167.224.50/32 "Wi-Fi" 192.168.2.1 metric=1'."
+# 20251223_065955.813 #   16.140 # INFO  # start # "Adding route 0.0.0.0/1 via 10.66.77.1"
+# 20251223_065955.880 #   16.207 # INFO  # start # "Adding route 128.0.0.0/1 via 10.66.77.1"
+# 20251223_065955.948 #   16.275 # INFO  # start # "Tunnel started with IP: Ip4 "10.66.77.2""
+# 20251223_065955.948 #   16.275 # INFO  # StartAsync # "Push: Tunnel started with IP: '10.66.77.2'."
+# 20251223_065955.949 #   16.276 # INFO  # StartAsync # "Kill-switch: permitted VPN local address Ip4 "10.66.77.2""
+# 20251223_065955.949 #   16.276 # INFO  # StartAsync # "Creating and starting push UDP client."
+# 20251223_065955.951 #   16.279 # INFO  # .ctor # "Created - Server: Ip4 "72.167.224.50":45001, ClientId: 10e38c19-d220-4852-8589-82eca51ade92, SessionId: 1, UseEncryption: True, Local=192.168.2.92:61343"
+# 20251223_065955.951 #   16.279 # INFO  # StartAsync # "Setting up direct injection from push client to tunnel."
+# 20251223_065955.951 #   16.279 # INFO  # StartAsync # "Starting push client loops."
+# 20251223_065955.952 #   16.279 # INFO  # start # "Started"
+# 20251223_065955.952 #   16.279 # INFO  # StartAsync # "Starting send loop (tunnel -> push client) - sendLoopAsync."
+# 20251223_065955.953 #   16.280 # INFO  # StartAsync # "Push VPN Client connected with IP: Ip4 "10.66.77.2""
+# 20251223_065955.953 #   16.280 # INFO  # keepaliveLoop # "Keepalive loop started."
+# 20251223_065955.953 #   16.281 # INFO  # sendLoop # "Send loop started."
+# 20251223_065955.955 #   16.282 # INFO  # receiveLoop # "Receive loop started."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+# 20251223_070026.103 #   46.430 # INFO  # receiveLoop # "CLIENT PUSH STATS: tun_rx=726/166504B udp_tx=726/185606B udp_rx=611/342851B dropped(mtu=0 outQ=0 injQ=0)"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+# 20251223_070031.359 #   51.686 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251223_070031.374 #   51.701 # INFO  # sendLoop # "Send loop stopped."
+# 20251223_070031.437 #   51.764 # INFO  # receiveLoop # "Receive loop stopped."
+# 20251223_070033.444 #   53.771 # INFO  # stop # "Stopped"
+# 20251223_070033.445 #   53.772 # INFO  # stop # "Stopped"
+# 20251223_070033.446 #   53.773 # INFO  # stop # "Stopping tunnel"
+# 20251223_070033.596 #   53.923 # INFO  # stop # "Tunnel stopped"
+# 20251223_070033.597 #   53.924 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251223_070034.019 #   54.347 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251223_070034.020 #   54.347 # INFO  # StopAsync # "Push VPN Client Service stopped"
