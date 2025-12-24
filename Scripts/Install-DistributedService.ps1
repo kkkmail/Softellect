@@ -2,7 +2,13 @@ function Install-DistributedService {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$ServiceName
+        [string]$ServiceName,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Login = "NT AUTHORITY\LOCAL SERVICE",
+
+        [Parameter(Mandatory = $false)]
+        [string]$Password = ""
     )
 
     # Get the script directory and load dependencies
@@ -25,5 +31,5 @@ function Install-DistributedService {
     Write-ServiceLog -Message "  binaryPath = '$binaryPath'" -Level "Info"
     Write-ServiceLog -Message "  description = '$description'" -Level "Info"
 
-    Reinstall-WindowsService -ServiceName $windowsServiceName -BinaryPath $binaryPath -Description $description
+    Reinstall-WindowsService -ServiceName $windowsServiceName -BinaryPath $binaryPath -Description $description -Login $Login -Password $Password
 }

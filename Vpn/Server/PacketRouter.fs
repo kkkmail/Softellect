@@ -424,7 +424,7 @@ module PacketRouter =
 
                     let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
                     let mtuResult = createResult.Value.SetMtu(MtuSize)
-                    Logger.logInfo $"Server - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}."
+                    Logger.logInfo $"Server - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}, MTU size: {MtuSize}."
 
                     if ipResult.IsSuccess then
                         running <- true

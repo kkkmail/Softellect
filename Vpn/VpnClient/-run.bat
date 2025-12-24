@@ -1,0 +1,2 @@
+VpnClientAdm.exe detectphysicalnetwork
+VpnClient.exe

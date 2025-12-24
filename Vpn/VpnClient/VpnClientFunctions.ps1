@@ -27,7 +27,7 @@ function InstallVpnClient {
     Write-ServiceLog -Message "Granting WFP permissions to LOCAL SERVICE..." -Level "Info"
     Grant-WfpPermissions
 
-    Install-DistributedService -ServiceName $ServiceName
+    Install-DistributedService -ServiceName $ServiceName -Login "NT AUTHORITY\SYSTEM"
 }
 
 function UninstallVpnClient {

@@ -21,7 +21,7 @@ function InstallVpnServer {
     Write-ServiceLog -Message "  scriptDirectory = '$scriptDirectory'" -Level "Info"
     Write-ServiceLog -Message "  ServiceName = '$ServiceName'" -Level "Info"
 
-    Install-DistributedService -ServiceName $ServiceName
+    Install-DistributedService -ServiceName $ServiceName -Login "NT AUTHORITY\SYSTEM"
 }
 
 function UninstallVpnServer {
