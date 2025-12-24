@@ -126,7 +126,7 @@ module Tunnel =
                 if sessionResult.IsSuccess then
                     let ipResult = adp.SetIpAddress(config.assignedIp.value, config.subnetMask)
                     let mtuResult = createResult.Value.SetMtu(MtuSize)
-                    Logger.logInfo $"Client - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}."
+                    Logger.logInfo $"Client - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}, MTU size: {MtuSize}."
 
                     if ipResult.IsSuccess then
                         // Configure DNS on the adapter
