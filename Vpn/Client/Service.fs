@@ -329,7 +329,7 @@ module Service =
             /// Spec 042: StartAsync MUST be lightweight and non-blocking.
             /// Only enables kill-switch and starts supervisor loop.
             member _.StartAsync(cancellationToken: CancellationToken) =
-                Logger.logInfo "Starting Push VPN Client Service (spec 042)..."
+                Logger.logInfo $"Starting Push VPN Client Service (spec 042){Nl}    data: %A{data}..."
 
                 // Enable kill-switch FIRST - this is a critical startup requirement
                 match enableKillSwitch data with
