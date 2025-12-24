@@ -305,16 +305,6 @@ module Crypto =
 
 
     /// Verifies and removes the signature.
-    // let tryVerify (combinedData : byte[]) (senderPublicKey : PublicKey) =
-    //     use rsa = RSA.Create()
-    //     rsa.FromXmlString(senderPublicKey.value)
-    //     let signatureLength = rsa.KeySize / 8
-    //     let signature = combinedData[..signatureLength - 1]
-    //     let originalData = combinedData[signatureLength..]
-    //
-    //     match verifySignature originalData signature senderPublicKey with
-    //     | Ok () -> Ok originalData
-    //     | Error e -> Error e
     let tryVerify (combinedData : byte[]) (senderPublicKey : PublicKey) =
         use rsa = RSA.Create()
         rsa.FromXmlString(senderPublicKey.value)

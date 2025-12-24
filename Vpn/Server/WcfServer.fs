@@ -42,16 +42,22 @@ module WcfServer =
             if r.Length < ClientIdPrefixSize then
                 SnafyErr $"r.Length: {r.Length} is less than expected: {ClientIdPrefixSize}." |> Error
             else
+                // Extract clientId from the BEGINNING of decrypted data (before verification).
+                // The signature was computed over [clientIdBytes; requestBytes], so we need to
+                // verify the FULL data first, then extract the payload.
                 let clientIdBytes = r[0..ClientIdPrefixSize - 1]
                 let clientId = Guid(clientIdBytes) |> VpnClientId
                 Logger.logInfo $"Extracted clientId: '{clientId.value}' from clientIdBytes: '%A{clientIdBytes}'."
 
                 match tryLoadClientPublicKey serverData clientId with
                 | Some key ->
-                    let encryptedPayload = Array.sub r ClientIdPrefixSize (r.Length - ClientIdPrefixSize)
-                    match tryVerify encryptedPayload key with
+                    // Verify signature on the FULL decrypted data (which includes clientIdBytes).
+                    match tryVerify r key with
                     | Ok verified ->
-                        match tryDeserialize<'T> wcfSerializationFormat verified with
+                        // After verification, 'verified' contains [clientIdBytes; requestBytes].
+                        // Extract the requestBytes by skipping clientIdBytes.
+                        let requestBytes = Array.sub verified ClientIdPrefixSize (verified.Length - ClientIdPrefixSize)
+                        match tryDeserialize<'T> wcfSerializationFormat requestBytes with
                         | Ok result ->
                             match verifier clientId result with
                             | true -> Ok (result, key)
