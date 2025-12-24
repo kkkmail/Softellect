@@ -16,10 +16,12 @@ module WcfClient =
         match trySerialize wcfSerializationFormat request with
         | Ok requestBytes ->
             let clientIdBytes = data.clientAccessInfo.vpnClientId.value.ToByteArray()
+            Logger.logInfo $"Obtained clientIdBytes: '%A{clientIdBytes}' for client: '{data.clientAccessInfo.vpnClientId.value}'."
 
             // Append VpnClientId bytes BEFORE the serialized payload.
             let toBeEncryptedData = Array.append clientIdBytes requestBytes
 
+            Logger.logInfo $"Calling trySignAndEncrypt with encryptionType: '%A{data.clientAccessInfo.encryptionType}' for client: '{data.clientAccessInfo.vpnClientId.value}'."
             match trySignAndEncrypt data.clientAccessInfo.encryptionType toBeEncryptedData data.clientPrivateKey data.serverPublicKey with
             | Ok r -> Ok r
             | Error e -> e |> SysErr |> VpnAuthErr |> VpnConnectionErr |> Error

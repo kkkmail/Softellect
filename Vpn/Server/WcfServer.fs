@@ -35,6 +35,8 @@ module WcfServer =
 
 
     let inline private tryDecryptAndVerifyRequest<'T> (serverData: VpnServerData) (data : byte[]) verifier : Result<'T * PublicKey, VpnError> =
+        Logger.logInfo $"Calling tryDecrypt with encryptionType: '%A{serverData.serverAccessInfo.encryptionType}'."
+
         match tryDecrypt serverData.serverAccessInfo.encryptionType data serverData.serverPrivateKey with
         | Ok r ->
             if r.Length < ClientIdPrefixSize then
@@ -42,6 +44,7 @@ module WcfServer =
             else
                 let clientIdBytes = r[0..ClientIdPrefixSize - 1]
                 let clientId = Guid(clientIdBytes) |> VpnClientId
+                Logger.logInfo $"Extracted clientId: '{clientId.value}' from clientIdBytes: '%A{clientIdBytes}'."
 
                 match tryLoadClientPublicKey serverData clientId with
                 | Some key ->
