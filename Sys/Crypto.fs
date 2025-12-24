@@ -300,17 +300,27 @@ module Crypto =
         let tryEncrypt = e.encryptor
 
         match signData data senderPrivateKey with
-        | Ok signature -> tryEncrypt (Array.concat [signature; data]) recipientPublicKey
+        | Ok signature -> tryEncrypt (Array.concat [data; signature]) recipientPublicKey
         | Error e -> Error e
 
 
     /// Verifies and removes the signature.
+    // let tryVerify (combinedData : byte[]) (senderPublicKey : PublicKey) =
+    //     use rsa = RSA.Create()
+    //     rsa.FromXmlString(senderPublicKey.value)
+    //     let signatureLength = rsa.KeySize / 8
+    //     let signature = combinedData[..signatureLength - 1]
+    //     let originalData = combinedData[signatureLength..]
+    //
+    //     match verifySignature originalData signature senderPublicKey with
+    //     | Ok () -> Ok originalData
+    //     | Error e -> Error e
     let tryVerify (combinedData : byte[]) (senderPublicKey : PublicKey) =
         use rsa = RSA.Create()
         rsa.FromXmlString(senderPublicKey.value)
         let signatureLength = rsa.KeySize / 8
-        let signature = combinedData[..signatureLength - 1]
-        let originalData = combinedData[signatureLength..]
+        let originalData = combinedData[..combinedData.Length - signatureLength - 1]  // Data is FIRST
+        let signature = combinedData[combinedData.Length - signatureLength..]         // Signature is LAST
 
         match verifySignature originalData signature senderPublicKey with
         | Ok () -> Ok originalData
