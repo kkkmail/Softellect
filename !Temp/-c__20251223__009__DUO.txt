@@ -1,0 +1,65 @@
+# 20251223_201911.388 #    0.062 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+# 20251223_201911.538 #    0.213 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_201911.606 #    0.280 # INFO  # StartAsync # "Starting Push VPN Client Service (spec 042)..."
+# 20251223_201911.606 #    0.281 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251223_201911.615 #    0.290 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251223_201911.615 #    0.290 # INFO  # StartAsync # "Starting supervisor loop..."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+# 20251223_201911.619 #    0.294 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251223_201911.625 #    0.299 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_201911.635 #    0.309 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_201911.742 #    0.417 # INFO  # trySignAndEncryptRequest # "Obtained clientIdBytes: '[|25uy; 140uy; 227uy; 16uy; 32uy; 210uy; 82uy; 72uy; 133uy; 137uy; 130uy; 236uy;
+  165uy; 26uy; 222uy; 146uy|]' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_201911.743 #    0.417 # INFO  # trySignAndEncryptRequest # "Calling trySignAndEncrypt with encryptionType: 'AES' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_201914.614 #    3.289 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDeserialize failed, error: 'DeserializationExn
+  MBrace.FsPickler.FsPicklerException: Error deserializing object of type 'Softellect.Vpn.Core.Primitives+VpnAuthResponse'.
+ ---> MBrace.FsPickler.InvalidPickleTypeException: Expected pickle of type 'Softellect.Vpn.Core.Primitives+VpnAuthResponse' but was 'Microsoft.FSharp.Core.FSharpResult`2[Softellect.Vpn.Core.Primitives+VpnAuthResponse,Softellect.Vpn.Core.Errors+VpnError]'.
+   at MBrace.FsPickler.BinaryPickleReader.MBrace-FsPickler-IPickleFormatReader-BeginReadRoot(String tag)
+   at MBrace.FsPickler.RootSerialization.readRootObject[T](IPicklerResolver resolver, ReflectionCache reflectionCache, IPickleFormatReader formatter, FSharpOption`1 streamingContext, FSharpOption`1 sifted, Boolean disableSubtypes, Boolean disableAssemblyLoading, Pickler`1 pickler)
+   --- End of inner exception stack trace ---
+   at MBrace.FsPickler.RootSerialization.readRootObject[T](IPicklerResolver resolver, ReflectionCache reflectionCache, IPickleFormatReader formatter, FSharpOption`1 streamingContext, FSharpOption`1 sifted, Boolean disableSubtypes, Boolean disableAssemblyLoading, Pickler`1 pickler)
+   at MBrace.FsPickler.FsPicklerSerializer.Deserialize[T](Stream stream, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding, FSharpOption`1 leaveOpen)
+   at <StartupCode$FsPickler>.$Serializer.f@146-1[T](FsPicklerSerializer bp, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding, Stream m)
+   at MBrace.FsPickler.FsPicklerSerializer.UnPickle[T](Byte[] data, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding)
+   at Softellect.Sys.Core.binDeserialize[a](Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 212
+   at Softellect.Sys.Core.deserialize[a](SerializationFormat f, Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 266
+   at Softellect.Sys.Core.tryDeserialize[A](SerializationFormat f, Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 290'."'"
+# 20251223_201914.615 #    3.290 # WARN  # supervisorLoopAsync # "Push: Authentication failed, will retry with backoff"
+# 20251223_201944.616 #   33.291 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251223_201944.617 #   33.292 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_201944.618 #   33.293 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_201944.618 #   33.293 # INFO  # trySignAndEncryptRequest # "Obtained clientIdBytes: '[|25uy; 140uy; 227uy; 16uy; 32uy; 210uy; 82uy; 72uy; 133uy; 137uy; 130uy; 236uy;
+  165uy; 26uy; 222uy; 146uy|]' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_201944.619 #   33.293 # INFO  # trySignAndEncryptRequest # "Calling trySignAndEncrypt with encryptionType: 'AES' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_201945.632 #   34.307 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDeserialize failed, error: 'DeserializationExn
+  MBrace.FsPickler.FsPicklerException: Error deserializing object of type 'Softellect.Vpn.Core.Primitives+VpnAuthResponse'.
+ ---> MBrace.FsPickler.InvalidPickleTypeException: Expected pickle of type 'Softellect.Vpn.Core.Primitives+VpnAuthResponse' but was 'Microsoft.FSharp.Core.FSharpResult`2[Softellect.Vpn.Core.Primitives+VpnAuthResponse,Softellect.Vpn.Core.Errors+VpnError]'.
+   at MBrace.FsPickler.BinaryPickleReader.MBrace-FsPickler-IPickleFormatReader-BeginReadRoot(String tag)
+   at MBrace.FsPickler.RootSerialization.readRootObject[T](IPicklerResolver resolver, ReflectionCache reflectionCache, IPickleFormatReader formatter, FSharpOption`1 streamingContext, FSharpOption`1 sifted, Boolean disableSubtypes, Boolean disableAssemblyLoading, Pickler`1 pickler)
+   --- End of inner exception stack trace ---
+   at MBrace.FsPickler.RootSerialization.readRootObject[T](IPicklerResolver resolver, ReflectionCache reflectionCache, IPickleFormatReader formatter, FSharpOption`1 streamingContext, FSharpOption`1 sifted, Boolean disableSubtypes, Boolean disableAssemblyLoading, Pickler`1 pickler)
+   at MBrace.FsPickler.FsPicklerSerializer.Deserialize[T](Stream stream, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding, FSharpOption`1 leaveOpen)
+   at <StartupCode$FsPickler>.$Serializer.f@146-1[T](FsPicklerSerializer bp, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding, Stream m)
+   at MBrace.FsPickler.FsPicklerSerializer.UnPickle[T](Byte[] data, FSharpOption`1 pickler, FSharpOption`1 streamingContext, FSharpOption`1 encoding)
+   at Softellect.Sys.Core.binDeserialize[a](Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 212
+   at Softellect.Sys.Core.deserialize[a](SerializationFormat f, Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 266
+   at Softellect.Sys.Core.tryDeserialize[A](SerializationFormat f, Byte[] b) in C:\GitHub\Softellect\Sys\Core.fs:line 290'."'"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+# 20251223_201949.775 #   38.449 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251223_201949.775 #   38.450 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251223_201949.777 #   38.452 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251223_201949.777 #   38.452 # INFO  # StopAsync # "Push VPN Client Service stopped"
