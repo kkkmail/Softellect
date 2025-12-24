@@ -88,11 +88,12 @@ module WcfServer =
 
             match tryDecryptAndVerifyRequest<VpnAuthRequest> serverData data verifier with
             | Ok (r, k) ->
-                let response = service.authenticate r
-
-                match trySignAndEncryptResponse serverData k response with
-                | Ok s -> Ok s
-                | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                match service.authenticate r with
+                | Ok authResponse ->
+                    match trySignAndEncryptResponse serverData k authResponse with
+                    | Ok s -> Ok s
+                    | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                | Error e -> Error e
             | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
 
         let pingSessionImpl data =
@@ -100,11 +101,12 @@ module WcfServer =
 
             match tryDecryptAndVerifyRequest<VpnPingRequest> serverData data verifier with
             | Ok (r, k) ->
-                let response = service.pingSession r
-
-                match trySignAndEncryptResponse serverData k response with
-                | Ok s -> Ok s
-                | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                match service.pingSession r with
+                | Ok pingResponse ->
+                    match trySignAndEncryptResponse serverData k pingResponse with
+                    | Ok s -> Ok s
+                    | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                | Error e -> Error e
             | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
 
         interface IAuthWcfService with
