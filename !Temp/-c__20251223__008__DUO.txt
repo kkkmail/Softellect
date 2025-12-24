@@ -1,0 +1,43 @@
+# 20251223_195723.243 #    0.054 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+# 20251223_195723.384 #    0.195 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_195723.444 #    0.255 # INFO  # StartAsync # "Starting Push VPN Client Service (spec 042)..."
+# 20251223_195723.444 #    0.255 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251223_195723.452 #    0.264 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251223_195723.453 #    0.264 # INFO  # StartAsync # "Starting supervisor loop..."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+# 20251223_195723.457 #    0.268 # INFO  # authenticate # "Push: Authenticating with server..."
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+# 20251223_195723.461 #    0.273 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_195723.470 #    0.281 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_195723.568 #    0.380 # INFO  # trySignAndEncryptRequest # "Obtained clientIdBytes: '[|25uy; 140uy; 227uy; 16uy; 32uy; 210uy; 82uy; 72uy; 133uy; 137uy; 130uy; 236uy;
+  165uy; 26uy; 222uy; 146uy|]' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_195723.569 #    0.380 # INFO  # trySignAndEncryptRequest # "Calling trySignAndEncrypt with encryptionType: 'AES' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_195726.435 #    3.246 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDecryptAndVerifyRequest failed, error: 'SnafyErr
+  "tryVerify for client: '10e38c19-d220-4852-8589-82eca51ade92' failed, error: 'CryptoErr VerifySignatureFailedError'."'."'"
+# 20251223_195726.435 #    3.247 # WARN  # supervisorLoopAsync # "Push: Authentication failed, will retry with backoff"
+# 20251223_195756.444 #   33.256 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251223_195756.446 #   33.258 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_195756.448 #   33.260 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_195756.449 #   33.260 # INFO  # trySignAndEncryptRequest # "Obtained clientIdBytes: '[|25uy; 140uy; 227uy; 16uy; 32uy; 210uy; 82uy; 72uy; 133uy; 137uy; 130uy; 236uy;
+  165uy; 26uy; 222uy; 146uy|]' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_195756.449 #   33.261 # INFO  # trySignAndEncryptRequest # "Calling trySignAndEncrypt with encryptionType: 'AES' for client: '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_195757.459 #   34.271 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDecryptAndVerifyRequest failed, error: 'SnafyErr
+  "tryVerify for client: '10e38c19-d220-4852-8589-82eca51ade92' failed, error: 'CryptoErr VerifySignatureFailedError'."'."'"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+# 20251223_195829.260 #   66.071 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251223_195829.261 #   66.072 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251223_195829.264 #   66.075 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251223_195829.264 #   66.076 # INFO  # StopAsync # "Push VPN Client Service stopped"
