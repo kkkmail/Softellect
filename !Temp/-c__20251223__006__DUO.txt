@@ -1,0 +1,37 @@
+# 20251223_190641.417 #    0.083 # INFO  # setLogLevel # "setLogLevel: Setting log level to 'InfoLog'."
+# 20251223_190641.602 #    0.268 # INFO  # vpnClientMain # "vpnClientMain - clientAccessInfo.vpnClientId = '10e38c19-d220-4852-8589-82eca51ade92'."
+# 20251223_190641.812 #    0.477 # INFO  # StartAsync # "Starting Push VPN Client Service (spec 042)..."
+# 20251223_190641.812 #    0.478 # INFO  # enableKillSwitch # "Enabling kill-switch..."
+# 20251223_190641.822 #    0.488 # INFO  # enableKillSwitch # "Kill-switch enabled"
+# 20251223_190641.823 #    0.488 # INFO  # StartAsync # "Starting supervisor loop..."
+# 20251223_190641.828 #    0.493 # INFO  # authenticate # "Push: Authenticating with server..."
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\GitHub\Softellect\Vpn\VpnClient\bin\x64\Release\net9.0
+# 20251223_190641.833 #    0.499 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_190641.844 #    0.510 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_190645.389 #    4.055 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDecryptAndVerifyRequest failed, error: 'SnafyErr
+  "tryLoadClientPublicKey for the client: '0becbda2-1ba6-6488-f8a3-836a7ba2e942' failed."'."'"
+# 20251223_190645.390 #    4.055 # WARN  # supervisorLoopAsync # "Push: Authentication failed, will retry with backoff"
+# 20251223_190715.395 #   34.060 # INFO  # authenticate # "Push: Authenticating with server..."
+# 20251223_190715.396 #   34.061 # INFO  # .ctor # "AuthWcfClient created - URL: 'net.tcp://72.167.224.50:45001/VpnService', CommType: 'NetTcpCommunication NoSecurity'"
+# 20251223_190715.397 #   34.062 # INFO  # .ctor # "AuthWcfClient - serverAccessInfo: 'NetTcpServiceInfo { netTcpServiceAddress = ServiceAddress (Ip4 "72.167.224.50")
+                    netTcpServicePort = ServicePort 45001
+                    netTcpServiceName = ServiceName "VpnService"
+                    netTcpSecurityMode = NoSecurity }'"
+# 20251223_190716.386 #   35.052 # WARN  # authenticate # "Push: Authentication failed: 'SnafyErr
+  "tryDecryptAndVerifyRequest failed, error: 'SnafyErr
+  "tryLoadClientPublicKey for the client: '4f1a4aa7-22ba-21c7-f65c-4eec137b10ce' failed."'."'"
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...
+# 20251223_190721.873 #   40.539 # INFO  # StopAsync # "Stopping Push VPN Client Service..."
+# 20251223_190721.876 #   40.541 # INFO  # disableKillSwitch # "Disabling kill-switch..."
+# 20251223_190721.879 #   40.545 # INFO  # disableKillSwitch # "Kill-switch disabled"
+# 20251223_190721.879 #   40.545 # INFO  # StopAsync # "Push VPN Client Service stopped"
