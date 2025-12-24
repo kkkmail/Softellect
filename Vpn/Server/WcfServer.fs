@@ -72,68 +72,8 @@ module WcfServer =
 
 
     /// Encrypted auth service that wraps authentication with encryption/signing.
-    /// Wire format for request: [clientId: 16 bytes][encrypted+signed VpnAuthRequest]
-    /// Wire format for response: [encrypted+signed Result<VpnAuthResponse, VpnError>]
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type AuthWcfService (service: IAuthService, serverData: VpnServerData) =
-        // let serverPrivateKey = serverData.serverPrivateKey
-        // let clientKeysPath = serverData.serverAccessInfo.clientKeysPath
-        //
-        // /// Try to load a client's public key by clientId.
-        // let tryLoadClientPublicKey (clientId: VpnClientId) =
-        //     let keyId = KeyId clientId.value
-        //     let keyFileName = FileName $"{clientId.value}.pkx"
-        //     let keyFilePath = keyFileName.combine clientKeysPath
-        //
-        //     match tryImportPublicKey keyFilePath (Some keyId) with
-        //     | Ok (_, publicKey) -> Some publicKey
-        //     | Error e ->
-        //         Logger.logWarn $"AuthWcfService: Failed to load public key for client {clientId.value}: '%A{e}'"
-        //         None
-        //
-        // /// Process an encrypted WCF request and return an encrypted response.
-        // /// Wire format: [clientId: 16 bytes][encrypted+signed payload]
-        // let processEncryptedRequest<'TReq, 'TRes> (data: byte[]) (handler: 'TReq -> 'TRes) (opName: string) : byte[] =
-        //     if data.Length < ClientIdPrefixSize then
-        //         Logger.logError $"AuthWcfService.{opName}: Received data too short for clientId prefix"
-        //         [||]
-        //     else
-        //         let clientIdBytes = data.[0..ClientIdPrefixSize - 1]
-        //         let clientId = Guid(clientIdBytes) |> VpnClientId
-        //         let encryptedPayload = Array.sub data ClientIdPrefixSize (data.Length - ClientIdPrefixSize)
-        //
-        //         Logger.logTrace (fun () -> $"AuthWcfService.{opName}: Processing request from client {clientId.value}")
-        //
-        //         match tryLoadClientPublicKey clientId with
-        //         | Some clientPublicKey ->
-        //             match tryDecryptAndVerify EncryptionType.AES encryptedPayload serverPrivateKey clientPublicKey with
-        //             | Ok decryptedBytes ->
-        //                 match tryDeserialize BinaryZippedFormat decryptedBytes with
-        //                 | Ok (request: 'TReq) ->
-        //                     let result = handler request
-        //
-        //                     match trySerialize BinaryZippedFormat result with
-        //                     | Ok responseBytes ->
-        //                         match tryEncryptAndSign EncryptionType.AES responseBytes serverPrivateKey clientPublicKey with
-        //                         | Ok encryptedResponse ->
-        //                             Logger.logTrace (fun () -> $"AuthWcfService.{opName}: Successfully processed for client {clientId.value}")
-        //                             encryptedResponse
-        //                         | Error e ->
-        //                             Logger.logError $"AuthWcfService.{opName}: Failed to encrypt response for client {clientId.value}: '%A{e}'"
-        //                             [||]
-        //                     | Error e ->
-        //                         Logger.logError $"AuthWcfService.{opName}: Failed to serialize response: '%A{e}'"
-        //                         [||]
-        //                 | Error e ->
-        //                     Logger.logError $"AuthWcfService.{opName}: Failed to deserialize request from client {clientId.value}: '%A{e}'"
-        //                     [||]
-        //             | Error e ->
-        //                 Logger.logError $"AuthWcfService.{opName}: Failed to decrypt/verify request from client {clientId.value}: '%A{e}'"
-        //                 [||]
-        //         | None ->
-        //             Logger.logError $"AuthWcfService.{opName}: Unknown client {clientId.value} - no public key found"
-        //             [||]
-
         let toAuthenticateError (e: WcfError) : VpnError = e |> AuthWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
         let toPingSessionError (e: WcfError) : VpnError = e |> PingWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
 
