@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Platforms>x64</Platforms>
         <AssemblyName>WorkerNodeAdm</AssemblyName>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -29,10 +29,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.8" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
         <ProjectReference Include="..\..\..\DistributedProcessing\WorkerNodeAdm\WorkerNodeAdm.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="9.0.303" />
+        <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>
 
 </Project>
