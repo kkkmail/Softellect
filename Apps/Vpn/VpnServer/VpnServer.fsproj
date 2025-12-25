@@ -35,13 +35,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+        <None Include="..\..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
+        <None Include="..\..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\VpnVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+        <None Include="..\..\..\Vpn\VpnVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="VpnServerName.ps1">
@@ -69,8 +69,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
-        <ProjectReference Include="..\ServerAdm\ServerAdm.fsproj" />
-        <ProjectReference Include="..\Server\Server.fsproj" />
+        <ProjectReference Include="..\VpnServerAdm\VpnServerAdm.fsproj" />
+        <ProjectReference Include="..\..\..\Vpn\Server\Server.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>
 

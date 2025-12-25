@@ -38,13 +38,13 @@
         <None Include="-run.bat">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
+        <None Include="..\..\..\Sys\BuildInfo.ps1" Link="BuildInfo.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
+        <None Include="..\..\..\Scripts\*.ps1" Link="%(Filename)%(Extension)">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-        <None Include="..\VpnVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
+        <None Include="..\..\..\Vpn\VpnVersionInfo.ps1" Link="MessagingVersionInfo.ps1">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Include="VpnClientName.ps1">
@@ -72,8 +72,8 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
-        <ProjectReference Include="..\ClientAdm\ClientAdm.fsproj" />
-        <ProjectReference Include="..\Client\Client.fsproj" />
+        <ProjectReference Include="..\VpnClientAdm\VpnClientAdm.fsproj" />
+        <ProjectReference Include="..\..\..\Vpn\Client\Client.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>
 
