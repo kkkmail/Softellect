@@ -35,7 +35,7 @@ module WcfServer =
 
 
     let inline private tryDecryptAndVerifyRequest<'T> (serverData: VpnServerData) (data : byte[]) verifier : Result<'T * PublicKey, VpnError> =
-        Logger.logInfo $"Calling tryDecrypt with encryptionType: '%A{serverData.serverAccessInfo.encryptionType}'."
+        Logger.logTrace (fun () -> $"Calling tryDecrypt with encryptionType: '%A{serverData.serverAccessInfo.encryptionType}'.")
 
         match tryDecrypt serverData.serverAccessInfo.encryptionType data serverData.serverPrivateKey with
         | Ok r ->
@@ -47,7 +47,7 @@ module WcfServer =
                 // verify the FULL data first, then extract the payload.
                 let clientIdBytes = r[0..ClientIdPrefixSize - 1]
                 let clientId = Guid(clientIdBytes) |> VpnClientId
-                Logger.logInfo $"Extracted clientId: '{clientId.value}' from clientIdBytes: '%A{clientIdBytes}'."
+                Logger.logTrace (fun () -> $"Extracted clientId: '{clientId.value}'.")
 
                 match tryLoadClientPublicKey serverData clientId with
                 | Some key ->

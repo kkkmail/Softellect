@@ -188,8 +188,7 @@ module IcmpProxy =
             updateIcmpChecksum outPacket
 
             let dstIp = readUInt32 outPacket 16
-            Logger.logTrace (fun () ->
-                $"ICMPPROXY OUT: {ipToString srcIp} -> {ipToString dstIp}, id={identifier}, seq={sequence}")
+            Logger.logTrace (fun () -> $"ICMPPROXY OUT: {ipToString srcIp} -> {ipToString dstIp}, id={identifier}, seq={sequence}")
 
             Some outPacket
 
@@ -202,8 +201,7 @@ module IcmpProxy =
             let key = { identifier = identifier; sequence = sequence }
             match pendingRequests.TryRemove(key) with
             | false, _ ->
-                Logger.logTrace (fun () ->
-                    $"ICMPPROXY IN: no mapping for id={identifier}, seq={sequence}, dropping")
+                Logger.logTrace (fun () -> $"ICMPPROXY IN: no mapping for id={identifier}, seq={sequence}, dropping")
                 None
             | true, entry ->
                 // Make a copy of the packet to modify
@@ -219,7 +217,6 @@ module IcmpProxy =
                 updateIpChecksum inPacket
                 updateIcmpChecksum inPacket
 
-                Logger.logTrace (fun () ->
-                    $"ICMPPROXY IN: {ipToString srcIp} -> {ipToString entry.clientIp}, id={identifier}, seq={sequence}")
+                Logger.logTrace (fun () -> $"ICMPPROXY IN: {ipToString srcIp} -> {ipToString entry.clientIp}, id={identifier}, seq={sequence}")
 
                 Some (entry.clientIp, inPacket)

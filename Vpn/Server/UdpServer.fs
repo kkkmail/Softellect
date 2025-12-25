@@ -34,6 +34,7 @@ module UdpServer =
         let mutable udpClient : UdpClient option = None
         let mutable cancellationTokenSource : CancellationTokenSource option = None
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
+        let mutable noEncryptionErr : int64 = 0L
 
         // Track kicked sessions to avoid repeated logging (spec 041: log error once)
         let kickedSessions = ConcurrentDictionary<VpnSessionId, DateTime>()
@@ -65,6 +66,8 @@ module UdpServer =
                     kickSession session $"AES encryption failed: %A{e}"
                     Error ()
             else
+                if noEncryptionErr % 1_000L = 0L then Logger.logWarn $"Session: {session.sessionId} for client: '{session.clientId}' does not use encryption."
+                noEncryptionErr <- noEncryptionErr + 1L
                 Ok plaintextPayload
 
         /// Decrypt the payload using per-packet AES key derivation.
@@ -139,20 +142,17 @@ module UdpServer =
                         | Error e -> Logger.logTrace (fun () -> $"Push: Invalid datagram from {remoteEp}, error: '{e}'.")
                         cleanupReassemblies ()
 
-                        if pushStats.shouldLog() then
-                            Logger.logInfo (pushStats.getSummary())
+                        if pushStats.shouldLog() then Logger.logInfo (pushStats.getSummary())
                     with
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
                         cleanupReassemblies ()
-                        if pushStats.shouldLog() then
-                            Logger.logInfo (pushStats.getSummary())
+                        if pushStats.shouldLog() then Logger.logInfo (pushStats.getSummary())
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.Interrupted -> ()
                     | :? SocketException as ex when ex.SocketErrorCode = SocketError.MessageSize ->
                         Logger.logWarn "MessageSize: inbound datagram too large — verify client fragmentation; dropping."
                     | :? OperationCanceledException -> ()
                     | _ when ct.IsCancellationRequested -> ()
-                    | ex ->
-                        Logger.logError $"UDP receive error: {ex.Message}"
+                    | ex -> Logger.logError $"UDP receive error: {ex.Message}"
 
                 Logger.logInfo "Combined UDP server receive loop stopped"
             } :> Task
@@ -169,7 +169,7 @@ module UdpServer =
                             do! Task.Delay(1, ct)
                         else
                             for session in sessions do
-                                // Skip if session was kicked
+                                // Skip if the session was kicked
                                 if kickedSessions.ContainsKey(session.sessionId) then
                                     ()
                                 else
@@ -188,10 +188,10 @@ module UdpServer =
                                                         // Generate nonce for this packet
                                                         let nonce = Guid.NewGuid()
 
-                                                        // Build plaintext payload with command
+                                                        // Build a plaintext payload with command
                                                         let plaintextPayload = buildPayload PushCmdData packet
 
-                                                        // Encrypt if session expects encryption
+                                                        // Encrypt if the session expects encryption
                                                         match encryptPayload session plaintextPayload nonce with
                                                         | Ok finalPayload ->
                                                             if finalPayload.Length > PushMaxPayload then

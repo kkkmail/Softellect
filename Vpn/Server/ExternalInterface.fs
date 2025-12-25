@@ -117,9 +117,7 @@ module ExternalInterface =
                     with
                     | :? ObjectDisposedException ->
                         () // Socket disposed during shutdown, ignore
-                    | ex ->
-                        if running then
-                            Logger.logError $"ExternalGateway startReceive error: {ex.Message}"
+                    | ex -> if running then Logger.logError $"ExternalGateway startReceive error: {ex.Message}"
                 | None -> ()
 
         and handleCompleted (e: SocketAsyncEventArgs) =
@@ -203,8 +201,7 @@ module ExternalInterface =
                 rawSocket.IOControl(IOControlCode.ReceiveAll, inVal, outVal) |> ignore
                 Logger.logInfo "ExternalGateway: IOControl ReceiveAll enabled"
             with
-            | ex ->
-                Logger.logWarn $"ExternalGateway: IOControl ReceiveAll failed: {ex.Message}. UDP may not work."
+            | ex -> Logger.logWarn $"ExternalGateway: IOControl ReceiveAll failed: {ex.Message}. UDP may not work."
 
             Logger.logInfo $"ExternalGateway: Raw IP socket bound to {config.serverPublicIp}"
 

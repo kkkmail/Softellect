@@ -352,8 +352,7 @@ module Nat =
                         updateIpChecksum packet
                         updateTransportChecksum packet proto
 
-                        Logger.logTrace (fun () ->
-                            $"NAT OUT: proto={proto}, {srcIp:X8}:{srcPort} -> {dstIp:X8}:{dstPort}, extPort={externalPort}")
+                        Logger.logTrace (fun () -> $"NAT OUT: proto={proto}, {srcIp:X8}:{srcPort} -> {dstIp:X8}:{dstPort}, extPort={externalPort}")
 
                         Some packet
 
@@ -375,8 +374,7 @@ module Nat =
                             updateIpChecksum packet
                             updateIcmpChecksum packet
 
-                            Logger.logTrace (fun () ->
-                                $"NAT OUT: proto=Icmp, {srcIp:X8}:id={identifier} -> {dstIp:X8}, extId={externalId}")
+                            Logger.logTrace (fun () -> $"NAT OUT: proto=Icmp, {srcIp:X8}:id={identifier} -> {dstIp:X8}, extId={externalId}")
 
                             Some packet
                         else
