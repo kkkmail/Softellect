@@ -13,7 +13,6 @@ open Softellect.Vpn.Client.Tunnel
 open Softellect.Vpn.Client.WcfClient
 open Softellect.Vpn.Client.UdpClient
 open Softellect.Vpn.Interop
-open Softellect.Vpn.Core.PacketDebug
 
 module Service =
 
@@ -83,7 +82,7 @@ module Service =
             Error errMsg
 
 
-    let private disableKillSwitch (data: VpnClientServiceData) (killSwitch : KillSwitch option) =
+    let private disableKillSwitch (killSwitch : KillSwitch option) =
         match killSwitch with
         | Some ks ->
             Logger.logInfo "Disabling kill-switch..."
@@ -243,11 +242,11 @@ module Service =
                                 authFailedOnce <- false
                                 currentBackoffMs <- HealthCheckIntervalMs
 
-                                // Start tunnel if not started (first successful auth)
+                                // Start the tunnel if not started (first successful auth)
                                 if not tunnelStarted then
                                     match startTunnel authResponse.assignedIp with
                                     | Ok t ->
-                                        Logger.logInfo $"Push: Tunnel started with IP: '{authResponse.assignedIp.value.value}'."
+                                        Logger.logInfo $"Push: Tunnel started with IP: '{authResponse.assignedIp.value.value}', state: '%A{t.state}'."
 
                                         // Permit traffic from VPN local address in kill-switch
                                         match killSwitch with
@@ -259,12 +258,10 @@ module Service =
                                             else
                                                 let errMsg = match r.Error with | null -> "Unknown error" | e -> e
                                                 Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
-                                        | None ->
-                                            Logger.logError "Kill-switch instance is missing"
-                                    | Error msg ->
-                                        Logger.logError $"Push: Failed to start tunnel: {msg}"
+                                        | None -> Logger.logError "Kill-switch instance is missing"
+                                    | Error msg -> Logger.logError $"Push: Failed to start tunnel: {msg}"
 
-                                // Start UDP client if tunnel started and UDP not started
+                                // Start UDP client if the tunnel started and UDP not started
                                 if tunnelStarted && not udpStarted then
                                     match tunnel with
                                     | Some t ->
@@ -317,7 +314,6 @@ module Service =
                                 currentBackoffMs <- HealthCheckIntervalMs
                     with
                     | :? OperationCanceledException -> ()
-                    | :? TaskCanceledException -> ()
                     | ex ->
                         // Spec 042: Never exit on exceptions, just log and continue
                         Logger.logError $"Push: Supervisor loop error: {ex.Message}"
@@ -388,7 +384,7 @@ module Service =
                 | None -> ()
 
                 // Disable kill-switch LAST
-                disableKillSwitch data killSwitch
+                disableKillSwitch killSwitch
                 killSwitch <- None
 
                 connectionState <- Disconnected

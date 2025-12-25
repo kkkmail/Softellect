@@ -48,13 +48,13 @@ module Service =
 
         interface IAuthService with
             member _.authenticate request =
-                Logger.logInfo $"Authentication request from client: {request.clientId.value}"
+                Logger.logInfo $"Authentication request from client: '{request.clientId.value}'."
 
                 match verifyAuthRequest request with
                 | Ok () ->
                     match registry.createPushSession(request.clientId) with
                     | Ok session ->
-                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId={session.sessionId.value}."
+                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId: {session.sessionId.value}."
 
                         let response =
                             {

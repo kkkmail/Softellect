@@ -127,7 +127,7 @@ module ClientRegistry =
             | Ok (_, publicKey) ->
                 match tryLoadVpnClientConfig clientId with
                 | Ok config ->
-                    Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}'."
+                    Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}', useEncryption: {config.useEncryption}, encryptionType: {config.encryptionType}."
                     Ok (config, publicKey)
                 | Error e -> Error e
             | Error e ->

@@ -91,19 +91,19 @@ module UdpProtocol =
 
     /// Stats logging interval in milliseconds
     [<Literal>]
-    let PushStatsIntervalMs = 30_000
+    let PushStatsIntervalMs = 3_600_000
 
 
     // ============================================================
-    // DATAGRAM FORMAT (spec 041):
-    // [0]       = sessionId (1 byte, UNENCRYPTED)
-    // [1..16]   = nonce GUID bytes (16 bytes, UNENCRYPTED)
-    // [17..end] = payload bytes (PLAINTEXT or AES-ENCRYPTED)
+    // DATAGRAM FORMAT (AES-ENCRYPTED):
+    // [0..16]   = nonce GUID bytes + sessionId (17 bytes)
+    // [17..end] = payload bytes
     //
-    // Payload format (when plaintext or after decryption):
+    // Payload format (after decryption):
     // [0]       = command byte (PushCmdData, PushCmdKeepalive, etc.)
     // [1..end]  = command-specific data
     // ============================================================
+
 
     /// Derive a per-packet AES key from session key and nonce using HMAC-SHA256.
     /// Uses domain separation: 0x01 suffix for the key, 0x02 suffix for IV.

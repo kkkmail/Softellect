@@ -70,7 +70,7 @@ module PacketRouter =
     let [<Literal>] maxPacketsPerWakeup = 4096
     let [<Literal>] cancelCheckEveryPackets = 256
 
-    /// Create initial receive loop state with all stopwatches and accumulators.
+    /// Create an initial receive loop state with all stopwatches and accumulators.
     let mkReceiveLoopState () =
         {
             swCalendar = Stopwatch.StartNew()
@@ -106,7 +106,7 @@ module PacketRouter =
         st.emptyWakeups <- 0L
         st.packetsRx <- 0L
 
-    /// Log stats if interval elapsed, then reset per-interval accumulators.
+    /// Log stats if the interval elapsed, then reset per-interval accumulators.
     let logStatsIfNeeded (st: ReceiveLoopState) =
         let curCalTicks = st.swCalendar.ElapsedTicks
         let intervalCalTicks = curCalTicks - st.lastStatsTicks

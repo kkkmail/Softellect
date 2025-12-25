@@ -171,28 +171,25 @@ module DnsProxy =
                                 let payload = Array.sub packet (ihl + 8) payloadLen
                                 Some (srcIp, srcPort, payload)
 
-    /// Forward DNS query to upstream and return reply packet ready for injection.
+    /// Forward the DNS query to upstream and return a reply packet ready for injection.
     /// Returns Some replyPacket or None on timeout/error.
     let forwardDnsQuery (serverVpnIpUint: uint32) (clientIp: uint32) (clientPort: uint16) (dnsQuery: byte[]) : byte[] option =
-        let clientIpStr =
-            $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
+        let clientIpStr = $"{byte (clientIp >>> 24)}.{byte (clientIp >>> 16)}.{byte (clientIp >>> 8)}.{byte clientIp}"
 
-        Logger.logTrace (fun () ->
-            $"DNSPROXY OUT: {clientIpStr}:{clientPort} -> 10.66.77.1:53 qlen={dnsQuery.Length} upstream={upstreamDns}")
+        Logger.logTrace (fun () -> $"DNSPROXY OUT: {clientIpStr}:{clientPort} -> 10.66.77.1:53 qlen={dnsQuery.Length} upstream={upstreamDns}")
 
         try
             use udpClient = new UdpClient()
             udpClient.Client.ReceiveTimeout <- dnsTimeoutMs
 
-            // Send query to upstream DNS
+            // Send the query to upstream DNS
             udpClient.Send(dnsQuery, dnsQuery.Length, upstreamDns) |> ignore
 
             // Receive response
             let mutable remoteEp = IPEndPoint(IPAddress.Any, 0)
             let response = udpClient.Receive(&remoteEp)
 
-            Logger.logTrace (fun () ->
-                $"DNSPROXY IN: upstream response len={response.Length} -> {clientIpStr}:{clientPort}")
+            Logger.logTrace (fun () -> $"DNSPROXY IN: upstream response len={response.Length} -> {clientIpStr}:{clientPort}")
 
             // Build reply packet: src=serverVpnIp:53, dst=clientIp:clientPort
             let replyPacket = buildUdpReply serverVpnIpUint 53us clientIp clientPort response
@@ -200,8 +197,7 @@ module DnsProxy =
 
         with
         | :? SocketException as ex when ex.SocketErrorCode = SocketError.TimedOut ->
-            Logger.logTrace (fun () ->
-                $"DNSPROXY TIMEOUT: no response from upstream for {clientIpStr}:{clientPort}")
+            Logger.logTrace (fun () -> $"DNSPROXY TIMEOUT: no response from upstream for {clientIpStr}:{clientPort}")
             None
         | ex ->
             Logger.logWarn $"DNSPROXY ERROR: {ex.Message}"
