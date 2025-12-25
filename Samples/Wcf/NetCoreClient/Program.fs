@@ -3,7 +3,6 @@
 open System
 open System.ServiceModel
 open System.Text
-open System.IO
 open System.Net.Http
 
 open Softellect.Samples.Wcf.NetCoreClient.EchoClient
@@ -17,13 +16,13 @@ module Program =
 
 
     let createEchoMessage() =
-        let message = new EchoMessage()
+        let message = EchoMessage()
         message.text <- "Complex Hello"
         message
 
 
     let callUsingWcf() =
-        let factory = new ChannelFactory<IEchoService>(new BasicHttpBinding(), new EndpointAddress(basicHttpEndPointAddress))
+        let factory = new ChannelFactory<IEchoService>(BasicHttpBinding(), EndpointAddress(basicHttpEndPointAddress))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -31,7 +30,7 @@ module Program =
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
-        let factory = new ChannelFactory<IEchoService>(new NetTcpBinding(), new EndpointAddress("net.tcp://localhost:8808/nettcp"))
+        let factory = new ChannelFactory<IEchoService>(NetTcpBinding(), EndpointAddress("net.tcp://localhost:8808/nettcp"))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -40,7 +39,7 @@ module Program =
         do factory.Close()
 
         // Complex type testing
-        let factory = new ChannelFactory<IEchoService>(new BasicHttpBinding(), new EndpointAddress(basicHttpEndPointAddress))
+        let factory = new ChannelFactory<IEchoService>(BasicHttpBinding(), EndpointAddress(basicHttpEndPointAddress))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -50,34 +49,45 @@ module Program =
 
 
     /// The following sample creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
-    let callUsingWebRequest() =
-        // Prepare the raw content.
-        let utf8Encoder = new UTF8Encoding()
-        let bodyContentBytes = utf8Encoder.GetBytes(soapEnvelopeContent)
+    let callUsingHttpClient () =
+        use client = new HttpClient()
 
-         //Create the web request.
-        let webRequest = System.Net.WebRequest.Create(Uri(basicHttpEndPointAddress))
-        do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
-        webRequest.ContentType <- "text/xml"
-        webRequest.Method <- "POST"
-        webRequest.ContentLength <- int64 bodyContentBytes.Length
+        // Prepare content
+        let content =
+            new StringContent(
+                soapEnvelopeContent,
+                Encoding.UTF8,
+                "text/xml"
+            )
 
-        // Append the content.
-        let requestContentStream = webRequest.GetRequestStream()
-        do requestContentStream.Write(bodyContentBytes, 0, bodyContentBytes.Length)
+        // SOAPAction is a header on the request content
+        content.Headers.Add(
+            "SOAPAction",
+            "http://tempuri.org/IEchoService/Echo"
+        )
 
-        // Send the request and read the response.
-        use responseStream = webRequest.GetResponse().GetResponseStream()
-        use responseReader = new StreamReader(responseStream)
-        let soapResponse = responseReader.ReadToEnd()
-        Logger.logTrace (fun () -> $"""Http SOAP Response: {soapResponse}""")
-        ()
+        // Send request (sync wait – OK for test code)
+        use response =
+            client.PostAsync(
+                basicHttpEndPointAddress,
+                content
+            ).GetAwaiter().GetResult()
+
+        response.EnsureSuccessStatusCode() |> ignore
+
+        let soapResponse =
+            response.Content
+                    .ReadAsStringAsync()
+                    .GetAwaiter()
+                    .GetResult()
+
+        Logger.logTrace (fun () -> $"Http SOAP Response: {soapResponse}")
 
 
     [<EntryPoint>]
     let main _ =
         do callUsingWcf()
-        do callUsingWebRequest()
+        do callUsingHttpClient()
 
         Logger.logInfo "Hit enter to exit."
         Console.ReadLine() |> ignore
