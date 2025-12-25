@@ -2,20 +2,13 @@
 
 open Softellect.DistributedProcessing.WorkerNodeAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
-open Softellect.DistributedProcessing.Primitives.WorkerNodeAdm
 open Softellect.Messaging.Primitives
-open Softellect.Messaging.ServiceInfo
-open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
-open Softellect.Sys.Core
 open Softellect.Sys.Crypto
-open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeAdm
-open Softellect.DistributedProcessing.VersionInfo
-open Softellect.Messaging.DataAccess
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeAdm
 
 module Implementation =

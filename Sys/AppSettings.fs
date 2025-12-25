@@ -36,7 +36,7 @@ module AppSettings =
             |> List.ofArray
             |> List.map (fun e -> e.Split ValueSeparator)
             |> List.map (fun e -> e |> Array.map (fun a -> a.Trim()))
-            |> List.map (fun e -> if e.Length = 2 then Some (e.[0], e.[1]) else None)
+            |> List.map (fun e -> if e.Length = 2 then Some (e[0], e[1]) else None)
             |> List.choose id
             |> Map.ofList
 
@@ -65,16 +65,16 @@ module AppSettings =
 
             // 2) Get or create the section object
             let sectionObj =
-                match jsonObj.[section] with
+                match jsonObj[section] with
                 | null ->
                     let newSection = JObject()
-                    jsonObj.[section] <- newSection
+                    jsonObj[section] <- newSection
                     newSection
                 | token ->
                     token :?> JObject
 
             // 3) Set the key value
-            sectionObj.[key] <- JValue($"{value}")
+            sectionObj[key] <- JValue($"{value}")
 
             Ok()
         with
@@ -90,16 +90,16 @@ module AppSettings =
                 | [] -> currentObj
                 | section :: rest ->
                     let nextObj =
-                        match currentObj.[section] with
+                        match currentObj[section] with
                         | null ->
                             let newObj = JObject()
-                            currentObj.[section] <- newObj
+                            currentObj[section] <- newObj
                             newObj
                         | token -> token :?> JObject
                     getOrCreateSection nextObj rest
 
             let targetObj = getOrCreateSection jsonObj sections
-            targetObj.[key] <- JValue($"{value}")
+            targetObj[key] <- JValue($"{value}")
             Ok()
         with
         | e -> Error e
@@ -153,10 +153,10 @@ module AppSettings =
 
             // 2) Get or create the section object
             let sectionObj =
-                match jsonObj.[section] with
+                match jsonObj[section] with
                 | null ->
                     let newSection = JObject()
-                    jsonObj.[section] <- newSection
+                    jsonObj[section] <- newSection
                     newSection
                 | token ->
                     token :?> JObject
@@ -169,7 +169,7 @@ module AppSettings =
                 jsonArray.Add(itemObj)
 
             // 4) Set the key to the array
-            sectionObj.[key] <- jsonArray
+            sectionObj[key] <- jsonArray
 
             Ok()
         with
@@ -217,12 +217,12 @@ module AppSettings =
         | e -> Error e
 
 
-    let private tryGetString (jsonObj : Newtonsoft.Json.Linq.JObject) (ConfigSection section) (ConfigKey key) =
+    let private tryGetString (jsonObj : JObject) (ConfigSection section) (ConfigKey key) =
         try
             // Safely try to get the section.
             match jsonObj.TryGetValue(section) with
             | true, sectionObj ->
-                match sectionObj :?> Newtonsoft.Json.Linq.JObject with
+                match sectionObj :?> JObject with
                 | null -> Ok None
                 | sectionJObj ->
                     // Safely try to get the key in the section.
@@ -290,8 +290,8 @@ module AppSettings =
         | Error e -> Error e
 
 
-    /// Returns a value if parsed properly. Otherwise ignores missing and/or incorrect value
-    /// and returns provided default value instead.
+    /// Returns a value if parsed properly. Otherwise, ignores missing and/or incorrect value
+    /// and returns the provided default value instead.
     let private getOrDefault<'T> setOnMissing (defaultValue : 'T) tryCreate jsonObj section key : 'T =
         match tryGet<'T> tryCreate jsonObj section key with
         | Ok (Some v) -> v
@@ -391,7 +391,7 @@ module AppSettings =
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently, it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
-    type AppSettingsProvider private (fileName, jsonObj : Newtonsoft.Json.Linq.JObject, setOnMissing : bool) =
+    type AppSettingsProvider private (fileName, jsonObj : JObject, setOnMissing : bool) =
         member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
         member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
@@ -454,7 +454,7 @@ module AppSettings =
             | Ok fullFileName ->
                 match tryOpenJson fullFileName with
                 | Ok jsonObj ->
-                    let jObj = jsonObj :?> Newtonsoft.Json.Linq.JObject
+                    let jObj = jsonObj :?> JObject
                     if isNull jObj then fullFileName |> JsonObjectIsNull |> Error
                     else (fullFileName, jObj, SetOnMissing) |> AppSettingsProvider |> Ok
                 | Error e -> e |> TryOpenJsonExn |> Error
@@ -466,8 +466,8 @@ module AppSettings =
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>
 
 
-    /// A simple command line handler to save default settings into appconfig.json file.
-    /// Thisis helpful when the structures change and you want to reset the settings.
+    /// A simple command line handler to save default settings into the appconfig.json file.
+    /// This is helpful when the structures change, and you want to reset the settings.
     [<CliPrefix(CliPrefix.None)>]
     type SettingsArguments =
         | [<Unique>] [<First>] [<AltCommandLine("s")>] Save
