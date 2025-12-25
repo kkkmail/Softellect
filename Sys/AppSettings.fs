@@ -1,13 +1,10 @@
 ﻿namespace Softellect.Sys
-open Microsoft.Identity.Client
 open Newtonsoft.Json.Linq
 
 open System
-open System.Collections.Generic
 open System.IO
 open Newtonsoft.Json
 open Argu
-open FSharp.Interop.Dynamic
 open Softellect.Sys.Core
 open Softellect.Sys.Primitives
 open Softellect.Sys.Errors
@@ -490,7 +487,7 @@ module AppSettings =
             | SaveSettingsTask s -> s()
 
         static member private tryCreateSaveSettingsTask s (p : list<SettingsArguments>) : SettingsTask option =
-            p |> List.tryPick (fun e -> match e with | Save -> s |> SaveSettingsTask |> Some | _ -> None)
+            p |> List.tryPick (fun e -> match e with | Save -> s |> SaveSettingsTask |> Some)
 
         static member tryCreate s p =
             [

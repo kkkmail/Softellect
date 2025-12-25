@@ -49,27 +49,8 @@ module Program =
         do factory.Close()
 
 
-    /// The following sample, creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
+    /// The following sample creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
     let callUsingWebRequest() =
-        //// Does not seem to work yet.
-        //// https://stackoverflow.com/questions/70185058/how-to-replace-obsolete-webclient-with-httpclient-in-net-6
-        //let handler = new HttpClientHandler()
-        ////handler.AutomaticDecompression <- (DecompressionMethods.GZip ||| DecompressionMethods.Deflate)
-
-        //use httpClient = new HttpClient(handler)
-        //httpClient.BaseAddress <- new Uri(basicHttpEndPointAddress)
-        //let webRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(basicHttpEndPointAddress))
-        //do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
-        ////webRequest.ContentType <- "text/xml"
-        ////webRequest.Method <- "POST"
-        ////webRequest.ContentLength <- int64 bodyContentBytes.Length
-        //webRequest.Content <- new StringContent(soapEnvelopeContent, Encoding.UTF8, "application/json")
-
-        //let response = httpClient.Send(webRequest)
-        //let reader = new StreamReader(response.Content.ReadAsStream())
-        //let responseBody = reader.ReadToEnd()
-        //Logger.logTrace (sprintf "%s" ("Http SOAP Response: " + responseBody))
-
         // Prepare the raw content.
         let utf8Encoder = new UTF8Encoding()
         let bodyContentBytes = utf8Encoder.GetBytes(soapEnvelopeContent)
