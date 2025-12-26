@@ -14,6 +14,14 @@ module AppSettings =
     let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
     let getEncryptionType() = AES
 
+    /// Returns (cleanupPeriod, maxIdle) for NAT cleanup.
+    /// cleanupPeriod: how often to run cleanup
+    /// maxIdle: how long a NAT mapping can be idle before removal
+    let getNatCleanupSettings () : TimeSpan * TimeSpan =
+        let cleanupPeriod = TimeSpan.FromSeconds(30.0)
+        let maxIdle = TimeSpan.FromMinutes(30.0)
+        (cleanupPeriod, maxIdle)
+
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
