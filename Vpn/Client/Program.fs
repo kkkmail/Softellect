@@ -86,8 +86,7 @@ module Program =
                             | false -> configureLogging (Some (getProjectName())) logging)
                         .ConfigureServices(fun hostContext services ->
                             let service = getClientService serviceData
-                            // services.AddSingleton<IHostedService>(service) |> ignore
-                            services.AddSingleton<IHostedService>(service :> IHostedService) |> ignore)
+                            services.AddSingleton<IHostedService>(service) |> ignore)
                         .Build()
 
                 host.Run()

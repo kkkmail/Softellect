@@ -2,9 +2,9 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <Platforms>x64</Platforms>
-        <AssemblyName>VpnClientAdm</AssemblyName>
+        <AssemblyName>VpnServerAdm</AssemblyName>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     </PropertyGroup>
 
@@ -29,9 +29,9 @@
 
     <ItemGroup>
         <PackageReference Include="Argu" Version="6.2.5" />
-        <ProjectReference Include="..\..\Sys\Sys.fsproj" />
-        <ProjectReference Include="..\Core\Core.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="9.0.303" />
+        <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
+        <ProjectReference Include="..\..\..\Vpn\Core\Core.fsproj" />
+        <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>
 
 </Project>

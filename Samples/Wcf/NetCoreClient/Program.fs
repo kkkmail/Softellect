@@ -3,7 +3,6 @@
 open System
 open System.ServiceModel
 open System.Text
-open System.IO
 open System.Net.Http
 
 open Softellect.Samples.Wcf.NetCoreClient.EchoClient
@@ -17,13 +16,13 @@ module Program =
 
 
     let createEchoMessage() =
-        let message = new EchoMessage()
+        let message = EchoMessage()
         message.text <- "Complex Hello"
         message
 
 
     let callUsingWcf() =
-        let factory = new ChannelFactory<IEchoService>(new BasicHttpBinding(), new EndpointAddress(basicHttpEndPointAddress))
+        let factory = new ChannelFactory<IEchoService>(BasicHttpBinding(), EndpointAddress(basicHttpEndPointAddress))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -31,7 +30,7 @@ module Program =
         do (channel :?> IClientChannel).Close()
         do factory.Close()
 
-        let factory = new ChannelFactory<IEchoService>(new NetTcpBinding(), new EndpointAddress("net.tcp://localhost:8808/nettcp"))
+        let factory = new ChannelFactory<IEchoService>(NetTcpBinding(), EndpointAddress("net.tcp://localhost:8808/nettcp"))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -40,7 +39,7 @@ module Program =
         do factory.Close()
 
         // Complex type testing
-        let factory = new ChannelFactory<IEchoService>(new BasicHttpBinding(), new EndpointAddress(basicHttpEndPointAddress))
+        let factory = new ChannelFactory<IEchoService>(BasicHttpBinding(), EndpointAddress(basicHttpEndPointAddress))
         do factory.Open()
         let channel = factory.CreateChannel()
         do (channel :?> IClientChannel).Open()
@@ -49,54 +48,46 @@ module Program =
         do factory.Close()
 
 
-    /// The following sample, creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
-    let callUsingWebRequest() =
-        //// Does not seem to work yet.
-        //// https://stackoverflow.com/questions/70185058/how-to-replace-obsolete-webclient-with-httpclient-in-net-6
-        //let handler = new HttpClientHandler()
-        ////handler.AutomaticDecompression <- (DecompressionMethods.GZip ||| DecompressionMethods.Deflate)
+    /// The following sample creates a basic web request to the specified endpoint, sends the SOAP request and reads the response
+    let callUsingHttpClient () =
+        use client = new HttpClient()
 
-        //use httpClient = new HttpClient(handler)
-        //httpClient.BaseAddress <- new Uri(basicHttpEndPointAddress)
-        //let webRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(basicHttpEndPointAddress))
-        //do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
-        ////webRequest.ContentType <- "text/xml"
-        ////webRequest.Method <- "POST"
-        ////webRequest.ContentLength <- int64 bodyContentBytes.Length
-        //webRequest.Content <- new StringContent(soapEnvelopeContent, Encoding.UTF8, "application/json")
+        // Prepare content
+        let content =
+            new StringContent(
+                soapEnvelopeContent,
+                Encoding.UTF8,
+                "text/xml"
+            )
 
-        //let response = httpClient.Send(webRequest)
-        //let reader = new StreamReader(response.Content.ReadAsStream())
-        //let responseBody = reader.ReadToEnd()
-        //Logger.logTrace (sprintf "%s" ("Http SOAP Response: " + responseBody))
+        // SOAPAction is a header on the request content
+        content.Headers.Add(
+            "SOAPAction",
+            "http://tempuri.org/IEchoService/Echo"
+        )
 
-        // Prepare the raw content.
-        let utf8Encoder = new UTF8Encoding()
-        let bodyContentBytes = utf8Encoder.GetBytes(soapEnvelopeContent)
+        // Send request (sync wait – OK for test code)
+        use response =
+            client.PostAsync(
+                basicHttpEndPointAddress,
+                content
+            ).GetAwaiter().GetResult()
 
-         //Create the web request.
-        let webRequest = System.Net.WebRequest.Create(Uri(basicHttpEndPointAddress))
-        do webRequest.Headers.Add("SOAPAction", "http://tempuri.org/IEchoService/Echo")
-        webRequest.ContentType <- "text/xml"
-        webRequest.Method <- "POST"
-        webRequest.ContentLength <- int64 bodyContentBytes.Length
+        response.EnsureSuccessStatusCode() |> ignore
 
-        // Append the content.
-        let requestContentStream = webRequest.GetRequestStream()
-        do requestContentStream.Write(bodyContentBytes, 0, bodyContentBytes.Length)
+        let soapResponse =
+            response.Content
+                    .ReadAsStringAsync()
+                    .GetAwaiter()
+                    .GetResult()
 
-        // Send the request and read the response.
-        use responseStream = webRequest.GetResponse().GetResponseStream()
-        use responseReader = new StreamReader(responseStream)
-        let soapResponse = responseReader.ReadToEnd()
-        Logger.logTrace (fun () -> $"""Http SOAP Response: {soapResponse}""")
-        ()
+        Logger.logTrace (fun () -> $"Http SOAP Response: {soapResponse}")
 
 
     [<EntryPoint>]
     let main _ =
         do callUsingWcf()
-        do callUsingWebRequest()
+        do callUsingHttpClient()
 
         Logger.logInfo "Hit enter to exit."
         Console.ReadLine() |> ignore

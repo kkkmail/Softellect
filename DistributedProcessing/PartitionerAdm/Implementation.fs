@@ -246,7 +246,7 @@ module Implementation =
 
 
     let sendAllSolvers (ctx : PartitionerAdmContext) (x : list<SendAllSolversArgs>) =
-        let force = x |> List.tryPick (fun e -> match e with | SendAllSolversArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
+        let force = x |> List.tryPick (fun e -> match e with | SendAllSolversArgs.Force e -> Some e) |> Option.defaultValue false
 
         let sendAll wl s =
             wl
@@ -452,7 +452,7 @@ module Implementation =
 
 
     let generateKeys (ctx : PartitionerAdmContext) (x : list<GenerateKeysArgs>) =
-        let force = x |> List.tryPick (fun e -> match e with | GenerateKeysArgs.Force e -> Some e | _ -> None) |> Option.defaultValue false
+        let force = x |> List.tryPick (fun e -> match e with | GenerateKeysArgs.Force e -> Some e) |> Option.defaultValue false
         let result = ctx.partitionerAdmProxy.tryGeneratePartitionerKeys force
         result
 
@@ -469,7 +469,7 @@ module Implementation =
 
 
     let importPublicKey (ctx : PartitionerAdmContext) (x : list<ImportPublicKeyArgs>) =
-        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some | _ -> None)
+        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some)
 
         match ifn with
         | Some f ->

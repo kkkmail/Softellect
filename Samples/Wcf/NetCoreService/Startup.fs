@@ -12,16 +12,15 @@ module Startup =
 
     type Startup() =
 
-        let createServiceModel (builder : IServiceBuilder) = 
+        let createServiceModel (builder : IServiceBuilder) =
             builder
                 .AddService<EchoService>()
-                .AddServiceEndpoint<EchoService, IEchoService>(new BasicHttpBinding(), "/basichttp")
-                .AddServiceEndpoint<EchoService, IEchoService>(new NetTcpBinding(), "/nettcp")
+                .AddServiceEndpoint<EchoService, IEchoService>(BasicHttpBinding(), "/basichttp")
+                .AddServiceEndpoint<EchoService, IEchoService>(NetTcpBinding(), "/nettcp")
             |> ignore
 
-
         member _.ConfigureServices(services : IServiceCollection) =
-            do services.AddServiceModelServices() |> ignore
+            services.AddServiceModelServices() |> ignore
 
-        member _.Configure(app : IApplicationBuilder, env : IHostingEnvironment) =
-            do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore
+        member _.Configure(app : IApplicationBuilder, _ : IWebHostEnvironment) =
+            app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore

@@ -20,6 +20,20 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Folder Name="/Apps/Vpn/">
+    <Project Path="Apps/Vpn/VpnClient/VpnClient.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/Vpn/VpnClientAdm/VpnClientAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/Vpn/VpnServer/VpnServer.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Apps/Vpn/VpnServerAdm/VpnServerAdm.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/DistributedProcessing/">
     <Project Path="DistributedProcessing/Core/Core.fsproj">
       <Platform Project="x64" />
@@ -117,9 +131,6 @@
     <Project Path="Vpn/Client/Client.fsproj">
       <Platform Project="x64" />
     </Project>
-    <Project Path="Vpn/ClientAdm/ClientAdm.fsproj">
-      <Platform Project="x64" />
-    </Project>
     <Project Path="Vpn/Core/Core.fsproj">
       <Platform Project="x64" />
     </Project>
@@ -127,15 +138,6 @@
       <Platform Project="x64" />
     </Project>
     <Project Path="Vpn/Server/Server.fsproj">
-      <Platform Project="x64" />
-    </Project>
-    <Project Path="Vpn/ServerAdm/ServerAdm.fsproj">
-      <Platform Project="x64" />
-    </Project>
-    <Project Path="Vpn/VpnClient/VpnClient.fsproj">
-      <Platform Project="x64" />
-    </Project>
-    <Project Path="Vpn/VpnServer/VpnServer.fsproj">
       <Platform Project="x64" />
     </Project>
   </Folder>

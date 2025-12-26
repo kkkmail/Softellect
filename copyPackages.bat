@@ -19,4 +19,4 @@ copy /b /y ..\Berreman\Berreman\Berreman\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y ..\Berreman\Berreman\OpticalProperties\bin\x64\Release\*.nupkg  ..\Packages\ 
 copy /b /y ..\Berreman\MathNetNumerics\FSharp\bin\x64\Release\*.nupkg  ..\Packages\ 
 copy /b /y ..\Berreman\MathNetNumerics\Numerics\bin\x64\Release\*.nupkg  ..\Packages\ 
-copy /b /y ..\DryIoc\.dist\packages\*.nupkg  ..\Packages\
+rem copy /b /y ..\DryIoc\.dist\packages\*.nupkg  ..\Packages\

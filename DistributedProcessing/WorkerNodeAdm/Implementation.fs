@@ -2,20 +2,13 @@
 
 open Softellect.DistributedProcessing.WorkerNodeAdm.CommandLine
 open Softellect.DistributedProcessing.Primitives.Common
-open Softellect.DistributedProcessing.Primitives.WorkerNodeAdm
 open Softellect.Messaging.Primitives
-open Softellect.Messaging.ServiceInfo
-open Softellect.Sys
 open Softellect.Sys.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
-open Softellect.Sys.Core
 open Softellect.Sys.Crypto
-open Softellect.Messaging.Client
 open Softellect.DistributedProcessing.Errors
 open Softellect.DistributedProcessing.DataAccess.WorkerNodeAdm
-open Softellect.DistributedProcessing.VersionInfo
-open Softellect.Messaging.DataAccess
 open Softellect.DistributedProcessing.AppSettings.WorkerNodeAdm
 
 module Implementation =
@@ -101,7 +94,7 @@ module Implementation =
 
 
     let generateKeys (ctx : WorkerNodeAdmContext) (x : list<GenerateKeysArgs>) =
-        let force = x |> List.tryPick (fun e -> match e with | Force e -> Some e | _ -> None) |> Option.defaultValue false
+        let force = x |> List.tryPick (fun e -> match e with | Force e -> Some e) |> Option.defaultValue false
         let result = ctx.workerNodeAdmProxy.tryGenerateWorkerNodeKeys force
         result
 
@@ -118,7 +111,7 @@ module Implementation =
 
 
     let importPublicKey (ctx : WorkerNodeAdmContext) (x : list<ImportPublicKeyArgs>) =
-        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some | _ -> None)
+        let ifn = x |> List.tryPick (fun e -> match e with | InputFileName e -> e |> FileName |> Some)
 
         match ifn with
         | Some f ->

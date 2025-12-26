@@ -1,15 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Platforms>x64</Platforms>
     <AssemblyName>Softellect.DistributedProcessing.MessagingService</AssemblyName>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>9.0.303.39</Version>
-    <PackageVersion>9.0.303.39</PackageVersion>
+    <Version>10.0.101.40</Version>
+    <PackageVersion>10.0.101.40</PackageVersion>
     <Description>Distributed processing messaging service...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -49,9 +49,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.8" />
-    <PackageReference Update="FSharp.Core" Version="9.0.303" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\MessagingService\MessagingService.fsproj" />
