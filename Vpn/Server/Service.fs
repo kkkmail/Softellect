@@ -12,6 +12,8 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Server.ClientRegistry
 open Softellect.Vpn.Server.PacketRouter
 open Softellect.Vpn.Server.DnsProxy
+open Softellect.Vpn.Server.Nat
+open Softellect.Vpn.Core.AppSettings
 open Softellect.Sys.Rop
 
 module Service =
@@ -55,6 +57,7 @@ module Service =
                     match registry.createPushSession(request.clientId) with
                     | Ok session ->
                         Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId: {session.sessionId.value}."
+                        registry.kickedSessions.TryRemove session.sessionId |> ignore
 
                         let response =
                             {
@@ -102,6 +105,7 @@ module Service =
 
     type VpnPushService(data: VpnServerData, registry : ClientRegistry) =
         let mutable started = false
+        let mutable cleanupCts : CancellationTokenSource option = None
 
         let routerConfig =
             {
@@ -118,6 +122,24 @@ module Service =
         let toAuthError f = f |> AuthWcfErr |> VpnWcfErr |> ClientAuthErr
         let toSendError f = f |> ConfigErr
         let toReceiveError f = f |> ConfigErr
+
+        let natCleanupLoop (ct: CancellationToken) =
+            task {
+                let cleanupPeriod, maxIdle = getNatCleanupSettings()
+                Logger.logInfo $"NAT cleanup loop started: period={cleanupPeriod.TotalSeconds}s, maxIdle={maxIdle.TotalMinutes}min"
+
+                while not ct.IsCancellationRequested do
+                    try
+                        do! Task.Delay(cleanupPeriod, ct)
+                        removeStaleEntries maxIdle
+                        Logger.logTrace (fun () -> "NAT cleanup tick completed")
+                    with
+                    | :? OperationCanceledException -> ()
+                    | _ when ct.IsCancellationRequested -> ()
+                    | ex -> Logger.logError $"NAT cleanup error: {ex.Message}"
+
+                Logger.logInfo "NAT cleanup loop stopped"
+            } :> Task
 
         let processPacket clientId packet =
             // Check if this is a DNS query to the VPN gateway
@@ -189,6 +211,12 @@ module Service =
                     match router.start() with
                     | Ok () ->
                         started <- true
+
+                        // Start a NAT cleanup loop
+                        let cts = new CancellationTokenSource()
+                        cleanupCts <- Some cts
+                        Task.Run(fun () -> natCleanupLoop cts.Token) |> ignore
+
                         Logger.logInfo "VPN Service started successfully"
                         Task.CompletedTask
                     | Error msg ->
@@ -201,9 +229,16 @@ module Service =
                     Task.CompletedTask
                 else
                     Logger.logInfo "Stopping VPN Service..."
+
+                    // Stop NAT cleanup loop
+                    match cleanupCts with
+                    | Some cts ->
+                        cts.Cancel()
+                        cts.Dispose()
+                        cleanupCts <- None
+                    | None -> ()
+
                     router.stop()
                     started <- false
                     Logger.logInfo "VPN Service stopped"
                     Task.CompletedTask
-
-        member _.clientRegistry = registry

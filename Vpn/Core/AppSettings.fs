@@ -14,6 +14,14 @@ module AppSettings =
     let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
     let getEncryptionType() = AES
 
+    /// Returns (cleanupPeriod, maxIdle) for NAT cleanup.
+    /// cleanupPeriod: how often to run cleanup
+    /// maxIdle: how long a NAT mapping can be idle before removal
+    let getNatCleanupSettings () : TimeSpan * TimeSpan =
+        let cleanupPeriod = TimeSpan.FromSeconds(30.0)
+        let maxIdle = TimeSpan.FromMinutes(30.0)
+        (cleanupPeriod, maxIdle)
+
 
     let vpnServerAccessInfoKey = ConfigKey "VpnServerAccessInfo"
     let vpnClientAccessInfoKey = ConfigKey "VpnClientAccessInfo"
@@ -290,76 +298,6 @@ module AppSettings =
             Logger.logError $"tryWritePhysicalNetworkConfig: ERROR - %A{e}."
             toErr $"Failed to create settings provider: %A{e}"
 
-
-    // let loadVpnClientConfigs () : VpnClientConfig list =
-    //     match AppSettingsProvider.tryCreate() with
-    //     | Ok provider ->
-    //         match provider.tryGetNestedSection ["appSettings"; "VpnClients"] with
-    //         | Ok (Some clientsObj) ->
-    //             let configs =
-    //                 clientsObj.Properties()
-    //                 |> Seq.choose (fun prop ->
-    //                     let clientName = prop.Name
-    //                     match provider.tryGetNested ["appSettings"; "VpnClients"; clientName] "ClientId" with
-    //                     | Ok (Some clientIdStr) ->
-    //                         match provider.tryGetNested ["appSettings"; "VpnClients"; clientName] "AssignedIp" with
-    //                         | Ok (Some assignedIpStr) ->
-    //                             match VpnClientId.tryCreate clientIdStr, VpnIpAddress.tryCreate assignedIpStr with
-    //                             | Some clientId, Some assignedIp ->
-    //                                 Some {
-    //                                     clientId = clientId
-    //                                     clientName = VpnClientName clientName
-    //                                     assignedIp = assignedIp
-    //                                 }
-    //                             | _ -> None
-    //                         | _ -> None
-    //                     | _ -> None
-    //                 )
-    //                 |> Seq.toList
-    //
-    //             Logger.logInfo $"loadVpnClientConfigs: Loaded {configs.Length} client(s)"
-    //             configs
-    //         | Ok None ->
-    //             Logger.logInfo "loadVpnClientConfigs: No VpnClients section found"
-    //             []
-    //         | Error e ->
-    //             Logger.logError $"loadVpnClientConfigs: ERROR getting VpnClients section - %A{e}."
-    //             []
-    //     | Error e ->
-    //         Logger.logError $"loadVpnClientConfigs: ERROR creating provider - %A{e}."
-    //         []
-    //
-    //
-    // let addOrUpdateVpnClientConfig (config: VpnClientConfig) =
-    //     let toErr e = e |> ConfigErr |> Error
-    //
-    //     match AppSettingsProvider.tryCreate() with
-    //     | Ok provider ->
-    //         let clientName = config.clientName.value
-    //         let sections = ["appSettings"; "VpnClients"; clientName]
-    //
-    //         match provider.trySetNested sections "ClientId" (config.clientId.value.ToString()) with
-    //         | Ok () ->
-    //             match provider.trySetNested sections "AssignedIp" config.assignedIp.value with
-    //             | Ok () ->
-    //                 Logger.logInfo $"addOrUpdateVpnClientConfig: Set values for client {clientName}"
-    //
-    //                 match provider.trySave() with
-    //                 | Ok () ->
-    //                     Logger.logInfo "addOrUpdateVpnClientConfig: trySave succeeded"
-    //                     Ok ()
-    //                 | Error e ->
-    //                     Logger.logError $"addOrUpdateVpnClientConfig: trySave failed: %A{e}"
-    //                     toErr $"Failed to save client config: %A{e}"
-    //             | Error e ->
-    //                 Logger.logError $"addOrUpdateVpnClientConfig: trySetNested AssignedIp failed: %A{e}"
-    //                 toErr $"Failed to set AssignedIp: %A{e}"
-    //         | Error e ->
-    //             Logger.logError $"addOrUpdateVpnClientConfig: trySetNested ClientId failed: %A{e}"
-    //             toErr $"Failed to set ClientId: %A{e}"
-    //     | Error e ->
-    //         Logger.logError $"addOrUpdateVpnClientConfig: ERROR creating provider - %A{e}."
-    //         toErr $"Failed to create settings provider: %A{e}"
 
     let addOrUpdateVpnClientConfig (config: VpnClientConfig) =
         match AppSettingsProvider.tryCreate() with

@@ -53,6 +53,9 @@ module ClientRegistry =
         /// A revers lookup by clientId
         let sessionIdByClientId = ConcurrentDictionary<VpnClientId, VpnSessionId>()
 
+        // Track kicked sessions to avoid repeated logging (spec 041: log error once)
+        let kickedSessionsBySessionId = ConcurrentDictionary<VpnSessionId, DateTime>()
+
         let mutable nextSessionId = VpnSessionId 1uy
         let sessionIdLock = obj()
 
@@ -195,6 +198,9 @@ module ClientRegistry =
                 session.lastSeen <- DateTime.UtcNow
                 session.currentEndpoint <- Some endpoint
             | None -> ()
+
+        /// Expose kick sessions.
+        member _.kickedSessions = kickedSessionsBySessionId
 
         // /// Check if a push session's endpoint is fresh (within freshness timeout).
         // member _.isPushEndpointFresh(clientId: VpnClientId) : bool =

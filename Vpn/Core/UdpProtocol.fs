@@ -22,16 +22,13 @@ module UdpProtocol =
     [<Literal>]
     let PushHeaderSize = 17
 
-    /// Legacy: clientId size (kept for reference during transition)
-    [<Literal>]
-    let PushClientIdSize = 16
-
     /// MTU for push dataplane (conservative to avoid fragmentation)
     [<Literal>]
-    let PushMtu = 1380
+    // let PushMtu = 1380
+    let PushMtu = 1550
     // let PushMtu = 2900
 
-    /// Must be smaller than or equal to PushMtu - PushClientIdSize - 1 (for command byte).
+    /// Must be smaller than or equal to PushMtu - PushHeaderSize.
     [<Literal>]
     let MtuSize = 1300
 
@@ -46,6 +43,7 @@ module UdpProtocol =
 
     [<Literal>]
     let ServerReassemblyTimeoutMs = 2000
+
 
     // /// Key for a reassembly map: (msgType, clientId, requestId).
     // type ReassemblyKey = byte * VpnClientId * uint32
@@ -220,25 +218,6 @@ module UdpProtocol =
                 Ok (sessionId, nonce, payload)
             | Error e -> Error $"%A{e}"
 
-    // /// Build a push datagram with the legacy format (spec 040).
-    // /// Wire layout: clientId (16 bytes) + payload
-    // let buildPushDatagram (clientId: VpnClientId) (payload: byte[]) : byte[] =
-    //     let payloadLen = payload.Length
-    //     if payloadLen > PushMaxPayload then
-    //         failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
-    //
-    //     let result = Array.zeroCreate (PushClientIdSize + payloadLen)
-    //     let guidBytes = clientId.value.ToByteArray()
-    //
-    //     // clientId (16 bytes)
-    //     Array.Copy(guidBytes, 0, result, 0, 16)
-    //
-    //     // payload
-    //     if payloadLen > 0 then
-    //         Array.Copy(payload, 0, result, PushClientIdSize, payloadLen)
-    //
-    //     result
-
 
     /// Build a plaintext payload with a command byte prefix.
     let buildPayload (cmd: byte) (data: byte[]) : byte[] =
@@ -412,6 +391,7 @@ module UdpProtocol =
         let unknownClientDropsCounter = AtomicCounter()
         let noEndpointDropsCounter = AtomicCounter()
         let queueFullDropsCounter = AtomicCounter()
+        let overSizeDropsCounter = AtomicCounter()
         let mutable lastLogTicks = Stopwatch.GetTimestamp()
 
         member _.udpRxDatagrams = udpRxDatagramsCounter
@@ -421,6 +401,7 @@ module UdpProtocol =
         member _.unknownClientDrops = unknownClientDropsCounter
         member _.noEndpointDrops = noEndpointDropsCounter
         member _.queueFullDrops = queueFullDropsCounter
+        member _.overSizeDrops = overSizeDropsCounter
 
         /// Check if stats should be logged (every PushStatsIntervalMs).
         member _.shouldLog() =
@@ -434,4 +415,7 @@ module UdpProtocol =
 
         /// Get stats summary string.
         member this.getSummary() =
-            $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B dropped(unknown=%d{unknownClientDropsCounter.value} noEp=%d{noEndpointDropsCounter.value} qFull=%d{queueFullDropsCounter.value})"
+            $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
+            $"udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B " +
+            $"dropped(unknown=%d{unknownClientDropsCounter.value} noEp=%d{noEndpointDropsCounter.value} " +
+            $"qFull=%d{queueFullDropsCounter.value} overSize=%d{overSizeDropsCounter.value})"
