@@ -127,7 +127,7 @@ module Service =
         let mutable running = false
         let cts = new CancellationTokenSource()
 
-        // Spec 042: Single mutable auth snapshot - THE source of truth for UDP plane
+        // Spec 042: Single mutable auth snapshot - The source of truth for UDP plane
         let mutable currentAuth : VpnAuthResponse option = None
         let authLock = obj()
 
@@ -261,7 +261,7 @@ module Service =
                                         | None -> Logger.logError "Kill-switch instance is missing"
                                     | Error msg -> Logger.logError $"Push: Failed to start tunnel: {msg}"
 
-                                // Start UDP client if the tunnel started and UDP not started
+                                // Start a UDP client if the tunnel started and UDP not started
                                 if tunnelStarted && not udpStarted then
                                     match tunnel with
                                     | Some t ->
@@ -308,7 +308,7 @@ module Service =
                                 // Session expired - need to re-authenticate
                                 Logger.logInfo "Push: Session expired, re-authenticating..."
                                 connectionState <- Reconnecting
-                                // Clear auth to trigger re-authentication on next iteration
+                                // Clear auth to trigger re-authentication on the next iteration
                                 // Spec 042: Do NOT stop UDP - it will just skip when getAuth() returns None
                                 setAuth None
                                 currentBackoffMs <- HealthCheckIntervalMs
@@ -323,7 +323,7 @@ module Service =
 
         interface IHostedService with
             /// Spec 042: StartAsync MUST be lightweight and non-blocking.
-            /// Only enables kill-switch and starts supervisor loop.
+            /// Only enables a kill-switch and starts the supervisor loop.
             member _.StartAsync(cancellationToken: CancellationToken) =
                 Logger.logInfo $"Starting Push VPN Client Service (spec 042), useEncryption: {data.clientAccessInfo.useEncryption}, encryptionType: %A{data.clientAccessInfo.encryptionType}..."
 
@@ -354,14 +354,14 @@ module Service =
                 running <- false
                 cts.Cancel()
 
-                // Wait for supervisor task
+                // Wait for the supervisor task
                 match supervisorTask with
                 | Some t ->
                     try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
                     supervisorTask <- None
                 | None -> ()
 
-                // Wait for send task
+                // Wait for a send task
                 match sendTask with
                 | Some t ->
                     try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()

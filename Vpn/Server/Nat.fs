@@ -55,13 +55,13 @@ module Nat =
     // (internalIp, internalPortOrId, remoteIp, remotePort, protocol) -> externalKey
     let private tableByInternal = ConcurrentDictionary<NatKey, NatExternalKey>()
 
-    // very simple port allocator (you might want to improve this)
-    let private nextPort = ref 40000us
+    // Very simple port allocator
+    let mutable private nextPort = 40000us
     let private random   = Random()
 
     let private allocateExternalPortOrId (proto: Protocol) =
         // naive: just bump number and wrap; skip if already in use
-        let mutable candidate = !nextPort
+        let mutable candidate = nextPort
         let mutable found = false
         let mutable tries = 0
         while not found && tries < 65535 do
@@ -75,7 +75,7 @@ module Nat =
                 found <- true
         if not found then
             failwith "NAT: no free external ports/ids"
-        nextPort := uint16 ((int candidate + 1) &&& 0xFFFF)
+        nextPort <- uint16 ((int candidate + 1) &&& 0xFFFF)
         candidate
 
     let private now () = DateTime.UtcNow
@@ -192,13 +192,13 @@ module Nat =
         let mutable i = ihl
         while i < ihl + segLen do
             if i = checksumOffset then
-                // skip checksum field itself (we'll write it later)
+                // skip the checksum field itself (we'll write it later)
                 ()
             else
                 if i + 1 < ihl + segLen then
                     add16 (readUInt16 buf i)
                 else
-                    // odd length: pad last byte with zero
+                    // odd length: pad the last byte with zero
                     let last = uint16 buf[i] <<< 8
                     add16 last
             i <- i + 2
@@ -229,7 +229,7 @@ module Nat =
         let ihl = headerLength buf
         let totalLen = int (readUInt16 buf 2)
         let icmpLen = totalLen - ihl
-        let checksumOffset = ihl + 2  // ICMP checksum at offset 2 within ICMP header
+        let checksumOffset = ihl + 2  // ICMP checksum at offset 2 within the ICMP header
 
         let mutable sum = 0u
         let mutable i = ihl
@@ -240,7 +240,7 @@ module Nat =
             else if i + 1 < ihl + icmpLen then
                 sum <- sum + uint32 (readUInt16 buf i)
             else
-                // odd length: pad last byte with zero
+                // odd length: pad the last byte with zero
                 sum <- sum + (uint32 buf[i] <<< 8)
             i <- i + 2
 
@@ -310,7 +310,7 @@ module Nat =
     /// Called for packets coming FROM VPN clients TO the Internet.
     /// - internalNetwork: true if src is VPN (10.66.77.0/24).
     /// - externalIp: server public IPv4, network byte order.
-    /// Returns Some translatedPacket, or None if packet should be dropped / not NATed.
+    /// Returns Some translatedPacket, or None if the packet should be dropped / not NATed.
     let translateOutbound (vpnSubnet: uint32, vpnMask: uint32) (externalIp: uint32) (packet: byte[]) : byte[] option =
         if packet.Length < 20 then None
         else
@@ -387,7 +387,7 @@ module Nat =
 
     /// Called for packets coming FROM the Internet TO the server external IP.
     /// - externalIp: server public IPv4, network byte order.
-    /// Returns Some translatedPacket (dest rewritten back to VPN client),
+    /// Returns Some translatedPacket (dest rewritten back to the VPN client),
     /// or None if no mapping was found (drop).
     let translateInbound (externalIp: uint32) (packet: byte[]) : byte[] option =
         if packet.Length < 20 then None
@@ -405,7 +405,7 @@ module Nat =
             if packet.Length < minSize then
                 None
             else
-                let srcIp = readUInt32 packet 12
+                // let srcIp = readUInt32 packet 12
                 let dstIp = readUInt32 packet 16
 
                 // Only handle packets addressed to our public IP.
