@@ -57,6 +57,7 @@ module Service =
                     match registry.createPushSession(request.clientId) with
                     | Ok session ->
                         Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId: {session.sessionId.value}."
+                        registry.kickedSessions.TryRemove session.sessionId |> ignore
 
                         let response =
                             {
@@ -211,7 +212,7 @@ module Service =
                     | Ok () ->
                         started <- true
 
-                        // Start NAT cleanup loop
+                        // Start a NAT cleanup loop
                         let cts = new CancellationTokenSource()
                         cleanupCts <- Some cts
                         Task.Run(fun () -> natCleanupLoop cts.Token) |> ignore
@@ -241,5 +242,3 @@ module Service =
                     started <- false
                     Logger.logInfo "VPN Service stopped"
                     Task.CompletedTask
-
-        member _.clientRegistry = registry

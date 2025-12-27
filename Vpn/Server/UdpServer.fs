@@ -35,9 +35,7 @@ module UdpServer =
         let mutable cancellationTokenSource : CancellationTokenSource option = None
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
         let mutable noEncryptionErr : int64 = 0L
-
-        // Track kicked sessions to avoid repeated logging (spec 041: log error once)
-        let kickedSessions = ConcurrentDictionary<VpnSessionId, DateTime>()
+        let kickedSessions = registry.kickedSessions
 
         let cleanupReassemblies () =
             let nowTicks = Stopwatch.GetTimestamp()
@@ -195,6 +193,7 @@ module UdpServer =
                                                         match encryptPayload session plaintextPayload nonce with
                                                         | Ok finalPayload ->
                                                             if finalPayload.Length > PushMaxPayload then
+                                                                pushStats.overSizeDrops.increment()
                                                                 Logger.logWarn $"Push: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload}) for {session.clientId.value}"
                                                                 None
                                                             else
