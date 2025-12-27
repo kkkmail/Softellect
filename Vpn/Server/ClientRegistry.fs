@@ -202,33 +202,6 @@ module ClientRegistry =
         /// Expose kick sessions.
         member _.kickedSessions = kickedSessionsBySessionId
 
-        // /// Check if a push session's endpoint is fresh (within freshness timeout).
-        // member _.isPushEndpointFresh(clientId: VpnClientId) : bool =
-        //     match pushSessions.TryGetValue(clientId) with
-        //     | true, session ->
-        //         match session.currentEndpoint with
-        //         | Some _ ->
-        //             let age = DateTime.UtcNow - session.lastSeen
-        //             age.TotalSeconds < float PushSessionFreshnessSeconds
-        //         | None -> false
-        //     | false, _ -> false
-
-        // /// Enqueue a packet for a push client. Returns true if enqueued, false if no session or queue rejected.
-        // member _.enqueuePushPacket(clientId: VpnClientId, packet: byte[]) : bool =
-        //     match pushSessions.TryGetValue(clientId) with
-        //     | true, session ->
-        //         session.pendingPackets.enqueue(packet)
-        //     | false, _ -> false
-
-        // /// Get the next send sequence number for a push client.
-        // member _.getNextPushSeq(clientId: VpnClientId) : uint32 =
-        //     match pushSessions.TryGetValue(clientId) with
-        //     | true, session ->
-        //         let seq = session.sendSeq
-        //         session.sendSeq <- session.sendSeq + 1u
-        //         seq
-        //     | false, _ -> 0u
-
         /// Get all push sessions with pending packets and fresh endpoints.
         member _.getPushSessionsWithPendingPackets() : PushClientSession list =
             sessionsBySessionId.Values
