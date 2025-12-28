@@ -1,7 +1,6 @@
 namespace Softellect.DistributedProcessing.SolverRunner
 
 open Argu
-open Softellect.DistributedProcessing.Primitives.Common
 open Softellect.DistributedProcessing.SolverRunner.CommandLine
 open Softellect.DistributedProcessing.SolverRunner.Implementation
 open Softellect.DistributedProcessing.SolverRunner.Primitives
@@ -10,7 +9,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.ExitErrorCodes
 open Softellect.Sys.AppSettings
-open Softellect.Sys.Core
+open Softellect.Sys.WindowsApi
 
 module Program =
 

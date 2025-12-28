@@ -1,7 +1,9 @@
 namespace Softellect.Vpn.Core
 
 open System.ServiceModel
+#if !ANDROID
 open Microsoft.Extensions.Hosting
+#endif
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
@@ -21,7 +23,7 @@ module ServiceInfo =
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
         abstract pingSession : VpnPingRequest -> VpnPingResult
 
-
+#if !ANDROID
     type IAuthService =
         inherit IHostedService
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
@@ -32,7 +34,7 @@ module ServiceInfo =
         inherit IHostedService
         abstract sendPackets : VpnSessionId * byte[][] -> VpnUnitResult
         abstract receivePackets : VpnSessionId -> VpnPacketsResult
-
+#endif
 
     [<ServiceContract(ConfigurationName = AuthServiceName)>]
     type IAuthWcfService =

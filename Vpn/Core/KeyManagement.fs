@@ -14,7 +14,7 @@ module KeyManagement =
 
     /// Exports a private key to a file in the specified folder.
     /// The file will be named with the KeyId GUID and .key extension.
-    let tryExportPrivateKey (folderName : FolderName) (PrivateKey privateKey as pk) (overwrite : bool) =
+    let tryExportPrivateKey (folderName : FolderName) (PrivateKey privateKey) (overwrite : bool) =
         try
             match extractKeyIdFromKey privateKey with
             | Some i ->

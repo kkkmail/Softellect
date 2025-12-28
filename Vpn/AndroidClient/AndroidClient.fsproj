@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <AssemblyName>Softellect.Vpn.AndroidClient</AssemblyName>
+    <Platforms>ARM64</Platforms>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <Platform>ARM64</Platform>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <OtherFlags>--warnaserror+:25</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <OtherFlags>--warnaserror+:25</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked files from Windows client -->
+    <Compile Include="..\Client\WcfClient.fs" Link="WcfClient.fs" />
+    <Compile Include="..\Client\UdpClient.fs" Link="UdpClient.fs" />
+    <!-- Android-specific implementation -->
+    <Compile Include="ConfigManager.fs" />
+    <Compile Include="VpnTunnelService.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Android\Core\Core.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+  </ItemGroup>
+</Project>

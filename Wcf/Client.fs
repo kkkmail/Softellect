@@ -24,9 +24,16 @@ module Client =
 
     type ClientWcfBinding =
         | BasicHttpBinding of BasicHttpBinding
+#if ANDROID
+        // NetTcpBinding is not supported on Android.
+#else
         | NetTcpBinding of NetTcpBinding
+#endif
 
 
+#if ANDROID
+    // NetTcpBinding is not supported on Android.
+#else
     /// There seems to be a security negotiation issue with using SecurityMode.Transport and remote WCF service.
     /// The service fails to accept connection with:
     ///     CoreWCF.Security.SecurityNegotiationException: Authentication failed on the remote side
@@ -49,6 +56,7 @@ module Client =
 
         binding.ReaderQuotas <- getQuotas()
         binding
+#endif
 
 
     /// Gets basic http binding suitable for sending very large data objects.
@@ -69,7 +77,11 @@ module Client =
     let getBinding t =
         match t with
         | HttpCommunication -> getBasicHttpBinding() |> BasicHttpBinding
+#if ANDROID
+        // NetTcpBinding is not supported on Android.
+#else
         | NetTcpCommunication s -> getNetTcpBinding s |> NetTcpBinding
+#endif
 
 
     /// Tries getting a Wcf Client.
@@ -83,7 +95,11 @@ module Client =
             let channelFactory =
                 match binding with
                 | BasicHttpBinding b -> new ChannelFactory<'T>(b, address)
+#if ANDROID
+                // NetTcpBinding is not supported on Android.
+#else
                 | NetTcpBinding b -> new ChannelFactory<'T>(b, address)
+#endif
 
             let service = channelFactory.CreateChannel()
             Ok (service, fun () -> channelFactory.Close())

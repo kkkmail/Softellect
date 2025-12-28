@@ -42,7 +42,12 @@ module Common =
 
     type WcfCommunicationType =
         | HttpCommunication
+#if ANDROID
+        // NetTcpBinding is not supported on Android.
+#else
         | NetTcpCommunication of WcfSecurityMode
+#endif
+
 
         member c.serialize() = jsonSerialize c
 
@@ -158,38 +163,65 @@ module Common =
 
     type ServiceAccessInfo =
         | HttpServiceInfo of HttpServiceAccessInfo
+#if ANDROID
+        // NetTcpBinding is not supported on Android.
+#else
         | NetTcpServiceInfo of NetTcpServiceAccessInfo
+#endif
 
         member i.getUrl() =
             match i with
             | HttpServiceInfo n ->  getHttpServiceUrl n.httpServiceAddress n.httpServicePort n.httpServiceName
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             | NetTcpServiceInfo n -> getNetTcpServiceUrl n.netTcpServiceAddress n.netTcpServicePort n.netTcpServiceName
+#endif
 
         member i.getIpAddress() =
             match i with
             | HttpServiceInfo n ->  n.httpServiceAddress.value
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             | NetTcpServiceInfo n -> n.netTcpServiceAddress.value
+#endif
 
         member i.getServicePort() =
             match i with
             | HttpServiceInfo n ->  n.httpServicePort
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             | NetTcpServiceInfo n -> n.netTcpServicePort
+#endif
 
         member i.communicationType =
             match i with
             | HttpServiceInfo _ -> HttpCommunication
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             | NetTcpServiceInfo n -> NetTcpCommunication n.netTcpSecurityMode
+#endif
 
 
         member i.serialize() =
             match i with
             | HttpServiceInfo n -> $"{nameof(HttpCommunication)}{DiscriminatedUnionSeparator}{n.serialize()}"
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             | NetTcpServiceInfo n -> $"{nameof(NetTcpServiceInfo)}{DiscriminatedUnionSeparator}{n.serialize()}"
-
+#endif
 
         static member tryDeserialize (s : string) =
             let startsWithHttp = $"{nameof(HttpServiceInfo)}{DiscriminatedUnionSeparator}"
+#if ANDROID
+            // NetTcpBinding is not supported on Android.
+#else
             let startsWithNetTcp = $"{nameof(NetTcpServiceInfo)}{DiscriminatedUnionSeparator}"
+#endif
 
             let s1 = s.Replace(" ", "")
 
@@ -201,6 +233,10 @@ module Common =
                 | Some v -> Ok v
                 | None -> Error s
             | false ->
+#if ANDROID
+                // NetTcpBinding is not supported on Android.
+                Error s
+#else
                 match s1.StartsWith startsWithNetTcp with
                 | true ->
                     let r = s1.Substring(startsWithNetTcp.Length) |> NetTcpServiceAccessInfo.tryDeserialize |> Option.bind (fun e -> e |> NetTcpServiceInfo |> Some)
@@ -209,3 +245,4 @@ module Common =
                     | Some v -> Ok v
                     | None -> Error s
                 | false -> Error s
+#endif

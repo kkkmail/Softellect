@@ -129,3 +129,12 @@ module WindowsApi =
             { dpiX = dpiX; dpiY = dpiY } |> Ok
         with
         | e -> e |> WindowsApiExn |> toError
+
+
+    /// Function to check if a monitor data is available.
+    let checkMonitorData() =
+        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
+        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
+        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
+
+        ()
