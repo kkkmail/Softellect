@@ -379,7 +379,11 @@ module UdpProtocol =
 
         /// Get stats summary string.
         member this.getSummary() =
-            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPacketsCounter.value}/%d{tunRxBytesCounter.value}B udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B dropped(mtu=%d{droppedMtuCounter.value} outQ=%d{droppedQueueFullOutboundCounter.value} injQ=%d{droppedQueueFullInjectCounter.value})"
+            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPacketsCounter.value}/%d{tunRxBytesCounter.value}B " +
+            $"udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B " +
+            $"udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
+            $"dropped(mtu=%d{droppedMtuCounter.value} outQ=%d{droppedQueueFullOutboundCounter.value} " +
+            $"injQ=%d{droppedQueueFullInjectCounter.value})"
 
 
     /// Server-side observability counters.
@@ -418,4 +422,4 @@ module UdpProtocol =
             $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
             $"udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B " +
             $"dropped(unknown=%d{unknownClientDropsCounter.value} noEp=%d{noEndpointDropsCounter.value} " +
-            $"qFull=%d{queueFullDropsCounter.value} overSize=%d{overSizeDropsCounter.value})"
+            $"qFull=%d{queueFullDropsCounter.value} mtu=%d{overSizeDropsCounter.value})"
