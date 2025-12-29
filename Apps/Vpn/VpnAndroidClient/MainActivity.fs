@@ -58,9 +58,9 @@ type MainActivity() =
     let mutable packetsSent = 0L
     let mutable packetsReceived = 0L
 
-    // Config file path in app-private storage
-    let getConfigFilePath (context: Context) =
-        Path.Combine(context.FilesDir.AbsolutePath, "vpn_config.json")
+    //// Config file path in app-private storage
+    //let getConfigFilePath (context: Context) =
+    //    Path.Combine(context.FilesDir.AbsolutePath, "vpn_config.json")
 
     let shortenSessionId (sid: string) =
         if String.IsNullOrEmpty(sid) then "N/A"
@@ -121,37 +121,32 @@ type MainActivity() =
             statsTimer <- null
 
     member private this.LoadConfig() =
-        let configPath = getConfigFilePath this
-        if File.Exists(configPath) then
-            match tryLoadConfigFromFile configPath with
-            | Ok config ->
-                serverHost <- config.serverHost
-                basicHttpPort <- config.basicHttpPort
-                udpPort <- config.udpPort
-                match toVpnClientServiceData config with
-                | Ok data ->
-                    serviceData <- Some data
-                    Logger.logInfo $"Config loaded: {serverHost}:{basicHttpPort}"
-                | Error e ->
-                    Logger.logError $"Failed to convert config: {e}"
-                    serviceData <- None
+        match tryLoadConfigFromFile this with
+        | Ok config ->
+            serverHost <- config.serverHost
+            basicHttpPort <- config.basicHttpPort
+            udpPort <- config.udpPort
+            match toVpnClientServiceData config with
+            | Ok data ->
+                serviceData <- Some data
+                Logger.logInfo $"Config loaded: {serverHost}:{basicHttpPort}"
             | Error e ->
-                Logger.logError $"Failed to load config: {e}"
+                Logger.logError $"Failed to convert config: {e}"
                 serviceData <- None
-        else
-            Logger.logInfo "No config file found"
+        | Error e ->
+            Logger.logError $"Failed to load config: {e}"
             serviceData <- None
 
-    member private this.SaveConfig(json: string) =
-        try
-            let configPath = getConfigFilePath this
-            File.WriteAllText(configPath, json)
-            Logger.logInfo $"Config saved to {configPath}"
-            true
-        with
-        | ex ->
-            Logger.logError $"Failed to save config: {ex.Message}"
-            false
+    //member private this.SaveConfig(json: string) =
+    //    try
+    //        let configPath = getConfigFilePath this
+    //        File.WriteAllText(configPath, json)
+    //        Logger.logInfo $"Config saved to {configPath}"
+    //        true
+    //    with
+    //    | ex ->
+    //        Logger.logError $"Failed to save config: {ex.Message}"
+    //        false
 
     member private this.OnImportConfigClick() =
         let intent = new Intent(Intent.ActionOpenDocument)
@@ -235,15 +230,17 @@ type MainActivity() =
         | RequestCodes.ImportConfig ->
             if resultCode = Result.Ok && data <> null && data.Data <> null then
                 try
-                    use stream = this.ContentResolver.OpenInputStream(data.Data)
-                    use reader = new StreamReader(stream)
-                    let json = reader.ReadToEnd()
-                    if this.SaveConfig(json) then
-                        this.LoadConfig()
-                        this.UpdateUI()
-                        Toast.MakeText(this, "Config imported successfully", ToastLength.Short).Show()
-                    else
-                        Toast.MakeText(this, "Failed to save config", ToastLength.Short).Show()
+                    //use stream = this.ContentResolver.OpenInputStream(data.Data)
+                    //use reader = new StreamReader(stream)
+                    //let json = reader.ReadToEnd()
+                    //if this.SaveConfig(json) then
+                    //    this.LoadConfig()
+                    //    this.UpdateUI()
+                    //    Toast.MakeText(this, "Config imported successfully", ToastLength.Short).Show()
+                    //else
+                    //    Toast.MakeText(this, "Failed to save config", ToastLength.Short).Show()
+                    this.LoadConfig()
+                    this.UpdateUI()
                 with
                 | ex ->
                     Logger.logError $"Import failed: {ex.Message}"

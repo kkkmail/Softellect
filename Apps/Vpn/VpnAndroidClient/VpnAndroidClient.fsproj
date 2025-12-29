@@ -15,6 +15,9 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
+    <AndroidBuildApplicationPackage>true</AndroidBuildApplicationPackage>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <GenerateAppBundle>false</GenerateAppBundle>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <OtherFlags>--warnaserror+:25</OtherFlags>
@@ -26,6 +29,10 @@
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <AndroidAsset Include="..\..\..\..\!Keys\vpn_config.json">
+      <Link>Assets\vpn_config.json</Link>
+    </AndroidAsset>
+
     <Compile Include="MainActivity.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +41,7 @@
   <ItemGroup>
     <AndroidManifest Include="AndroidManifest.xml" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\..\..\Vpn\AndroidClient\AndroidClient.fsproj" />
     <PackageReference Update="FSharp.Core" Version="10.0.101" />

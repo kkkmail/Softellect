@@ -8,6 +8,14 @@ open Softellect.Sys.Logging
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
+open Android.App
+open Android.Content
+open Android.Net
+open Android.Net.Wifi
+//open Android.Net.Connectivity
+open Java.Net
+open Android.Media
+open System.Text
 
 module ConfigManager =
 
@@ -28,8 +36,8 @@ module ConfigManager =
             /// Client ID (GUID string).
             clientId : string
 
-            ///// Server ID (GUID string).
-            //serverId : string
+            /// Server ID (GUID string).
+            serverId : string
 
             /// Client private key (base64 encoded).
             clientPrivateKey : string
@@ -53,7 +61,7 @@ module ConfigManager =
                 basicHttpPort = 0
                 udpPort = 0
                 clientId = ""
-                //serverId = ""
+                serverId = ""
                 clientPrivateKey = ""
                 clientPublicKey = ""
                 serverPublicKey = ""
@@ -96,14 +104,68 @@ module ConfigManager =
         | ex -> Error $"Failed to parse config: '{ex.Message}'."
 
 
-    let getPhysicalGatewayIp() = failwith "getPhysicalGatewayIp is not implemented yet."
-    let getPhysicalInterfaceName() = failwith "getPhysicalInterfaceName is not implemented yet."
+    /// Requires Android permission: android.permission.ACCESS_NETWORK_STATE
+    let getPhysicalInterfaceName() =
+        let ctx = Application.Context
+        let cm = ctx.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+        let net = cm.ActiveNetwork
+        if isNull net then failwith "No active network."
+        let lp = cm.GetLinkProperties(net)
+        if isNull lp then failwith "No LinkProperties for active network."
+        let ifName = lp.InterfaceName
+        if String.IsNullOrWhiteSpace ifName then failwith "Active network has no interface name."
+        ifName
+
+    /// Requires Android permission: android.permission.ACCESS_NETWORK_STATE
+    /// Best-effort: prefers default route gateway from LinkProperties, falls back to WiFi DHCP gateway.
+    let getPhysicalGatewayIp() =
+        let ctx = Application.Context
+        let cm = ctx.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+        let net = cm.ActiveNetwork
+        if isNull net then failwith "No active network."
+
+        let lp = cm.GetLinkProperties(net)
+        let gwFromRoutes =
+            if isNull lp then None
+            else
+                lp.Routes
+                |> Seq.cast<RouteInfo>
+                |> Seq.tryPick (fun r ->
+                    // Default route has a gateway; take it
+                    if r.IsDefaultRoute then
+                        let gw = r.Gateway
+                        if isNull gw then None
+                        else Some gw.HostAddress
+                    else None)
+
+        match gwFromRoutes with
+        | Some gw when not (String.IsNullOrWhiteSpace gw) -> gw
+        | _ ->
+            // Fallback for Wi-Fi: DHCP gateway (works when LinkProperties doesn't expose it)
+            let wm = ctx.GetSystemService(Context.WifiService) :?> WifiManager
+            if isNull wm || isNull wm.DhcpInfo then
+                failwith "Gateway not found in LinkProperties, and WiFi DHCP info unavailable."
+            let g = wm.DhcpInfo.Gateway
+            if g = 0 then failwith "WiFi DHCP gateway is 0."
+            // DhcpInfo.Gateway is little-endian int
+            let b1 = byte (g &&& 0xFF)
+            let b2 = byte ((g >>> 8) &&& 0xFF)
+            let b3 = byte ((g >>> 16) &&& 0xFF)
+            let b4 = byte ((g >>> 24) &&& 0xFF)
+            $"{b1}.{b2}.{b3}.{b4}"
+        |> Ip4
+
+
+    let readConfigJson (context: Context) : string =
+        use stream = context.Assets.Open("vpn_config.json")
+        use reader = new StreamReader(stream, Encoding.UTF8)
+        reader.ReadToEnd()
 
 
     /// Load config from file path.
-    let tryLoadConfigFromFile (filePath: string) : Result<VpnClientConfig, string> =
+    let tryLoadConfigFromFile (context: Context) : Result<VpnClientConfig, string> =
         try
-            let json = File.ReadAllText(filePath)
+            let json = readConfigJson context
             tryLoadConfigFromJson json
         with
         | ex -> Error $"Failed to read config file: {ex.Message}"
@@ -155,13 +217,13 @@ module ConfigManager =
         | ex -> Error $"Failed to convert config: {ex.Message}"
 
 
-    /// Load and convert config from file.
-    let tryLoadServiceDataFromFile (filePath: string) : Result<VpnClientServiceData, string> =
-        tryLoadConfigFromFile filePath
-        |> Result.bind toVpnClientServiceData
+    ///// Load and convert config from file.
+    //let tryLoadServiceDataFromFile (filePath: string) : Result<VpnClientServiceData, string> =
+    //    tryLoadConfigFromFile filePath
+    //    |> Result.bind toVpnClientServiceData
 
 
-    /// Load and convert config from JSON string.
-    let tryLoadServiceDataFromJson (json: string) : Result<VpnClientServiceData, string> =
-        tryLoadConfigFromJson json
-        |> Result.bind toVpnClientServiceData
+    ///// Load and convert config from JSON string.
+    //let tryLoadServiceDataFromJson (json: string) : Result<VpnClientServiceData, string> =
+    //    tryLoadConfigFromJson json
+    //    |> Result.bind toVpnClientServiceData

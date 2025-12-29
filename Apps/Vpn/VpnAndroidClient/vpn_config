@@ -1,0 +1,12 @@
+{
+  "serverHost": "127.0.0.1",
+  "basicHttpPort": 12345,
+  "udpPort": 12345,
+  "clientId": "10e38c19-d220-4852-8589-82eca51ade92",
+  "serverId": "fb22de75-91c0-4adc-8d17-87078ea226a4",
+  "clientPrivateKey": "XML_CLIENT_PRIVATE_KEY_STRING",
+  "clientPublicKey": "XML_CLIENT_PUBLIC_KEY_STRING",
+  "serverPublicKey": "XML_SERVER_PUBLIC_KEY_STRING",
+  "useEncryption": true,
+  "encryptionType": "AES"
+}
