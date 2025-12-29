@@ -1,0 +1,16 @@
+17:18:18.698 [INFO ] OnCreate: "VPN Android client starting"
+17:18:18.915 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
+17:18:56.865 [INFO ] StartVpn: "Starting VPN service..."
+17:18:56.907 [ERROR] StartVpn: "Authentication failed: VpnConnectionErr
+  (VpnAuthErr
+     (SerializationErr
+        (SerializationExn
+           System.TypeInitializationException: TypeInitialization_Type, <StartupCode$Softellect-Sys>.$Core
+ ---> System.ArgumentNullException: ArgumentNull_Generic Arg_ParamName_Name, path1
+   at System.IO.Path.Combine(String , String )
+   at <StartupCode$Softellect-Sys>.$Core..cctor()
+   Exception_EndOfInnerExceptionStack
+   at Softellect.Sys.Core.binSerialize[VpnAuthRequest](VpnAuthRequest t)
+   at Softellect.Sys.Core.serialize[VpnAuthRequest](SerializationFormat f, VpnAuthRequest t)
+   at Softellect.Sys.Core.trySerialize[VpnAuthRequest](SerializationFormat f, VpnAuthRequest a))))"
+17:18:56.911 [ERROR] SetLastError: "VPN start returned false"
