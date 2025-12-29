@@ -653,6 +653,9 @@ module Core =
 
 
     /// Well-known Windows top-level folders we must never delete
+#if ANDROID
+    let private wellKnownTopFolders = []
+#else
     let private wellKnownTopFolders =
         [
             Path.GetPathRoot(Environment.SystemDirectory)          // e.g. "C:\"
@@ -662,6 +665,7 @@ module Core =
             Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Users")
         ]
         |> List.map _.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+#endif
 
 
     /// Check if the folder is dangerous (one of the system folders).
