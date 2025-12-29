@@ -283,6 +283,12 @@ type VpnTunnelServiceImpl() =
     member _.IsRunning =
         vpnInterface <> null && cts <> null && not cts.IsCancellationRequested
 
+    /// Get current session ID (1 byte).
+    member _.SessionId : byte =
+        match getAuth() with
+        | Some auth -> auth.sessionId.value
+        | None -> 0uy
+
     override this.OnStartCommand(intent: Intent, flags: StartCommandFlags, startId: int) =
         StartCommandResult.Sticky
 

@@ -2,6 +2,8 @@ namespace Softellect.Vpn.AndroidClient
 
 open System
 open System.IO
+open System.Collections.Generic
+open System.Threading
 open Newtonsoft.Json
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
@@ -12,10 +14,66 @@ open Android.App
 open Android.Content
 open Android.Net
 open Android.Net.Wifi
-//open Android.Net.Connectivity
 open Java.Net
 open Android.Media
 open System.Text
+
+
+/// Thread-safe ring buffer for log messages.
+/// Used to capture logs for UI display.
+module LogBuffer =
+
+    let private maxLines = 4096
+    let private buffer = Array.zeroCreate<string> maxLines
+    let mutable private head = 0
+    let mutable private count = 0
+    let private gate = obj()
+
+    /// Event raised when a new log line is added.
+    let mutable onLogAdded: (unit -> unit) option = None
+
+    /// Add a log line to the buffer.
+    let addLine (line: string) =
+        lock gate (fun () ->
+            buffer.[head] <- line
+            head <- (head + 1) % maxLines
+            if count < maxLines then count <- count + 1
+        )
+        match onLogAdded with
+        | Some handler -> handler()
+        | None -> ()
+
+    /// Get all lines in chronological order.
+    let getLines() : string[] =
+        lock gate (fun () ->
+            if count = 0 then [||]
+            elif count < maxLines then
+                // Buffer not yet wrapped
+                Array.sub buffer 0 count
+            else
+                // Buffer wrapped - oldest is at head, newest at head-1
+                let result = Array.zeroCreate count
+                let start = head
+                for i in 0 .. count - 1 do
+                    result.[i] <- buffer.[(start + i) % maxLines]
+                result
+        )
+
+    /// Get all lines as a single string with newlines.
+    let getText() : string =
+        getLines() |> String.concat "\n"
+
+    /// Clear the buffer.
+    let clear() =
+        lock gate (fun () ->
+            head <- 0
+            count <- 0
+        )
+
+    /// Get current line count.
+    let lineCount() =
+        lock gate (fun () -> count)
+
 
 module ConfigManager =
 
@@ -102,6 +160,37 @@ module ConfigManager =
                 Ok config
         with
         | ex -> Error $"Failed to parse config: '{ex.Message}'."
+
+
+    /// Network type for display purposes.
+    type NetworkType =
+        | WiFi
+        | Cellular
+        | Unknown
+
+        member this.ToDisplayString() =
+            match this with
+            | WiFi -> "Wi-Fi"
+            | Cellular -> "Cellular"
+            | Unknown -> "Unknown"
+
+
+    /// Requires Android permission: android.permission.ACCESS_NETWORK_STATE
+    /// Determines the current network type (Wi-Fi, Cellular, or Unknown).
+    let getNetworkType() : NetworkType =
+        try
+            let ctx = Application.Context
+            let cm = ctx.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+            let net = cm.ActiveNetwork
+            if isNull net then Unknown
+            else
+                let caps = cm.GetNetworkCapabilities(net)
+                if isNull caps then Unknown
+                elif caps.HasTransport(TransportType.Wifi) then WiFi
+                elif caps.HasTransport(TransportType.Cellular) then Cellular
+                else Unknown
+        with
+        | _ -> Unknown
 
 
     /// Requires Android permission: android.permission.ACCESS_NETWORK_STATE
