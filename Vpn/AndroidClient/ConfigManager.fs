@@ -269,10 +269,10 @@ module ConfigManager =
             let serverPublicKey = PublicKey config.serverPublicKey
             let encryptionType = parseEncryptionType config.encryptionType
             let serviceAddress = IpAddress.Ip4 config.serverHost |> ServiceAddress
-            let servicPort = config.udpPort |> ServicePort
-            let serviceName = ServiceName AuthServiceName
+            let servicePort = config.udpPort |> ServicePort
+            let serviceName = ServiceName "VpnService"
 
-            let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicPort serviceName
+            let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicePort serviceName
 
             let clientAccessInfo : VpnClientAccessInfo =
                 {
@@ -289,7 +289,7 @@ module ConfigManager =
                     encryptionType = encryptionType
                 }
 
-            let wcfHttpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicPort (ServiceName AuthServiceName)
+            let wcfHttpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicePort serviceName
 
             let clientAccessInfoWithCorrectPort = { clientAccessInfo with serverAccessInfo = HttpServiceInfo wcfHttpServiceInfo }
 
