@@ -39,12 +39,12 @@ module RequestCodes =
 
 /// Pastel colors for button states (muted, not saturated).
 module PastelColors =
-    let paleRed = Color.ParseColor("#E57373")       // Disconnected
-    let paleYellow = Color.ParseColor("#FFD54F")    // Connecting
-    let paleGreen = Color.ParseColor("#81C784")     // Connected
-    let textRed = Color.ParseColor("#C62828")       // Darker red for text
-    let textYellow = Color.ParseColor("#F57F17")    // Darker yellow for text
-    let textGreen = Color.ParseColor("#2E7D32")     // Darker green for text
+    let paleRed() = Color.ParseColor("#E57373")       // Disconnected
+    let paleYellow() = Color.ParseColor("#FFD54F")    // Connecting
+    let paleGreen() = Color.ParseColor("#81C784")     // Connected
+    let textRed() = Color.ParseColor("#C62828")       // Darker red for text
+    let textYellow() = Color.ParseColor("#F57F17")    // Darker yellow for text
+    let textGreen() = Color.ParseColor("#2E7D32")     // Darker green for text
 
 
 /// Main activity for the VPN Android client.
@@ -166,14 +166,15 @@ type MainActivity() =
 
     /// Update the power button appearance based on state.
     member private this.UpdatePowerButton() =
+        if isNull powerButton then () else
         let (bgColor, enabled) =
             match configLoadError with
-            | Some _ -> (PastelColors.paleRed, false) // Fatal config error - disabled
+            | Some _ -> (PastelColors.paleRed(), false) // Fatal config error - disabled
             | None ->
                 match connectionState with
-                | Disconnected -> (PastelColors.paleRed, serviceData.IsSome)
-                | Connecting -> (PastelColors.paleYellow, true)
-                | Connected -> (PastelColors.paleGreen, true)
+                | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
+                | Connecting -> (PastelColors.paleYellow(), true)
+                | Connected -> (PastelColors.paleGreen(), true)
 
         // Create round drawable background
         let drawable = new GradientDrawable()
@@ -185,14 +186,15 @@ type MainActivity() =
 
     /// Update the status text based on state.
     member private this.UpdateStatusText() =
+        if isNull statusText then () else
         let (text, color) =
             match configLoadError with
-            | Some _ -> ("Config Error", PastelColors.textRed)
+            | Some _ -> ("Config Error", PastelColors.textRed())
             | None ->
                 match connectionState with
-                | Disconnected -> ("Disconnected", PastelColors.textRed)
-                | Connecting -> ("Connecting…", PastelColors.textYellow)
-                | Connected -> ("Connected", PastelColors.textGreen)
+                | Disconnected -> ("Disconnected", PastelColors.textRed())
+                | Connecting -> ("Connecting…", PastelColors.textYellow())
+                | Connected -> ("Connected", PastelColors.textGreen())
 
         statusText.Text <- text
         statusText.SetTextColor(color)
@@ -200,11 +202,13 @@ type MainActivity() =
 
     /// Update the Info pane content.
     member private this.UpdateInfoPane() =
+        if isNull infoPaneText then () else
         infoPaneText.Text <- this.BuildInfoPaneText()
 
 
     /// Update the Log pane content.
     member private this.UpdateLogPane() =
+        if isNull logPaneText || isNull logScrollView then () else
         logPaneText.Text <- LogBuffer.getText()
         // Auto-scroll to bottom if user hasn't scrolled up
         if not userScrolledUp then
@@ -534,23 +538,29 @@ type MainActivity() =
     override this.OnCreate(savedInstanceState: Bundle) =
         base.OnCreate(savedInstanceState)
 
-        // Configure logging to write to LogBuffer
-        configureLogging()
+        try
+            // Configure logging to write to LogBuffer
+            configureLogging()
 
-        // Set up LogBuffer callback to refresh log pane
-        LogBuffer.onLogAdded <- Some (fun () ->
-            this.RunOnUiThread(fun () -> this.UpdateLogPane())
-        )
+            Logger.logInfo "VPN Android client starting"
 
-        Logger.logInfo "VPN Android client starting"
+            // Build and set the layout FIRST
+            let layout = this.BuildLayout()
+            this.SetContentView(layout)
 
-        // Build and set the layout
-        let layout = this.BuildLayout()
-        this.SetContentView(layout)
+            // Set up LogBuffer callback to refresh log pane AFTER UI is built
+            LogBuffer.onLogAdded <- Some (fun () ->
+                this.RunOnUiThread(fun () -> this.UpdateLogPane())
+            )
 
-        // Load config from Assets
-        this.LoadConfig()
-        this.UpdateUI()
+            // Load config from Assets
+            this.LoadConfig()
+            this.UpdateUI()
+        with
+        | ex ->
+            // Log to Android logcat in case of early failure
+            Android.Util.Log.Error("VpnAndroidClient", $"OnCreate failed: {ex.Message}") |> ignore
+            Android.Util.Log.Error("VpnAndroidClient", $"Stack: {ex.StackTrace}") |> ignore
 
 
     override this.OnConfigurationChanged(newConfig: Configuration) =
