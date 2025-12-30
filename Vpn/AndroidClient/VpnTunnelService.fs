@@ -167,7 +167,7 @@ type VpnTunnelServiceImpl() =
                 let builder = new VpnService.Builder(this)
                 builder.SetSession("Softellect VPN") |> ignore
                 builder.SetMtu(VpnTunnelService.TunnelMtu) |> ignore
-                builder.AddAddress(response.assignedIp.value.ToString(), 24) |> ignore
+                builder.AddAddress(response.assignedIp.value.value, 24) |> ignore
                 builder.AddRoute("0.0.0.0", 0) |> ignore
                 // Exclude the VPN server from the tunnel
                 builder.AddDisallowedApplication(this.PackageName) |> ignore
