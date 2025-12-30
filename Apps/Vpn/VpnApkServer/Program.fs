@@ -2,8 +2,12 @@ namespace Softellect.Vpn.VpnApkServer
 
 open System
 open System.IO
+open System.Text
+open System.Text.Encodings.Web
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.FileProviders
@@ -33,7 +37,54 @@ module Program =
         Logger.logInfo $"getWebRootPath - wwwroot absolute path: '{wwwroot}'."
         wwwroot
 
+    type LargeFontDirectoryFormatter() =
+        interface IDirectoryFormatter with
+            member _.GenerateContentAsync(context: HttpContext, contents: seq<IFileInfo>) : Task =
+                task {
+                    let request = context.Request
+                    let response = context.Response
+                    response.ContentType <- "text/html; charset=utf-8"
+
+                    let path = request.Path.Value
+                    let sb = StringBuilder()
+
+                    sb.AppendLine("<!DOCTYPE html>") |> ignore
+                    sb.AppendLine("<html><head>") |> ignore
+                    sb.AppendLine("<meta charset=\"utf-8\">") |> ignore
+                    sb.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">") |> ignore
+                    sb.AppendLine($"<title>{HtmlEncoder.Default.Encode(path)}</title>") |> ignore
+                    sb.AppendLine("<style>") |> ignore
+                    sb.AppendLine("body { font-family: sans-serif; font-size: 24px; padding: 20px; }") |> ignore
+                    sb.AppendLine("a { display: block; padding: 15px 0; text-decoration: none; color: #0066cc; }") |> ignore
+                    sb.AppendLine("a:hover { text-decoration: underline; }") |> ignore
+                    sb.AppendLine("h1 { font-size: 28px; }") |> ignore
+                    sb.AppendLine("</style>") |> ignore
+                    sb.AppendLine("</head><body>") |> ignore
+                    sb.AppendLine($"<h1>{HtmlEncoder.Default.Encode(path)}</h1>") |> ignore
+
+                    if path <> "/" then
+                        let segments = path.TrimEnd('/').Split('/', StringSplitOptions.RemoveEmptyEntries)
+                        let parent =
+                            if segments.Length <= 1 then "/"
+                            else "/" + String.Join("/", segments |> Array.take (segments.Length - 1)) + "/"
+                        sb.AppendLine($"<a href=\"{parent}\">..</a>") |> ignore
+
+                    for item in contents do
+                        let name = item.Name
+                        let href =
+                            if item.IsDirectory then
+                                path.TrimEnd('/') + "/" + name + "/"
+                            else
+                                path.TrimEnd('/') + "/" + name
+                        sb.AppendLine($"<a href=\"{HtmlEncoder.Default.Encode(href)}\">{HtmlEncoder.Default.Encode(name)}</a>") |> ignore
+
+                    sb.AppendLine("</body></html>") |> ignore
+
+                    do! response.WriteAsync(sb.ToString())
+                } :> Task
+
     let configureServices (services: IServiceCollection) =
+        services.AddSingleton<IDirectoryFormatter, LargeFontDirectoryFormatter>() |> ignore
         services.AddDirectoryBrowser() |> ignore
 
     let configureApp (webRootPath: string) (app: IApplicationBuilder) =
@@ -49,6 +100,7 @@ module Program =
 
         let directoryBrowserOptions = DirectoryBrowserOptions()
         directoryBrowserOptions.FileProvider <- fileProvider
+        directoryBrowserOptions.Formatter <- LargeFontDirectoryFormatter()
 
         app.UseStaticFiles(staticFileOptions) |> ignore
         app.UseDirectoryBrowser(directoryBrowserOptions) |> ignore
