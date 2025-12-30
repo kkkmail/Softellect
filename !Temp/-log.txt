@@ -1,39 +1,6 @@
-17:32:48.559 [INFO ] OnCreate: "VPN Android client starting"
-17:32:48.754 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
-17:32:54.203 [INFO ] StartVpn: "Starting VPN service..."
-17:32:54.850 [ERROR] tryCommunicate: "tryCommunicate: At 12/29/2025 5:32:54 PM got inner exception:' System.ServiceModel.EndpointNotFoundException: There was no endpoint listening at http://72.167.224.50:45001/AuthService that could accept the message. This is often caused by an incorrect address or SOAP action. See InnerException, if present, for more details.
-   at System.ServiceModel.Channels.HttpResponseMessageHelper.ValidateResponseStatusCode()
-   at System.ServiceModel.Channels.HttpResponseMessageHelper.ParseIncomingResponse(TimeoutHelper timeoutHelper)
-   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<ReceiveReplyAsync>d__18[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
-   at System.ServiceModel.Channels.RequestChannel.RequestAsync(Message message, TimeSpan timeout)
-   at System.ServiceModel.Channels.RequestChannel.RequestAsyncInternal(Message message, TimeSpan timeout)
-   at System.Runtime.TaskHelpers.WaitForCompletionNoSpin[Message](Task`1 task)
-   at System.ServiceModel.Channels.RequestChannel.Request(Message message, TimeSpan timeout)
-   at System.ServiceModel.Dispatcher.RequestChannelBinder.Request(Message message, TimeSpan timeout)
-   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
-   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
-   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
-   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
-   at generatedProxy_1.authenticate(Byte[] )
-   at Softellect.Wcf.Client.tryCommunicate$cont@115[Byte[],IAuthWcfService,VpnError,Byte[]](FSharpFunc`2 c, FSharpFunc`2 f, Byte[] a, FSharpResult`2 matchValue, Unit unitVar)'."
-17:32:54.872 [ERROR] StartVpn: "Authentication failed: VpnConnectionErr
-  (VpnAuthErr
-     (VpnWcfErr
-        (AuthWcfErr
-           (WcfExn
-              System.ServiceModel.EndpointNotFoundException: There was no endpoint listening at http://72.167.224.50:45001/AuthService that could accept the message. This is often caused by an incorrect address or SOAP action. See InnerException, if present, for more details.
-   at System.ServiceModel.Channels.HttpResponseMessageHelper.ValidateResponseStatusCode()
-   at System.ServiceModel.Channels.HttpResponseMessageHelper.ParseIncomingResponse(TimeoutHelper timeoutHelper)
-   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<ReceiveReplyAsync>d__18[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
-   at System.ServiceModel.Channels.RequestChannel.RequestAsync(Message message, TimeSpan timeout)
-   at System.ServiceModel.Channels.RequestChannel.RequestAsyncInternal(Message message, TimeSpan timeout)
-   at System.Runtime.TaskHelpers.WaitForCompletionNoSpin[Message](Task`1 task)
-   at System.ServiceModel.Channels.RequestChannel.Request(Message message, TimeSpan timeout)
-   at System.ServiceModel.Dispatcher.RequestChannelBinder.Request(Message message, TimeSpan timeout)
-   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
-   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
-   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
-   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
-   at generatedProxy_1.authenticate(Byte[] )
-   at Softellect.Wcf.Client.tryCommunicate$cont@115[Byte[],IAuthWcfService,VpnError,Byte[]](FSharpFunc`2 c, FSharpFunc`2 f, Byte[] a, FSharpResult`2 matchValue, Unit unitVar)))))"
-17:32:54.872 [ERROR] SetLastError: "VPN start returned false"
+20:18:45.753 [INFO ] OnCreate: "VPN Android client starting"
+20:18:45.888 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
+20:18:59.248 [INFO ] StartVpn: "Starting VPN service..."
+20:19:00.155 [INFO ] StartVpn: "Authentication successful, sessionId: 3"
+20:19:00.158 [ERROR] StartVpn: "Failed to start VPN: Attempt to invoke virtual method 'java.lang.String android.content.Context.getPackageName()' on a null object reference"
+20:19:00.158 [ERROR] SetLastError: "VPN start returned false"
