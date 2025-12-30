@@ -292,7 +292,7 @@ type MainActivity() =
         | Some data ->
             async {
                 try
-                    let svc = new VpnTunnelServiceImpl()
+                    let svc = new VpnTunnelServiceImpl(this)
                     vpnService <- Some svc
                     if svc.StartVpn(data) then
                         connectionState <- Connected

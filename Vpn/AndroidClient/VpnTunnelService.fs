@@ -25,8 +25,9 @@ module VpnTunnelService =
 
 
 /// Android VpnService implementation for Softellect VPN.
+/// Note: This class is used directly (not as a bound service) and requires a context to be passed.
 [<Service(Name = "com.softellect.vpn.VpnTunnelService", Permission = "android.permission.BIND_VPN_SERVICE")>]
-type VpnTunnelServiceImpl() =
+type VpnTunnelServiceImpl(context: Context) =
     inherit VpnService()
 
     let mutable vpnInterface: ParcelFileDescriptor = null
@@ -169,8 +170,8 @@ type VpnTunnelServiceImpl() =
                 builder.SetMtu(VpnTunnelService.TunnelMtu) |> ignore
                 builder.AddAddress(response.assignedIp.value.value, 24) |> ignore
                 builder.AddRoute("0.0.0.0", 0) |> ignore
-                // Exclude the VPN server from the tunnel
-                builder.AddDisallowedApplication(this.PackageName) |> ignore
+                // Exclude the VPN app itself from the tunnel
+                builder.AddDisallowedApplication(context.PackageName) |> ignore
 
                 vpnInterface <- builder.Establish()
                 if vpnInterface = null then
