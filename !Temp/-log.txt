@@ -1,6 +1,214 @@
-20:18:45.753 [INFO ] OnCreate: "VPN Android client starting"
-20:18:45.888 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
-20:18:59.248 [INFO ] StartVpn: "Starting VPN service..."
-20:19:00.155 [INFO ] StartVpn: "Authentication successful, sessionId: 3"
-20:19:00.158 [ERROR] StartVpn: "Failed to start VPN: Attempt to invoke virtual method 'java.lang.String android.content.Context.getPackageName()' on a null object reference"
-20:19:00.158 [ERROR] SetLastError: "VPN start returned false"
+-- Configuration --
+Server: 72.167.224.50
+BasicHttp Port: 45001
+UDP Port: 45001
+ClientId: 10e38c19-d220-4852-8589-82eca51ade92
+ServerId: fb22de75-91c0-4adc-8d17-87078ea226a4
+
+-- Session --
+SessionId: 7
+
+-- Traffic --
+Bytes sent: 19,433,872
+Bytes received: 60,532,530
+
+-- Network --
+Type: Wi-Fi
+Interface: eth0
+Gateway: 10.0.2.2
+
+-- Errors --
+Last error: "None"
+
+
+===================================
+
+08:12:36.123 [INFO ] OnCreate: "VPN Android client starting"
+08:12:36.256 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
+08:12:45.411 [INFO ] StartVpn: "Starting VPN service..."
+08:12:46.335 [INFO ] StartVpn: "Authentication successful, sessionId: 7"
+08:12:46.374 [INFO ] .ctor: "VpnPushUdpClient created - Server: Ip4 "72.167.224.50":45001, ClientId: 10e38c19-d220-4852-8589-82eca51ade92, UseEncryption: True, Local=10.0.2.15:53896"
+08:12:46.375 [INFO ] start: "Started"
+08:12:46.377 [INFO ] tunReadLoop: "TUN read loop started"
+08:12:46.377 [INFO ] sendLoop: "Send loop started."
+08:12:46.377 [INFO ] receiveLoop: "Receive loop started."
+08:12:46.385 [INFO ] tunWriteLoop: "TUN write loop started"
+08:12:46.387 [INFO ] keepaliveLoop: "Keepalive loop started."
+08:12:46.387 [INFO ] StartVpn: "VPN service started successfully"
+08:12:46.392 [INFO ] StartVpnConnection: "VPN connected successfully"
+08:12:46.395 [INFO ] pingLoop: "Ping loop started"
+09:12:46.540 [INFO ] receiveLoop: "CLIENT PUSH STATS: tun_rx=80739/18566635B udp_tx=80739/20718979B udp_rx=92869/59766933B dropped(mtu=0 outQ=0 injQ=0)"
+10:12:46.687 [INFO ] receiveLoop: "CLIENT PUSH STATS: tun_rx=94122/19234517B udp_tx=94122/21722762B udp_rx=106254/62633774B dropped(mtu=0 outQ=0 injQ=0)"
+10:32:04.946 [ERROR] tryCommunicate: "tryCommunicate: At 12/30/2025 10:32:04 AM got inner exception:' System.ServiceModel.CommunicationException: Connection failure
+ ---> System.Net.Http.HttpRequestException: Connection failure
+ ---> Java.Net.SocketTimeoutException: failed to connect to /72.167.224.50 (port 45001) from /10.0.2.15 (port 53220) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+ ---> Java.Lang.Exception: isConnected failed: ETIMEDOUT (Connection timed out)
+
+  --- End of managed Java.Lang.Exception stack trace ---
+android.system.ErrnoException: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:267)
+	at libcore.io.IoBridge.connectErrno(IoBridge.java:187)
+	at libcore.io.IoBridge.connect(IoBridge.java:129)
+	at java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:137)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:390)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:230)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:212)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:436)
+	at java.net.Socket.connect(Socket.java:621)
+	at com.android.okhttp.internal.Platform.connectSocket(Platform.java:145)
+	at com.android.okhttp.internal.io.RealConnection.connectSocket(RealConnection.java:141)
+	at com.android.okhttp.internal.io.RealConnection.connect(RealConnection.java:112)
+	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:184)
+	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:126)
+	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:95)
+	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:281)
+	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:224)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:461)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.connect(HttpURLConnectionImpl.java:127)
+
+   Exception_EndOfInnerExceptionStack
+   at Java.Interop.JniEnvironment.InstanceMethods.CallVoidMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeAbstractVoidMethod(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnectionInvoker.Connect()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass137_0.<ConnectAsync>b__0()
+  --- End of managed Java.Net.SocketTimeoutException stack trace ---
+java.net.SocketTimeoutException: failed to connect to /72.167.224.50 (port 45001) from /10.0.2.15 (port 53220) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:276)
+	at libcore.io.IoBridge.connectErrno(IoBridge.java:187)
+	at libcore.io.IoBridge.connect(IoBridge.java:129)
+	at java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:137)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:390)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:230)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:212)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:436)
+	at java.net.Socket.connect(Socket.java:621)
+	at com.android.okhttp.internal.Platform.connectSocket(Platform.java:145)
+	at com.android.okhttp.internal.io.RealConnection.connectSocket(RealConnection.java:141)
+	at com.android.okhttp.internal.io.RealConnection.connect(RealConnection.java:112)
+	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:184)
+	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:126)
+	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:95)
+	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:281)
+	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:224)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:461)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.connect(HttpURLConnectionImpl.java:127)
+Caused by: android.system.ErrnoException: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:267)
+	... 18 more
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass137_0.<ConnectAsync>b__0()
+   at System.Threading.Tasks.Task.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__288_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<SendRequestAsync>d__13[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
+   Exception_EndOfInnerExceptionStack
+   at System.ServiceModel.Channels.HttpChannelUtilities.ProcessGetResponseWebException(HttpRequestException requestException, HttpRequestMessage request, HttpAbortReason abortReason)
+   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<SendRequestAsync>d__13[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
+   at System.ServiceModel.Channels.RequestChannel.RequestAsync(Message message, TimeSpan timeout)
+   at System.ServiceModel.Channels.RequestChannel.RequestAsyncInternal(Message message, TimeSpan timeout)
+   at System.Runtime.TaskHelpers.WaitForCompletionNoSpin[Message](Task`1 task)
+   at System.ServiceModel.Channels.RequestChannel.Request(Message message, TimeSpan timeout)
+   at System.ServiceModel.Dispatcher.RequestChannelBinder.Request(Message message, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
+   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
+   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
+   at generatedProxy_1.pingSession(Byte[] )
+   at Softellect.Wcf.Client.tryCommunicate$cont@115[Byte[],IAuthWcfService,VpnError,Byte[]](FSharpFunc`2 c, FSharpFunc`2 f, Byte[] a, FSharpResult`2 matchValue, Unit unitVar)'."
+10:32:04.961 [WARN ] pingLoop: "Ping failed: VpnConnectionErr
+  (VpnAuthErr
+     (VpnWcfErr
+        (PingWcfErr
+           (WcfExn
+              System.ServiceModel.CommunicationException: Connection failure
+ ---> System.Net.Http.HttpRequestException: Connection failure
+ ---> Java.Net.SocketTimeoutException: failed to connect to /72.167.224.50 (port 45001) from /10.0.2.15 (port 53220) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+ ---> Java.Lang.Exception: isConnected failed: ETIMEDOUT (Connection timed out)
+
+  --- End of managed Java.Lang.Exception stack trace ---
+android.system.ErrnoException: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:267)
+	at libcore.io.IoBridge.connectErrno(IoBridge.java:187)
+	at libcore.io.IoBridge.connect(IoBridge.java:129)
+	at java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:137)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:390)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:230)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:212)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:436)
+	at java.net.Socket.connect(Socket.java:621)
+	at com.android.okhttp.internal.Platform.connectSocket(Platform.java:145)
+	at com.android.okhttp.internal.io.RealConnection.connectSocket(RealConnection.java:141)
+	at com.android.okhttp.internal.io.RealConnection.connect(RealConnection.java:112)
+	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:184)
+	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:126)
+	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:95)
+	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:281)
+	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:224)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:461)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.connect(HttpURLConnectionImpl.java:127)
+
+   Exception_EndOfInnerExceptionStack
+   at Java.Interop.JniEnvironment.InstanceMethods.CallVoidMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeAbstractVoidMethod(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnectionInvoker.Connect()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass137_0.<ConnectAsync>b__0()
+  --- End of managed Java.Net.SocketTimeoutException stack trace ---
+java.net.SocketTimeoutException: failed to connect to /72.167.224.50 (port 45001) from /10.0.2.15 (port 53220) after 86400000ms: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:276)
+	at libcore.io.IoBridge.connectErrno(IoBridge.java:187)
+	at libcore.io.IoBridge.connect(IoBridge.java:129)
+	at java.net.PlainSocketImpl.socketConnect(PlainSocketImpl.java:137)
+	at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:390)
+	at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:230)
+	at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:212)
+	at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:436)
+	at java.net.Socket.connect(Socket.java:621)
+	at com.android.okhttp.internal.Platform.connectSocket(Platform.java:145)
+	at com.android.okhttp.internal.io.RealConnection.connectSocket(RealConnection.java:141)
+	at com.android.okhttp.internal.io.RealConnection.connect(RealConnection.java:112)
+	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:184)
+	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:126)
+	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:95)
+	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:281)
+	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:224)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:461)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.connect(HttpURLConnectionImpl.java:127)
+Caused by: android.system.ErrnoException: isConnected failed: ETIMEDOUT (Connection timed out)
+	at libcore.io.IoBridge.isConnected(IoBridge.java:267)
+	... 18 more
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass137_0.<ConnectAsync>b__0()
+   at System.Threading.Tasks.Task.InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__288_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<SendRequestAsync>d__13[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
+   Exception_EndOfInnerExceptionStack
+   at System.ServiceModel.Channels.HttpChannelUtilities.ProcessGetResponseWebException(HttpRequestException requestException, HttpRequestMessage request, HttpAbortReason abortReason)
+   at System.ServiceModel.Channels.HttpChannelFactory`1.HttpClientRequestChannel.HttpClientChannelAsyncRequest.<SendRequestAsync>d__13[[System.ServiceModel.Channels.IRequestChannel, System.ServiceModel.Primitives, Version=8.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].MoveNext()
+   at System.ServiceModel.Channels.RequestChannel.RequestAsync(Message message, TimeSpan timeout)
+   at System.ServiceModel.Channels.RequestChannel.RequestAsyncInternal(Message message, TimeSpan timeout)
+   at System.Runtime.TaskHelpers.WaitForCompletionNoSpin[Message](Task`1 task)
+   at System.ServiceModel.Channels.RequestChannel.Request(Message message, TimeSpan timeout)
+   at System.ServiceModel.Dispatcher.RequestChannelBinder.Request(Message message, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs, TimeSpan timeout)
+   at System.ServiceModel.Channels.ServiceChannel.Call(String action, Boolean oneway, ProxyOperationRuntime operation, Object[] ins, Object[] outs)
+   at System.ServiceModel.Channels.ServiceChannelProxy.InvokeService(MethodCall methodCall, ProxyOperationRuntime operation)
+   at System.ServiceModel.Channels.ServiceChannelProxy.Invoke(MethodInfo targetMethod, Object[] args)
+   at generatedProxy_1.pingSession(Byte[] )
+   at Softellect.Wcf.Client.tryCommunicate

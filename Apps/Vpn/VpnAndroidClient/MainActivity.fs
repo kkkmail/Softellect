@@ -22,6 +22,7 @@ open Softellect.Vpn.AndroidClient
 open Softellect.Vpn.AndroidClient.ConfigManager
 open Softellect.Vpn.AndroidClient.LogBuffer
 open Android.Content.PM
+open VpnAndroidClient
 
 
 /// VPN connection states for UI display.
@@ -54,7 +55,7 @@ type MainActivity() =
     inherit Activity()
 
     let mutable connectionState = Disconnected
-    let mutable powerButton: Button = null
+    let mutable powerButton: ImageButton = null
     let mutable statusText: TextView = null
     let mutable infoPaneText: TextView = null
     let mutable logPaneText: TextView = null
@@ -364,16 +365,17 @@ type MainActivity() =
         rowParams.BottomMargin <- 16
         row.LayoutParameters <- rowParams
 
-        // Power button (round, 52dp) - using Button with power symbol text
-        powerButton <- new Button(this)
+        // Power button (round, 52dp) - using ImageButton with vector drawable
+        powerButton <- new ImageButton(this)
         let buttonSize = (52.0f * this.Resources.DisplayMetrics.Density) |> int
         let buttonParams = new LinearLayout.LayoutParams(buttonSize, buttonSize)
         buttonParams.RightMargin <- 16
         powerButton.LayoutParameters <- buttonParams
-        powerButton.Text <- "⏻"  // Unicode power symbol
-        powerButton.TextSize <- 24.0f
-        powerButton.SetTextColor(Color.White)
-        powerButton.SetPadding(0, 0, 0, 0)
+        powerButton.SetImageResource(Resource.Drawable.ic_power)
+        powerButton.SetColorFilter(Color.White, PorterDuff.Mode.SrcIn)
+        powerButton.SetScaleType(ImageView.ScaleType.CenterInside)
+        powerButton.ContentDescription <- "Power"
+        powerButton.SetPadding(12, 12, 12, 12)
         powerButton.Click.Add(fun _ -> this.OnPowerButtonClick())
         row.AddView(powerButton)
 
