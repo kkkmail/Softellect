@@ -75,8 +75,9 @@ type VpnTunnelServiceImpl() =
     let tunReadLoop (inputStream: FileInputStream) (udp: VpnPushUdpClient) (token: CancellationToken) =
         let buffer = Array.zeroCreate<byte> VpnTunnelService.TunnelBufferSize
         Logger.logInfo "TUN read loop started"
+        let mutable shouldExit = false
 
-        while not token.IsCancellationRequested do
+        while not token.IsCancellationRequested && not shouldExit do
             try
                 let bytesRead = inputStream.Read(buffer, 0, buffer.Length)
                 if bytesRead > 0 then
@@ -84,18 +85,29 @@ type VpnTunnelServiceImpl() =
                     if udp.enqueueOutbound(packet) then
                         Interlocked.Increment(&packetsSent) |> ignore
                         Interlocked.Add(&bytesSent, int64 bytesRead) |> ignore
+                elif bytesRead < 0 then
+                    // EOF or error - exit loop
+                    Logger.logInfo "TUN read returned EOF, exiting loop"
+                    shouldExit <- true
             with
-            | :? ObjectDisposedException -> ()
+            | :? ObjectDisposedException ->
+                shouldExit <- true
+            | ex when ex.Message.Contains("EBADF") ->
+                // Bad file descriptor - TUN interface was closed
+                Logger.logInfo "TUN file descriptor closed, exiting read loop"
+                shouldExit <- true
             | ex when not token.IsCancellationRequested ->
                 Logger.logError $"TUN read error: {ex.Message}"
+                shouldExit <- true // Exit on any unrecoverable error
 
         Logger.logInfo "TUN read loop stopped"
 
     /// TUN write loop - reads from UDP inbound queue and writes to TUN.
     let tunWriteLoop (outputStream: FileOutputStream) (udp: VpnPushUdpClient) (token: CancellationToken) =
         Logger.logInfo "TUN write loop started"
+        let mutable shouldExit = false
 
-        while not token.IsCancellationRequested do
+        while not token.IsCancellationRequested && not shouldExit do
             try
                 // Wait for packets with timeout
                 if udp.inboundQueue.wait(100) then
@@ -106,9 +118,14 @@ type VpnTunnelServiceImpl() =
                         Interlocked.Add(&bytesReceived, int64 packet.Length) |> ignore
                     | None -> ()
             with
-            | :? ObjectDisposedException -> ()
+            | :? ObjectDisposedException ->
+                shouldExit <- true
+            | ex when ex.Message.Contains("EBADF") ->
+                Logger.logInfo "TUN file descriptor closed, exiting write loop"
+                shouldExit <- true
             | ex when not token.IsCancellationRequested ->
                 Logger.logError $"TUN write error: {ex.Message}"
+                shouldExit <- true
 
         Logger.logInfo "TUN write loop stopped"
 
@@ -190,47 +207,45 @@ type VpnTunnelServiceImpl() =
                     false
                 else
                     try
-                        try
-                            tunInputStream <- new FileInputStream(vpnInterface.FileDescriptor)
-                            tunOutputStream <- new FileOutputStream(vpnInterface.FileDescriptor)
+                        tunInputStream <- new FileInputStream(vpnInterface.FileDescriptor)
+                        tunOutputStream <- new FileOutputStream(vpnInterface.FileDescriptor)
 
-                            // Create UDP client
-                            let udp = createVpnPushUdpClient serviceData getAuth
-                            udpClient <- Some udp
+                        // Create UDP client
+                        let udp = createVpnPushUdpClient serviceData getAuth
+                        udpClient <- Some udp
 
-                            // Set packet injector for direct injection
-                            udp.setPacketInjector(createPacketInjector tunOutputStream)
+                        // Set packet injector for direct injection
+                        udp.setPacketInjector(createPacketInjector tunOutputStream)
 
-                            // Start UDP client
-                            udp.start()
+                        // Start UDP client
+                        udp.start()
 
-                            // Start cancellation token
-                            cts <- new CancellationTokenSource()
-                            let token = cts.Token
+                        // Start cancellation token
+                        cts <- new CancellationTokenSource()
+                        let token = cts.Token
 
-                            // Start TUN read thread
-                            tunReadThread <- new Thread(fun () -> tunReadLoop tunInputStream udp token)
-                            tunReadThread.Name <- "TUN-Read"
-                            tunReadThread.Start()
+                        // Start TUN read thread
+                        tunReadThread <- new Thread(fun () -> tunReadLoop tunInputStream udp token)
+                        tunReadThread.Name <- "TUN-Read"
+                        tunReadThread.Start()
 
-                            // Start TUN write thread (for packets not directly injected)
-                            tunWriteThread <- new Thread(fun () -> tunWriteLoop tunOutputStream udp token)
-                            tunWriteThread.Name <- "TUN-Write"
-                            tunWriteThread.Start()
+                        // Start TUN write thread (for packets not directly injected)
+                        tunWriteThread <- new Thread(fun () -> tunWriteLoop tunOutputStream udp token)
+                        tunWriteThread.Name <- "TUN-Write"
+                        tunWriteThread.Start()
 
-                            // Start ping thread
-                            pingThread <- new Thread(fun () -> pingLoop auth serviceData.clientAccessInfo.vpnClientId token)
-                            pingThread.Name <- "Session-Ping"
-                            pingThread.Start()
+                        // Start ping thread
+                        pingThread <- new Thread(fun () -> pingLoop auth serviceData.clientAccessInfo.vpnClientId token)
+                        pingThread.Name <- "Session-Ping"
+                        pingThread.Start()
 
-                            Logger.logInfo "VPN service started successfully"
-                            true
-                        with
-                        | e ->
-                            Logger.logError $"VPN service - exception: '%A{e}'."
-                            false
-                    finally
+                        Logger.logInfo "VPN service started successfully"
+                        true
+                    with
+                    | e ->
+                        Logger.logError $"VPN service - exception during setup: '%A{e}'."
                         closeVpnInterface ()
+                        false
 
             | Error e ->
                 Logger.logError $"Authentication failed: %A{e}"
