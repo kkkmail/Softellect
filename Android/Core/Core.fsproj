@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <AssemblyName>Softellect.Vpn.Core</AssemblyName>
+    <Platforms>ARM64</Platforms>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <Platform>ARM64</Platform>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);ANDROID</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <OtherFlags>--warnaserror+:25</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <OtherFlags>--warnaserror+:25</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked files from Vpn\Core - only what's needed for Android -->
+    <Compile Include="..\..\Vpn\Core\Primitives.fs" Link="Primitives.fs" />
+    <Compile Include="..\..\Vpn\Core\Errors.fs" Link="Errors.fs" />
+    <Compile Include="..\..\Vpn\Core\ServiceInfo.fs" Link="ServiceInfo.fs" />
+    <Compile Include="..\..\Vpn\Core\UdpProtocol.fs" Link="UdpProtocol.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+  </ItemGroup>
+</Project>

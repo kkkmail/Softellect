@@ -1,0 +1,31 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="ARM64" />
+  </Configurations>
+
+  <Folder Name="/Android/">
+    <Project Path="Android\Sys\Sys.fsproj">
+      <Platform Project="ARM64" />
+    </Project>
+    <Project Path="Android\Wcf\Wcf.fsproj">
+      <Platform Project="ARM64" />
+    </Project>
+    <Project Path="Android\Core\Core.fsproj">
+      <Platform Project="ARM64" />
+    </Project>
+  </Folder>
+
+  <Folder Name="/Vpn/">
+    <Project Path="Vpn\AndroidClient\AndroidClient.fsproj">
+      <Platform Project="ARM64" />
+    </Project>
+  </Folder>
+
+  <Folder Name="/Apps/Vpn/">
+    <Project Path="Apps\Vpn\VpnAndroidClient\VpnAndroidClient.fsproj">
+      <Platform Project="ARM64" />
+    </Project>
+  </Folder>
+</Solution>

@@ -12,7 +12,6 @@ open Softellect.Sys.Errors
 open Softellect.Sys.Primitives
 open Softellect.Sys.Logging
 open Newtonsoft.Json.Serialization
-open Softellect.Sys.WindowsApi
 
 /// Collection of various low level functions, extension methods, and system types.
 module Core =
@@ -631,15 +630,6 @@ module Core =
                 e |> TryGetExtensionExn |> Error
 
 
-    /// Function to check if a monitor data is available.
-    let checkMonitorData() =
-        match tryGetMonitorResolution(), tryGetColorDepth(), tryGetDpi() with
-        | Ok mr, Ok cd, Ok dpi -> Logger.logInfo $"%A{mr}, %A{cd}, %A{dpi}."
-        | a, b, c -> Logger.logWarn $"%A{a}, %A{b}, %A{c}."
-
-        ()
-
-
     /// Tries to execute a given file with given command line parameters and wait for exit.
     let tryExecuteFile (FileName fileName) (commandLine: string) =
         try
@@ -663,6 +653,9 @@ module Core =
 
 
     /// Well-known Windows top-level folders we must never delete
+#if ANDROID
+    let private wellKnownTopFolders = []
+#else
     let private wellKnownTopFolders =
         [
             Path.GetPathRoot(Environment.SystemDirectory)          // e.g. "C:\"
@@ -672,6 +665,7 @@ module Core =
             Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Users")
         ]
         |> List.map _.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
+#endif
 
 
     /// Check if the folder is dangerous (one of the system folders).

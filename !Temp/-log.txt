@@ -1,0 +1,6 @@
+20:18:45.753 [INFO ] OnCreate: "VPN Android client starting"
+20:18:45.888 [INFO ] LoadConfig: "Config loaded: 72.167.224.50:45001"
+20:18:59.248 [INFO ] StartVpn: "Starting VPN service..."
+20:19:00.155 [INFO ] StartVpn: "Authentication successful, sessionId: 3"
+20:19:00.158 [ERROR] StartVpn: "Failed to start VPN: Attempt to invoke virtual method 'java.lang.String android.content.Context.getPackageName()' on a null object reference"
+20:19:00.158 [ERROR] SetLastError: "VPN start returned false"
