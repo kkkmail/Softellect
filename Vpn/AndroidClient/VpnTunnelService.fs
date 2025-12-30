@@ -25,11 +25,13 @@ module VpnTunnelService =
 
 
 /// Android VpnService implementation for Softellect VPN.
-/// Note: This class is used directly (not as a bound service) and requires a context to be passed.
+/// Note: This class is used directly (not as a bound service).
+/// Call SetContext() before StartVpn() to provide the Android context.
 [<Service(Name = "com.softellect.vpn.VpnTunnelService", Permission = "android.permission.BIND_VPN_SERVICE")>]
-type VpnTunnelServiceImpl(context: Context) =
+type VpnTunnelServiceImpl() =
     inherit VpnService()
 
+    let mutable context: Context = null
     let mutable vpnInterface: ParcelFileDescriptor = null
     let mutable tunInputStream: FileInputStream = null
     let mutable tunOutputStream: FileOutputStream = null
@@ -144,8 +146,17 @@ type VpnTunnelServiceImpl(context: Context) =
             try vpnInterface.Close() with | _ -> ()
             vpnInterface <- null
 
+    /// Set the Android context. Must be called before StartVpn().
+    member _.SetContext(ctx: Context) =
+        context <- ctx
+
     member this.StartVpn(serviceData: VpnClientServiceData) : bool =
         try
+            if isNull context then
+                Logger.logError "Context not set. Call SetContext() before StartVpn()."
+                false
+            else
+
             Logger.logInfo "Starting VPN service..."
 
             // Create auth client and authenticate
