@@ -21,6 +21,9 @@
     </Project>
   </Folder>
   <Folder Name="/Apps/Vpn/">
+    <Project Path="Apps/Vpn/VpnApkServer/VpnApkServer.fsproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="Apps/Vpn/VpnClient/VpnClient.fsproj">
       <Platform Project="x64" />
     </Project>
