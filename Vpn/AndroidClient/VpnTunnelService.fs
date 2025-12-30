@@ -137,6 +137,12 @@ type VpnTunnelServiceImpl() =
 
         Logger.logInfo "Ping loop stopped"
 
+    let closeVpnInterface () =
+        // Close VPN interface
+        if vpnInterface <> null then
+            try vpnInterface.Close() with | _ -> ()
+            vpnInterface <- null
+
     member this.StartVpn(serviceData: VpnClientServiceData) : bool =
         try
             Logger.logInfo "Starting VPN service..."
@@ -171,40 +177,48 @@ type VpnTunnelServiceImpl() =
                     Logger.logError "Failed to establish VPN interface"
                     false
                 else
-                    tunInputStream <- new FileInputStream(vpnInterface.FileDescriptor)
-                    tunOutputStream <- new FileOutputStream(vpnInterface.FileDescriptor)
+                    try
+                        try
+                            tunInputStream <- new FileInputStream(vpnInterface.FileDescriptor)
+                            tunOutputStream <- new FileOutputStream(vpnInterface.FileDescriptor)
 
-                    // Create UDP client
-                    let udp = createVpnPushUdpClient serviceData getAuth
-                    udpClient <- Some udp
+                            // Create UDP client
+                            let udp = createVpnPushUdpClient serviceData getAuth
+                            udpClient <- Some udp
 
-                    // Set packet injector for direct injection
-                    udp.setPacketInjector(createPacketInjector tunOutputStream)
+                            // Set packet injector for direct injection
+                            udp.setPacketInjector(createPacketInjector tunOutputStream)
 
-                    // Start UDP client
-                    udp.start()
+                            // Start UDP client
+                            udp.start()
 
-                    // Start cancellation token
-                    cts <- new CancellationTokenSource()
-                    let token = cts.Token
+                            // Start cancellation token
+                            cts <- new CancellationTokenSource()
+                            let token = cts.Token
 
-                    // Start TUN read thread
-                    tunReadThread <- new Thread(fun () -> tunReadLoop tunInputStream udp token)
-                    tunReadThread.Name <- "TUN-Read"
-                    tunReadThread.Start()
+                            // Start TUN read thread
+                            tunReadThread <- new Thread(fun () -> tunReadLoop tunInputStream udp token)
+                            tunReadThread.Name <- "TUN-Read"
+                            tunReadThread.Start()
 
-                    // Start TUN write thread (for packets not directly injected)
-                    tunWriteThread <- new Thread(fun () -> tunWriteLoop tunOutputStream udp token)
-                    tunWriteThread.Name <- "TUN-Write"
-                    tunWriteThread.Start()
+                            // Start TUN write thread (for packets not directly injected)
+                            tunWriteThread <- new Thread(fun () -> tunWriteLoop tunOutputStream udp token)
+                            tunWriteThread.Name <- "TUN-Write"
+                            tunWriteThread.Start()
 
-                    // Start ping thread
-                    pingThread <- new Thread(fun () -> pingLoop auth serviceData.clientAccessInfo.vpnClientId token)
-                    pingThread.Name <- "Session-Ping"
-                    pingThread.Start()
+                            // Start ping thread
+                            pingThread <- new Thread(fun () -> pingLoop auth serviceData.clientAccessInfo.vpnClientId token)
+                            pingThread.Name <- "Session-Ping"
+                            pingThread.Start()
 
-                    Logger.logInfo "VPN service started successfully"
-                    true
+                            Logger.logInfo "VPN service started successfully"
+                            true
+                        with
+                        | e ->
+                            Logger.logError $"VPN service - exception: '%A{e}'."
+                            false
+                    finally
+                        closeVpnInterface ()
 
             | Error e ->
                 Logger.logError $"Authentication failed: %A{e}"
@@ -252,9 +266,7 @@ type VpnTunnelServiceImpl() =
             tunOutputStream <- null
 
         // Close VPN interface
-        if vpnInterface <> null then
-            try vpnInterface.Close() with | _ -> ()
-            vpnInterface <- null
+        closeVpnInterface()
 
         // Clear auth
         setAuth None
