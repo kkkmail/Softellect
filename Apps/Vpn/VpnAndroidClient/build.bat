@@ -9,11 +9,16 @@ set "APK_NAME=com.softellect.vpn-Signed.apk"
 rem --- Args ---
 set "USER_NAME=%~1"
 
-rem --- Derived paths (safe: not inside a (...) block) ---
+rem --- Derived paths ---
 set "CONFIG=%KEY_DIR%\vpn_config.json"
 if not "%USER_NAME%"=="" set "USER_CONFIG=%KEY_DIR%\vpn_config_%USER_NAME%.json"
 if not "%USER_NAME%"=="" set "USER_OUT=%OUTPUT_DIR%\%USER_NAME%"
 set "APK_PATH=%OUTPUT_DIR%\%APK_NAME%"
+
+rem --- Log ---
+if not "%USER_NAME%"=="" (
+    echo === BUILDING APK FOR USER: %USER_NAME% ===
+)
 
 rem --- If user name is provided, copy user config ---
 if "%USER_NAME%"=="" goto build
@@ -36,7 +41,7 @@ if errorlevel 1 (
     exit /b %errorlevel%
 )
 
-rem --- Copy APK to user-specific folder (only if user provided) ---
+rem --- Copy APK to user-specific folder ---
 if "%USER_NAME%"=="" exit /b 0
 
 if not exist "%APK_PATH%" (
