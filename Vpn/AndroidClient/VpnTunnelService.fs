@@ -23,10 +23,32 @@ module VpnTunnelService =
     [<Literal>]
     let TunnelBufferSize = 2048
 
+    /// Health check interval in ms (same as Windows: 30 seconds between successful checks).
+    [<Literal>]
+    let HealthCheckIntervalMs = 30000
+
+    /// Maximum health check backoff in ms (same as Windows: cap at 5 minutes).
+    [<Literal>]
+    let MaxHealthCheckBackoffMs = 300000
+
+    /// Backoff delay when auth is not available (same as Windows: 100ms).
+    [<Literal>]
+    let NoAuthBackoffMs = 100
+
+
+/// VPN connection state for service layer (spec 050).
+type VpnServiceConnectionState =
+    | Disconnected
+    | Connecting
+    | Connected
+    | Reconnecting
+    | Failed of string
+
 
 /// Android VpnService implementation for Softellect VPN.
 /// Note: This class is used directly (not as a bound service).
 /// Call SetContext() before StartVpn() to provide the Android context.
+/// Implements resilience/reconnect per spec 050.
 [<Service(Name = "com.softellect.vpn.VpnTunnelService", Permission = "android.permission.BIND_VPN_SERVICE")>]
 type VpnTunnelServiceImpl() =
     inherit VpnService()
@@ -41,12 +63,17 @@ type VpnTunnelServiceImpl() =
     let mutable cts: CancellationTokenSource = null
     let mutable tunReadThread: Thread = null
     let mutable tunWriteThread: Thread = null
-    let mutable pingThread: Thread = null
+    let mutable supervisorThread: Thread = null
 
     let mutable bytesSent = 0L
     let mutable bytesReceived = 0L
     let mutable packetsSent = 0L
     let mutable packetsReceived = 0L
+
+    // Spec 050: Connection state and last error tracking
+    let mutable connectionState = VpnServiceConnectionState.Disconnected
+    let mutable lastError: string = ""
+    let stateLock = obj()
 
     let authLock = obj()
 
@@ -57,6 +84,30 @@ type VpnTunnelServiceImpl() =
     /// Set current auth response (thread-safe).
     let setAuth auth =
         lock authLock (fun () -> authResponse <- auth)
+
+    /// Get current connection state (thread-safe).
+    let getState () =
+        lock stateLock (fun () -> connectionState)
+
+    /// Set current connection state (thread-safe).
+    let setState state =
+        lock stateLock (fun () -> connectionState <- state)
+
+    /// Get last error (thread-safe).
+    let getLastError () =
+        lock stateLock (fun () -> lastError)
+
+    /// Set last error (thread-safe).
+    let setLastError err =
+        lock stateLock (fun () ->
+            lastError <- err
+            if not (String.IsNullOrEmpty err) then
+                Logger.logWarn $"VPN service error: {err}"
+        )
+
+    /// Clear last error (thread-safe).
+    let clearLastError () =
+        lock stateLock (fun () -> lastError <- "")
 
     /// Packet injector that writes to TUN.
     let createPacketInjector (outputStream: FileOutputStream) =
@@ -129,39 +180,133 @@ type VpnTunnelServiceImpl() =
 
         Logger.logInfo "TUN write loop stopped"
 
-    /// Session ping loop - keeps session alive.
-    let pingLoop (client: IAuthClient) (clientId: VpnClientId) (token: CancellationToken) =
-        Logger.logInfo "Ping loop started"
-        let pingInterval = TimeSpan.FromSeconds(30.0)
+    /// Ping the server to check if the session is still valid.
+    let pingSession (client: IAuthClient) (clientId: VpnClientId) (auth: VpnAuthResponse) =
+        let pingRequest =
+            {
+                clientId = clientId
+                sessionId = auth.sessionId
+                timestamp = DateTime.UtcNow
+            }
+        try
+            match client.pingSession pingRequest with
+            | Ok () -> true
+            | Error e ->
+                setLastError $"Ping failed: %A{e}"
+                false
+        with
+        | ex ->
+            setLastError $"Ping exception: {ex.Message}"
+            false
 
-        while not token.IsCancellationRequested do
-            try
-                Thread.Sleep(pingInterval)
-                if not token.IsCancellationRequested then
-                    match getAuth() with
-                    | Some auth ->
-                        let pingRequest =
-                            {
-                                clientId = clientId
-                                sessionId = auth.sessionId
-                                timestamp = DateTime.UtcNow
-                            }
-                        match client.pingSession pingRequest with
-                        | Ok () -> Logger.logTrace (fun () -> "Ping successful")
-                        | Error e -> Logger.logWarn $"Ping failed: %A{e}"
-                    | None -> ()
-            with
-            | :? ThreadInterruptedException -> ()
-            | ex when not token.IsCancellationRequested ->
-                Logger.logError $"Ping error: {ex.Message}"
-
-        Logger.logInfo "Ping loop stopped"
+    /// Authenticate with the server.
+    let authenticate (client: IAuthClient) (clientId: VpnClientId) =
+        Logger.logInfo "Authenticating with server..."
+        let authRequest =
+            {
+                clientId = clientId
+                timestamp = DateTime.UtcNow
+                nonce = Guid.NewGuid().ToByteArray()
+            }
+        try
+            match client.authenticate authRequest with
+            | Ok response ->
+                Logger.logInfo $"Authentication successful, sessionId: {response.sessionId.value}"
+                clearLastError ()
+                Ok response
+            | Error e ->
+                let errMsg = $"Authentication failed: %A{e}"
+                setLastError errMsg
+                Error errMsg
+        with
+        | ex ->
+            let errMsg = $"Authentication exception: {ex.Message}"
+            setLastError errMsg
+            Error errMsg
 
     let closeVpnInterface () =
         // Close VPN interface
         if vpnInterface <> null then
             try vpnInterface.Close() with | _ -> ()
             vpnInterface <- null
+
+    /// Supervisor loop - handles health checks and reconnection (spec 050).
+    /// Runs forever until stopped. Mirrors Windows logic with Android-specific network refresh.
+    let supervisorLoop (serviceData: VpnClientServiceData) (token: CancellationToken) =
+        Logger.logInfo "Supervisor loop started"
+        let mutable currentBackoffMs = VpnTunnelService.HealthCheckIntervalMs
+        let mutable authFailedOnce = false
+
+        while not token.IsCancellationRequested do
+            try
+                match getAuth() with
+                | None ->
+                    // No auth - need to authenticate (Connecting or Reconnecting state)
+                    // Spec 050: Re-query network info BEFORE each authentication attempt during Reconnecting
+                    let currentState = getState()
+                    if currentState = VpnServiceConnectionState.Reconnecting then
+                        Logger.logInfo "Reconnecting: refreshing network info before auth..."
+                        try
+                            let _ = ConfigManager.getNetworkType()
+                            let _ = ConfigManager.getPhysicalInterfaceName()
+                            let _ = ConfigManager.getPhysicalGatewayIp()
+                            Logger.logInfo "Network info refreshed successfully"
+                        with
+                        | ex ->
+                            setLastError $"Network info refresh failed: {ex.Message}"
+                            // Continue anyway - will retry on next iteration
+
+                    match authClient with
+                    | Some client ->
+                        match authenticate client serviceData.clientAccessInfo.vpnClientId with
+                        | Ok response ->
+                            // Atomically swap the auth snapshot
+                            setAuth (Some response)
+                            authFailedOnce <- false
+                            currentBackoffMs <- VpnTunnelService.HealthCheckIntervalMs
+                            // Transition to Connected
+                            setState VpnServiceConnectionState.Connected
+                            Logger.logInfo $"VPN connected with sessionId: {response.sessionId.value}"
+                        | Error _ ->
+                            // Log auth failure once, then occasionally
+                            if not authFailedOnce then
+                                Logger.logWarn "Authentication failed, will retry with backoff"
+                                authFailedOnce <- true
+                            // Exponential backoff
+                            Thread.Sleep(currentBackoffMs)
+                            currentBackoffMs <- min (currentBackoffMs * 2) VpnTunnelService.MaxHealthCheckBackoffMs
+                    | None ->
+                        // No auth client - should not happen, but backoff
+                        Thread.Sleep(currentBackoffMs)
+
+                | Some auth ->
+                    // Have auth - do health check
+                    Thread.Sleep(currentBackoffMs)
+                    if not token.IsCancellationRequested then
+                        match authClient with
+                        | Some client ->
+                            let sessionValid = pingSession client serviceData.clientAccessInfo.vpnClientId auth
+                            if sessionValid then
+                                // Reset backoff on success
+                                currentBackoffMs <- VpnTunnelService.HealthCheckIntervalMs
+                            else
+                                // Session expired or ping failed - need to re-authenticate
+                                Logger.logInfo "Session expired, entering Reconnecting state..."
+                                setState VpnServiceConnectionState.Reconnecting
+                                // Clear auth to trigger re-authentication on the next iteration
+                                // UDP loops will skip when getAuth() returns None (spec 050)
+                                setAuth None
+                                currentBackoffMs <- VpnTunnelService.HealthCheckIntervalMs
+                        | None -> ()
+            with
+            | :? ThreadInterruptedException -> ()
+            | ex when not token.IsCancellationRequested ->
+                // Never exit on exceptions, just log and continue (same as Windows)
+                setLastError $"Supervisor loop error: {ex.Message}"
+                Thread.Sleep(currentBackoffMs)
+                currentBackoffMs <- min (currentBackoffMs * 2) VpnTunnelService.MaxHealthCheckBackoffMs
+
+        Logger.logInfo "Supervisor loop stopped"
 
     /// Set the Android context. Must be called before StartVpn().
     member _.SetContext(ctx: Context) =
@@ -171,10 +316,13 @@ type VpnTunnelServiceImpl() =
         try
             if isNull context then
                 Logger.logError "Context not set. Call SetContext() before StartVpn()."
+                setState (VpnServiceConnectionState.Failed "Context not set")
                 false
             else
 
             Logger.logInfo "Starting VPN service..."
+            setState VpnServiceConnectionState.Connecting
+            clearLastError ()
 
             // Create auth client and authenticate
             let auth = createAuthWcfClient serviceData
@@ -203,7 +351,10 @@ type VpnTunnelServiceImpl() =
 
                 vpnInterface <- builder.Establish()
                 if vpnInterface = null then
-                    Logger.logError "Failed to establish VPN interface"
+                    let errMsg = "Failed to establish VPN interface"
+                    Logger.logError errMsg
+                    setLastError errMsg
+                    setState VpnServiceConnectionState.Disconnected
                     false
                 else
                     try
@@ -234,25 +385,36 @@ type VpnTunnelServiceImpl() =
                         tunWriteThread.Name <- "TUN-Write"
                         tunWriteThread.Start()
 
-                        // Start ping thread
-                        pingThread <- new Thread(fun () -> pingLoop auth serviceData.clientAccessInfo.vpnClientId token)
-                        pingThread.Name <- "Session-Ping"
-                        pingThread.Start()
+                        // Start supervisor thread (handles health checks and reconnection - spec 050)
+                        supervisorThread <- new Thread(fun () -> supervisorLoop serviceData token)
+                        supervisorThread.Name <- "Supervisor"
+                        supervisorThread.Start()
 
+                        // Set initial Connected state
+                        setState VpnServiceConnectionState.Connected
                         Logger.logInfo "VPN service started successfully"
                         true
                     with
                     | e ->
-                        Logger.logError $"VPN service - exception during setup: '%A{e}'."
+                        let errMsg = $"VPN service - exception during setup: '%A{e}'."
+                        Logger.logError errMsg
+                        setLastError errMsg
+                        setState VpnServiceConnectionState.Disconnected
                         closeVpnInterface ()
                         false
 
             | Error e ->
-                Logger.logError $"Authentication failed: %A{e}"
+                let errMsg = $"Authentication failed: %A{e}"
+                Logger.logError errMsg
+                setLastError errMsg
+                setState VpnServiceConnectionState.Disconnected
                 false
         with
         | ex ->
-            Logger.logError $"Failed to start VPN: {ex.Message}"
+            let errMsg = $"Failed to start VPN: {ex.Message}"
+            Logger.logError errMsg
+            setLastError errMsg
+            setState VpnServiceConnectionState.Disconnected
             false
 
     member this.StopVpn() =
@@ -277,11 +439,11 @@ type VpnTunnelServiceImpl() =
 
         waitThread tunReadThread
         waitThread tunWriteThread
-        waitThread pingThread
+        waitThread supervisorThread
 
         tunReadThread <- null
         tunWriteThread <- null
-        pingThread <- null
+        supervisorThread <- null
 
         // Close streams
         if tunInputStream <> null then
@@ -309,6 +471,8 @@ type VpnTunnelServiceImpl() =
             cts.Dispose()
             cts <- null
 
+        // Set state to Disconnected
+        setState VpnServiceConnectionState.Disconnected
         Logger.logInfo "VPN service stopped"
 
     /// Get current stats.
@@ -327,6 +491,14 @@ type VpnTunnelServiceImpl() =
         match getAuth() with
         | Some auth -> auth.sessionId.value
         | None -> 0uy
+
+    /// Get current connection state (spec 050).
+    member _.State : VpnServiceConnectionState =
+        getState()
+
+    /// Get last error message (spec 050).
+    member _.LastError : string =
+        getLastError()
 
     override this.OnStartCommand(intent: Intent, flags: StartCommandFlags, startId: int) =
         StartCommandResult.Sticky
