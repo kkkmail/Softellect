@@ -25,11 +25,12 @@ open Android.Content.PM
 open VpnAndroidClient
 
 
-/// VPN connection states for UI display.
+/// VPN connection states for UI display (spec 050: includes Reconnecting).
 type VpnConnectionState =
     | Disconnected
     | Connecting
     | Connected
+    | Reconnecting
 
 
 /// Request codes for activity results.
@@ -43,9 +44,11 @@ module PastelColors =
     let paleRed() = Color.ParseColor("#E57373")       // Disconnected
     let paleYellow() = Color.ParseColor("#FFD54F")    // Connecting
     let paleGreen() = Color.ParseColor("#81C784")     // Connected
+    let paleOrange() = Color.ParseColor("#FFB74D")    // Reconnecting (spec 050)
     let textRed() = Color.ParseColor("#C62828")       // Darker red for text
     let textYellow() = Color.ParseColor("#F57F17")    // Darker yellow for text
     let textGreen() = Color.ParseColor("#2E7D32")     // Darker green for text
+    let textOrange() = Color.ParseColor("#E65100")    // Darker orange for text (spec 050)
 
 
 /// Main activity for the VPN Android client.
@@ -176,6 +179,7 @@ type MainActivity() =
                 | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
                 | Connecting -> (PastelColors.paleYellow(), true)
                 | Connected -> (PastelColors.paleGreen(), true)
+                | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
 
         // Create round drawable background
         let drawable = new GradientDrawable()
@@ -196,6 +200,7 @@ type MainActivity() =
                 | Disconnected -> ("Disconnected", PastelColors.textRed())
                 | Connecting -> ("Connecting…", PastelColors.textYellow())
                 | Connected -> ("Connected", PastelColors.textGreen())
+                | Reconnecting -> ("Reconnecting…", PastelColors.textOrange()) // Spec 050
 
         statusText.Text <- text
         statusText.SetTextColor(color)
@@ -228,6 +233,15 @@ type MainActivity() =
         )
 
 
+    /// Map service state to UI state (spec 050).
+    member private this.mapServiceStateToUiState (serviceState: VpnServiceConnectionState) =
+        match serviceState with
+        | VpnServiceConnectionState.Disconnected -> Disconnected
+        | VpnServiceConnectionState.Connecting -> Connecting
+        | VpnServiceConnectionState.Connected -> Connected
+        | VpnServiceConnectionState.Reconnecting -> Reconnecting
+        | VpnServiceConnectionState.Failed _ -> Disconnected
+
     member private this.UpdateStats() =
         match vpnService with
         | Some svc when svc.IsRunning ->
@@ -237,6 +251,14 @@ type MainActivity() =
             packetsSent <- pktSent
             packetsReceived <- pktRecv
             sessionId <- svc.SessionId
+            // Spec 050: Read state and lastError from service
+            connectionState <- this.mapServiceStateToUiState svc.State
+            lastError <- svc.LastError
+            this.UpdateUI()
+        | Some svc ->
+            // Service exists but not running - still read state
+            connectionState <- this.mapServiceStateToUiState svc.State
+            lastError <- svc.LastError
             this.UpdateUI()
         | _ -> ()
 
@@ -297,13 +319,16 @@ type MainActivity() =
                     svc.SetContext(this)
                     vpnService <- Some svc
                     if svc.StartVpn(data) then
-                        connectionState <- Connected
+                        // Spec 050: Read state from service
+                        connectionState <- this.mapServiceStateToUiState svc.State
                         sessionId <- svc.SessionId
+                        lastError <- svc.LastError
                         this.StartStatsTimer()
                         Logger.logInfo "VPN connected successfully"
                     else
-                        this.SetLastError "VPN start returned false"
-                        connectionState <- Disconnected
+                        // Spec 050: Read state and lastError from service
+                        connectionState <- this.mapServiceStateToUiState svc.State
+                        lastError <- svc.LastError
                         vpnService <- None
                 with
                 | ex ->
@@ -344,6 +369,9 @@ type MainActivity() =
         | Connecting ->
             this.StopVpnConnection()
         | Connected ->
+            this.StopVpnConnection()
+        | Reconnecting ->
+            // Spec 050: User can manually disconnect during reconnection
             this.StopVpnConnection()
 
 
