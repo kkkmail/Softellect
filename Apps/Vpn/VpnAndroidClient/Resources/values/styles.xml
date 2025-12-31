@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <style name="AppTheme" parent="@android:style/Theme.Material.Light.DarkActionBar">
+  <!-- spec 054: Use NoActionBar theme since we create our own title bar (Band 1) in code.
+       This avoids duplication and ensures consistent layout on Android 13-16. -->
+  <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
     <item name="android:colorPrimary">#3F51B5</item>
     <item name="android:colorPrimaryDark">#303F9F</item>
     <item name="android:colorAccent">#FF4081</item>
+    <!-- Ensure content is not drawn behind status bar on Android 15+/16 -->
+    <item name="android:fitsSystemWindows">true</item>
+    <item name="android:statusBarColor">#303F9F</item>
   </style>
 </resources>

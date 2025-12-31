@@ -502,24 +502,57 @@ type MainActivity() =
 
 
     /// Build the main layout with orientation awareness.
+    /// Layout structure (spec 054):
+    /// - Band 1: Title bar (bluish, "Softellect VPN") - WrapContent, no weight
+    /// - Band 2: Connect button + status row - WrapContent, no weight
+    /// - Band 3: Info/Log panes - fills remaining space with weight=1
     member private this.BuildLayout() =
         let mainLayout = new LinearLayout(this)
+        mainLayout.Orientation <- Orientation.Vertical
+        // Standard padding; system insets are handled by android:fitsSystemWindows in theme
         mainLayout.SetPadding(16, 16, 16, 16)
 
-        // Top control row
+        // Band 1: Title bar (bluish header with "Softellect VPN")
+        // WrapContent height, no weight - must always be visible
+        let titleBar = new LinearLayout(this)
+        titleBar.Orientation <- Orientation.Horizontal
+        titleBar.SetGravity(GravityFlags.CenterVertical)
+        titleBar.SetBackgroundColor(Color.ParseColor("#3F51B5")) // Primary color from theme
+        titleBar.SetPadding(16, 12, 16, 12)
+        let titleBarParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MatchParent,
+            LinearLayout.LayoutParams.WrapContent)
+        titleBarParams.BottomMargin <- 8
+        titleBar.LayoutParameters <- titleBarParams
+
+        let titleText = new TextView(this)
+        titleText.Text <- "Softellect VPN"
+        titleText.TextSize <- 20.0f
+        titleText.SetTypeface(Typeface.DefaultBold, TypefaceStyle.Bold)
+        titleText.SetTextColor(Color.White)
+        let titleTextParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WrapContent,
+            LinearLayout.LayoutParams.WrapContent)
+        titleText.LayoutParameters <- titleTextParams
+        titleBar.AddView(titleText)
+
+        mainLayout.AddView(titleBar)
+
+        // Band 2: Top control row (Connect button + status)
+        // WrapContent height, no weight - must always be visible
         let topRow = this.CreateTopControlRow()
         mainLayout.AddView(topRow)
 
-        // Determine orientation
+        // Determine orientation for Band 3 panes layout
         let orientation = this.Resources.Configuration.Orientation
 
-        // Panes container - vertical in portrait, horizontal in landscape
+        // Band 3: Panes container (Info + Log) - the only flexible region
+        // Uses height=0 with weight=1.0 to fill remaining space
+        // Vertical in portrait, horizontal in landscape
         let panesContainer = new LinearLayout(this)
         if orientation = Android.Content.Res.Orientation.Landscape then
-            mainLayout.Orientation <- Orientation.Vertical
             panesContainer.Orientation <- Orientation.Horizontal
         else
-            mainLayout.Orientation <- Orientation.Vertical
             panesContainer.Orientation <- Orientation.Vertical
 
         let panesParams = new LinearLayout.LayoutParams(
