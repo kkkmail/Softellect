@@ -35,7 +35,7 @@ if errorlevel 1 (
 )
 
 :build
-dotnet build -c Release -f net10.0-android /p:AndroidBuildApplicationPackage=True /p:AndroidPackageFormat=apk /p:GenerateAppBundle=false
+dotnet build -t:Rebuild -c Release -f net10.0-android /p:AndroidBuildApplicationPackage=True /p:AndroidPackageFormat=apk /p:GenerateAppBundle=false
 if errorlevel 1 (
     echo ERROR: Build failed
     exit /b %errorlevel%

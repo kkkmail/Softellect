@@ -12,6 +12,7 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.UdpClient
 open Softellect.Vpn.Client.WcfClient
+open Softellect.Vpn.AndroidClient.ConfigManager
 
 module VpnTunnelService =
 
@@ -74,6 +75,9 @@ type VpnTunnelServiceImpl() =
     let mutable connectionState = VpnServiceConnectionState.Disconnected
     let mutable lastError: string = ""
     let stateLock = obj()
+
+    // Spec 056: Device binding hash (computed once at StartVpn from context)
+    let mutable clientHash: VpnClientHash option = None
 
     let authLock = obj()
 
@@ -200,11 +204,13 @@ type VpnTunnelServiceImpl() =
             false
 
     /// Authenticate with the server.
-    let authenticate (client: IAuthClient) (clientId: VpnClientId) =
+    /// Spec 056: clientHash is now required for device binding.
+    let authenticate (client: IAuthClient) (clientId: VpnClientId) (clientHash: VpnClientHash) =
         Logger.logInfo "Authenticating with server..."
         let authRequest =
             {
                 clientId = clientId
+                clientHash = clientHash
                 timestamp = DateTime.UtcNow
                 nonce = Guid.NewGuid().ToByteArray()
             }
@@ -232,7 +238,8 @@ type VpnTunnelServiceImpl() =
 
     /// Supervisor loop - handles health checks and reconnection (spec 050).
     /// Runs forever until stopped. Mirrors Windows logic with Android-specific network refresh.
-    let supervisorLoop (serviceData: VpnClientServiceData) (token: CancellationToken) =
+    /// Spec 056: hash parameter for device binding.
+    let supervisorLoop (serviceData: VpnClientServiceData) (hash: VpnClientHash) (token: CancellationToken) =
         Logger.logInfo "Supervisor loop started"
         let mutable currentBackoffMs = VpnTunnelService.HealthCheckIntervalMs
         let mutable authFailedOnce = false
@@ -247,9 +254,9 @@ type VpnTunnelServiceImpl() =
                     if currentState = VpnServiceConnectionState.Reconnecting then
                         Logger.logInfo "Reconnecting: refreshing network info before auth..."
                         try
-                            let _ = ConfigManager.getNetworkType()
-                            let _ = ConfigManager.getPhysicalInterfaceName()
-                            let _ = ConfigManager.getPhysicalGatewayIp()
+                            let _ = getNetworkType()
+                            let _ = getPhysicalInterfaceName()
+                            let _ = getPhysicalGatewayIp()
                             Logger.logInfo "Network info refreshed successfully"
                         with
                         | ex ->
@@ -258,7 +265,7 @@ type VpnTunnelServiceImpl() =
 
                     match authClient with
                     | Some client ->
-                        match authenticate client serviceData.clientAccessInfo.vpnClientId with
+                        match authenticate client serviceData.clientAccessInfo.vpnClientId hash with
                         | Ok response ->
                             // Atomically swap the auth snapshot
                             setAuth (Some response)
@@ -324,6 +331,19 @@ type VpnTunnelServiceImpl() =
             setState VpnServiceConnectionState.Connecting
             clearLastError ()
 
+            // Spec 056: Compute client hash from Android Secure ID
+            match getAndroidClientHash context with
+            | Error e ->
+                let errMsg = $"Failed to get client hash: {e}"
+                Logger.logError errMsg
+                setLastError errMsg
+                setState VpnServiceConnectionState.Disconnected
+                false
+            | Ok hash ->
+
+            // Store hash for supervisor loop
+            clientHash <- Some hash
+
             // Create auth client and authenticate
             let auth = createAuthWcfClient serviceData
             authClient <- Some auth
@@ -331,6 +351,7 @@ type VpnTunnelServiceImpl() =
             let authRequest =
                 {
                     clientId = serviceData.clientAccessInfo.vpnClientId
+                    clientHash = hash
                     timestamp = DateTime.UtcNow
                     nonce = Guid.NewGuid().ToByteArray()
                 }
@@ -386,7 +407,8 @@ type VpnTunnelServiceImpl() =
                         tunWriteThread.Start()
 
                         // Start supervisor thread (handles health checks and reconnection - spec 050)
-                        supervisorThread <- new Thread(fun () -> supervisorLoop serviceData token)
+                        // Spec 056: Pass hash to supervisor loop for device binding
+                        supervisorThread <- new Thread(fun () -> supervisorLoop serviceData hash token)
                         supervisorThread.Name <- "Supervisor"
                         supervisorThread.Start()
 

@@ -575,7 +575,7 @@ module Core =
 
         /// Gets the full file name located in the folder where the assembly normally resides on disk or
         /// the installation directory unless the file name is already a name with a full path.
-        /// Optional folder name allow specifying a subfolder unless it is a fully qualified folder name.
+        /// Optional folder name allows specifying a subfolder unless it is a fully qualified folder name.
         member f.tryGetFullFileName(fo : FolderName option) =
             try
                 let fileName = f.value

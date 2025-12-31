@@ -14,6 +14,7 @@ open Android.App
 open Android.Content
 open Android.Net
 open Android.Net.Wifi
+open Android.Provider
 open Java.Net
 open Android.Media
 open System.Text
@@ -243,6 +244,27 @@ module ConfigManager =
             let b4 = byte ((g >>> 24) &&& 0xFF)
             $"{b1}.{b2}.{b3}.{b4}"
         |> Ip4
+
+
+    /// Spec 056: Get Android Secure ID for device binding.
+    /// Returns Error if ANDROID_ID cannot be read.
+    let getAndroidSecureId (context: Context) : Result<string, string> =
+        try
+            let contentResolver = context.ContentResolver
+            let androidId = Settings.Secure.GetString(contentResolver, Settings.Secure.AndroidId)
+            if String.IsNullOrEmpty(androidId) then
+                Error "ANDROID_ID is null or empty"
+            else
+                Ok androidId
+        with
+        | ex -> Error $"Failed to read ANDROID_ID: {ex.Message}"
+
+
+    /// Spec 056: Compute client hash from Android Secure ID.
+    let getAndroidClientHash (context: Context) : Result<VpnClientHash, string> =
+        match getAndroidSecureId context with
+        | Ok androidId -> Ok (VpnClientHash.compute androidId)
+        | Error e -> Error e
 
 
     let readConfigJson (context: Context) : string =

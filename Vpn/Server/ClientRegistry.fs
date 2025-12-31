@@ -12,6 +12,8 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Sys.Core
+open System.IO
 
 module ClientRegistry =
 
@@ -30,6 +32,7 @@ module ClientRegistry =
             assignedIp : VpnIpAddress
             publicKey : PublicKey
             useEncryption : bool
+            hash : VpnClientHash option
             encryptionType : EncryptionType
             mutable lastSeen : DateTime
             mutable currentEndpoint : IPEndPoint option
@@ -120,7 +123,58 @@ module ClientRegistry =
             rng.GetBytes(key)
             key
 
-        member private r.tryGetClientConfig (clientId : VpnClientId) =
+        let getClientHashFilePath (clientId : VpnClientId) =
+            let hashFileName = FileName $"{clientId.value}.hash"
+            let hashFilePath = hashFileName.combine data.serverAccessInfo.clientKeysPath
+            hashFilePath
+
+        let tryGetClientHash (clientId : VpnClientId) =
+            let hashFile = getClientHashFilePath clientId
+            try
+                match hashFile.tryGetFullFileName() with
+                | Ok fn ->
+                    match File.Exists fn.value with
+                    | true ->
+                        let hash = File.ReadAllText fn.value |> fun s -> s.Trim() |> VpnClientHash
+                        Ok (Some hash)
+                    | false -> Ok None
+                | Error e ->
+                    let err = $"Failed to load hash for client '{clientId.value}', error: '%A{e}'."
+                    Logger.logWarn err
+                    err |> HashErr |> Error
+            with
+            | e ->
+                let err = $"Failed to load hash for client: '{clientId.value}', exception: '%A{e}'."
+                Logger.logWarn err
+                err |> HashErr |> Error
+
+        /// Spec 056: Store client hash to file. Only creates if file doesn't exist.
+        /// Returns Ok true if created, Ok false if already exists, Error on failure.
+        let tryStoreClientHash (clientId : VpnClientId) (hash : VpnClientHash) =
+            let hashFile = getClientHashFilePath clientId
+            try
+                match hashFile.tryGetFullFileName() with
+                | Ok fn ->
+                    if File.Exists fn.value then
+                        // File already exists - do not overwrite
+                        Ok false
+                    else
+                        // Create new hash file (ASCII, no BOM)
+                        File.WriteAllText(fn.value, hash.value, System.Text.Encoding.ASCII)
+                        Logger.logInfo $"Stored hash for client '{clientId.value}'."
+                        Ok true
+                | Error e ->
+                    let err = $"Failed to store hash for client '{clientId.value}', error: '%A{e}'."
+                    Logger.logWarn err
+                    err |> HashErr |> Error
+            with
+            | e ->
+                let err = $"Failed to store hash for client: '{clientId.value}', exception: '%A{e}'."
+                Logger.logWarn err
+                err |> HashErr |> Error
+
+
+        member private r.tryGetClientConfigData (clientId : VpnClientId) =
             let keyId = KeyId clientId.value
             let keyFileName = FileName $"{clientId.value}.pkx"
             let clientKeysPath = data.serverAccessInfo.clientKeysPath
@@ -130,8 +184,16 @@ module ClientRegistry =
             | Ok (_, publicKey) ->
                 match tryLoadVpnClientConfig clientId with
                 | Ok config ->
-                    Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}', useEncryption: {config.useEncryption}, encryptionType: {config.encryptionType}."
-                    Ok (config, publicKey)
+                    match tryGetClientHash clientId with
+                    | Ok hash ->
+                        Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}', useEncryption: {config.useEncryption}, encryptionType: {config.encryptionType}."
+                        {
+                            clientConfig = config
+                            clientPublicKey = publicKey
+                            clientHash = hash
+                        }
+                        |> Ok
+                    | Error e -> Error e
                 | Error e -> Error e
             | Error e ->
                 Logger.logWarn $"Failed to load public key for client {clientId.value}: '%A{e}'."
@@ -150,10 +212,34 @@ module ClientRegistry =
         member _.serverPrivateKey = data.serverPrivateKey
         member _.serverPublicKey = data.serverPublicKey
 
+        /// Spec 056: Verify client hash binding.
+        /// - If no stored hash exists, store the provided hash (first-use binding).
+        /// - If stored hash exists, verify it matches the provided hash.
+        /// Returns Ok () if verification passes (or binding succeeds), Error if mismatch.
+        member _.verifyAndBindClientHash(clientId: VpnClientId, requestHash: VpnClientHash) : Result<unit, VpnError> =
+            match tryGetClientHash clientId with
+            | Ok (Some storedHash) ->
+                // Hash exists - verify it matches
+                if storedHash.value = requestHash.value then
+                    Logger.logTrace (fun () -> $"Hash verification passed for client '{clientId.value}'.")
+                    Ok ()
+                else
+                    let err = $"Hash mismatch for client '{clientId.value}': stored hash differs from request hash."
+                    Logger.logWarn err
+                    err |> HashMismatchErr |> VpnAuthErr |> VpnConnectionErr |> Error
+            | Ok None ->
+                // No stored hash - first-use binding
+                match tryStoreClientHash clientId requestHash with
+                | Ok _ ->
+                    Logger.logInfo $"First-use hash binding for client '{clientId.value}'."
+                    Ok ()
+                | Error e -> Error e
+            | Error e -> Error e
+
         /// Create a push session for a client.
         member r.createPushSession(clientId: VpnClientId) : Result<PushClientSession, VpnError> =
-            match r.tryGetClientConfig(clientId) with
-            | Ok (config, publicKey) ->
+            match r.tryGetClientConfigData(clientId) with
+            | Ok config ->
                 match tryAllocateSessionId clientId with
                 | Ok sessionId ->
                     let sessionAesKey = generateSessionAesKey()
@@ -163,11 +249,12 @@ module ClientRegistry =
                             clientId = clientId
                             sessionId = sessionId
                             sessionAesKey = sessionAesKey
-                            clientName = config.clientName
-                            assignedIp = config.assignedIp
-                            publicKey = publicKey
-                            useEncryption = config.useEncryption
-                            encryptionType = config.encryptionType
+                            clientName = config.clientConfig.clientName
+                            assignedIp = config.clientConfig.assignedIp
+                            publicKey = config.clientPublicKey
+                            useEncryption = config.clientConfig.useEncryption
+                            encryptionType = config.clientConfig.encryptionType
+                            hash = config.clientHash
                             lastSeen = DateTime.UtcNow
                             currentEndpoint = None
                             pendingPackets = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
@@ -177,7 +264,7 @@ module ClientRegistry =
 
                     sessionsBySessionId[sessionId] <- session
                     sessionIdByClientId[clientId] <- sessionId
-                    Logger.logInfo $"Created push session for client: '{clientId.value}' with sessionId: {sessionId.value}, useEncryption: {config.useEncryption}."
+                    Logger.logInfo $"Created push session for client: '{clientId.value}' with sessionId: {sessionId.value}, useEncryption: {config.clientConfig.useEncryption}."
                     Ok session
                 | Error e -> Error e
 

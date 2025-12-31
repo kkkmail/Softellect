@@ -23,6 +23,7 @@ module Errors =
         | NoAvailableSessionsErr
         | SerializationErr of SerializationError
         | SysErr of SysError
+        | HashMismatchErr of string // Spec 056: Device binding hash mismatch
 
 
     type VpnTunnelError =
@@ -60,6 +61,7 @@ module Errors =
         | VpnConnectionErr of VpnConnectionError
         | VpnServerErr of VpnServerError
         | ConfigErr of string
+        | HashErr of string
         | CryptoErr of CryptoError
         | SnafyErr of string // TODO kk:20251223 - Follow the trail, then propagate through the error hierarchy properly.
 

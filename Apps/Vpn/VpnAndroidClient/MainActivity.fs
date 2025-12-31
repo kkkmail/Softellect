@@ -45,10 +45,12 @@ module PastelColors =
     let paleYellow() = Color.ParseColor("#FFD54F")    // Connecting
     let paleGreen() = Color.ParseColor("#81C784")     // Connected
     let paleOrange() = Color.ParseColor("#FFB74D")    // Reconnecting (spec 050)
+    let palePurple() = Color.ParseColor("#BA68C8")    // Disconnecting (spec 055)
     let textRed() = Color.ParseColor("#C62828")       // Darker red for text
     let textYellow() = Color.ParseColor("#F57F17")    // Darker yellow for text
     let textGreen() = Color.ParseColor("#2E7D32")     // Darker green for text
     let textOrange() = Color.ParseColor("#E65100")    // Darker orange for text (spec 050)
+    let textPurple() = Color.ParseColor("#7B1FA2")    // Darker purple for text (spec 055)
 
 
 /// Main activity for the VPN Android client.
@@ -58,6 +60,7 @@ type MainActivity() =
     inherit Activity()
 
     let mutable connectionState = Disconnected
+    let mutable pendingDisconnect = false // Spec 055: UI-only flag for immediate feedback
     let mutable powerButton: ImageButton = null
     let mutable statusText: TextView = null
     let mutable infoPaneText: TextView = null
@@ -175,11 +178,15 @@ type MainActivity() =
             match configLoadError with
             | Some _ -> (PastelColors.paleRed(), false) // Fatal config error - disabled
             | None ->
-                match connectionState with
-                | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
-                | Connecting -> (PastelColors.paleYellow(), true)
-                | Connected -> (PastelColors.paleGreen(), true)
-                | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
+                // Spec 055: Check pending disconnect first for immediate UI feedback
+                if pendingDisconnect then
+                    (PastelColors.palePurple(), true)
+                else
+                    match connectionState with
+                    | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
+                    | Connecting -> (PastelColors.paleYellow(), true)
+                    | Connected -> (PastelColors.paleGreen(), true)
+                    | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
 
         // Create round drawable background
         let drawable = new GradientDrawable()
@@ -196,11 +203,15 @@ type MainActivity() =
             match configLoadError with
             | Some _ -> ("Config Error", PastelColors.textRed())
             | None ->
-                match connectionState with
-                | Disconnected -> ("Disconnected", PastelColors.textRed())
-                | Connecting -> ("Connecting…", PastelColors.textYellow())
-                | Connected -> ("Connected", PastelColors.textGreen())
-                | Reconnecting -> ("Reconnecting…", PastelColors.textOrange()) // Spec 050
+                // Spec 055: Check pending disconnect first for immediate UI feedback
+                if pendingDisconnect then
+                    ("Disconnecting…", PastelColors.textPurple())
+                else
+                    match connectionState with
+                    | Disconnected -> ("Disconnected", PastelColors.textRed())
+                    | Connecting -> ("Connecting…", PastelColors.textYellow())
+                    | Connected -> ("Connected", PastelColors.textGreen())
+                    | Reconnecting -> ("Reconnecting…", PastelColors.textOrange()) // Spec 050
 
         statusText.Text <- text
         statusText.SetTextColor(color)
@@ -252,12 +263,18 @@ type MainActivity() =
             packetsReceived <- pktRecv
             sessionId <- svc.SessionId
             // Spec 050: Read state and lastError from service
-            connectionState <- this.mapServiceStateToUiState svc.State
+            let newState = this.mapServiceStateToUiState svc.State
+            // Spec 055: Clear pending disconnect when state becomes Disconnected
+            if newState = Disconnected then pendingDisconnect <- false
+            connectionState <- newState
             lastError <- svc.LastError
             this.UpdateUI()
         | Some svc ->
             // Service exists but not running - still read state
-            connectionState <- this.mapServiceStateToUiState svc.State
+            let newState = this.mapServiceStateToUiState svc.State
+            // Spec 055: Clear pending disconnect when state becomes Disconnected
+            if newState = Disconnected then pendingDisconnect <- false
+            connectionState <- newState
             lastError <- svc.LastError
             this.UpdateUI()
         | _ -> ()
@@ -357,6 +374,7 @@ type MainActivity() =
         packetsSent <- 0L
         packetsReceived <- 0L
         connectionState <- Disconnected
+        pendingDisconnect <- false // Spec 055: Clear pending flag when disconnect completes
         this.UpdateUI()
 
 
@@ -366,12 +384,12 @@ type MainActivity() =
             connectionState <- Connecting
             this.UpdateUI()
             this.RequestVpnPermission()
-        | Connecting ->
-            this.StopVpnConnection()
-        | Connected ->
-            this.StopVpnConnection()
+        | Connecting
+        | Connected
         | Reconnecting ->
-            // Spec 050: User can manually disconnect during reconnection
+            // Spec 055: Set pending disconnect immediately for instant UI feedback
+            pendingDisconnect <- true
+            this.UpdateUI()
             this.StopVpnConnection()
 
 
