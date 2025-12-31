@@ -35,6 +35,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="wwwroot\**\*">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <FrameworkReference Include="Microsoft.AspNetCore.App" />
         <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.0.101" />
