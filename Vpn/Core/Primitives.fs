@@ -69,6 +69,15 @@ module Primitives =
 
         member this.value = let (VpnClientHash v) = this in v
 
+        /// Compute a VpnClientHash from a device identifier string.
+        /// Spec 056: SHA256 of UTF-8 bytes, encoded as lowercase hex.
+        static member compute (deviceIdString: string) : VpnClientHash =
+            let bytes = System.Text.Encoding.UTF8.GetBytes(deviceIdString)
+            use sha256 = System.Security.Cryptography.SHA256.Create()
+            let hashBytes = sha256.ComputeHash(bytes)
+            let hexString = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant()
+            VpnClientHash hexString
+
 
     type VpnSubnet =
         | VpnSubnet of string
@@ -137,6 +146,7 @@ module Primitives =
     type VpnAuthRequest =
         {
             clientId : VpnClientId
+            clientHash : VpnClientHash // Spec 056: Device binding hash
             timestamp : DateTime
             nonce : byte[]
         }

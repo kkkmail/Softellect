@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
+open Microsoft.Win32
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
@@ -32,6 +33,28 @@ module Service =
     /// Maximum health check backoff in ms (spec 042: cap at 5 minutes).
     [<Literal>]
     let MaxHealthCheckBackoffMs = 300000
+
+
+    /// Spec 056: Get Windows MachineGuid for device binding.
+    /// Returns Error if the registry key cannot be read.
+    let getWindowsMachineGuid () : Result<string, string> =
+        try
+            use key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Cryptography")
+            match key with
+            | null -> Error "Cannot open Cryptography registry key"
+            | k ->
+                match k.GetValue("MachineGuid") with
+                | null -> Error "MachineGuid value not found"
+                | v -> Ok (v.ToString())
+        with
+        | ex -> Error $"Failed to read MachineGuid: {ex.Message}"
+
+
+    /// Spec 056: Compute client hash from Windows MachineGuid.
+    let getWindowsClientHash () : Result<VpnClientHash, string> =
+        match getWindowsMachineGuid() with
+        | Ok machineGuid -> Ok (VpnClientHash.compute machineGuid)
+        | Error e -> Error e
 
 
     type VpnClientConnectionState =
@@ -141,27 +164,35 @@ module Service =
 
         let authenticate () =
             Logger.logInfo "Push: Authenticating with server..."
-            let authClient = createAuthWcfClient data
 
-            let request : VpnAuthRequest =
-                {
-                    clientId = data.clientAccessInfo.vpnClientId
-                    timestamp = DateTime.UtcNow
-                    nonce = Guid.NewGuid().ToByteArray()
-                }
+            // Spec 056: Get client hash from Windows MachineGuid
+            match getWindowsClientHash() with
+            | Error e ->
+                Logger.logError $"Push: Failed to get client hash: {e}"
+                Error $"Failed to get client hash: {e}"
+            | Ok clientHash ->
+                let authClient = createAuthWcfClient data
 
-            try
-                match authClient.authenticate request with
-                | Ok response ->
-                    Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}, SessionId: {response.sessionId.value}"
-                    Ok response
-                | Error e ->
-                    Logger.logWarn $"Push: Authentication failed: '%A{e}'"
-                    Error $"Authentication error: '%A{e}'."
-            with
-            | ex ->
-                Logger.logWarn $"Push: Authentication exception: {ex.Message}"
-                Error $"Authentication exception: {ex.Message}"
+                let request : VpnAuthRequest =
+                    {
+                        clientId = data.clientAccessInfo.vpnClientId
+                        clientHash = clientHash
+                        timestamp = DateTime.UtcNow
+                        nonce = Guid.NewGuid().ToByteArray()
+                    }
+
+                try
+                    match authClient.authenticate request with
+                    | Ok response ->
+                        Logger.logInfo $"Push: Authenticated successfully. Assigned IP: {response.assignedIp.value}, SessionId: {response.sessionId.value}"
+                        Ok response
+                    | Error e ->
+                        Logger.logWarn $"Push: Authentication failed: '%A{e}'"
+                        Error $"Authentication error: '%A{e}'."
+                with
+                | ex ->
+                    Logger.logWarn $"Push: Authentication exception: {ex.Message}"
+                    Error $"Authentication exception: {ex.Message}"
 
         /// Ping the server to check if the session is still valid.
         let pingSession (auth: VpnAuthResponse) =

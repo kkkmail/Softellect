@@ -54,19 +54,23 @@ module Service =
 
                 match verifyAuthRequest request with
                 | Ok () ->
-                    match registry.createPushSession(request.clientId) with
-                    | Ok session ->
-                        Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId: {session.sessionId.value}."
-                        registry.kickedSessions.TryRemove session.sessionId |> ignore
+                    // Spec 056: Verify and bind client hash before creating session
+                    match registry.verifyAndBindClientHash(request.clientId, request.clientHash) with
+                    | Ok () ->
+                        match registry.createPushSession(request.clientId) with
+                        | Ok session ->
+                            Logger.logInfo $"Successfully created push session in registry: {registry.GetHashCode()} for client: '{request.clientId.value}' with sessionId: {session.sessionId.value}."
+                            registry.kickedSessions.TryRemove session.sessionId |> ignore
 
-                        let response =
-                            {
-                                assignedIp = session.assignedIp
-                                serverPublicIp = serverVpnIp
-                                sessionId = session.sessionId
-                                sessionAesKey = session.sessionAesKey
-                            }
-                        Ok response
+                            let response =
+                                {
+                                    assignedIp = session.assignedIp
+                                    serverPublicIp = serverVpnIp
+                                    sessionId = session.sessionId
+                                    sessionAesKey = session.sessionAesKey
+                                }
+                            Ok response
+                        | Error e -> Error e
                     | Error e -> Error e
                 | Error e -> Error e
 

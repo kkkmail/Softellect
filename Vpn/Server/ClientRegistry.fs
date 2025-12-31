@@ -135,7 +135,7 @@ module ClientRegistry =
                 | Ok fn ->
                     match File.Exists fn.value with
                     | true ->
-                        let hash = File.ReadAllText fn.value |> VpnClientHash
+                        let hash = File.ReadAllText fn.value |> fun s -> s.Trim() |> VpnClientHash
                         Ok (Some hash)
                     | false -> Ok None
                 | Error e ->
@@ -145,6 +145,31 @@ module ClientRegistry =
             with
             | e ->
                 let err = $"Failed to load hash for client: '{clientId.value}', exception: '%A{e}'."
+                Logger.logWarn err
+                err |> HashErr |> Error
+
+        /// Spec 056: Store client hash to file. Only creates if file doesn't exist.
+        /// Returns Ok true if created, Ok false if already exists, Error on failure.
+        let tryStoreClientHash (clientId : VpnClientId) (hash : VpnClientHash) =
+            let hashFile = getClientHashFilePath clientId
+            try
+                match hashFile.tryGetFullFileName() with
+                | Ok fn ->
+                    if File.Exists fn.value then
+                        // File already exists - do not overwrite
+                        Ok false
+                    else
+                        // Create new hash file (ASCII, no BOM)
+                        File.WriteAllText(fn.value, hash.value, System.Text.Encoding.ASCII)
+                        Logger.logInfo $"Stored hash for client '{clientId.value}'."
+                        Ok true
+                | Error e ->
+                    let err = $"Failed to store hash for client '{clientId.value}', error: '%A{e}'."
+                    Logger.logWarn err
+                    err |> HashErr |> Error
+            with
+            | e ->
+                let err = $"Failed to store hash for client: '{clientId.value}', exception: '%A{e}'."
                 Logger.logWarn err
                 err |> HashErr |> Error
 
@@ -186,6 +211,30 @@ module ClientRegistry =
 
         member _.serverPrivateKey = data.serverPrivateKey
         member _.serverPublicKey = data.serverPublicKey
+
+        /// Spec 056: Verify client hash binding.
+        /// - If no stored hash exists, store the provided hash (first-use binding).
+        /// - If stored hash exists, verify it matches the provided hash.
+        /// Returns Ok () if verification passes (or binding succeeds), Error if mismatch.
+        member _.verifyAndBindClientHash(clientId: VpnClientId, requestHash: VpnClientHash) : Result<unit, VpnError> =
+            match tryGetClientHash clientId with
+            | Ok (Some storedHash) ->
+                // Hash exists - verify it matches
+                if storedHash.value = requestHash.value then
+                    Logger.logTrace (fun () -> $"Hash verification passed for client '{clientId.value}'.")
+                    Ok ()
+                else
+                    let err = $"Hash mismatch for client '{clientId.value}': stored hash differs from request hash."
+                    Logger.logWarn err
+                    err |> HashMismatchErr |> VpnAuthErr |> VpnConnectionErr |> Error
+            | Ok None ->
+                // No stored hash - first-use binding
+                match tryStoreClientHash clientId requestHash with
+                | Ok _ ->
+                    Logger.logInfo $"First-use hash binding for client '{clientId.value}'."
+                    Ok ()
+                | Error e -> Error e
+            | Error e -> Error e
 
         /// Create a push session for a client.
         member r.createPushSession(clientId: VpnClientId) : Result<PushClientSession, VpnError> =

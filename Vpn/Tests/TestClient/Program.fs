@@ -33,6 +33,7 @@ module Program =
                     clientId = clientId
                     timestamp = DateTime.Now
                     nonce = [| 1uy; 2uy; 3uy; 4uy; 5uy; 6uy; 7uy; 8uy; 9uy |]
+                    clientHash = $"{Guid.NewGuid()}" |> VpnClientHash
                 }
 
             let payload = authRequest |> serialize BinaryZippedFormat   // dummy test data

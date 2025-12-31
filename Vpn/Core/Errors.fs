@@ -23,6 +23,7 @@ module Errors =
         | NoAvailableSessionsErr
         | SerializationErr of SerializationError
         | SysErr of SysError
+        | HashMismatchErr of string // Spec 056: Device binding hash mismatch
 
 
     type VpnTunnelError =
