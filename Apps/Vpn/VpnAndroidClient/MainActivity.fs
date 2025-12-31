@@ -390,7 +390,8 @@ type MainActivity() =
             // Spec 055: Set pending disconnect immediately for instant UI feedback
             pendingDisconnect <- true
             this.UpdateUI()
-            this.StopVpnConnection()
+            // Spec 055: Run StopVpnConnection asynchronously so UI update happens first
+            async { this.StopVpnConnection() } |> Async.Start
 
 
     member private this.CopyToClipboard(text: string, label: string) =
