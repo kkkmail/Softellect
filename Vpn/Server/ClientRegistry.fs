@@ -12,6 +12,8 @@ open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Sys.Core
+open System.IO
 
 module ClientRegistry =
 
@@ -30,6 +32,7 @@ module ClientRegistry =
             assignedIp : VpnIpAddress
             publicKey : PublicKey
             useEncryption : bool
+            hash : VpnClientHash option
             encryptionType : EncryptionType
             mutable lastSeen : DateTime
             mutable currentEndpoint : IPEndPoint option
@@ -120,7 +123,33 @@ module ClientRegistry =
             rng.GetBytes(key)
             key
 
-        member private r.tryGetClientConfig (clientId : VpnClientId) =
+        let getClientHashFilePath (clientId : VpnClientId) =
+            let hashFileName = FileName $"{clientId.value}.hash"
+            let hashFilePath = hashFileName.combine data.serverAccessInfo.clientKeysPath
+            hashFilePath
+
+        let tryGetClientHash (clientId : VpnClientId) =
+            let hashFile = getClientHashFilePath clientId
+            try
+                match hashFile.tryGetFullFileName() with
+                | Ok fn ->
+                    match File.Exists fn.value with
+                    | true ->
+                        let hash = File.ReadAllText fn.value |> VpnClientHash
+                        Ok (Some hash)
+                    | false -> Ok None
+                | Error e ->
+                    let err = $"Failed to load hash for client '{clientId.value}', error: '%A{e}'."
+                    Logger.logWarn err
+                    err |> HashErr |> Error
+            with
+            | e ->
+                let err = $"Failed to load hash for client: '{clientId.value}', exception: '%A{e}'."
+                Logger.logWarn err
+                err |> HashErr |> Error
+
+
+        member private r.tryGetClientConfigData (clientId : VpnClientId) =
             let keyId = KeyId clientId.value
             let keyFileName = FileName $"{clientId.value}.pkx"
             let clientKeysPath = data.serverAccessInfo.clientKeysPath
@@ -130,8 +159,16 @@ module ClientRegistry =
             | Ok (_, publicKey) ->
                 match tryLoadVpnClientConfig clientId with
                 | Ok config ->
-                    Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}', useEncryption: {config.useEncryption}, encryptionType: {config.encryptionType}."
-                    Ok (config, publicKey)
+                    match tryGetClientHash clientId with
+                    | Ok hash ->
+                        Logger.logInfo $"Loaded client: '{config.clientName.value}' : '{clientId.value}' -> '{config.assignedIp.value}', useEncryption: {config.useEncryption}, encryptionType: {config.encryptionType}."
+                        {
+                            clientConfig = config
+                            clientPublicKey = publicKey
+                            clientHash = hash
+                        }
+                        |> Ok
+                    | Error e -> Error e
                 | Error e -> Error e
             | Error e ->
                 Logger.logWarn $"Failed to load public key for client {clientId.value}: '%A{e}'."
@@ -152,8 +189,8 @@ module ClientRegistry =
 
         /// Create a push session for a client.
         member r.createPushSession(clientId: VpnClientId) : Result<PushClientSession, VpnError> =
-            match r.tryGetClientConfig(clientId) with
-            | Ok (config, publicKey) ->
+            match r.tryGetClientConfigData(clientId) with
+            | Ok config ->
                 match tryAllocateSessionId clientId with
                 | Ok sessionId ->
                     let sessionAesKey = generateSessionAesKey()
@@ -163,11 +200,12 @@ module ClientRegistry =
                             clientId = clientId
                             sessionId = sessionId
                             sessionAesKey = sessionAesKey
-                            clientName = config.clientName
-                            assignedIp = config.assignedIp
-                            publicKey = publicKey
-                            useEncryption = config.useEncryption
-                            encryptionType = config.encryptionType
+                            clientName = config.clientConfig.clientName
+                            assignedIp = config.clientConfig.assignedIp
+                            publicKey = config.clientPublicKey
+                            useEncryption = config.clientConfig.useEncryption
+                            encryptionType = config.clientConfig.encryptionType
+                            hash = config.clientHash
                             lastSeen = DateTime.UtcNow
                             currentEndpoint = None
                             pendingPackets = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)
@@ -177,7 +215,7 @@ module ClientRegistry =
 
                     sessionsBySessionId[sessionId] <- session
                     sessionIdByClientId[clientId] <- sessionId
-                    Logger.logInfo $"Created push session for client: '{clientId.value}' with sessionId: {sessionId.value}, useEncryption: {config.useEncryption}."
+                    Logger.logInfo $"Created push session for client: '{clientId.value}' with sessionId: {sessionId.value}, useEncryption: {config.clientConfig.useEncryption}."
                     Ok session
                 | Error e -> Error e
 

@@ -64,6 +64,12 @@ module Primitives =
         member this.value = let (VpnClientName v) = this in v
 
 
+    type VpnClientHash =
+        | VpnClientHash of string
+
+        member this.value = let (VpnClientHash v) = this in v
+
+
     type VpnSubnet =
         | VpnSubnet of string
 
@@ -166,3 +172,11 @@ module Primitives =
 
         member this.value = let (VpnDataVersion v) = this in v
         static member current = VpnDataVersion 1
+
+
+    type VpnClientConfigData =
+        {
+            clientConfig : VpnClientData
+            clientPublicKey : PublicKey
+            clientHash : VpnClientHash option
+        }

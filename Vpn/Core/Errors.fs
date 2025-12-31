@@ -60,6 +60,7 @@ module Errors =
         | VpnConnectionErr of VpnConnectionError
         | VpnServerErr of VpnServerError
         | ConfigErr of string
+        | HashErr of string
         | CryptoErr of CryptoError
         | SnafyErr of string // TODO kk:20251223 - Follow the trail, then propagate through the error hierarchy properly.
 
