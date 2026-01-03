@@ -8,6 +8,7 @@ open Softellect.Vpn.Core.Primitives
 module Errors =
 
     type VpnWcfError =
+        | VersionInfoWcfErr of WcfError
         | AuthWcfErr of WcfError
         | PingWcfErr of WcfError
 

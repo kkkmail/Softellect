@@ -190,3 +190,12 @@ module Primitives =
             clientPublicKey : PublicKey
             clientHash : VpnClientHash option
         }
+
+
+    /// Spec 057: Version handshake response - stable contract, do not modify.
+    /// If evolution is needed, add a new method instead.
+    type VpnVersionInfoResponse =
+        {
+            serverBuildNumber : int
+            minAllowedClientBuildNumber : int
+        }
