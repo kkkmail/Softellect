@@ -184,17 +184,17 @@ module Service =
             try
                 match authClient.getVersionInfo() with
                 | Ok versionInfo ->
-                    let (result, info) = checkVersionCompatibility versionInfo
+                    let result, info = checkVersionCompatibility versionInfo
                     setVersionCheckResult (Some (result, info))
 
                     match result with
-                    | VersionOk ->
+                    | VersionCheckOk ->
                         Logger.logInfo $"Push: Version check OK. Client: {info.clientBuild}, Server: {info.serverBuild}"
                         Ok ()
-                    | VersionWarn msg ->
+                    | VersionCheckWarn msg ->
                         Logger.logWarn $"Push: {msg}"
                         Ok ()  // WARN - proceed to auth
-                    | WcfClient.VersionError msg ->
+                    | VersionCheckError msg ->
                         Logger.logError $"Push: {msg}"
                         Error msg  // ERROR - do not proceed to auth
                 | Error e ->
@@ -321,7 +321,7 @@ module Service =
                                 | Error msg ->
                                     // Check if this is a version ERROR or transient failure
                                     match getVersionCheckResult() with
-                                    | Some (WcfClient.VersionError _, _) ->
+                                    | Some (VersionCheckError _, _) ->
                                         // Spec 057: Version ERROR - fail fast, do not retry
                                         Logger.logError $"Push: Version incompatibility - stopping connection attempts"
                                         connectionState <- VpnClientConnectionState.VersionError msg
