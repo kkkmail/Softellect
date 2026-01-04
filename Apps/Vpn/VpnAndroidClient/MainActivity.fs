@@ -21,16 +21,18 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.AndroidClient
 open Softellect.Vpn.AndroidClient.ConfigManager
 open Softellect.Vpn.AndroidClient.LogBuffer
+open Softellect.Vpn.Client.WcfClient
 open Android.Content.PM
 open VpnAndroidClient
 
 
-/// VPN connection states for UI display (spec 050: includes Reconnecting).
+/// VPN connection states for UI display (spec 050/057: includes Reconnecting and VersionMismatch).
 type VpnConnectionState =
     | Disconnected
     | Connecting
     | Connected
     | Reconnecting
+    | VersionMismatch  // Spec 057: Version mismatch (WARN or ERROR)
 
 
 /// Request codes for activity results.
@@ -53,6 +55,20 @@ module PastelColors =
     let textPurple() = Color.ParseColor("#7B1FA2")    // Darker purple for text (spec 055)
 
 
+/// Spec 057: Title bar colors for version states.
+module TitleBarColors =
+    let normal() = Color.ParseColor("#3F51B5")        // Primary color (default bluish)
+    let versionWarn() = Color.ParseColor("#FFC107")   // Yellowish (amber) for version WARN
+    let versionError() = Color.ParseColor("#D32F2F")  // Reddish for version ERROR
+
+
+/// Spec 057: Version state for UI display.
+type VersionState =
+    | VersionOkState
+    | VersionWarnState
+    | VersionErrorState
+
+
 /// Main activity for the VPN Android client.
 [<Activity(Label = "Softellect VPN", MainLauncher = true, Theme = "@style/AppTheme",
            ConfigurationChanges = (ConfigChanges.Orientation ||| ConfigChanges.ScreenSize))>]
@@ -66,11 +82,14 @@ type MainActivity() =
     let mutable infoPaneText: TextView = null
     let mutable logPaneText: TextView = null
     let mutable logScrollView: ScrollView = null
+    let mutable titleBar: LinearLayout = null  // Spec 057: Reference to title bar for color changes
     let mutable vpnService: VpnTunnelServiceImpl option = None
     let mutable serviceData: VpnClientServiceData option = None
     let mutable statsTimer: Timer = null
     let mutable configLoadError: string option = None
     let mutable lastError: string = ""
+    let mutable versionState: VersionState = VersionOkState  // Spec 057: Version state for UI
+    let mutable versionInfo: VersionCheckInfo option = None  // Spec 057: Version info for display
 
     // Connection info from config
     let mutable serverHost = ""
@@ -145,6 +164,24 @@ type MainActivity() =
         sb.AppendLine($"ServerId: {serverId}") |> ignore
         sb.AppendLine() |> ignore
 
+        // Spec 057: Version section
+        sb.AppendLine("── Version ──") |> ignore
+        match versionInfo with
+        | Some info ->
+            sb.AppendLine($"Client build: {info.clientBuild}") |> ignore
+            sb.AppendLine($"Server build: {info.serverBuild}") |> ignore
+            sb.AppendLine($"Min client (server): {info.minAllowedClientByServer}") |> ignore
+            sb.AppendLine($"Min server (client): {info.minAllowedServerByClient}") |> ignore
+            let statusStr =
+                match versionState with
+                | VersionOkState -> "OK"
+                | VersionWarnState -> "WARN"
+                | VersionErrorState -> "ERROR"
+            sb.AppendLine($"Status: {statusStr}") |> ignore
+        | None ->
+            sb.AppendLine("Not checked yet") |> ignore
+        sb.AppendLine() |> ignore
+
         // Session section
         sb.AppendLine("── Session ──") |> ignore
         sb.AppendLine($"SessionId: {this.FormatSessionId()}") |> ignore
@@ -187,6 +224,7 @@ type MainActivity() =
                     | Connecting -> (PastelColors.paleYellow(), true)
                     | Connected -> (PastelColors.paleGreen(), true)
                     | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
+                    | VersionMismatch -> (PastelColors.paleRed(), false) // Spec 057: Disabled on version mismatch
 
         // Create round drawable background
         let drawable = new GradientDrawable()
@@ -212,6 +250,7 @@ type MainActivity() =
                     | Connecting -> ("Connecting…", PastelColors.textYellow())
                     | Connected -> ("Connected", PastelColors.textGreen())
                     | Reconnecting -> ("Reconnecting…", PastelColors.textOrange()) // Spec 050
+                    | VersionMismatch -> ("Version Mismatch", PastelColors.textRed()) // Spec 057
 
         statusText.Text <- text
         statusText.SetTextColor(color)
@@ -234,17 +273,29 @@ type MainActivity() =
             ) |> ignore
 
 
+    /// Spec 057: Update title bar color based on version state.
+    member private this.UpdateTitleBar() =
+        if isNull titleBar then () else
+        let bgColor =
+            match versionState with
+            | VersionOkState -> TitleBarColors.normal()
+            | VersionWarnState -> TitleBarColors.versionWarn()
+            | VersionErrorState -> TitleBarColors.versionError()
+        titleBar.SetBackgroundColor(bgColor)
+
+
     /// Full UI update.
     member private this.UpdateUI() =
         this.RunOnUiThread(fun () ->
             this.UpdatePowerButton()
             this.UpdateStatusText()
+            this.UpdateTitleBar()  // Spec 057
             this.UpdateInfoPane()
             this.UpdateLogPane()
         )
 
 
-    /// Map service state to UI state (spec 050).
+    /// Map service state to UI state (spec 050/057).
     member private this.mapServiceStateToUiState (serviceState: VpnServiceConnectionState) =
         match serviceState with
         | VpnServiceConnectionState.Disconnected -> Disconnected
@@ -252,6 +303,21 @@ type MainActivity() =
         | VpnServiceConnectionState.Connected -> Connected
         | VpnServiceConnectionState.Reconnecting -> Reconnecting
         | VpnServiceConnectionState.Failed _ -> Disconnected
+        | VpnServiceConnectionState.VersionError _ -> Disconnected  // Spec 057: Treat as disconnected
+
+    /// Spec 057: Update version state from service.
+    member private this.updateVersionState (svc: VpnTunnelServiceImpl) =
+        match svc.VersionCheckResult with
+        | Some (VersionCheckOk, info) ->
+            versionState <- VersionOkState
+            versionInfo <- Some info
+        | Some (VersionCheckWarn _, info) ->
+            versionState <- VersionWarnState
+            versionInfo <- Some info
+        | Some (VersionCheckError _, info) ->
+            versionState <- VersionErrorState
+            versionInfo <- Some info
+        | None -> ()
 
     member private this.UpdateStats() =
         match vpnService with
@@ -268,6 +334,8 @@ type MainActivity() =
             if newState = Disconnected then pendingDisconnect <- false
             connectionState <- newState
             lastError <- svc.LastError
+            // Spec 057: Update version state
+            this.updateVersionState svc
             this.UpdateUI()
         | Some svc ->
             // Service exists but not running - still read state
@@ -276,6 +344,8 @@ type MainActivity() =
             if newState = Disconnected then pendingDisconnect <- false
             connectionState <- newState
             lastError <- svc.LastError
+            // Spec 057: Update version state
+            this.updateVersionState svc
             this.UpdateUI()
         | _ -> ()
 
@@ -392,6 +462,8 @@ type MainActivity() =
             this.UpdateUI()
             // Spec 055: Run StopVpnConnection asynchronously so UI update happens first
             async { this.StopVpnConnection() } |> Async.Start
+        | VersionMismatch ->
+            this.UpdateUI()
 
 
     member private this.CopyToClipboard(text: string, label: string) =
@@ -533,16 +605,18 @@ type MainActivity() =
 
         // Band 1: Title bar (bluish header with "Softellect VPN")
         // WrapContent height, no weight - must always be visible
-        let titleBar = new LinearLayout(this)
-        titleBar.Orientation <- Orientation.Horizontal
-        titleBar.SetGravity(GravityFlags.CenterVertical)
-        titleBar.SetBackgroundColor(Color.ParseColor("#3F51B5")) // Primary color from theme
-        titleBar.SetPadding(16, 12, 16, 12)
+        // Spec 057: Color changes based on version state
+        let newTitleBar = new LinearLayout(this)
+        newTitleBar.Orientation <- Orientation.Horizontal
+        newTitleBar.SetGravity(GravityFlags.CenterVertical)
+        newTitleBar.SetBackgroundColor(TitleBarColors.normal()) // Primary color from theme
+        newTitleBar.SetPadding(16, 12, 16, 12)
         let titleBarParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MatchParent,
             LinearLayout.LayoutParams.WrapContent)
         titleBarParams.BottomMargin <- 8
-        titleBar.LayoutParameters <- titleBarParams
+        newTitleBar.LayoutParameters <- titleBarParams
+        titleBar <- newTitleBar  // Save reference for color updates
 
         let titleText = new TextView(this)
         titleText.Text <- "Softellect VPN"
@@ -553,9 +627,9 @@ type MainActivity() =
             LinearLayout.LayoutParams.WrapContent,
             LinearLayout.LayoutParams.WrapContent)
         titleText.LayoutParameters <- titleTextParams
-        titleBar.AddView(titleText)
+        newTitleBar.AddView(titleText)
 
-        mainLayout.AddView(titleBar)
+        mainLayout.AddView(newTitleBar)
 
         // Band 2: Top control row (Connect button + status)
         // WrapContent height, no weight - must always be visible

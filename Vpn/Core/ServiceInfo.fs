@@ -17,15 +17,18 @@ module ServiceInfo =
 
 
     type VpnPingResult = Result<unit, VpnError>
+    type VpnVersionInfoResult = Result<VpnVersionInfoResponse, VpnError>
 
 
     type IAuthClient =
+        abstract getVersionInfo : unit -> VpnVersionInfoResult
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
         abstract pingSession : VpnPingRequest -> VpnPingResult
 
 #if !ANDROID
     type IAuthService =
         inherit IHostedService
+        abstract getVersionInfo : unit -> VpnVersionInfoResult
         abstract authenticate : VpnAuthRequest -> VpnAuthResult
         abstract pingSession : VpnPingRequest -> VpnPingResult
 
@@ -38,6 +41,10 @@ module ServiceInfo =
 
     [<ServiceContract(ConfigurationName = AuthServiceName)>]
     type IAuthWcfService =
+
+        /// Spec 057: Version handshake - stable contract, do not modify.
+        [<OperationContract(Name = "getVersionInfo")>]
+        abstract getVersionInfo : data:byte[] -> byte[]
 
         [<OperationContract(Name = "authenticate")>]
         abstract authenticate : data:byte[] -> byte[]

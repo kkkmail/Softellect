@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.Extensions.Hosting
+open Softellect.Sys.BuildInfo
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
@@ -28,6 +29,12 @@ module Service =
     let MaxSendPacketsPerCall = 256
 
 
+    /// Spec 057: Hard-coded minimum client build number the server will accept.
+    /// This constant is "cut in stone" - if changes are needed, add a new method.
+    [<Literal>]
+    let minAllowedClientBuildNumber = 40
+
+
     type AuthService(data: VpnServerData) =
         let mutable started = false
 
@@ -49,6 +56,15 @@ module Service =
             else Ok ()
 
         interface IAuthService with
+            /// Spec 057: Version handshake - returns server build info.
+            member _.getVersionInfo () =
+                let response : VpnVersionInfoResponse =
+                    {
+                        serverBuildNumber = BuildNumber
+                        minAllowedClientBuildNumber = minAllowedClientBuildNumber
+                    }
+                Ok response
+
             member _.authenticate request =
                 Logger.logInfo $"Authentication request from client: '{request.clientId.value}'."
 

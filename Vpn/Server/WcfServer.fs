@@ -80,8 +80,22 @@ module WcfServer =
     /// Encrypted auth service that wraps authentication with encryption/signing.
     [<ServiceBehavior(InstanceContextMode = InstanceContextMode.PerCall, IncludeExceptionDetailInFaults = true)>]
     type AuthWcfService (service: IAuthService, serverData: VpnServerData) =
+        let toGetVersionInfoError (e: WcfError) : VpnError = e |> VersionInfoWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
         let toAuthenticateError (e: WcfError) : VpnError = e |> AuthWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
         let toPingSessionError (e: WcfError) : VpnError = e |> PingWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
+
+        let getVersionInfoImpl data =
+            let verifier _ _ = true // No extra verification beyond decryption.
+
+            match tryDecryptAndVerifyRequest<unit> serverData data verifier with
+            | Ok (_, k) ->
+                match service.getVersionInfo () with
+                | Ok authResponse ->
+                    match trySignAndEncryptResponse serverData k authResponse with
+                    | Ok s -> Ok s
+                    | Error e -> SnafyErr $"trySignAndEncryptResponse failed, error: '%A{e}'." |> Error
+                | Error e -> Error e
+            | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
 
         let authenticateImpl data =
             let verifier c (r : VpnAuthRequest) = r.clientId = c
@@ -110,6 +124,7 @@ module WcfServer =
             | Error e -> SnafyErr $"tryDecryptAndVerifyRequest failed, error: '%A{e}'." |> Error
 
         interface IAuthWcfService with
+            member _.getVersionInfo data = tryReply getVersionInfoImpl toGetVersionInfoError data
             member _.authenticate data = tryReply authenticateImpl toAuthenticateError data
             member _.pingSession data = tryReply pingSessionImpl toPingSessionError data
 

@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>10.0.101.40</Version>
-    <PackageVersion>10.0.101.40</PackageVersion>
+    <Version>10.0.101.41</Version>
+    <PackageVersion>10.0.101.41</PackageVersion>
     <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
     <PackageTags>messaging;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>

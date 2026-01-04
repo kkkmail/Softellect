@@ -1,5 +1,6 @@
 namespace Softellect.Vpn.Client
 
+open Softellect.Sys.BuildInfo
 open Softellect.Sys.Core
 open Softellect.Sys.Crypto
 open Softellect.Sys.Logging
@@ -11,6 +12,60 @@ open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 
 module WcfClient =
+
+    /// Spec 057: Hard-coded minimum server build number the client will accept.
+    [<Literal>]
+    let minAllowedServerBuildNumber = 41
+
+
+    /// Spec 057: Version check result.
+    type VersionCheckResult =
+        | VersionCheckOk
+        | VersionCheckWarn of message: string
+        | VersionCheckError of message: string
+
+
+    /// Spec 057: Version check info for error messages and UI display.
+    type VersionCheckInfo =
+        {
+            clientBuild : int
+            serverBuild : int
+            minAllowedClientByServer : int
+            minAllowedServerByClient : int
+        }
+
+
+    /// Spec 057: Perform version gating logic.
+    /// Returns OK, WARN, or ERROR based on version compatibility.
+    let checkVersionCompatibility (versionInfo: VpnVersionInfoResponse) : VersionCheckResult * VersionCheckInfo =
+        let clientBuild = BuildNumber
+        let serverBuild = versionInfo.serverBuildNumber
+        let minAllowedClientByServer = versionInfo.minAllowedClientBuildNumber
+        let minAllowedServerByClient = minAllowedServerBuildNumber
+
+        let info =
+            {
+                clientBuild = clientBuild
+                serverBuild = serverBuild
+                minAllowedClientByServer = minAllowedClientByServer
+                minAllowedServerByClient = minAllowedServerByClient
+            }
+
+        // Check ERROR conditions first (fail fast)
+        if clientBuild < minAllowedClientByServer then
+            let msg = $"Client build {clientBuild} is below minimum supported {minAllowedClientByServer} (server build {serverBuild}). Upgrade client required."
+            (VersionCheckError msg, info)
+        elif serverBuild < minAllowedServerByClient then
+            let msg = $"Server build {serverBuild} is below minimum supported {minAllowedServerByClient} (client build {clientBuild}). Upgrade server required."
+            (VersionCheckError msg, info)
+        // Check WARN conditions
+        elif clientBuild <> serverBuild then
+            let msg = $"Version mismatch: client {clientBuild}, server {serverBuild}; supported (server min client {minAllowedClientByServer}, client min server {minAllowedServerByClient})."
+            (VersionCheckWarn msg, info)
+        // OK - versions match
+        else
+            (VersionCheckOk, info)
+
 
     let inline private trySignAndEncryptRequest (data: VpnClientServiceData) request =
         match trySerialize wcfSerializationFormat request with
@@ -47,8 +102,16 @@ module WcfClient =
         do Logger.logTrace (fun () -> $"AuthWcfClient - serverAccessInfo: '%A{clientAccessInfo.serverAccessInfo}'")
 
         let tryGetWcfService() = tryGetWcfService<IAuthWcfService> commType url
+        let toVersionInfoError (e: WcfError) = e |> VersionInfoWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
         let toAuthError (e: WcfError) = e |> AuthWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
         let toPingError (e: WcfError) = e |> PingWcfErr |> VpnWcfErr |> VpnAuthErr |> VpnConnectionErr
+
+        let getVersionInfoImpl () =
+            match trySignAndEncryptRequest data () with
+            | Ok r ->
+                  tryCommunicate tryGetWcfService (fun service -> service.getVersionInfo) toAuthError r
+                  |> Result.bind (tryDecryptAndVerifyResponse data)
+            | Error e -> Error e
 
         let authenticateImpl (request : VpnAuthRequest) =
             match trySignAndEncryptRequest data request with
@@ -65,6 +128,7 @@ module WcfClient =
             | Error e -> Error e
 
         interface IAuthClient with
+            member _.getVersionInfo () = getVersionInfoImpl ()
             member _.authenticate request = authenticateImpl request
             member _.pingSession request =  pingSessionImpl request
 

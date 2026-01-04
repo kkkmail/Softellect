@@ -63,6 +63,7 @@ module Service =
         | Connected of VpnIpAddress
         | Reconnecting
         | Failed of string
+        | VersionError of string  // Spec 057: Version incompatibility error
 
 
     let private getServerIp (data: VpnClientServiceData) =
@@ -162,6 +163,48 @@ module Service =
         let setAuth (auth: VpnAuthResponse option) =
             lock authLock (fun () -> currentAuth <- auth)
 
+        // Spec 057: Version check state - None means not checked yet, Some means checked
+        let mutable versionCheckResult : (VersionCheckResult * VersionCheckInfo) option = None
+        let versionLock = obj()
+
+        /// Get current version check result (thread-safe).
+        let getVersionCheckResult () =
+            lock versionLock (fun () -> versionCheckResult)
+
+        /// Set version check result (thread-safe).
+        let setVersionCheckResult result =
+            lock versionLock (fun () -> versionCheckResult <- result)
+
+        /// Spec 057: Check server version before authentication.
+        /// Returns Ok () if version is OK or WARN, Error msg if version is ERROR.
+        let checkVersion () =
+            Logger.logInfo "Push: Checking server version..."
+            let authClient = createAuthWcfClient data
+
+            try
+                match authClient.getVersionInfo() with
+                | Ok versionInfo ->
+                    let result, info = checkVersionCompatibility versionInfo
+                    setVersionCheckResult (Some (result, info))
+
+                    match result with
+                    | VersionCheckOk ->
+                        Logger.logInfo $"Push: Version check OK. Client: {info.clientBuild}, Server: {info.serverBuild}"
+                        Ok ()
+                    | VersionCheckWarn msg ->
+                        Logger.logWarn $"Push: {msg}"
+                        Ok ()  // WARN - proceed to auth
+                    | VersionCheckError msg ->
+                        Logger.logError $"Push: {msg}"
+                        Error msg  // ERROR - do not proceed to auth
+                | Error e ->
+                    Logger.logWarn $"Push: Version check failed: '%A{e}'"
+                    Error $"Version check error: '%A{e}'."
+            with
+            | ex ->
+                Logger.logWarn $"Push: Version check exception: {ex.Message}"
+                Error $"Version check exception: {ex.Message}"
+
         let authenticate () =
             Logger.logInfo "Push: Authenticating with server..."
 
@@ -250,81 +293,108 @@ module Service =
                         Logger.logError $"Push: Error in send loop: {ex.Message}"
             } :> Task
 
-        /// Spec 042: Supervisor loop - handles authentication and health checks.
+        /// Spec 042/057: Supervisor loop - handles version check, authentication and health checks.
         /// Runs forever until stopped. Never exits due to transient failures.
+        /// Spec 057: Version check is performed BEFORE first authentication and uses same retry policy.
         let supervisorLoopAsync () =
             task {
                 let mutable tunnelStarted = false
                 let mutable udpStarted = false
                 let mutable currentBackoffMs = HealthCheckIntervalMs
                 let mutable authFailedOnce = false
+                let mutable versionChecked = false
+                let mutable versionCheckFailed = false  // Spec 057: Tracks if version check returned ERROR
 
-                while running && not cts.Token.IsCancellationRequested do
+                while running && not cts.Token.IsCancellationRequested && not versionCheckFailed do
                     try
                         match getAuth() with
                         | None ->
-                            // No auth - need to authenticate
+                            // No auth - need to check version (once) then authenticate
                             connectionState <- Connecting
 
-                            match authenticate() with
-                            | Ok authResponse ->
-                                // Atomically swap the auth snapshot
-                                setAuth (Some authResponse)
-                                authFailedOnce <- false
-                                currentBackoffMs <- HealthCheckIntervalMs
+                            // Spec 057: Perform version check before first authentication
+                            if not versionChecked then
+                                match checkVersion() with
+                                | Ok () ->
+                                    versionChecked <- true
+                                    // Version OK or WARN - proceed to auth
+                                | Error msg ->
+                                    // Check if this is a version ERROR or transient failure
+                                    match getVersionCheckResult() with
+                                    | Some (VersionCheckError _, _) ->
+                                        // Spec 057: Version ERROR - fail fast, do not retry
+                                        Logger.logError $"Push: Version incompatibility - stopping connection attempts"
+                                        connectionState <- VpnClientConnectionState.VersionError msg
+                                        versionCheckFailed <- true
+                                    | _ ->
+                                        // Transient failure - retry with backoff (same policy as auth)
+                                        if not authFailedOnce then
+                                            Logger.logWarn "Push: Version check failed (transient), will retry with backoff"
+                                            authFailedOnce <- true
+                                        do! Task.Delay(currentBackoffMs, cts.Token)
+                                        currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
 
-                                // Start the tunnel if not started (first successful auth)
-                                if not tunnelStarted then
-                                    match startTunnel authResponse.assignedIp with
-                                    | Ok t ->
-                                        Logger.logInfo $"Push: Tunnel started with IP: '{authResponse.assignedIp.value.value}', state: '%A{t.state}'."
+                            // Only proceed to auth if version check passed
+                            if versionChecked && not versionCheckFailed then
+                                match authenticate() with
+                                | Ok authResponse ->
+                                    // Atomically swap the auth snapshot
+                                    setAuth (Some authResponse)
+                                    authFailedOnce <- false
+                                    currentBackoffMs <- HealthCheckIntervalMs
 
-                                        // Permit traffic from VPN local address in kill-switch
-                                        match killSwitch with
-                                        | Some ks ->
-                                            let r = ks.AddPermitFilterForLocalHost(authResponse.assignedIp.value.ipAddress, $"Permit VPN Local {authResponse.assignedIp.value}")
-                                            if r.IsSuccess then
-                                                Logger.logInfo $"Kill-switch: permitted VPN local address {authResponse.assignedIp.value}"
-                                                tunnelStarted <- true
-                                            else
-                                                let errMsg = match r.Error with | null -> "Unknown error" | e -> e
-                                                Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
-                                        | None -> Logger.logError "Kill-switch instance is missing"
-                                    | Error msg -> Logger.logError $"Push: Failed to start tunnel: {msg}"
+                                    // Start the tunnel if not started (first successful auth)
+                                    if not tunnelStarted then
+                                        match startTunnel authResponse.assignedIp with
+                                        | Ok t ->
+                                            Logger.logInfo $"Push: Tunnel started with IP: '{authResponse.assignedIp.value.value}', state: '%A{t.state}'."
 
-                                // Start a UDP client if the tunnel started and UDP not started
-                                if tunnelStarted && not udpStarted then
-                                    match tunnel with
-                                    | Some t ->
-                                        Logger.logInfo "Creating and starting push UDP client."
-                                        let pc = createVpnPushUdpClient data getAuth
+                                            // Permit traffic from VPN local address in kill-switch
+                                            match killSwitch with
+                                            | Some ks ->
+                                                let r = ks.AddPermitFilterForLocalHost(authResponse.assignedIp.value.ipAddress, $"Permit VPN Local {authResponse.assignedIp.value}")
+                                                if r.IsSuccess then
+                                                    Logger.logInfo $"Kill-switch: permitted VPN local address {authResponse.assignedIp.value}"
+                                                    tunnelStarted <- true
+                                                else
+                                                    let errMsg = match r.Error with | null -> "Unknown error" | e -> e
+                                                    Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
+                                            | None -> Logger.logError "Kill-switch instance is missing"
+                                        | Error msg -> Logger.logError $"Push: Failed to start tunnel: {msg}"
 
-                                        Logger.logInfo "Setting up direct injection from push client to tunnel."
-                                        pc.setPacketInjector(TunnelInjector(t))
+                                    // Start a UDP client if the tunnel started and UDP not started
+                                    if tunnelStarted && not udpStarted then
+                                        match tunnel with
+                                        | Some t ->
+                                            Logger.logInfo "Creating and starting push UDP client."
+                                            let pc = createVpnPushUdpClient data getAuth
 
-                                        Logger.logInfo "Starting push client loops."
-                                        pc.start()
-                                        pushClient <- Some pc
+                                            Logger.logInfo "Setting up direct injection from push client to tunnel."
+                                            pc.setPacketInjector(TunnelInjector(t))
 
-                                        Logger.logInfo "Starting send loop (tunnel -> push client)."
-                                        sendTask <- Some (Task.Run(fun () -> sendLoopAsync t pc))
+                                            Logger.logInfo "Starting push client loops."
+                                            pc.start()
+                                            pushClient <- Some pc
 
-                                        udpStarted <- true
-                                    | None -> ()
+                                            Logger.logInfo "Starting send loop (tunnel -> push client)."
+                                            sendTask <- Some (Task.Run(fun () -> sendLoopAsync t pc))
 
-                                if tunnelStarted && udpStarted then
-                                    connectionState <- Connected authResponse.assignedIp
-                                    Logger.logInfo $"Push VPN Client connected with IP: {authResponse.assignedIp.value}"
+                                            udpStarted <- true
+                                        | None -> ()
 
-                            | Error _ ->
-                                // Spec 042: Log auth failure once, then info occasionally
-                                if not authFailedOnce then
-                                    Logger.logWarn "Push: Authentication failed, will retry with backoff"
-                                    authFailedOnce <- true
+                                    if tunnelStarted && udpStarted then
+                                        connectionState <- Connected authResponse.assignedIp
+                                        Logger.logInfo $"Push VPN Client connected with IP: {authResponse.assignedIp.value}"
 
-                                // Exponential backoff
-                                do! Task.Delay(currentBackoffMs, cts.Token)
-                                currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
+                                | Error _ ->
+                                    // Spec 042: Log auth failure once, then info occasionally
+                                    if not authFailedOnce then
+                                        Logger.logWarn "Push: Authentication failed, will retry with backoff"
+                                        authFailedOnce <- true
+
+                                    // Exponential backoff
+                                    do! Task.Delay(currentBackoffMs, cts.Token)
+                                    currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
 
                         | Some auth ->
                             // Have auth - do health check

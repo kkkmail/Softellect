@@ -37,13 +37,14 @@ module VpnTunnelService =
     let NoAuthBackoffMs = 100
 
 
-/// VPN connection state for service layer (spec 050).
+/// VPN connection state for service layer (spec 050/057).
 type VpnServiceConnectionState =
     | Disconnected
     | Connecting
     | Connected
     | Reconnecting
     | Failed of string
+    | VersionError of string  // Spec 057: Version incompatibility error
 
 
 /// Android VpnService implementation for Softellect VPN.
@@ -112,6 +113,46 @@ type VpnTunnelServiceImpl() =
     /// Clear last error (thread-safe).
     let clearLastError () =
         lock stateLock (fun () -> lastError <- "")
+
+    // Spec 057: Version check state - None means not checked yet, Some means checked
+    let mutable versionCheckResult : (VersionCheckResult * VersionCheckInfo) option = None
+    let versionLock = obj()
+
+    /// Get current version check result (thread-safe).
+    let getVersionCheckResult () =
+        lock versionLock (fun () -> versionCheckResult)
+
+    /// Set version check result (thread-safe).
+    let setVersionCheckResult result =
+        lock versionLock (fun () -> versionCheckResult <- result)
+
+    /// Spec 057: Check server version.
+    /// Returns Ok () if version is OK or WARN, Error msg if version is ERROR.
+    let checkVersion (client: IAuthClient) =
+        Logger.logInfo "VPN: Checking server version..."
+        try
+            match client.getVersionInfo() with
+            | Ok versionInfo ->
+                let (result, info) = checkVersionCompatibility versionInfo
+                setVersionCheckResult (Some (result, info))
+
+                match result with
+                | VersionCheckOk ->
+                    Logger.logInfo $"VPN: Version check OK. Client: {info.clientBuild}, Server: {info.serverBuild}"
+                    Ok ()
+                | VersionCheckWarn msg ->
+                    Logger.logWarn $"VPN: {msg}"
+                    Ok ()  // WARN - proceed to auth
+                | VersionCheckError msg ->
+                    Logger.logError $"VPN: {msg}"
+                    Error msg  // ERROR - do not proceed to auth
+            | Error e ->
+                Logger.logWarn $"VPN: Version check failed: '%A{e}'"
+                Error $"Version check error: '%A{e}'."
+        with
+        | ex ->
+            Logger.logWarn $"VPN: Version check exception: {ex.Message}"
+            Error $"Version check exception: {ex.Message}"
 
     /// Packet injector that writes to TUN.
     let createPacketInjector (outputStream: FileOutputStream) =
@@ -344,10 +385,28 @@ type VpnTunnelServiceImpl() =
             // Store hash for supervisor loop
             clientHash <- Some hash
 
-            // Create auth client and authenticate
+            // Create auth client
             let auth = createAuthWcfClient serviceData
             authClient <- Some auth
 
+            // Spec 057: Perform version check before authentication
+            match checkVersion auth with
+            | Error msg ->
+                // Check if this is a version ERROR (fail fast)
+                match getVersionCheckResult() with
+                | Some (VersionCheckError _, _) ->
+                    // Version ERROR - do not proceed to auth
+                    setLastError msg
+                    setState (VpnServiceConnectionState.VersionError msg)
+                    false
+                | _ ->
+                    // Transient failure - treat as regular error
+                    setLastError msg
+                    setState VpnServiceConnectionState.Disconnected
+                    false
+            | Ok () ->
+
+            // Version OK or WARN - proceed to authenticate
             let authRequest =
                 {
                     clientId = serviceData.clientAccessInfo.vpnClientId
@@ -521,6 +580,10 @@ type VpnTunnelServiceImpl() =
     /// Get last error message (spec 050).
     member _.LastError : string =
         getLastError()
+
+    /// Spec 057: Get version check result (for UI display).
+    member _.VersionCheckResult : (VersionCheckResult * VersionCheckInfo) option =
+        getVersionCheckResult()
 
     override this.OnStartCommand(intent: Intent, flags: StartCommandFlags, startId: int) =
         StartCommandResult.Sticky
