@@ -14,9 +14,8 @@ open Softellect.Vpn.Core.ServiceInfo
 module WcfClient =
 
     /// Spec 057: Hard-coded minimum server build number the client will accept.
-    /// This constant is "cut in stone" - if changes are needed, add a new method.
     [<Literal>]
-    let minAllowedServerBuildNumber = 40
+    let minAllowedServerBuildNumber = 41
 
 
     /// Spec 057: Version check result.
