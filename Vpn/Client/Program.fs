@@ -1,19 +1,13 @@
 namespace Softellect.Vpn.Client
 
-open System
 open System.IO
-open System.Net
-open CoreWCF.Configuration
-open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
-open Softellect.Wcf.Common
 open Softellect.Wcf.Program
-open Softellect.Wcf.Service
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.KeyManagement
@@ -94,38 +88,6 @@ module Program =
                 // Create the admin WCF service wrapper
                 let adminWcfService = AdminWcfService(vpnService :> IAdminService)
 
-                // let host =
-                //     Host.CreateDefaultBuilder()
-                //         .UseWindowsService()
-                //         .ConfigureLogging(fun logging ->
-                //             match isService() with
-                //             | true -> configureServiceLogging (Some (getProjectName())) logging
-                //             | false -> configureLogging (Some (getProjectName())) logging)
-                //         .ConfigureServices(fun hostContext services ->
-                //             // Register VPN service as IHostedService
-                //             services.AddSingleton<IHostedService>(vpnService :> IHostedService) |> ignore
-                //             // Register admin WCF service for DI
-                //             services.AddSingleton<AdminWcfService>(adminWcfService) |> ignore
-                //             services.AddServiceModelServices() |> ignore)
-                //         .ConfigureWebHostDefaults(fun webBuilder ->
-                //             match adminAccessInfo with
-                //             | HttpServiceInfo i ->
-                //                 webBuilder.UseKestrel(fun options ->
-                //                     let endPoint = IPEndPoint(i.httpServiceAddress.value.ipAddress, i.httpServicePort.value)
-                //                     Logger.logInfo $"Configuring admin WCF endpoint on {endPoint}..."
-                //                     options.Listen(endPoint)
-                //                     options.Limits.MaxResponseBufferSize <- (Nullable (int64 Int32.MaxValue))
-                //                     options.Limits.MaxRequestBufferSize <- (Nullable (int64 Int32.MaxValue))
-                //                     options.Limits.MaxRequestBodySize <- (Nullable (int64 Int32.MaxValue))) |> ignore
-                //             | NetTcpServiceInfo i ->
-                //                 webBuilder.UseNetTcp(i.netTcpServicePort.value) |> ignore
-                //
-                //             webBuilder.UseStartup(fun _ -> WcfStartup<IAdminWcfService, AdminWcfService>(adminAccessInfo)) |> ignore)
-                //         .Build()
-                //
-                // host.Run()
-                // Softellect.Sys.ExitErrorCodes.CompletedSuccessfully
-
                 let projectName = getProjectName() |> Some
 
                 let configureServices (services : IServiceCollection) =
@@ -143,11 +105,10 @@ module Program =
                         postBuildHandler = None
                     }
 
-                wcfMain<IAdminService, IAdminWcfService, AdminWcfService> "AdminService" programData argv
+                wcfMain<IAdminService, IAdminWcfService, AdminWcfService> programName programData argv
             | Error msg ->
                 Logger.logCrit msg
                 Softellect.Sys.ExitErrorCodes.CriticalError
-
         | Error msg ->
             Logger.logCrit msg
             Softellect.Sys.ExitErrorCodes.CriticalError

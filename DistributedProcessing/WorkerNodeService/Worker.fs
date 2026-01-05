@@ -43,14 +43,14 @@ module Worker =
             member _.ping() = ping()
 
         interface IHostedService with
-            member _.StartAsync(cancellationToken : CancellationToken) =
+            member _.StartAsync(_ : CancellationToken) =
                 async {
                     Logger.logInfo "WorkerNodeService::StartAsync..."
                 }
                 |> Async.StartAsTask
                 :> Task
 
-            member _.StopAsync(cancellationToken : CancellationToken) =
+            member _.StopAsync(_ : CancellationToken) =
                 async {
                     Logger.logInfo "WorkerNodeService::StopAsync..."
                 }
