@@ -2,7 +2,8 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <UseWindowsForms>true</UseWindowsForms>
         <Platforms>x64</Platforms>
         <AssemblyName>VpnClientAdm</AssemblyName>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -24,13 +25,16 @@
     <ItemGroup>
         <Compile Include="CommandLine.fs" />
         <Compile Include="Implementation.fs" />
+        <Compile Include="TrayUi.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Argu" Version="6.2.5" />
         <ProjectReference Include="..\..\..\Sys\Sys.fsproj" />
+        <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
         <ProjectReference Include="..\..\..\Vpn\Core\Core.fsproj" />
+        <ProjectReference Include="..\..\..\Vpn\Client\Client.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>
 

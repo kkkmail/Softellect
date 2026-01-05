@@ -11,6 +11,7 @@ module Errors =
         | VersionInfoWcfErr of WcfError
         | AuthWcfErr of WcfError
         | PingWcfErr of WcfError
+        | AdminWcfErr of WcfError
 
 
     type VpnAuthError =
@@ -57,10 +58,16 @@ module Errors =
         | ClientNotRegisteredErr of VpnClientId
 
 
+    type VpnAdminError =
+        | AdminWcfErr of VpnWcfError
+        | AdminOperationErr of string
+
+
     type VpnError =
         | VpnAggregateErr of VpnError  * List<VpnError>
         | VpnConnectionErr of VpnConnectionError
         | VpnServerErr of VpnServerError
+        | VpnAdminErr of VpnAdminError
         | ConfigErr of string
         | HashErr of string
         | CryptoErr of CryptoError
