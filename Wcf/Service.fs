@@ -107,8 +107,5 @@ module Service =
             do
                 services.AddServiceModelServices() |> ignore
 
-                // TODO kk:2025122 - This seems to be a fuck up. Commenting out to see if this resolves the registration issues.
-                // services.AddTransient<'WcfService>() |> ignore
-
         member _.Configure(app : IApplicationBuilder, _ : IWebHostEnvironment) =
             do app.UseServiceModel(fun builder -> createServiceModel builder) |> ignore

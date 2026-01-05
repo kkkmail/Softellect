@@ -117,6 +117,7 @@ module ServiceInfo =
     /// High-level F# interface for admin service.
     /// Used by the service to expose VPN control operations.
     type IAdminService =
+        inherit IHostedService
         abstract getStatus : unit -> VpnClientConnectionState
         abstract startVpn : unit -> AdminUnitResult
         abstract stopVpn : unit -> AdminUnitResult

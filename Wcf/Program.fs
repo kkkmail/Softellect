@@ -48,12 +48,6 @@ module Program =
                 | true -> data.configureServiceLogging logging
                 | false -> data.configureLogging logging)
 
-                // if isService then
-                // else
-                //     logging.AddConsole() |> ignore  // Add console logging
-                //     logging.AddDebug() |> ignore    // Add debug logging
-                //     logging.SetMinimumLevel(LogLevel.Information) |> ignore) // Set minimum log level
-
             .ConfigureServices(fun hostContext services ->
                 let service = data.getService()
                 services.AddSingleton<'IService>(service) |> ignore
