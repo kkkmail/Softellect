@@ -37,6 +37,8 @@ module AppSettings =
     let physicalInterfaceNameKey = ConfigKey "PhysicalInterfaceName"
     let useEncryptionKey = ConfigKey "UseEncryption"
     let encryptionTypeKey = ConfigKey "EncryptionType"
+    let adminAccessInfoKey = ConfigKey "AdminAccessInfo"
+    let autoStartKey = ConfigKey "AutoStart"
 
     let defaultPhysicalGatewayIp = Ip4 "192.168.1.1"
     let defaultPhysicalInterfaceName = "Wi-Fi"
@@ -341,3 +343,35 @@ module AppSettings =
         | Error e ->
             Logger.logError $"addOrUpdateVpnClientConfig: ERROR creating provider - '%A{e}'."
             toErr $"Failed to create settings provider: %A{e}"
+
+
+    /// Default admin service access info for localhost communication.
+    let defaultAdminAccessInfo =
+        {
+            httpServiceAddress = ServiceAddress localHost
+            httpServicePort = ServicePort 45002
+            httpServiceName = ServiceName "VpnAdmService"
+        }
+        |> HttpServiceInfo
+
+
+    /// Loads admin service access info from appsettings.json.
+    let loadAdminAccessInfo () =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            getServiceAccessInfo provider adminAccessInfoKey defaultAdminAccessInfo
+        | Error e ->
+            Logger.logWarn $"loadAdminAccessInfo - Cannot load settings, using default. Error: '%A{e}'."
+            defaultAdminAccessInfo
+
+
+    /// Loads AutoStart setting from appsettings.json.
+    /// Returns true if VPN should start automatically with the service.
+    let loadAutoStart () =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let s = provider.getStringOrDefault autoStartKey ""
+            s.ToLower() = "true"
+        | Error e ->
+            Logger.logWarn $"loadAutoStart - Cannot load settings, using default (false). Error: '%A{e}'."
+            false

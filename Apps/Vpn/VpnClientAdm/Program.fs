@@ -6,17 +6,19 @@ open Softellect.Sys.AppSettings
 open Softellect.Sys.Logging
 open Softellect.Vpn.ClientAdm.CommandLine
 open Softellect.Vpn.ClientAdm.Implementation
+open Softellect.Vpn.ClientAdm.TrayUi
 
 module Program =
 
     [<EntryPoint>]
+    [<System.STAThread>]
     let main argv =
         setLogLevel()
         let parser = ArgumentParser.Create<VpnClientAdmArgs>(programName = "VpnClientAdm")
 
         try
-            let ctx = ClientAdmContext.create()
             let results = (parser.Parse argv).GetAllResults()
+            let ctx = ClientAdmContext.create()
 
             let retVal =
                 results
@@ -28,6 +30,7 @@ module Program =
                         | Status args -> status ctx (args.GetAllResults())
                         | SetServer args -> setServer ctx (args.GetAllResults())
                         | DetectPhysicalNetwork _ -> detectPhysicalNetwork ctx
+                        | Tray args -> run ctx (args.GetAllResults())
                     )
 
             retVal |> List.iter (fun x ->
@@ -38,7 +41,7 @@ module Program =
             CompletedSuccessfully
         with
         | :? ArguParseException as ex ->
-            printfn "%s" ex.Message
+            printfn $"%s{ex.Message}"
             InvalidCommandLineArgs
         | ex ->
             Logger.logCrit $"Unexpected error: {ex.Message}"

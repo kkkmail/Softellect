@@ -97,3 +97,43 @@ module ServiceInfo =
             clientPublicKey : PublicKey
             serverPublicKey : PublicKey
         }
+
+
+#if !ANDROID
+    /// VPN connection state for admin interface and UI display.
+    type VpnClientConnectionState =
+        | Disconnected
+        | Connecting
+        | Connected of VpnIpAddress
+        | Reconnecting
+        | Failed of string
+        | VersionError of string
+
+
+    /// Admin service result types.
+    type AdminUnitResult = Result<unit, VpnError>
+
+
+    /// High-level F# interface for admin service.
+    /// Used by the service to expose VPN control operations.
+    type IAdminService =
+        inherit IHostedService
+        abstract getStatus : unit -> VpnClientConnectionState
+        abstract startVpn : unit -> AdminUnitResult
+        abstract stopVpn : unit -> AdminUnitResult
+
+
+    /// Low-level WCF interface for admin service.
+    /// All methods use byte[] -> byte[] pattern for WCF serialization.
+    [<ServiceContract(ConfigurationName = "VpnAdminService")>]
+    type IAdminWcfService =
+
+        [<OperationContract(Name = "getStatus")>]
+        abstract getStatus : data:byte[] -> byte[]
+
+        [<OperationContract(Name = "startVpn")>]
+        abstract startVpn : data:byte[] -> byte[]
+
+        [<OperationContract(Name = "stopVpn")>]
+        abstract stopVpn : data:byte[] -> byte[]
+#endif

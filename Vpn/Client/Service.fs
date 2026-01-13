@@ -9,6 +9,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
+open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Tunnel
 open Softellect.Vpn.Client.WcfClient
@@ -55,15 +56,6 @@ module Service =
         match getWindowsMachineGuid() with
         | Ok machineGuid -> Ok (VpnClientHash.compute machineGuid)
         | Error e -> Error e
-
-
-    type VpnClientConnectionState =
-        | Disconnected
-        | Connecting
-        | Connected of VpnIpAddress
-        | Reconnecting
-        | Failed of string
-        | VersionError of string  // Spec 057: Version incompatibility error
 
 
     let private getServerIp (data: VpnClientServiceData) =
@@ -135,21 +127,24 @@ module Service =
             member _.injectPacket(packet) = tunnel.injectPacket(packet)
 
 
-    /// VPN client service using push dataplane (spec 042).
+    /// VPN client service using push dataplane (spec 042/058).
     /// Implements client resilience via atomic auth snapshot.
     /// - StartAsync is lightweight and non-blocking
     /// - Supervisor loop handles auth, health checks, and recovery
     /// - UDP plane runs once and never restarts
     /// - Client never exits due to transient failures
-    type VpnPushClientService(data: VpnClientServiceData) =
-        let mutable connectionState = Disconnected
+    /// - VPN start/stop is controlled via IAdminService (spec 058)
+    type VpnPushClientService(data: VpnClientServiceData, autoStart: bool) =
+        let mutable connectionState = VpnClientConnectionState.Disconnected
         let mutable tunnel : Tunnel option = None
         let mutable killSwitch : KillSwitch option = None
         let mutable pushClient : VpnPushUdpClient option = None
         let mutable sendTask : Task option = None
         let mutable supervisorTask : Task option = None
         let mutable running = false
-        let cts = new CancellationTokenSource()
+        let mutable vpnStarted = false
+        let mutable cts = new CancellationTokenSource()
+        let startStopLock = obj()
 
         // Spec 042: Single mutable auth snapshot - The source of truth for UDP plane
         let mutable currentAuth : VpnAuthResponse option = None
@@ -310,7 +305,7 @@ module Service =
                         match getAuth() with
                         | None ->
                             // No auth - need to check version (once) then authenticate
-                            connectionState <- Connecting
+                            connectionState <- VpnClientConnectionState.Connecting
 
                             // Spec 057: Perform version check before first authentication
                             if not versionChecked then
@@ -383,7 +378,7 @@ module Service =
                                         | None -> ()
 
                                     if tunnelStarted && udpStarted then
-                                        connectionState <- Connected authResponse.assignedIp
+                                        connectionState <- VpnClientConnectionState.Connected authResponse.assignedIp
                                         Logger.logInfo $"Push VPN Client connected with IP: {authResponse.assignedIp.value}"
 
                                 | Error _ ->
@@ -422,73 +417,118 @@ module Service =
                         currentBackoffMs <- min (currentBackoffMs * 2) MaxHealthCheckBackoffMs
             } :> Task
 
+        /// Internal method to start VPN connection.
+        /// Called by IAdminService.startVpn() or during StartAsync if autoStart=true.
+        let doStartVpn () : AdminUnitResult =
+            lock startStopLock (fun () ->
+                if vpnStarted then
+                    Logger.logInfo "VPN already started, ignoring start request."
+                    Ok ()
+                else
+                    Logger.logInfo "Starting VPN connection..."
+
+                    // Enable kill-switch FIRST - this is a critical startup requirement
+                    match enableKillSwitch data with
+                    | Ok ks ->
+                        killSwitch <- Some ks
+                        running <- true
+                        vpnStarted <- true
+
+                        // Reset cancellation token if it was cancelled
+                        if cts.IsCancellationRequested then
+                            cts.Dispose()
+                            cts <- new CancellationTokenSource()
+
+                        // Initialize currentAuth = None
+                        setAuth None
+
+                        // Start supervisor loop in background
+                        Logger.logInfo "Starting supervisor loop..."
+                        supervisorTask <- Some (Task.Run(supervisorLoopAsync))
+
+                        Ok ()
+
+                    | Error msg ->
+                        connectionState <- Failed msg
+                        Logger.logError $"Failed to enable kill-switch: {msg}"
+                        VpnAdminError.AdminOperationErr msg |> VpnAdminErr |> Error
+            )
+
+        /// Internal method to stop VPN connection.
+        /// Called by IAdminService.stopVpn() or during StopAsync.
+        let doStopVpn () : AdminUnitResult =
+            lock startStopLock (fun () ->
+                if not vpnStarted then
+                    Logger.logInfo "VPN already stopped, ignoring stop request."
+                    Ok ()
+                else
+                    Logger.logInfo "Stopping VPN connection..."
+                    running <- false
+                    cts.Cancel()
+
+                    // Wait for the supervisor task
+                    match supervisorTask with
+                    | Some t ->
+                        try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
+                        supervisorTask <- None
+                    | None -> ()
+
+                    // Wait for a send task
+                    match sendTask with
+                    | Some t ->
+                        try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
+                        sendTask <- None
+                    | None -> ()
+
+                    // Stop and dispose push client
+                    match pushClient with
+                    | Some pc ->
+                        pc.stop()
+                        (pc :> IDisposable).Dispose()
+                        pushClient <- None
+                    | None -> ()
+
+                    // Stop tunnel
+                    match tunnel with
+                    | Some t ->
+                        t.stop()
+                        tunnel <- None
+                    | None -> ()
+
+                    // Disable kill-switch LAST
+                    disableKillSwitch killSwitch
+                    killSwitch <- None
+
+                    connectionState <- VpnClientConnectionState.Disconnected
+                    vpnStarted <- false
+                    Logger.logInfo "VPN connection stopped"
+                    Ok ()
+            )
+
+        interface IAdminService with
+            member _.getStatus () = connectionState
+            member _.startVpn () = doStartVpn()
+            member _.stopVpn () = doStopVpn()
+
         interface IHostedService with
-            /// Spec 042: StartAsync MUST be lightweight and non-blocking.
-            /// Only enables a kill-switch and starts the supervisor loop.
+            /// Spec 058: StartAsync starts the service infrastructure.
+            /// VPN connection starts automatically only if autoStart=true.
             member _.StartAsync(cancellationToken: CancellationToken) =
-                Logger.logInfo $"Starting Push VPN Client Service (spec 042), useEncryption: {data.clientAccessInfo.useEncryption}, encryptionType: %A{data.clientAccessInfo.encryptionType}..."
+                Logger.logInfo $"Starting Push VPN Client Service (spec 042/058), autoStart: {autoStart}, useEncryption: {data.clientAccessInfo.useEncryption}, encryptionType: %A{data.clientAccessInfo.encryptionType}..."
 
-                // Enable kill-switch FIRST - this is a critical startup requirement
-                match enableKillSwitch data with
-                | Ok ks ->
-                    killSwitch <- Some ks
-                    running <- true
-
-                    // Initialize currentAuth = None (spec 042)
-                    setAuth None
-
-                    // Start supervisor loop in background (spec 042)
-                    Logger.logInfo "Starting supervisor loop..."
-                    supervisorTask <- Some (Task.Run(supervisorLoopAsync))
-
-                    // Return immediately (spec 042: non-blocking)
+                if autoStart then
+                    match doStartVpn() with
+                    | Ok () -> Task.CompletedTask
+                    | Error e ->
+                        Logger.logError $"Failed to auto-start VPN: '%A{e}'"
+                        Task.FromException(Exception($"Failed to auto-start VPN: '%A{e}'"))
+                else
+                    Logger.logInfo "VPN auto-start disabled. Waiting for admin command to start."
                     Task.CompletedTask
-
-                | Error msg ->
-                    // Kill-switch failure is a CRITICAL startup failure (spec 042)
-                    connectionState <- Failed msg
-                    Logger.logError $"Push: Failed to enable kill-switch: {msg}"
-                    Task.FromException(Exception($"Failed to enable kill-switch: {msg}"))
 
             member _.StopAsync(cancellationToken: CancellationToken) =
                 Logger.logInfo "Stopping Push VPN Client Service..."
-                running <- false
-                cts.Cancel()
-
-                // Wait for the supervisor task
-                match supervisorTask with
-                | Some t ->
-                    try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
-                    supervisorTask <- None
-                | None -> ()
-
-                // Wait for a send task
-                match sendTask with
-                | Some t ->
-                    try t.Wait(TimeSpan.FromSeconds(5.0)) |> ignore with | _ -> ()
-                    sendTask <- None
-                | None -> ()
-
-                // Stop and dispose push client
-                match pushClient with
-                | Some pc ->
-                    pc.stop()
-                    (pc :> IDisposable).Dispose()
-                    pushClient <- None
-                | None -> ()
-
-                // Stop tunnel
-                match tunnel with
-                | Some t ->
-                    t.stop()
-                    tunnel <- None
-                | None -> ()
-
-                // Disable kill-switch LAST
-                disableKillSwitch killSwitch
-                killSwitch <- None
-
-                connectionState <- Disconnected
+                doStopVpn() |> ignore
                 Logger.logInfo "Push VPN Client Service stopped"
                 Task.CompletedTask
 

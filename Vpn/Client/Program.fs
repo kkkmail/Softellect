@@ -1,17 +1,19 @@
 namespace Softellect.Vpn.Client
 
 open System.IO
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
+open Softellect.Wcf.Program
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.Service
-open Microsoft.Extensions.DependencyInjection
-open Microsoft.Extensions.Hosting
+open Softellect.Vpn.Client.AdminService
 
 module Program =
 
@@ -54,16 +56,19 @@ module Program =
                     Logger.logError $"Failed to import server public key: %A{e}"
                     Error $"Failed to import server public key: %A{e}"
 
-    let getClientService (serviceData : VpnClientServiceData) =
+    let getClientService (serviceData : VpnClientServiceData) (autoStart: bool) =
         match serviceData.clientAccessInfo.vpnTransportProtocol with
-        | UDP_Push -> VpnPushClientService(serviceData) :> IHostedService
+        | UDP_Push -> VpnPushClientService(serviceData, autoStart)
 
 
     let vpnClientMain programName argv =
         setLogLevel()
         let clientAccessInfo = loadVpnClientAccessInfo()
+        let adminAccessInfo = loadAdminAccessInfo()
+        let autoStart = loadAutoStart() || (not (isService())) // If we run as EXE, then connect to VPN.
 
-        Logger.logInfo $"vpnClientMain - clientAccessInfo.vpnClientId = '{clientAccessInfo.vpnClientId.value}'."
+        Logger.logInfo $"vpnClientMain - clientAccessInfo.vpnClientId = '{clientAccessInfo.vpnClientId.value}', autoStart = {autoStart}."
+        Logger.logInfo $"vpnClientMain - adminAccessInfo = '{adminAccessInfo}'."
 
         match loadClientKeys clientAccessInfo.clientKeyPath clientAccessInfo.vpnClientId with
         | Ok (clientPrivateKey, clientPublicKey) ->
@@ -77,25 +82,33 @@ module Program =
                         serverPublicKey = serverPublicKey
                     }
 
-                let host =
-                    Host.CreateDefaultBuilder()
-                        .UseWindowsService()
-                        .ConfigureLogging(fun logging ->
-                            match isService() with
-                            | true -> configureServiceLogging (Some (getProjectName())) logging
-                            | false -> configureLogging (Some (getProjectName())) logging)
-                        .ConfigureServices(fun hostContext services ->
-                            let service = getClientService serviceData
-                            services.AddSingleton<IHostedService>(service) |> ignore)
-                        .Build()
+                // Create the VPN client service (implements both IHostedService and IAdminService)
+                let vpnService = getClientService serviceData autoStart
 
-                host.Run()
-                Softellect.Sys.ExitErrorCodes.CompletedSuccessfully
+                // Create the admin WCF service wrapper
+                let adminWcfService = AdminWcfService(vpnService :> IAdminService)
 
+                let projectName = getProjectName() |> Some
+
+                let configureServices (services : IServiceCollection) =
+                    services.AddSingleton<IHostedService>(vpnService :> IHostedService) |> ignore
+
+                let programData =
+                    {
+                        serviceAccessInfo = adminAccessInfo
+                        getService = fun () -> vpnService :> IAdminService
+                        getWcfService = fun _ -> adminWcfService
+                        saveSettings = fun () -> ()
+                        configureServices = Some configureServices
+                        configureServiceLogging = configureServiceLogging projectName
+                        configureLogging = configureLogging projectName
+                        postBuildHandler = None
+                    }
+
+                wcfMain<IAdminService, IAdminWcfService, AdminWcfService> programName programData argv
             | Error msg ->
                 Logger.logCrit msg
                 Softellect.Sys.ExitErrorCodes.CriticalError
-
         | Error msg ->
             Logger.logCrit msg
             Softellect.Sys.ExitErrorCodes.CriticalError

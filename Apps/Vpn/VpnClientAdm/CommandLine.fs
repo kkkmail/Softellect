@@ -74,6 +74,17 @@ module CommandLine =
 
 
     and
+        [<CliPrefix(CliPrefix.Dash)>]
+        TrayArgs =
+        | [<Unique>] [<AltCommandLine("-sc")>] ShowConsole of bool
+
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                | ShowConsole _ -> "pass true to keep the console window visible in tray mode (debug)."
+
+
+    and
         VpnClientAdmArgs =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] GenerateKeys of ParseResults<GenerateKeysArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] ExportPublicKey of ParseResults<ExportPublicKeyArgs>
@@ -81,6 +92,7 @@ module CommandLine =
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] Status of ParseResults<StatusArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] SetServer of ParseResults<SetServerArgs>
         | [<Unique>] [<CliPrefix(CliPrefix.None)>] DetectPhysicalNetwork of ParseResults<DetectPhysicalNetworkArgs>
+        | [<Unique>] [<CliPrefix(CliPrefix.None)>] Tray of ParseResults<TrayArgs>
 
         interface IArgParserTemplate with
             member this.Usage =
@@ -91,3 +103,4 @@ module CommandLine =
                 | Status _ -> "shows current VPN client configuration and status."
                 | SetServer _ -> "configures VPN server address and port."
                 | DetectPhysicalNetwork _ -> "detects physical network route and writes to appsettings.json."
+                | Tray _ -> "starts the tray UI mode for VPN status and control."
