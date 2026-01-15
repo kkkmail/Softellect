@@ -176,7 +176,7 @@ module PacketRouter =
         member _.isRunning = running
 #else
     type PacketRouter(config: PacketRouterConfig, registry: ClientRegistry.ClientRegistry) =
-        let mutable adapter : WinTunAdapter option = None
+        let mutable adapter : ITunAdapter option = None
         let mutable running = false
         let mutable receiveThread : Thread option = None
         let cts = new CancellationTokenSource()
@@ -349,17 +349,20 @@ module PacketRouter =
 
         // Helper: drain all available packets from WinTun adapter.
         // Times ReceivePacket calls in drainTicks, processPacket calls in processTicks (non-overlapping).
-        let drainPackets (st: ReceiveLoopState) (adp: WinTunAdapter) (readEvent: WaitHandle) =
+        let drainPackets (st: ReceiveLoopState) (adp: ITunAdapter) (readEvent: WaitHandle) =
             let mutable processedThisWakeup = 0
 
-            // Time first ReceivePacket call
-            let first = timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket())
-
-            if isNull first || first.Length = 0 then
-                // Spurious wakeup / stuck signaled
+            // Spurious wakeup / stuck signaled
+            let stuck() =
                 st.emptyWakeups <- st.emptyWakeups + 1L
                 resetReadEventIfPossible readEvent
-            else
+
+            // Time first ReceivePacket call
+            match timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket()) with
+
+            | None -> stuck ()
+            | Some empty when empty.Length = 0 -> stuck ()
+            | Some first ->
                 // Process first packet
                 timed st.swProcess &st.processTicks &st.processCount (fun () -> processPacket first)
                 st.packetsRx <- st.packetsRx + 1L
@@ -367,6 +370,11 @@ module PacketRouter =
 
                 // Drain remaining packets
                 let mutable continueLoop = true
+
+                let exitLoop() =
+                    resetReadEventIfPossible readEvent
+                    continueLoop <- false
+
                 while continueLoop do
                     // Check cap
                     if processedThisWakeup >= maxPacketsPerWakeup then
@@ -375,21 +383,18 @@ module PacketRouter =
                         continueLoop <- false
                     // Check cancellation every cancelCheckEveryPackets packets
                     elif processedThisWakeup % cancelCheckEveryPackets = 0 && cts.Token.IsCancellationRequested then
-                        resetReadEventIfPossible readEvent
-                        continueLoop <- false
+                        exitLoop()
                     else
-                        let packet = timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket())
-
-                        if isNull packet || packet.Length = 0 then
-                            resetReadEventIfPossible readEvent
-                            continueLoop <- false
-                        else
+                        match timed st.swDrain &st.drainTicks &st.drainCount (fun () -> adp.ReceivePacket()) with
+                        | None -> exitLoop()
+                        | Some empty when empty.Length = 0 -> exitLoop()
+                        | Some packet ->
                             timed st.swProcess &st.processTicks &st.processCount (fun () -> processPacket packet)
                             st.packetsRx <- st.packetsRx + 1L
                             processedThisWakeup <- processedThisWakeup + 1
 
         // Helper: handle the result of WaitAny.
-        let handleWaitResult (st: ReceiveLoopState) (adp: WinTunAdapter) (readEvent: WaitHandle) (waitResult: int) =
+        let handleWaitResult (st: ReceiveLoopState) (adp: ITunAdapter) (readEvent: WaitHandle) (waitResult: int) =
             if waitResult = WaitHandle.WaitTimeout then
                 // Timeout - no event fired
                 st.waitTimeouts <- st.waitTimeouts + 1L
@@ -425,34 +430,25 @@ module PacketRouter =
                             Logger.logError $"Error in receive loop: {ex.Message}"
             | _ -> Logger.logWarn "Adapter not ready for receive loop"
 
-        let getErrorMessage (result: Softellect.Vpn.Interop.Result<Unit>) =
-            match result.Error with
-            | null -> "Unknown error"
-            | err -> err
-
-        let getErrorMessageT (result: Softellect.Vpn.Interop.Result<WinTunAdapter>) =
-            match result.Error with
-            | null -> "Unknown error"
-            | err -> err
-
         member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
-            let createResult = WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>())
-            if createResult.IsSuccess then
-                adapter <- Some createResult.Value
+            match WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>()) with
+            Ok createResult ->
+                adapter <- Some createResult
 
-                let sessionResult = createResult.Value.StartSession()
-                if sessionResult.IsSuccess then
+                match createResult.StartSession () with
+                | Ok () ->
                     // Set the IP address on the adapter
                     let serverIp = config.serverVpnIp.value
                     let subnetMask = IpAddress.subnetMask24
 
-                    let ipResult = createResult.Value.SetIpAddress(serverIp, subnetMask)
-                    let mtuResult = createResult.Value.SetMtu(MtuSize)
-                    Logger.logInfo $"Server - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}, MTU size: {MtuSize}."
+                    let ipResult = createResult.SetIpAddress serverIp subnetMask
+                    let mtuResult = createResult.SetMtu(MtuSize)
+                    Logger.logInfo $"Server - ipResult: %A{ipResult}, mtuResult: %A{mtuResult}, MTU size: {MtuSize}."
 
-                    if ipResult.IsSuccess then
+                    match ipResult with
+                    | Ok () ->
                         running <- true
 
                         // Start external gateway with inbound callback (ICMP proxy first, then NAT)
@@ -504,20 +500,17 @@ module PacketRouter =
                         receiveThread <- Some thread
                         Logger.logInfo $"Packet router started with IP: {serverIp}"
                         Ok ()
-                    else
-                        let errMsg = getErrorMessage ipResult
+                    | Error errMsg ->
                         Logger.logError $"Failed to set IP address: {errMsg}"
-                        createResult.Value.Dispose()
+                        createResult.Dispose()
                         adapter <- None
                         Error $"Failed to set IP address: {errMsg}"
-                else
-                    let errMsg = getErrorMessage sessionResult
+                | Error errMsg ->
                     Logger.logError $"Failed to start session: {errMsg}"
-                    createResult.Value.Dispose()
+                    createResult.Dispose()
                     adapter <- None
                     Error $"Failed to start session: {errMsg}"
-            else
-                let errMsg = getErrorMessageT createResult
+            | Error errMsg ->
                 Logger.logError $"Failed to create adapter: {errMsg}"
                 Error $"Failed to create adapter: {errMsg}"
 
@@ -547,13 +540,12 @@ module PacketRouter =
         member _.injectPacket(packet: byte[]) =
             match adapter with
             | Some adp when adp.IsSessionActive ->
-                let result = adp.SendPacket(packet)
-                if result.IsSuccess then
+                match adp.SendPacket(packet) with
+                | Ok () ->
                     Logger.logTrace (fun () -> $"Injected packet to TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
                     Ok ()
-                else Error (getErrorMessage result)
-            | _ ->
-                Error "Adapter not ready"
+                | Error e -> Error e
+            | _ -> Error "Adapter not ready"
 
         member r.routeFromClient(packet: byte[]) =
             let v = getIpVersion packet
@@ -591,7 +583,6 @@ module PacketRouter =
                                     Ok () // dropped by NAT (e.g. too short); ignore
             | 6 -> Ok () // IPv6 not supported
             | _ -> Ok () // unknown/empty
-
 
         member _.isRunning = running
 #endif

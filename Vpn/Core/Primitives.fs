@@ -199,3 +199,42 @@ module Primitives =
             serverBuildNumber : int
             minAllowedClientBuildNumber : int
         }
+
+    type ITunAdapter =
+        inherit IDisposable
+
+        /// Start a packet I/O session on the adapter
+        abstract member StartSession : unit -> Result<unit, string>
+
+        abstract member EndSession : unit -> unit
+
+        abstract member GetReadWaitEvent : unit -> IntPtr
+
+        /// Indicates whether the adapter session is active
+        abstract member IsSessionActive : bool
+
+        /// Wait handle that becomes signaled when packets are available for reading
+        /// (Windows: native handle; Linux: user-space event)
+        abstract member GetReadWaitHandle : unit -> System.Threading.WaitHandle
+
+        /// Receive a single packet from the adapter
+        /// Returns None if no packet is available
+        abstract member ReceivePacket : unit -> byte[] option
+
+        /// Send a single packet to the adapter
+        abstract member SendPacket : byte[] -> Result<unit, string>
+
+        /// Configure adapter IPv4 address and subnet
+        abstract member SetIpAddress : IpAddress -> IpAddress -> Result<unit, string>
+
+        /// Sets the DNS server on this adapter
+        abstract member SetDnsServer : IpAddress -> Result<unit, string>
+
+        /// Adds a route via this adapter
+        abstract member AddRoute : IpAddress -> IpAddress -> IpAddress -> int -> Result<unit, string>
+
+        /// Sets the interface metric on this adapter
+        abstract member SetInterfaceMetric : int -> Result<unit, string>
+
+        /// Configure MTU
+        abstract member SetMtu : int -> Result<unit, string>

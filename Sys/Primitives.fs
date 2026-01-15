@@ -12,6 +12,9 @@ module Primitives =
 
     let isService() = not Environment.UserInteractive
 
+    /// Exposes F# unit to C#
+    let FSharpUnit = ()
+
 
     [<Literal>]
     let CopyrightInfo = "MIT License - Copyright Konstantin K. Konstantinov and Alisa F. Konstantinova © 2015 - 2024."

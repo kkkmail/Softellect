@@ -33,7 +33,7 @@ module Tunnel =
 
 
     type Tunnel(config: TunnelConfig, ct: CancellationToken) =
-        let mutable adapter : WinTunAdapter option = None
+        let mutable adapter : ITunAdapter option = None
         let mutable tunnelState = Disconnected
         let mutable running = false
         let mutable receiveThread : Thread option = None
@@ -42,11 +42,6 @@ module Tunnel =
         // Channel for outbound packets (from TUN adapter to VPN server)
         let outboundChannelOptions = UnboundedChannelOptions(SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false)
         let outboundChannel = Channel.CreateUnbounded<byte[]>(outboundChannelOptions)
-
-        let getErrorMessage (result: Softellect.Vpn.Interop.Result<Unit>) =
-            match result.Error with
-            | null -> "Unknown error"
-            | err -> err
 
         let receiveLoop () =
             match adapter with
@@ -68,11 +63,12 @@ module Tunnel =
                             else
                                 // readEvent signaled - drain all available packets
                                 let mutable hasMore = true
+                                let hasNoMore () = hasMore <- false
                                 while hasMore do
-                                    let packet = adp.ReceivePacket()
-                                    if isNull packet || packet.Length = 0 then
-                                        hasMore <- false
-                                    else
+                                    match adp.ReceivePacket() with
+                                    | None -> hasNoMore ()
+                                    | Some empty when empty.Length = 0 -> hasNoMore ()
+                                    | Some packet ->
                                         let v = getIpVersion packet
                                         match v with
                                         | 4 ->
@@ -93,21 +89,20 @@ module Tunnel =
             let processName = "netsh"
             let deleteCommand = $"interface ipv4 delete route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value}"
             Logger.logInfo $"Executing: '{processName} {deleteCommand}'."
-            let deleteResult = WinTunAdapter.RunCommand(processName, deleteCommand, "delete server /32 exclusion route");
 
-            if not deleteResult.IsSuccess then
-                let errMsg = getErrorMessage deleteResult
-                Logger.logWarn $"Failed to execute: '{processName} {deleteCommand}', error: {errMsg}. Proceeding further."
+            match WinTunAdapter.RunCommand(processName, deleteCommand, "delete server /32 exclusion route") with
+            | Error errMsg -> Logger.logWarn $"Failed to execute: '{processName} {deleteCommand}', error: {errMsg}. Proceeding further."
+            | Ok () -> ()
 
             let command = $"interface ipv4 add route {config.serverPublicIp.value}/32 \"{config.physicalInterfaceName}\" {config.physicalGatewayIp.value} metric=1"
             let operation = "add server /32 exclusion route"
             Logger.logInfo $"Executing: '{processName} {command}'."
-            let hostResult = WinTunAdapter.RunCommand(processName, command, operation);
-            if not hostResult.IsSuccess then
-                let errMsg = getErrorMessage hostResult
+
+            match WinTunAdapter.RunCommand(processName, command, operation) with
+            | Error errMsg ->
                 Logger.logError $"Failed to execute: '{processName} {command}', error: {errMsg}"
                 Error errMsg
-            else
+            | Ok () ->
                 Logger.logInfo $"Successfully executed: '{processName} {command}'."
                 Ok ()
 
@@ -115,32 +110,29 @@ module Tunnel =
             Logger.logInfo $"Starting tunnel with adapter: {config.adapterName}"
             tunnelState <- Connecting
 
-            let createResult = WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>())
+            match WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>()) with
+            | Ok createResult ->
+                adapter <- Some createResult
+                let adp = createResult
 
-            if createResult.IsSuccess then
-                adapter <- Some createResult.Value
-                let adp = createResult.Value
+                match adp.StartSession() with
+                |Ok () ->
+                    let ipResult = adp.SetIpAddress config.assignedIp.value config.subnetMask
+                    let mtuResult = createResult.SetMtu(MtuSize)
+                    Logger.logInfo $"Client - ipResult: {ipResult}, mtuResult: {mtuResult}, MTU size: {MtuSize}."
 
-                let sessionResult = adp.StartSession()
-
-                if sessionResult.IsSuccess then
-                    let ipResult = adp.SetIpAddress(config.assignedIp.value, config.subnetMask)
-                    let mtuResult = createResult.Value.SetMtu(MtuSize)
-                    Logger.logInfo $"Client - ipResult: {ipResult.IsSuccess}, mtuResult: {mtuResult.IsSuccess}, MTU size: {MtuSize}."
-
-                    if ipResult.IsSuccess then
+                    match ipResult with
+                    | Ok () ->
                         // Configure DNS on the adapter
                         Logger.logInfo $"Setting DNS server to: {config.dnsServerIp.value}"
-                        let dnsResult = adp.SetDnsServer(config.dnsServerIp)
-
-                        if not dnsResult.IsSuccess then
-                            let errMsg = getErrorMessage dnsResult
+                        match adp.SetDnsServer(config.dnsServerIp) with
+                        | Error errMsg ->
                             Logger.logError $"Failed to set DNS server: {errMsg}"
                             tunnelState <- TunnelError errMsg
                             adp.Dispose()
                             adapter <- None
                             Error errMsg
-                        else
+                        | Ok () ->
                             match t.addHostRoute() with
                             | Error e ->
                                 tunnelState <- TunnelError e
@@ -153,27 +145,23 @@ module Tunnel =
                                 let routeMetric = 1
 
                                 Logger.logInfo $"Adding route 0.0.0.0/1 via {config.gatewayIp.value}"
-                                let route1Result = adp.AddRoute(Ip4 "0.0.0.0", routeMask, config.gatewayIp, routeMetric)
-
-                                if not route1Result.IsSuccess then
-                                    let errMsg = getErrorMessage route1Result
+                                match adp.AddRoute (Ip4 "0.0.0.0") routeMask config.gatewayIp routeMetric with
+                                | Error errMsg ->
                                     Logger.logError $"Failed to add route 0.0.0.0/1: {errMsg}"
                                     tunnelState <- TunnelError errMsg
                                     adp.Dispose()
                                     adapter <- None
                                     Error errMsg
-                                else
+                                | Ok () ->
                                     Logger.logInfo $"Adding route 128.0.0.0/1 via {config.gatewayIp.value}"
-                                    let route2Result = adp.AddRoute(Ip4 "128.0.0.0", routeMask, config.gatewayIp, routeMetric)
-
-                                    if not route2Result.IsSuccess then
-                                        let errMsg = getErrorMessage route2Result
+                                    match adp.AddRoute (Ip4 "128.0.0.0") routeMask config.gatewayIp routeMetric with
+                                    | Error errMsg ->
                                         Logger.logError $"Failed to add route 128.0.0.0/1: {errMsg}"
                                         tunnelState <- TunnelError errMsg
                                         adp.Dispose()
                                         adapter <- None
                                         Error errMsg
-                                    else
+                                    | Ok () ->
                                         running <- true
                                         let thread = Thread(ThreadStart(receiveLoop))
                                         thread.IsBackground <- true
@@ -182,23 +170,17 @@ module Tunnel =
                                         tunnelState <- Connected
                                         Logger.logInfo $"Tunnel started with IP: {config.assignedIp.value}"
                                         Ok ()
-                    else
-                        let errMsg = getErrorMessage ipResult
+                    | Error errMsg ->
                         tunnelState <- TunnelError errMsg
                         adp.Dispose()
                         adapter <- None
                         Error errMsg
-                else
-                    let errMsg = getErrorMessage sessionResult
+                | Error errMsg ->
                     tunnelState <- TunnelError errMsg
                     adp.Dispose()
                     adapter <- None
                     Error errMsg
-            else
-                let errMsg =
-                    match createResult.Error with
-                    | null -> "Unknown error creating adapter"
-                    | err -> err
+            | Error errMsg ->
                 tunnelState <- TunnelError errMsg
                 Error errMsg
 
@@ -225,13 +207,12 @@ module Tunnel =
         member _.injectPacket(packet: byte[]) =
             match adapter with
             | Some adp when adp.IsSessionActive ->
-                let result = adp.SendPacket(packet)
-                if result.IsSuccess then
+                match adp.SendPacket(packet) with
+                | Ok () ->
                     Logger.logTrace (fun () -> $"Tunnel injected packet to TUN adapter, size={packet.Length} bytes, packet=%A{(summarizePacket packet)}")
                     Ok ()
-                else Error (getErrorMessage result)
-            | _ ->
-                Error "Tunnel not ready"
+                | Error e -> Error e
+            | _ -> Error "Tunnel not ready"
 
         /// Get the channel reader for outbound packets.
         /// Consumers should use ReadAsync to wait, then TryRead to drain.

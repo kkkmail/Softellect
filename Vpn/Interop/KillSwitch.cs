@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
+using Microsoft.FSharp.Core;
+using Softellect.Sys;
 
 namespace Softellect.Vpn.Interop;
 
@@ -25,11 +27,11 @@ public sealed class KillSwitch : IDisposable
     /// <param name="vpnServerPort">VPN server port.</param>
     /// <param name="localLanExclusions">Local LAN subnets to allow (CIDR notation).</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> Enable(IPAddress vpnServerIp, int vpnServerPort, IEnumerable<string> localLanExclusions)
+    public FSharpResult<Unit, string> Enable(IPAddress vpnServerIp, int vpnServerPort, IEnumerable<string> localLanExclusions)
     {
         if (_isEnabled)
         {
-            return Result<Unit>.Failure("Kill-switch is already enabled");
+            return FSharpResult<Unit, string>.NewError("Kill-switch is already enabled");
         }
 
         // Create a dynamic session - filters will be automatically removed when the session ends
@@ -60,7 +62,7 @@ public sealed class KillSwitch : IDisposable
 
             if (result != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to open WFP engine: 0x{result:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to open WFP engine: 0x{result:X8}");
             }
         }
         finally
@@ -74,12 +76,12 @@ public sealed class KillSwitch : IDisposable
             var txnResult = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
             if (txnResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to begin transaction: 0x{txnResult:X8}");
             }
 
             // Add sublayer
             var addSublayerResult = AddSublayer();
-            if (!addSublayerResult.IsSuccess)
+            if (!addSublayerResult.IsOk)
             {
                 WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                 return addSublayerResult;
@@ -87,7 +89,7 @@ public sealed class KillSwitch : IDisposable
 
             // Add permit filter for loopback
             var loopbackResult = AddPermitFilter("127.0.0.0", 8, "Permit Loopback");
-            if (!loopbackResult.IsSuccess)
+            if (!loopbackResult.IsOk)
             {
                 WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                 return loopbackResult;
@@ -95,7 +97,7 @@ public sealed class KillSwitch : IDisposable
 
             // Add permit filter for VPN server
             var vpnServerResult = AddPermitFilterForHost(vpnServerIp, "Permit VPN Server");
-            if (!vpnServerResult.IsSuccess)
+            if (!vpnServerResult.IsOk)
             {
                 WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                 return vpnServerResult;
@@ -108,7 +110,7 @@ public sealed class KillSwitch : IDisposable
                 if (parts.Length == 2 && IPAddress.TryParse(parts[0], out _) && int.TryParse(parts[1], out var prefix))
                 {
                     var lanResult = AddPermitFilter(parts[0], prefix, $"Permit LAN {exclusion}");
-                    if (!lanResult.IsSuccess)
+                    if (!lanResult.IsOk)
                     {
                         WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                         return lanResult;
@@ -118,7 +120,7 @@ public sealed class KillSwitch : IDisposable
 
             // Add block-all filter with lower weight (processes last)
             var blockResult = AddBlockAllFilter();
-            if (!blockResult.IsSuccess)
+            if (!blockResult.IsOk)
             {
                 WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                 return blockResult;
@@ -128,16 +130,16 @@ public sealed class KillSwitch : IDisposable
             var commitResult = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
             if (commitResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to commit transaction: 0x{commitResult:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to commit transaction: 0x{commitResult:X8}");
             }
 
             _isEnabled = true;
-            return Result<Unit>.Success(Unit.Value);
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
         }
         catch (Exception ex)
         {
             WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
-            return Result<Unit>.Failure($"Exception enabling kill-switch: {ex.Message}");
+            return FSharpResult<Unit, string>.NewError($"Exception enabling kill-switch: {ex.Message}");
         }
     }
 
@@ -145,11 +147,11 @@ public sealed class KillSwitch : IDisposable
     /// Disables the kill-switch, restoring normal traffic flow.
     /// </summary>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> Disable()
+    public FSharpResult<Unit, string> Disable()
     {
         if (!_isEnabled || _engineHandle == IntPtr.Zero)
         {
-            return Result<Unit>.Success(Unit.Value);
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
         }
 
         try
@@ -158,7 +160,7 @@ public sealed class KillSwitch : IDisposable
             var result = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
             if (result != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to begin transaction: 0x{result:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to begin transaction: 0x{result:X8}");
             }
 
             // Remove all filters
@@ -176,20 +178,20 @@ public sealed class KillSwitch : IDisposable
             result = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
             if (result != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to commit transaction: 0x{result:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to commit transaction: 0x{result:X8}");
             }
 
             _isEnabled = false;
-            return Result<Unit>.Success(Unit.Value);
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
         }
         catch (Exception ex)
         {
             WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
-            return Result<Unit>.Failure($"Exception disabling kill-switch: {ex.Message}");
+            return FSharpResult<Unit, string>.NewError($"Exception disabling kill-switch: {ex.Message}");
         }
     }
 
-    private Result<Unit> AddSublayer()
+    private FSharpResult<Unit, string> AddSublayer()
     {
         var sublayer = new WindowsFilteringPlatform.FWPM_SUBLAYER0
         {
@@ -206,13 +208,13 @@ public sealed class KillSwitch : IDisposable
 
         if (result != WindowsFilteringPlatform.ErrorSuccess && result != WindowsFilteringPlatform.FwpEAlreadyExists)
         {
-            return Result<Unit>.Failure($"Failed to add sublayer: 0x{result:X8}");
+            return FSharpResult<Unit, string>.NewError($"Failed to add sublayer: 0x{result:X8}");
         }
 
-        return Result<Unit>.Success(Unit.Value);
+        return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
     }
 
-    private Result<Unit> AddPermitFilter(string network, int prefixLength, string name)
+    private FSharpResult<Unit, string> AddPermitFilter(string network, int prefixLength, string name)
     {
         var ip = IPAddress.Parse(network);
         var ipUint = IPv4ToUInt32(ip);
@@ -221,7 +223,7 @@ public sealed class KillSwitch : IDisposable
         return AddFilterWithCondition(name, WindowsFilteringPlatform.FWP_ACTION_PERMIT, WindowsFilteringPlatform.FWPM_CONDITION_IP_REMOTE_ADDRESS, ipUint, mask, 100);
     }
 
-    private Result<Unit> AddPermitFilterForHost(IPAddress ip, string name)
+    private FSharpResult<Unit, string> AddPermitFilterForHost(IPAddress ip, string name)
     {
         var ipUint = IPv4ToUInt32(ip);
 
@@ -234,11 +236,11 @@ public sealed class KillSwitch : IDisposable
     /// <param name="localIp">The local IP address to permit.</param>
     /// <param name="name">Display name for the filter.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> AddPermitFilterForLocalHost(IPAddress localIp, string name)
+    public FSharpResult<Unit, string> AddPermitFilterForLocalHost(IPAddress localIp, string name)
     {
         if (_engineHandle == IntPtr.Zero || !_isEnabled)
         {
-            return Result<Unit>.Failure("Kill-switch is not enabled");
+            return FSharpResult<Unit, string>.NewError("Kill-switch is not enabled");
         }
 
         try
@@ -246,11 +248,11 @@ public sealed class KillSwitch : IDisposable
             var txnResult = WindowsFilteringPlatform.FwpmTransactionBegin0(_engineHandle, 0);
             if (txnResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to begin transaction: 0x{txnResult:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to begin transaction: 0x{txnResult:X8}");
             }
 
             var ipUint = IPv4ToUInt32(localIp);
-            
+
             var filterResult = AddFilterWithCondition(
                 name,
                 WindowsFilteringPlatform.FWP_ACTION_PERMIT,
@@ -259,7 +261,7 @@ public sealed class KillSwitch : IDisposable
                 uint.MaxValue,
                 110);
 
-            if (!filterResult.IsSuccess)
+            if (!filterResult.IsOk)
             {
                 WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
                 return filterResult;
@@ -268,19 +270,19 @@ public sealed class KillSwitch : IDisposable
             var commitResult = WindowsFilteringPlatform.FwpmTransactionCommit0(_engineHandle);
             if (commitResult != WindowsFilteringPlatform.ErrorSuccess)
             {
-                return Result<Unit>.Failure($"Failed to commit transaction: 0x{commitResult:X8}");
+                return FSharpResult<Unit, string>.NewError($"Failed to commit transaction: 0x{commitResult:X8}");
             }
 
-            return Result<Unit>.Success(Unit.Value);
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
         }
         catch (Exception ex)
         {
             WindowsFilteringPlatform.FwpmTransactionAbort0(_engineHandle);
-            return Result<Unit>.Failure($"Exception adding local host permit filter: {ex.Message}");
+            return FSharpResult<Unit, string>.NewError($"Exception adding local host permit filter: {ex.Message}");
         }
     }
 
-    private Result<Unit> AddBlockAllFilter()
+    private FSharpResult<Unit, string> AddBlockAllFilter()
     {
         var namePtr = Marshal.StringToHGlobalUni("VPN Kill-Switch Block All");
         var descPtr = Marshal.StringToHGlobalUni("Blocks all outbound traffic not explicitly permitted");
@@ -347,11 +349,11 @@ public sealed class KillSwitch : IDisposable
 
                 if (result != WindowsFilteringPlatform.ErrorSuccess)
                 {
-                    return Result<Unit>.Failure($"Failed to add block-all filter: 0x{result:X8}");
+                    return FSharpResult<Unit, string>.NewError($"Failed to add block-all filter: 0x{result:X8}");
                 }
 
                 _filterIds.Add(filterId);
-                return Result<Unit>.Success(Unit.Value);
+                return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
             }
             finally
             {
@@ -365,7 +367,7 @@ public sealed class KillSwitch : IDisposable
         }
     }
 
-    private Result<Unit> AddFilterWithCondition(string name, uint action, Guid fieldKey, uint ipAddress, uint mask, byte filterWeight)
+    private FSharpResult<Unit, string> AddFilterWithCondition(string name, uint action, Guid fieldKey, uint ipAddress, uint mask, byte filterWeight)
     {
         // Allocate condition value (FWP_V4_ADDR_AND_MASK)
         var addrMask = new WindowsFilteringPlatform.FWP_V4_ADDR_AND_MASK
@@ -470,11 +472,11 @@ public sealed class KillSwitch : IDisposable
 
                     if (result != WindowsFilteringPlatform.ErrorSuccess)
                     {
-                        return Result<Unit>.Failure($"Failed to add filter '{name}': 0x{result:X8}");
+                        return FSharpResult<Unit, string>.NewError($"Failed to add filter '{name}': 0x{result:X8}");
                     }
 
                     _filterIds.Add(filterId);
-                    return Result<Unit>.Success(Unit.Value);
+                    return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
                 }
                 finally
                 {
@@ -493,7 +495,7 @@ public sealed class KillSwitch : IDisposable
             Marshal.FreeHGlobal(descPtr);
         }
     }
-    
+
     // private static uint IPv4ToUInt32(IPAddress ip)
     // {
     //     var bytes = ip.GetAddressBytes();
