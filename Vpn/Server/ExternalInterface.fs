@@ -56,23 +56,6 @@ module ExternalInterface =
 
     // ---- External Gateway ----
 
-#if LINUX
-    /// Linux stub: ExternalGateway does nothing on Linux.
-    type ExternalGateway(config: ExternalConfig) =
-        do Logger.logInfo "ExternalGateway: Running in LINUX STUB MODE - no external packet routing available."
-
-        member _.start(_onPacketFromInternet: byte[] -> unit) =
-            Logger.logInfo "ExternalGateway.start: LINUX STUB MODE - no external packet routing."
-
-        member _.sendOutbound(_packet: byte[]) =
-            () // Silently drop packets in stub mode
-
-        member _.stop() =
-            Logger.logInfo "ExternalGateway.stop: LINUX STUB MODE."
-
-        interface IDisposable with
-            member _.Dispose() = ()
-#else
     /// Raw IPv4 gateway for sending/receiving complete IP packets to/from the external network.
     /// Uses SocketType.Raw with ProtocolType.IP to handle both TCP and UDP uniformly.
     type ExternalGateway(config: ExternalConfig) =
@@ -293,4 +276,3 @@ module ExternalInterface =
 
         interface IDisposable with
             member this.Dispose() = this.stop()
-#endif

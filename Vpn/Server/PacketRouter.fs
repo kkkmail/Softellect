@@ -9,9 +9,6 @@ open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.UdpProtocol
-#if !LINUX
-open Softellect.Vpn.Interop
-#endif
 open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.IcmpProxy
 open Softellect.Vpn.Server.ExternalInterface
@@ -151,31 +148,18 @@ module PacketRouter =
             }
 
 
-#if LINUX
-    /// Linux stub: PacketRouter does nothing on Linux.
-    type PacketRouter(config: PacketRouterConfig, registry: ClientRegistry.ClientRegistry) =
-        let mutable running = false
+    type PacketRouterContext =
+        {
+            config: PacketRouterConfig
+            registry: ClientRegistry.ClientRegistry
+            tryGetTunAdapter : string -> string -> Nullable<Guid> -> Result<ITunAdapter, string>
+        }
 
-        do Logger.logInfo "PacketRouter: Running in LINUX STUB MODE - no packet routing available."
 
-        member _.start() =
-            Logger.logInfo "PacketRouter.start: LINUX STUB MODE - no packet routing."
-            running <- true
-            Ok ()
+    type PacketRouter(ctx : PacketRouterContext) =
+        let config = ctx.config
+        let registry = ctx.registry
 
-        member _.stop() =
-            Logger.logInfo "PacketRouter.stop: LINUX STUB MODE."
-            running <- false
-
-        member _.injectPacket(_packet: byte[]) =
-            Error "PacketRouter.injectPacket: LINUX STUB MODE - not implemented."
-
-        member _.routeFromClient(_packet: byte[]) : Result<unit, string> =
-            Ok () // Silently drop packets in stub mode
-
-        member _.isRunning = running
-#else
-    type PacketRouter(config: PacketRouterConfig, registry: ClientRegistry.ClientRegistry) =
         let mutable adapter : ITunAdapter option = None
         let mutable running = false
         let mutable receiveThread : Thread option = None
@@ -433,8 +417,8 @@ module PacketRouter =
         member _.start() =
             Logger.logInfo $"Starting packet router with adapter: {config.adapterName}"
 
-            match WinTunAdapter.Create(config.adapterName, AdapterName, System.Nullable<Guid>()) with
-            Ok createResult ->
+            match ctx.tryGetTunAdapter config.adapterName AdapterName (System.Nullable<Guid>()) with
+            | Ok createResult ->
                 adapter <- Some createResult
 
                 match createResult.StartSession () with
@@ -585,4 +569,3 @@ module PacketRouter =
             | _ -> Ok () // unknown/empty
 
         member _.isRunning = running
-#endif
