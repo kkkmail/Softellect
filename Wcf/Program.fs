@@ -40,9 +40,13 @@ module Program =
         and 'IWcfService : not struct
         and 'WcfService : not struct>
         (data : ProgramData<'IService, 'WcfService>) =
+#if LINUX
+        // Linux: do not call .UseWindowsService()
+        Host.CreateDefaultBuilder()
+#else
         Host.CreateDefaultBuilder()
             .UseWindowsService()
-
+#endif
             .ConfigureLogging(fun logging ->
                 match isService() with
                 | true -> data.configureServiceLogging logging

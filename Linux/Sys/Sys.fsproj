@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Softellect.Sys</AssemblyName>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked files from Softellect.Sys - in dependency order, excluding Windows-specific files -->
+    <Compile Include="..\..\Sys\NamingConventions.fs" Link="NamingConventions.fs" />
+    <Compile Include="..\..\Sys\BuildInfo.fs" Link="BuildInfo.fs" />
+    <Compile Include="..\..\Sys\VersionInfo.fs" Link="VersionInfo.fs" />
+    <Compile Include="..\..\Sys\ExitErrorCodes.fs" Link="ExitErrorCodes.fs" />
+    <Compile Include="..\..\Sys\Logging.fs" Link="Logging.fs" />
+    <Compile Include="..\..\Sys\Primitives.fs" Link="Primitives.fs" />
+    <Compile Include="..\..\Sys\Errors.fs" Link="Errors.fs" />
+    <!-- Excluding WindowsApi.fs - Windows-specific -->
+    <Compile Include="..\..\Sys\Core.fs" Link="Core.fs" />
+    <Compile Include="..\..\Sys\Rop.fs" Link="Rop.fs" />
+    <Compile Include="..\..\Sys\Retry.fs" Link="Retry.fs" />
+    <Compile Include="..\..\Sys\TimerEvents.fs" Link="TimerEvents.fs" />
+    <!-- Excluding ServiceInstaller.fs - Windows-specific -->
+    <Compile Include="..\..\Sys\AppSettings.fs" Link="AppSettings.fs" />
+    <Compile Include="..\..\Sys\DynamicSql.fs" Link="DynamicSql.fs" />
+    <Compile Include="..\..\Sys\Crypto.fs" Link="Crypto.fs" />
+    <Compile Include="..\..\Sys\DataAccess.fs" Link="DataAccess.fs" />
+    <Compile Include="..\..\Sys\FileSystemTypes.fs" Link="FileSystemTypes.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Argu" Version="6.2.5" />
+    <PackageReference Include="CoreWCF.Http" Version="1.8.0" />
+    <PackageReference Include="CoreWCF.NetTcp" Version="1.8.0" />
+    <PackageReference Include="CoreWCF.Primitives" Version="1.8.0" />
+    <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
+    <PackageReference Include="FsPickler" Version="5.3.2" />
+    <PackageReference Include="FsPickler.Json" Version="5.3.2" />
+    <PackageReference Include="log4net" Version="3.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.6" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Log4Net.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />
+    <PackageReference Include="System.ServiceModel.Http" Version="10.0.652802" />
+    <PackageReference Include="System.ServiceModel.NetTcp" Version="10.0.652802" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
+    <!-- Excluding System.ServiceProcess.ServiceController - Windows-specific -->
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Include="SQLProvider" Version="1.5.17" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <!-- Excluding SQLite.Interop.dll and System.Data.SQLite.Core - may need Linux alternatives -->
+    <PackageReference Include="FSharp.Data" Version="6.6.0" />
+  </ItemGroup>
+</Project>

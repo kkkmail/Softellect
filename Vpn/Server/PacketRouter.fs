@@ -9,7 +9,9 @@ open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.UdpProtocol
+#if !LINUX
 open Softellect.Vpn.Interop
+#endif
 open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.IcmpProxy
 open Softellect.Vpn.Server.ExternalInterface
@@ -149,6 +151,30 @@ module PacketRouter =
             }
 
 
+#if LINUX
+    /// Linux stub: PacketRouter does nothing on Linux.
+    type PacketRouter(config: PacketRouterConfig, registry: ClientRegistry.ClientRegistry) =
+        let mutable running = false
+
+        do Logger.logInfo "PacketRouter: Running in LINUX STUB MODE - no packet routing available."
+
+        member _.start() =
+            Logger.logInfo "PacketRouter.start: LINUX STUB MODE - no packet routing."
+            running <- true
+            Ok ()
+
+        member _.stop() =
+            Logger.logInfo "PacketRouter.stop: LINUX STUB MODE."
+            running <- false
+
+        member _.injectPacket(_packet: byte[]) =
+            Error "PacketRouter.injectPacket: LINUX STUB MODE - not implemented."
+
+        member _.routeFromClient(_packet: byte[]) : Result<unit, string> =
+            Ok () // Silently drop packets in stub mode
+
+        member _.isRunning = running
+#else
     type PacketRouter(config: PacketRouterConfig, registry: ClientRegistry.ClientRegistry) =
         let mutable adapter : WinTunAdapter option = None
         let mutable running = false
@@ -568,3 +594,4 @@ module PacketRouter =
 
 
         member _.isRunning = running
+#endif

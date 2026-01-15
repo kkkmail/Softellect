@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Softellect.Vpn.Server</AssemblyName>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked files from Vpn\Server -->
+    <Compile Include="..\Server\ClientRegistry.fs" Link="ClientRegistry.fs" />
+    <Compile Include="..\Server\Nat.fs" Link="Nat.fs" />
+    <Compile Include="..\Server\ExternalInterface.fs" Link="ExternalInterface.fs" />
+    <Compile Include="..\Server\DnsProxy.fs" Link="DnsProxy.fs" />
+    <Compile Include="..\Server\IcmpProxy.fs" Link="IcmpProxy.fs" />
+    <Compile Include="..\Server\PacketRouter.fs" Link="PacketRouter.fs" />
+    <Compile Include="..\Server\Service.fs" Link="Service.fs" />
+    <Compile Include="..\Server\WcfServer.fs" Link="WcfServer.fs" />
+    <Compile Include="..\Server\UdpServer.fs" Link="UdpServer.fs" />
+    <Compile Include="..\Server\Program.fs" Link="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Linux\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\..\Linux\Wcf\Wcf.fsproj" />
+    <ProjectReference Include="..\..\Linux\Core\Core.fsproj" />
+    <!-- Linux: Do not include Interop.csproj -->
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Linux: Do not include Microsoft.Extensions.Hosting.WindowsServices -->
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+  </ItemGroup>
+</Project>
