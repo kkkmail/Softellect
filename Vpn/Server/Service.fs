@@ -140,7 +140,7 @@ module Service =
                 config = routerConfig
                 registry = registry
 #if LINUX
-                tryGetTunAdapter = fun _ _ _ -> failwith ""
+                tryGetTunAdapter = fun name tunnelType guid -> Softellect.Vpn.LinuxServer.TunAdapter.create name tunnelType (Option.ofNullable guid)
 #else
                 tryGetTunAdapter = fun name tunnelType guid -> Softellect.Vpn.Interop.WinTunAdapter.Create(name, tunnelType, guid)
 #endif
