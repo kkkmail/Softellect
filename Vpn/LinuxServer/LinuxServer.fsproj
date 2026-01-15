@@ -24,7 +24,7 @@
     <!-- Linked files from Vpn\Server -->
     <Compile Include="..\Server\ClientRegistry.fs" Link="ClientRegistry.fs" />
     <Compile Include="..\Server\Nat.fs" Link="Nat.fs" />
-    <Compile Include="..\Server\ExternalInterface.fs" Link="ExternalInterface.fs" />
+    <Compile Include="ExternalInterface.fs" />
     <Compile Include="..\Server\DnsProxy.fs" Link="DnsProxy.fs" />
     <Compile Include="..\Server\IcmpProxy.fs" Link="IcmpProxy.fs" />
     <Compile Include="..\Server\PacketRouter.fs" Link="PacketRouter.fs" />
