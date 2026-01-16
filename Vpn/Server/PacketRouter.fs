@@ -466,7 +466,7 @@ module PacketRouter =
                                             match findClientByIp destIpAddr with
                                             | Some session ->
                                                 registry.enqueuePacketForClient(session.sessionId, translated) |> ignore
-                                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
+                                                Logger.logTrace (fun () -> $"HEAVY LOG - NAT inbound: enqueued packet to client {session.clientId.value}, size={translated.Length} bytes")
                                             | None ->
                                                 Logger.logTrace (fun () -> $"NAT inbound: no client session for destination IP {destIpStr}")
                                         | None ->

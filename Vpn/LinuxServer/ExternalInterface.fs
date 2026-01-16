@@ -220,18 +220,22 @@ module ExternalInterface =
                 match getDestinationIpAddress packet, getProtocolByte packet with
                 | Some dstIp, Some proto ->
                     let remoteEndPoint = IPEndPoint(dstIp, 0)
+
                     try
                         // IPv4 protocol: TCP=6, UDP=17. Others: drop (or extend later).
                         match proto with
-                        | 6uy  -> rawTcpSocket.SendTo(packet, remoteEndPoint) |> ignore
-                        | 17uy -> rawUdpSocket.SendTo(packet, remoteEndPoint) |> ignore
+                        | 6uy  ->
+                            let sent = rawTcpSocket.SendTo(packet, remoteEndPoint)
+                            Logger.logTrace (fun () -> $"HEAVY LOG (Linux) - Sent {sent} bytes to rawTcpSocket, remoteEndPoint: {remoteEndPoint}, packet: {(summarizePacket packet)}.")
+                        | 17uy ->
+                            let sent = rawUdpSocket.SendTo(packet, remoteEndPoint)
+                            Logger.logTrace (fun () -> $"HEAVY LOG (Linux) - Sent {sent} bytes to rawUdpSocket, remoteEndPoint: {remoteEndPoint}, packet: {(summarizePacket packet)}.")
                         | _ ->
                             Logger.logTrace (fun () -> $"ExternalGateway(Linux).sendOutbound: unsupported ip proto={proto}, drop. Packet: {summarizePacket packet}")
                     with ex ->
                         if getDstIp4 packet <> "255.255.255.255" then
                             Logger.logError $"ExternalGateway(Linux).sendOutbound failed: {(summarizePacket packet)}, exception: '{ex.Message}'."
-                | _ ->
-                    Logger.logWarn "ExternalGateway(Linux).sendOutbound: Could not extract dst/proto, dropping packet"
+                | _ -> Logger.logWarn "ExternalGateway(Linux).sendOutbound: Could not extract dst/proto, dropping packet"
 
         member _.stop() =
             Logger.logInfo "ExternalGateway(Linux) stopping"
