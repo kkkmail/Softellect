@@ -437,7 +437,7 @@ module Nat =
                             Some packet
                         | false, _ ->
                             // No mapping – drop
-                            Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, no mapping for extPort={dstPort}, dropping packet")
+                            // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto={proto}, no mapping for extPort={dstPort}, dropping packet")
                             None
 
                     | Icmp ->
@@ -468,11 +468,11 @@ module Nat =
                                 Some packet
                             | false, _ ->
                                 // No mapping – drop
-                                Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, no mapping for extId={identifier}, dropping packet")
+                                // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, no mapping for extId={identifier}, dropping packet")
                                 None
                         else
                             // Non-echo-reply ICMP – drop (no mapping possible)
-                            Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, type={icmpType} not echo reply, dropping packet")
+                            // Logger.logTrace (fun () -> $"HEAVY LOG - NAT IN: proto=Icmp, type={icmpType} not echo reply, dropping packet")
                             None
 
                     | Other _ ->
