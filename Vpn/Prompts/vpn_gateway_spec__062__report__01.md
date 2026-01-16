@@ -10,7 +10,9 @@
 
 ### Most Likely Root Cause (High Confidence)
 
-The Linux server's `ExternalGateway` uses **two separate raw sockets** (`ProtocolType.Tcp` and `ProtocolType.Udp`) for sending outbound packets, while the Windows server uses a **single raw IP socket** (`ProtocolType.IP`). On Linux, raw sockets bound to `ProtocolType.Tcp` do not properly transmit TCP packets with custom IP headers when using `SendTo()` - the kernel either drops the packets or corrupts them because raw TCP sockets on Linux are designed primarily for **receiving** TCP packets, not for **sending** arbitrary TCP packets with custom headers.
+The Linux server's `ExternalGateway` uses **two separate raw sockets** (`ProtocolType.Tcp` and `ProtocolType.Udp`) for sending outbound packets, while the Windows server uses a **single raw IP socket** (`ProtocolType.IP`). 
+On Linux, raw sockets bound to `ProtocolType.Tcp` do not properly transmit TCP packets with custom IP headers when using `SendTo()` - the kernel either drops the packets or corrupts them because raw TCP sockets on Linux 
+are designed primarily for **receiving** TCP packets, not for **sending** arbitrary TCP packets with custom headers.
 
 ### Evidence Summary
 
