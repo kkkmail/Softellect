@@ -71,7 +71,7 @@ module WcfClient =
         match trySerialize wcfSerializationFormat request with
         | Ok requestBytes ->
             let clientIdBytes = data.clientAccessInfo.vpnClientId.value.ToByteArray()
-            Logger.logTrace (fun () -> $"Obtained clientIdBytes: '%A{clientIdBytes}' for client: '{data.clientAccessInfo.vpnClientId.value}'.")
+            Logger.logTrace (fun () -> $"Obtained clientIdBytes.Length`: '%A{clientIdBytes.Length}' for client: '{data.clientAccessInfo.vpnClientId.value}'.")
 
             // Append VpnClientId bytes BEFORE the serialized payload.
             let toBeEncryptedData = Array.append clientIdBytes requestBytes
