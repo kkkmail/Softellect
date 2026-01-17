@@ -106,7 +106,7 @@ module UdpClient =
             Logger.logInfo "Receive loop started."
             while not clientCts.Token.IsCancellationRequested do
                 try
-                    // Get current auth snapshot
+                    // Get the current auth snapshot
                     match getAuth() with
                     | None ->
                         // No auth available - backoff and retry
