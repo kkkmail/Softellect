@@ -1,6 +1,7 @@
 namespace Softellect.Vpn.Server
 
 open System.IO
+open System.Diagnostics
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
@@ -56,6 +57,28 @@ module Program =
             getAuthWcfProgram data getAuthService argv (Some configureServices)
 
 
+    /// Adds iptables rule to drop outgoing RST packets for VPN NAT port range.
+    /// This prevents the Linux kernel from interfering with raw socket TCP traffic.
+    /// Returns true if successful, false otherwise.
+    let tryAddVpnIptablesRule () =
+        try
+            let startInfo = ProcessStartInfo()
+            startInfo.FileName <- "iptables"
+            startInfo.Arguments <- "-A OUTPUT -p tcp --sport 40000:65535 --tcp-flags RST RST -j DROP"
+            startInfo.UseShellExecute <- false
+            startInfo.RedirectStandardError <- true
+            startInfo.CreateNoWindow <- true
+
+            use proc = Process.Start(startInfo)
+            proc.WaitForExit()
+
+            if proc.ExitCode = 0 then Ok ()
+            else
+                let error = proc.StandardError.ReadToEnd()
+                Error $"Failed to add iptables rule: {error}"
+        with ex -> Error $"Exception adding iptables rule: {ex.Message}"
+
+
     let vpnServerMain argv =
         setLogLevel()
         let serverAccessInfo = loadVpnServerAccessInfo()
@@ -64,15 +87,20 @@ module Program =
 
         match loadServerKeys serverAccessInfo.serverKeyPath with
         | Ok (privateKey, publicKey) ->
-            let data =
-                {
-                    serverAccessInfo = serverAccessInfo
-                    serverPrivateKey = privateKey
-                    serverPublicKey = publicKey
-                }
+            match tryAddVpnIptablesRule () with
+            | Ok () ->
+                let data =
+                    {
+                        serverAccessInfo = serverAccessInfo
+                        serverPrivateKey = privateKey
+                        serverPublicKey = publicKey
+                    }
 
-            let program = getProgram data argv
-            program()
+                let program = getProgram data argv
+                program()
+            | Error e ->
+                Logger.logCrit e
+                Softellect.Sys.ExitErrorCodes.CriticalError
         | Error msg ->
             Logger.logCrit msg
             Softellect.Sys.ExitErrorCodes.CriticalError
