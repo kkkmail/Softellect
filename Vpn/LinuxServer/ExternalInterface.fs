@@ -11,9 +11,9 @@ open Softellect.Vpn.Core.UdpProtocol
 
 /// Linux external interface for sending/receiving raw IPv4 packets to/from the real internet.
 /// Linux does NOT support SocketType.Raw + ProtocolType.IP (EPROTONOSUPPORT).
-/// Instead, use two raw sockets: one for TCP and one for UDP.
+/// Instead, use three raw sockets: one for TCP, one for UDP, and one for ICMP.
 ///
-/// IMPORTANT: On Linux, raw sockets with IPPROTO_TCP/IPPROTO_UDP receive packets
+/// IMPORTANT: On Linux, raw sockets with IPPROTO_TCP/IPPROTO_UDP/IPPROTO_ICMP receive packets
 /// WITH the IP header included (unlike some documentation suggests).
 /// However, packets are only delivered to raw sockets if they are destined to the local machine.
 module ExternalInterface =
@@ -49,12 +49,14 @@ module ExternalInterface =
         // Stats
         let mutable totalTcpReceived = 0L
         let mutable totalUdpReceived = 0L
+        let mutable totalIcmpReceived = 0L
         let mutable passedToCallback = 0L
         let mutable droppedTooShort = 0L
         let mutable droppedNotDstServerIp = 0L
         let mutable droppedSrcIsServerIp = 0L
         let mutable tcpReceiveErrors = 0L
         let mutable udpReceiveErrors = 0L
+        let mutable icmpReceiveErrors = 0L
 
         let statsStopwatch = System.Diagnostics.Stopwatch()
 
@@ -62,13 +64,15 @@ module ExternalInterface =
             if statsStopwatch.ElapsedMilliseconds >= PushStatsIntervalMs then
                 let tcpRx  = Interlocked.Read(&totalTcpReceived)
                 let udpRx  = Interlocked.Read(&totalUdpReceived)
+                let icmpRx = Interlocked.Read(&totalIcmpReceived)
                 let passed = Interlocked.Read(&passedToCallback)
                 let d1     = Interlocked.Read(&droppedTooShort)
                 let d2     = Interlocked.Read(&droppedNotDstServerIp)
                 let d3     = Interlocked.Read(&droppedSrcIsServerIp)
                 let tcpErr = Interlocked.Read(&tcpReceiveErrors)
                 let udpErr = Interlocked.Read(&udpReceiveErrors)
-                Logger.logInfo $"ExternalGateway(Linux) stats: tcpRx={tcpRx}, udpRx={udpRx}, passed={passed}, dropShort={d1}, dropNotDst={d2}, dropSrc={d3}, tcpErr={tcpErr}, udpErr={udpErr}"
+                let icmpErr = Interlocked.Read(&icmpReceiveErrors)
+                Logger.logInfo $"ExternalGateway(Linux) stats: tcpRx={tcpRx}, udpRx={udpRx}, icmpRx={icmpRx}, passed={passed}, dropShort={d1}, dropNotDst={d2}, dropSrc={d3}, tcpErr={tcpErr}, udpErr={udpErr}, icmpErr={icmpErr}"
                 statsStopwatch.Restart()
 
         let isShutdownError (error: SocketError) =
@@ -80,14 +84,16 @@ module ExternalInterface =
             | SocketError.Shutdown -> true
             | _ -> false
 
-        // Two raw sockets: TCP + UDP
+        // Three raw sockets: TCP + UDP + ICMP
         // On Linux, we must use protocol-specific raw sockets
         let rawTcpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Tcp)
         let rawUdpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Udp)
+        let rawIcmpSocket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp)
 
         // Separate buffers per socket
         let tcpBuffer : byte[] = Array.zeroCreate<byte> 65535
         let udpBuffer : byte[] = Array.zeroCreate<byte> 65535
+        let icmpBuffer : byte[] = Array.zeroCreate<byte> 65535
 
         // CancellationTokenSource for blocking receive threads
         let cts = new CancellationTokenSource()
@@ -196,31 +202,76 @@ module ExternalInterface =
                         Logger.logError $"ExternalGateway(Linux) UDP receive exception: {ex.Message}"
                     logStatsIfDue()
 
+        let icmpReceiveThread () =
+            let remoteEp = IPEndPoint(IPAddress.Any, 0) :> EndPoint
+            while running do
+                try
+                    let mutable ep = remoteEp
+                    let n = rawIcmpSocket.ReceiveFrom(icmpBuffer, &ep)
+
+                    if n > 0 then
+                        Interlocked.Increment(&totalIcmpReceived) |> ignore
+
+                        if not (shouldDropByIpFilter icmpBuffer n "ICMP") then
+                            let packet = Array.zeroCreate<byte> n
+                            Buffer.BlockCopy(icmpBuffer, 0, packet, 0, n)
+                            Interlocked.Increment(&passedToCallback) |> ignore
+
+                            Logger.logTrace (fun () ->
+                                $"HEAVY LOG (Linux) - Received ICMP {n} bytes from rawIcmpSocket, packet: {(summarizePacket packet)}.")
+
+                            match onPacketCallback with
+                            | Some cb -> cb packet
+                            | None -> ()
+
+                        logStatsIfDue()
+                with
+                | :? ObjectDisposedException -> ()
+                | :? SocketException as se when isShutdownError se.SocketErrorCode -> ()
+                | :? SocketException as se when se.SocketErrorCode = SocketError.TimedOut ->
+                    // Timeout is expected, just continue the loop
+                    logStatsIfDue()
+                | :? SocketException as se ->
+                    if running then
+                        Interlocked.Increment(&icmpReceiveErrors) |> ignore
+                        Logger.logError $"ExternalGateway(Linux) ICMP receive error: {se.SocketErrorCode} - {se.Message}"
+                    logStatsIfDue()
+                | ex ->
+                    if running then
+                        Interlocked.Increment(&icmpReceiveErrors) |> ignore
+                        Logger.logError $"ExternalGateway(Linux) ICMP receive exception: {ex.Message}"
+                    logStatsIfDue()
+
         let mutable tcpThread : Thread option = None
         let mutable udpThread : Thread option = None
+        let mutable icmpThread : Thread option = None
 
         do
             // For sending complete IPv4 packets (including IP header)
             rawTcpSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true)
             rawUdpSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true)
+            rawIcmpSocket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.HeaderIncluded, true)
 
             // Bind to the server external IP
             // On Linux, binding raw sockets to a specific IP filters received packets to that destination
             let ep = IPEndPoint(config.serverPublicIp, 0)
             rawTcpSocket.Bind(ep)
             rawUdpSocket.Bind(ep)
+            rawIcmpSocket.Bind(ep)
 
             // Set receive buffer sizes for better performance
             try
                 rawTcpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 1024 * 1024)
                 rawUdpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 1024 * 1024)
+                rawIcmpSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveBuffer, 1024 * 1024)
             with _ -> ()
 
             // Set receive timeout to allow periodic checks of running flag
             rawTcpSocket.ReceiveTimeout <- 1000
             rawUdpSocket.ReceiveTimeout <- 1000
+            rawIcmpSocket.ReceiveTimeout <- 1000
 
-            Logger.logInfo $"ExternalGateway(Linux): raw TCP+UDP sockets bound to {config.serverPublicIp}"
+            Logger.logInfo $"ExternalGateway(Linux): raw TCP+UDP+ICMP sockets bound to {config.serverPublicIp}"
 
         member _.start(onPacketFromInternet: byte[] -> unit) =
             if running then
@@ -233,14 +284,17 @@ module ExternalInterface =
                 // Start dedicated receive threads
                 let tcp = Thread(ThreadStart(tcpReceiveThread), IsBackground = true, Name = "ExternalGateway-TCP")
                 let udp = Thread(ThreadStart(udpReceiveThread), IsBackground = true, Name = "ExternalGateway-UDP")
+                let icmp = Thread(ThreadStart(icmpReceiveThread), IsBackground = true, Name = "ExternalGateway-ICMP")
 
                 tcpThread <- Some tcp
                 udpThread <- Some udp
+                icmpThread <- Some icmp
 
                 tcp.Start()
                 udp.Start()
+                icmp.Start()
 
-                Logger.logInfo "ExternalGateway(Linux) started (raw TCP + raw UDP with dedicated threads)"
+                Logger.logInfo "ExternalGateway(Linux) started (raw TCP + raw UDP + raw ICMP with dedicated threads)"
 
         member _.sendOutbound(packet: byte[]) =
             if packet.Length < 20 then
@@ -251,9 +305,12 @@ module ExternalInterface =
                     let remoteEndPoint = IPEndPoint(dstIp, 0)
 
                     try
-                        // IPv4 protocol: TCP=6, UDP=17. Others: drop (or extend later).
+                        // IPv4 protocol: ICMP=1, TCP=6, UDP=17
                         match proto with
-                        | 6uy  ->
+                        | 1uy ->
+                            let sent = rawIcmpSocket.SendTo(packet, remoteEndPoint)
+                            Logger.logTrace (fun () -> $"HEAVY LOG (Linux) - Sent {sent} bytes to rawIcmpSocket, remoteEndPoint: {remoteEndPoint}, packet: {(summarizePacket packet)}.")
+                        | 6uy ->
                             let sent = rawTcpSocket.SendTo(packet, remoteEndPoint)
                             Logger.logTrace (fun () -> $"HEAVY LOG (Linux) - Sent {sent} bytes to rawTcpSocket, remoteEndPoint: {remoteEndPoint}, packet: {(summarizePacket packet)}.")
                         | 17uy ->
@@ -275,6 +332,7 @@ module ExternalInterface =
             try cts.Cancel() with _ -> ()
             try rawTcpSocket.Close() with _ -> ()
             try rawUdpSocket.Close() with _ -> ()
+            try rawIcmpSocket.Close() with _ -> ()
 
             // Wait for threads to finish
             match tcpThread with
@@ -285,11 +343,17 @@ module ExternalInterface =
             | Some t -> try t.Join(2000) |> ignore with _ -> ()
             | None -> ()
 
+            match icmpThread with
+            | Some t -> try t.Join(2000) |> ignore with _ -> ()
+            | None -> ()
+
             tcpThread <- None
             udpThread <- None
+            icmpThread <- None
 
             try rawTcpSocket.Dispose() with _ -> ()
             try rawUdpSocket.Dispose() with _ -> ()
+            try rawIcmpSocket.Dispose() with _ -> ()
             try cts.Dispose() with _ -> ()
 
             Logger.logInfo "ExternalGateway(Linux) stopped"
