@@ -32,11 +32,12 @@
         <Content Include="log4net.config">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="vpn_linux_setup.md">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Linux: Do not include Microsoft.Extensions.Hosting.WindowsServices -->
-        <!-- Linux: Do not include VpnServerAdm for stub -->
         <ProjectReference Include="..\..\..\Vpn\LinuxServer\LinuxServer.fsproj" />
         <PackageReference Update="FSharp.Core" Version="10.0.101" />
     </ItemGroup>

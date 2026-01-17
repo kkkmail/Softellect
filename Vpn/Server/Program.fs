@@ -16,6 +16,10 @@ open Softellect.Vpn.Core.KeyManagement
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Server.Service
 
+#if LINUX
+open Softellect.Vpn.LinuxServer.TunAdapter
+#endif
+
 module Program =
 
     let private loadServerKeys (serverKeyPath: FolderName) =
@@ -56,28 +60,83 @@ module Program =
             let getAuthService() = authService
             getAuthWcfProgram data getAuthService argv (Some configureServices)
 
-
+#if LINUX
     /// Adds iptables rule to drop outgoing RST packets for VPN NAT port range.
     /// This prevents the Linux kernel from interfering with raw socket TCP traffic.
     /// Returns true if successful, false otherwise.
     let tryAddVpnIptablesRule () =
+        runCommand "iptables" "-A OUTPUT -p tcp --sport 40000:65535 --tcp-flags RST RST -j DROP" "add iptables rule"
+
+
+    let getPrimaryInterfaceName () =
+        let defaultInterfaceName = "eth0"
+
+        let parseDev (output : string) =
+            let parts = output.Split([|' '; '\n'; '\t'|], System.StringSplitOptions.RemoveEmptyEntries)
+
+            parts
+            |> Array.tryFindIndex ((=) "dev")
+            |> Option.bind (fun i -> if i + 1 < parts.Length then Some parts[i + 1] else None)
+
         try
-            let startInfo = ProcessStartInfo()
-            startInfo.FileName <- "iptables"
-            startInfo.Arguments <- "-A OUTPUT -p tcp --sport 40000:65535 --tcp-flags RST RST -j DROP"
-            startInfo.UseShellExecute <- false
-            startInfo.RedirectStandardError <- true
-            startInfo.CreateNoWindow <- true
+            let startInfo =
+                ProcessStartInfo(
+                    FileName = "/sbin/ip",
+                    Arguments = "route get 1.1.1.1",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                )
 
             use proc = Process.Start(startInfo)
-            proc.WaitForExit()
+            proc.WaitForExit(10_000) |> ignore
 
-            if proc.ExitCode = 0 then Ok ()
+            if proc.ExitCode <> 0 then
+                let err = proc.StandardError.ReadToEnd()
+                Logger.logWarn $"ip route failed, falling back to eth0. Error: '{err}'."
+                defaultInterfaceName
             else
-                let error = proc.StandardError.ReadToEnd()
-                Error $"Failed to add iptables rule: {error}"
-        with ex -> Error $"Exception adding iptables rule: {ex.Message}"
+                let output = proc.StandardOutput.ReadToEnd()
+                match parseDev output with
+                | Some iface -> iface
+                | None ->
+                    Logger.logWarn $"could not parse interface from output '{output}', falling back to eth0."
+                    defaultInterfaceName
+        with ex ->
+            Logger.logWarn $"exception '{ex.Message}', falling back to eth0."
+            defaultInterfaceName
 
+
+    let disableNicOffloads () =
+        let iface = getPrimaryInterfaceName()
+        let runCommand = runCommand "ethtool"
+
+        let step (args : string) (op : string) =
+            match runCommand args op with
+            | Ok () -> Ok ()
+            | Error e when e.Contains("Could not change any device features") ->
+                Logger.logWarn $"Non-fatal: '{op}' failed: '{e}'."
+                Ok ()
+            | Error e -> Error e
+
+        // Run sequentially, stop on first error
+        step $"-K {iface} gro off" "disable gro"
+        |> Result.bind (fun () -> step $"-K {iface} rx-gro-hw off" "disable rx-gro-hw")
+        |> Result.bind (fun () -> step $"-K {iface} lro off" "disable lro")
+        |> Result.bind (fun () -> step $"-K {iface} tso off" "disable tso")
+        |> Result.bind (fun () -> step $"-K {iface} gso off" "disable gso")
+        |> Result.bind (fun () -> step $"-K {iface} tx off" "disable tx checksum offload")
+        |> Result.bind (fun () -> step $"-K {iface} rx off" "disable rx checksum offload")
+        |> Result.bind (fun () -> step $"-K {iface} rxvlan off" "disable rxvlan offload")
+        |> Result.bind (fun () -> step $"-K {iface} txvlan off" "disable txvlan offload")
+        |> Result.bind (fun () -> step $"-K {iface} tx-udp-segmentation off" "disable tx-udp-segmentation")
+        |> Result.bind (fun () -> step $"-K {iface} tx-udp_tnl-segmentation off" "disable tx-udp_tnl-segmentation")
+        |> Result.bind (fun () -> step $"-K {iface} tx-udp_tnl-csum-segmentation off" "disable tx-udp_tnl-csum-segmentation")
+#else
+    let tryAddVpnIptablesRule () = Ok ()
+    let disableNicOffloads () = Ok ()
+#endif
 
     let vpnServerMain argv =
         setLogLevel()
@@ -89,15 +148,20 @@ module Program =
         | Ok (privateKey, publicKey) ->
             match tryAddVpnIptablesRule () with
             | Ok () ->
-                let data =
-                    {
-                        serverAccessInfo = serverAccessInfo
-                        serverPrivateKey = privateKey
-                        serverPublicKey = publicKey
-                    }
+                match disableNicOffloads () with
+                | Ok () ->
+                    let data =
+                        {
+                            serverAccessInfo = serverAccessInfo
+                            serverPrivateKey = privateKey
+                            serverPublicKey = publicKey
+                        }
 
-                let program = getProgram data argv
-                program()
+                    let program = getProgram data argv
+                    program()
+                | Error e ->
+                    Logger.logCrit e
+                    Softellect.Sys.ExitErrorCodes.CriticalError
             | Error e ->
                 Logger.logCrit e
                 Softellect.Sys.ExitErrorCodes.CriticalError

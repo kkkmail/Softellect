@@ -2,6 +2,7 @@ namespace Softellect.Vpn.LinuxServer
 
 open System
 open System.Runtime.InteropServices
+open System.Diagnostics
 open System.Threading
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.Primitives
@@ -70,9 +71,9 @@ module TunAdapter =
 
     let private getErrno () = Marshal.GetLastWin32Error()
 
-    let private runCommand fileName arguments operationName =
+    let runCommand fileName arguments operationName =
         try
-            let startInfo = System.Diagnostics.ProcessStartInfo(
+            let startInfo = ProcessStartInfo(
                 FileName = fileName,
                 Arguments = arguments,
                 UseShellExecute = false,
@@ -80,15 +81,14 @@ module TunAdapter =
                 RedirectStandardError = true,
                 CreateNoWindow = true
             )
-            use proc = System.Diagnostics.Process.Start(startInfo)
-            proc.WaitForExit(30000) |> ignore
+            use proc = Process.Start(startInfo)
+            proc.WaitForExit(60_000) |> ignore
+
             if proc.ExitCode <> 0 then
                 let err = proc.StandardError.ReadToEnd()
-                Error $"Failed to {operationName}: {err}"
-            else
-                Ok ()
-        with ex ->
-            Error $"Exception in {operationName}: {ex.Message}"
+                Error $"Failed in '{operationName}': {err}"
+            else Ok ()
+        with ex -> Error $"Exception in '{operationName}': {ex.Message}"
 
     let private runIp arguments operationName =
         runCommand "/sbin/ip" arguments operationName
