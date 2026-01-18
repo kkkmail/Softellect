@@ -452,7 +452,8 @@ module TrayUi =
             this.FormBorderStyle <- FormBorderStyle.None
             this.Size <- Size(0, 0)
             // Register this form as the marshal control for UI thread invocation
-            context.SetMarshalControl(this)
+            // Must wait until handle is created before BeginInvoke can be used
+            this.HandleCreated.Add(fun _ -> context.SetMarshalControl(this))
 
         override _.WndProc(m: Message byref) =
             context.ProcessMessage(m)
