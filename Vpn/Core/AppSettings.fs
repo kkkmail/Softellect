@@ -11,6 +11,12 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Wcf.Common
 
 module AppSettings =
+
+    type ConfigSection
+        with
+        static member vpnConnections = ConfigSection "vpnConnections"
+
+
     let getVpnTransportProtocol() = VpnTransportProtocol.UDP_Push
     let getEncryptionType() = AES
 
@@ -58,6 +64,7 @@ module AppSettings =
                         netTcpSecurityMode = NoSecurity
                     }
                     |> NetTcpServiceInfo
+                vpnConnections = []
                 clientKeyPath = FolderName @"C:\Keys\VpnClient"
                 serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
                 localLanExclusions = LocalLanExclusion.defaultValues
@@ -166,6 +173,23 @@ module AppSettings =
             failwith $"loadVpnServerAccessInfo - Cannot load settings. Error: '%A{e}'."
 
 
+    let loadVpnConnections () =
+        match AppSettingsProvider.tryCreate ConfigSection.vpnConnections with
+        | Ok provider ->
+            match provider.tryGetSectionKeys () with
+            | Ok keys ->
+                let d = VpnClientAccessInfo.defaultValue.serverAccessInfo
+                let connections = keys |> List.map (fun k -> { vpnConnectionName = VpnConnectionName k.value; serverAccessInfo = getServiceAccessInfo provider k d })
+                Logger.logInfo $"Found {connections.Length} VPN connection points."
+                connections
+            | Error e ->
+                Logger.logWarn $"Cannot load VPN connection keys: '%A{e}'."
+                []
+        | Error e ->
+            Logger.logWarn $"Cannot load VPN connections: '%A{e}'."
+            []
+
+
     let loadVpnClientAccessInfo () =
         match AppSettingsProvider.tryCreate() with
         | Ok provider ->
@@ -176,14 +200,14 @@ module AppSettings =
                 match provider.getStringOrDefault vpnClientIdKey "" |> VpnClientId.tryCreate with
                 | Some id -> id
                 | None ->
-                    Logger.logWarn "loadVpnClientAccessInfo - No VpnClientId found in settings, generating new one."
+                    Logger.logWarn "No VpnClientId found in settings, generating new one."
                     VpnClientId.create()
 
             let vpnServerId =
                 match provider.getStringOrDefault vpnServerIdKey "" |> VpnServerId.tryCreate with
                 | Some id -> id
                 | None ->
-                    Logger.logWarn "loadVpnClientAccessInfo - No VpnServerId found in settings, generating new one."
+                    Logger.logWarn "No VpnServerId found in settings, generating new one."
                     VpnServerId.create()
 
             let clientKeyPath = provider.getStringOrDefault clientKeyPathKey d.clientKeyPath.value |> FolderName
@@ -229,6 +253,7 @@ module AppSettings =
                 vpnClientId = clientId
                 vpnServerId = vpnServerId
                 serverAccessInfo = serverAccess
+                vpnConnections = loadVpnConnections ()
                 clientKeyPath = clientKeyPath
                 serverPublicKeyPath = serverPublicKeyPath
                 localLanExclusions = localLanExclusions
@@ -239,8 +264,9 @@ module AppSettings =
                 encryptionType = encryptionType
             }
         | Error e ->
-            Logger.logCrit $"loadVpnClientAccessInfo - Cannot load settings. Error: '%A{e}'."
-            failwith $"loadVpnClientAccessInfo - Cannot load settings. Error: '%A{e}'."
+            let errMsg = $"Cannot load settings. Error: '%A{e}'."
+            Logger.logCrit errMsg
+            failwith errMsg
 
 
     let updateVpnServerAccessInfo (info: VpnServerAccessInfo) =
