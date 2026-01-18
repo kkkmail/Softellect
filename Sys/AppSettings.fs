@@ -234,6 +234,22 @@ module AppSettings =
         | e -> Error e
 
 
+    let private tryGetSectionKeys (jsonObj : JObject) (ConfigSection section) =
+        try
+            match jsonObj.TryGetValue(section) with
+            | true, sectionObj ->
+                match sectionObj :?> JObject with
+                | null -> Ok []
+                | sectionJObj ->
+                    sectionJObj.Properties()
+                    |> Seq.map (fun p -> ConfigKey p.Name)
+                    |> Seq.toList
+                    |> Ok
+            | _ -> Ok []
+        with
+        | e -> Error e
+
+
     let private tryGetNestedString (jsonObj: JObject) (sections: string list) =
         try
             let rec getValue (currentObj: JObject) (keys: string list) =
@@ -391,28 +407,30 @@ module AppSettings =
     /// A thin (get / set) wrapper around appsettings.json or similarly structured JSON file.
     /// Currently, it supports only simple key value pairs.
     /// If you need anything more advanced, then get the string and parse it yourself.
-    type AppSettingsProvider private (fileName, jsonObj : JObject, setOnMissing : bool) =
-        member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getDoubleOrDefault key defaultValue = getDoubleOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getGuidOrDefault key defaultValue = getGuidOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getBoolOrDefault key defaultValue = getBoolOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getFolderNameOrDefault key defaultValue = getFolderNameOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
-        member _.getFileNameOrDefault key defaultValue = getFileNameOrDefault setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+    type AppSettingsProvider private (fileName, jsonObj : JObject, setOnMissing : bool, configSection : ConfigSection) =
+        member _.getStringOrDefault key defaultValue = getStringOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getIntOrDefault key defaultValue = getIntOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getDecimalOrDefault key defaultValue = getDecimalOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getDoubleOrDefault key defaultValue = getDoubleOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getGuidOrDefault key defaultValue = getGuidOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getBoolOrDefault key defaultValue = getBoolOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getFolderNameOrDefault key defaultValue = getFolderNameOrDefault setOnMissing defaultValue jsonObj configSection key
+        member _.getFileNameOrDefault key defaultValue = getFileNameOrDefault setOnMissing defaultValue jsonObj configSection key
 
-        member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj ConfigSection.appSettings key
-        member _.tryGetFromJson<'T> key = tryGetFromJson<'T> jsonObj ConfigSection.appSettings key
+        member _.tryGet<'T> tryCreate key = tryGet<'T> tryCreate jsonObj configSection key
+        member _.tryGetFromJson<'T> key = tryGetFromJson<'T> jsonObj configSection key
 
         member _.getOrDefault<'T> (defaultValue : 'T) tryCreate key =
-            getOrDefault<'T> setOnMissing defaultValue tryCreate jsonObj ConfigSection.appSettings key
+            getOrDefault<'T> setOnMissing defaultValue tryCreate jsonObj configSection key
 
         member _.getFromJsonOrDefault<'T> (defaultValue : 'T) key =
-            getFromJsonOrDefault<'T> setOnMissing defaultValue jsonObj ConfigSection.appSettings key
+            getFromJsonOrDefault<'T> setOnMissing defaultValue jsonObj configSection key
 
-        member _.trySet key value = trySet jsonObj ConfigSection.appSettings key value
-        // member _.tryGetArray<'T> key = tryGetArray<'T> jsonObj ConfigSection.appSettings key
-        // member _.trySetArray<'T> key items = trySetArray<'T> jsonObj ConfigSection.appSettings key items
+        member _.tryGetSectionKeys () = tryGetSectionKeys jsonObj configSection
+
+        member _.trySet key value = trySet jsonObj configSection key value
+        // member _.tryGetArray<'T> key = tryGetArray<'T> jsonObj configSection key
+        // member _.trySetArray<'T> key items = trySetArray<'T> jsonObj configSection key items
         // member _.trySetNested sections key value = trySetNested jsonObj sections key value
         // member _.tryGetNested sections key = tryGetNested jsonObj sections key
         // member _.tryGetNestedSection sections = tryGetNestedSection jsonObj sections
@@ -449,18 +467,20 @@ module AppSettings =
             | Ok () -> ()
             | Error e -> Logger.logError $"AppSettingsProvider.save - ERROR: '%A{e}'."
 
-        static member tryCreate (fileName : FileName) =
+        static member tryCreate (fileName : FileName, configSection : ConfigSection) =
             match fileName.tryGetFullFileName() with
             | Ok fullFileName ->
                 match tryOpenJson fullFileName with
                 | Ok jsonObj ->
                     let jObj = jsonObj :?> JObject
                     if isNull jObj then fullFileName |> JsonObjectIsNull |> Error
-                    else (fullFileName, jObj, SetOnMissing) |> AppSettingsProvider |> Ok
+                    else (fullFileName, jObj, SetOnMissing, configSection) |> AppSettingsProvider |> Ok
                 | Error e -> e |> TryOpenJsonExn |> Error
             | Error e -> Error e
 
-        static member tryCreate () = AppSettingsProvider.tryCreate appSettingsFile
+        static member tryCreate (fileName : FileName) = AppSettingsProvider.tryCreate (fileName, ConfigSection.appSettings)
+        static member tryCreate (configSection : ConfigSection) = AppSettingsProvider.tryCreate (appSettingsFile, configSection)
+        static member tryCreate () = AppSettingsProvider.tryCreate (appSettingsFile, ConfigSection.appSettings)
 
 
     type AppSettingsProviderResult = Result<AppSettingsProvider, exn>

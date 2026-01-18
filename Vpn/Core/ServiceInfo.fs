@@ -66,11 +66,19 @@ module ServiceInfo =
         }
 
 
+    type VpnConnectionInfo =
+        {
+            vpnConnectionName : VpnConnectionName
+            serverAccessInfo : ServiceAccessInfo
+        }
+
+
     type VpnClientAccessInfo =
         {
             vpnClientId : VpnClientId
             vpnServerId : VpnServerId
             serverAccessInfo : ServiceAccessInfo
+            vpnConnections : VpnConnectionInfo list
             clientKeyPath : FolderName
             serverPublicKeyPath : FolderName
             localLanExclusions : LocalLanExclusion list

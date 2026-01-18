@@ -64,6 +64,12 @@ module Primitives =
         member this.value = let (VpnClientName v) = this in v
 
 
+    type VpnConnectionName =
+        | VpnConnectionName of string
+
+        member this.value = let (VpnConnectionName v) = this in v
+
+
     type VpnClientHash =
         | VpnClientHash of string
 
