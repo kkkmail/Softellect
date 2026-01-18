@@ -119,7 +119,7 @@ module Tunnel =
                 |Ok () ->
                     let ipResult = adp.SetIpAddress config.assignedIp.value config.subnetMask
                     let mtuResult = createResult.SetMtu(MtuSize)
-                    Logger.logInfo $"Client - ipResult: {ipResult}, mtuResult: {mtuResult}, MTU size: {MtuSize}."
+                    Logger.logInfo $"Client - ipResult: %A{ipResult}, mtuResult: {mtuResult}, MTU size: {MtuSize}."
 
                     match ipResult with
                     | Ok () ->
