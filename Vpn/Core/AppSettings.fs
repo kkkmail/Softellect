@@ -429,3 +429,47 @@ module AppSettings =
         | Error e ->
             Logger.logWarn $"loadAutoStart - Cannot load settings, using default (false). Error: '%A{e}'."
             false
+
+
+    /// Saves the selected VPN connection name to appsettings.json.
+    let saveSelectedVpnConnectionName (name: VpnConnectionName) =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            match provider.trySet vpnConnectionNameKey name.value with
+            | Ok () ->
+                match provider.trySave() with
+                | Ok () -> Ok ()
+                | Error e -> toErr $"Failed to save settings: %A{e}"
+            | Error e -> toErr $"Failed to set VPN connection name: %A{e}"
+        | Error e ->
+            Logger.logError $"saveSelectedVpnConnectionName: ERROR - %A{e}."
+            toErr $"Failed to create settings provider: %A{e}"
+
+
+    /// Saves the AutoStart setting to appsettings.json.
+    let saveAutoStart (value: bool) =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let strValue = if value then "true" else "false"
+            match provider.trySet autoStartKey strValue with
+            | Ok () ->
+                match provider.trySave() with
+                | Ok () -> Ok ()
+                | Error e -> toErr $"Failed to save settings: %A{e}"
+            | Error e -> toErr $"Failed to set AutoStart: %A{e}"
+        | Error e ->
+            Logger.logError $"saveAutoStart: ERROR - %A{e}."
+            toErr $"Failed to create settings provider: %A{e}"
+
+
+    /// Loads the currently selected VPN connection name from appsettings.json.
+    /// Returns None if not set, otherwise the configured name.
+    let loadSelectedVpnConnectionName () =
+        match AppSettingsProvider.tryCreate() with
+        | Ok provider ->
+            let s = provider.getStringOrDefault vpnConnectionNameKey ""
+            if String.IsNullOrWhiteSpace s then None
+            else Some (VpnConnectionName s)
+        | Error e ->
+            Logger.logWarn $"loadSelectedVpnConnectionName - Cannot load settings. Error: '%A{e}'."
+            None
