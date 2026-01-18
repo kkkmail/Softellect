@@ -77,7 +77,7 @@ module ServiceInfo =
         {
             vpnClientId : VpnClientId
             vpnServerId : VpnServerId
-            serverAccessInfo : ServiceAccessInfo
+            vpnConnectionInfo : VpnConnectionInfo
             vpnConnections : VpnConnectionInfo list
             clientKeyPath : FolderName
             serverPublicKeyPath : FolderName

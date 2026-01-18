@@ -10,6 +10,7 @@ open Softellect.Sys.Logging
 open Softellect.Vpn.ClientAdm.CommandLine
 open Softellect.Vpn.ClientAdm.Implementation
 open Softellect.Vpn.Core.AppSettings
+open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.AdminService
 
@@ -58,10 +59,11 @@ module TrayUi =
             Console.SetIn(new StreamReader(Stream.Null))
 
 
-    /// UI-only state when the service is unreachable.
+    /// UI-only state when the service is unreachable or querying.
     type TrayUiState =
         | ServiceState of VpnClientConnectionState
         | ServiceNotRunning
+        | QueryingStatus
 
 
     /// Pastel colors matching Android client (spec 058).
@@ -86,6 +88,7 @@ module TrayUi =
             | Failed msg -> $"Failed: {msg}"
             | VersionError msg -> $"Version Error: {msg}"
         | ServiceNotRunning -> "Service Not Running"
+        | QueryingStatus -> "Checking service..."
 
 
     /// Get color for a state.
@@ -100,6 +103,7 @@ module TrayUi =
             | Failed _ -> StateColors.failed
             | VersionError _ -> StateColors.failed
         | ServiceNotRunning -> StateColors.serviceNotRunning
+        | QueryingStatus -> StateColors.serviceNotRunning
 
 
     /// Check if the current state is "connected" (for toggle logic).
@@ -131,42 +135,139 @@ module TrayUi =
         let adminAccessInfo = loadAdminAccessInfo()
         let adminClient = createAdminWcfClient adminAccessInfo
 
+        // Load VPN connections and selected connection name
+        let vpnConnections = loadVpnConnections()
+        let mutable selectedVpnConnectionName =
+            match loadSelectedVpnConnectionName() with
+            | Some name ->
+                // Validate against available connections
+                if vpnConnections |> List.exists (fun c -> c.vpnConnectionName = name) then name
+                else
+                    // Invalid name - use first available or default
+                    match vpnConnections with
+                    | h :: _ ->
+                        Logger.logWarn $"TrayUi: Configured VPN name '{name.value}' not found in available connections. Using '{h.vpnConnectionName.value}'."
+                        h.vpnConnectionName
+                    | [] -> VpnConnectionName.defaultValue
+            | None ->
+                // No configured name - use first available or default
+                match vpnConnections with
+                | h :: _ -> h.vpnConnectionName
+                | [] -> VpnConnectionName.defaultValue
+
+        let mutable autoStart = loadAutoStart()
         let mutable currentState = ServiceNotRunning
+        let mutable reconnectRequired = false
         let mutable notifyIcon : NotifyIcon option = None
         let mutable contextMenu : ContextMenuStrip option = None
+        let mutable vpnConnectionMenuItems : ToolStripMenuItem list = []
+        let mutable autoStartMenuItem : ToolStripMenuItem option = None
         let mutable isDisposed = false
+        let mutable isQueryingStatus = false
+        let mutable marshalControl : Control option = None
+        // Track last displayed values to avoid redundant UI updates
+        let mutable lastDisplayedColor : Color option = None
+        let mutable lastDisplayedText : string option = None
+
+        /// Get the tooltip text based on current state and VPN connection name.
+        let getTooltipText () =
+            if vpnConnections.IsEmpty then
+                "No VPN connections configured"
+            else
+                let baseText =
+                    match currentState with
+                    | ServiceState (Connected ip) ->
+                        $"{selectedVpnConnectionName.value}: {ip.value.value}"
+                    | QueryingStatus ->
+                        "Checking service..."
+                    | _ ->
+                        getStateText currentState
+
+                if reconnectRequired then
+                    $"{baseText} (reconnect required)"
+                else
+                    baseText
 
         /// Update the tray icon and tooltip based on the current state.
+        /// Only updates if color or text has actually changed to avoid blinking.
         let updateUi () =
             match notifyIcon with
             | Some icon ->
-                let color = getStateColor currentState
-                let text = getStateText currentState
+                let color =
+                    if vpnConnections.IsEmpty then StateColors.serviceNotRunning
+                    else getStateColor currentState
+                let text = getTooltipText()
+                let truncatedText = if text.Length > 63 then text.Substring(0, 60) + "..." else text
 
-                // Dispose old icon before creating a new one
-                if icon.Icon <> null then
-                    icon.Icon.Dispose()
+                let colorChanged = lastDisplayedColor <> Some color
+                let textChanged = lastDisplayedText <> Some truncatedText
 
-                icon.Icon <- createIcon color
-                // Tooltip is limited to 63 characters
-                icon.Text <- if text.Length > 63 then text.Substring(0, 60) + "..." else text
+                // Only update icon if color changed
+                if colorChanged then
+                    let oldIcon = icon.Icon
+                    icon.Icon <- createIcon color
+                    lastDisplayedColor <- Some color
+                    // Dispose old icon after setting new one to avoid GDI+ errors
+                    if oldIcon <> null then
+                        oldIcon.Dispose()
+
+                // Only update tooltip if text changed
+                if textChanged then
+                    icon.Text <- truncatedText
+                    lastDisplayedText <- Some truncatedText
             | None -> ()
 
-        /// Query status from the service.
-        let queryStatus () =
-            try
-                match adminClient.getStatus() with
-                | Ok state ->
-                    currentState <- ServiceState state
-                | Error e ->
-                    Logger.logWarn $"TrayUi: Failed to get status: '%A{e}'"
-                    currentState <- ServiceNotRunning
-            with
-            | ex ->
-                Logger.logWarn $"TrayUi: Exception getting status: {ex.Message}"
-                currentState <- ServiceNotRunning
+        /// Query status from the service asynchronously.
+        let queryStatusAsync () =
+            if not isQueryingStatus then
+                isQueryingStatus <- true
 
-            updateUi()
+                // Only show "Checking service..." if we don't have a valid state yet
+                match currentState with
+                | ServiceNotRunning ->
+                    currentState <- QueryingStatus
+                    updateUi()
+                | _ -> ()
+
+                // Start background thread for the query
+                let worker = new System.ComponentModel.BackgroundWorker()
+                worker.DoWork.Add(fun e ->
+                    try
+                        match adminClient.getStatus() with
+                        | Ok state -> e.Result <- box (Some state)
+                        | Error err ->
+                            Logger.logWarn $"TrayUi: Failed to get status: '%A{err}'"
+                            e.Result <- box None
+                    with
+                    | ex ->
+                        Logger.logWarn $"TrayUi: Exception getting status: {ex.Message}"
+                        e.Result <- box None
+                )
+
+                worker.RunWorkerCompleted.Add(fun e ->
+                    // Marshal back to UI thread
+                    match marshalControl with
+                    | Some ctrl when not ctrl.IsDisposed ->
+                        ctrl.BeginInvoke(Action(fun () ->
+                            match e.Result :?> VpnClientConnectionState option with
+                            | Some state ->
+                                // Clear reconnect required flag when disconnected
+                                if not (isConnected (ServiceState state)) then
+                                    reconnectRequired <- false
+                                currentState <- ServiceState state
+                            | None ->
+                                currentState <- ServiceNotRunning
+
+                            isQueryingStatus <- false
+                            updateUi()
+                            worker.Dispose()
+                        )) |> ignore
+                    | _ ->
+                        isQueryingStatus <- false
+                        worker.Dispose()
+                )
+
+                worker.RunWorkerAsync()
 
         /// Handle click - toggle VPN connection.
         let handleClick () =
@@ -183,7 +284,7 @@ module TrayUi =
                     | Error e -> Logger.logError $"TrayUi: Start command failed: '%A{e}'"
 
                 // Query status after the command completes
-                queryStatus()
+                queryStatusAsync()
             with
             | ex ->
                 Logger.logError $"TrayUi: Exception during click handling: {ex.Message}"
@@ -192,19 +293,92 @@ module TrayUi =
 
         /// Handle hover - refresh status.
         let handleMouseMove () =
-            queryStatus()
+            queryStatusAsync()
 
         /// Handle Exit menu item.
         let handleExit () =
             Logger.logInfo "TrayUi: User selected Exit."
             this.ExitThread()
 
+        /// Handle VPN connection selection.
+        let handleVpnConnectionSelect (connectionName: VpnConnectionName) =
+            if connectionName <> selectedVpnConnectionName then
+                let oldName = selectedVpnConnectionName.value
+                selectedVpnConnectionName <- connectionName
+
+                // Persist the selection
+                match saveSelectedVpnConnectionName connectionName with
+                | Ok () ->
+                    Logger.logInfo $"TrayUi: VPN connection changed from '{oldName}' to '{connectionName.value}'."
+                | Error e ->
+                    Logger.logError $"TrayUi: Failed to save VPN connection selection: '%A{e}'."
+
+                // Update checked state for all menu items
+                vpnConnectionMenuItems |> List.iter (fun item ->
+                    item.Checked <- (item.Tag :?> VpnConnectionName) = connectionName
+                )
+
+                // Set reconnect required if currently connected
+                if isConnected currentState then
+                    reconnectRequired <- true
+
+                updateUi()
+
+        /// Handle Auto Start toggle.
+        let handleAutoStartToggle () =
+            autoStart <- not autoStart
+
+            // Persist the setting
+            match saveAutoStart autoStart with
+            | Ok () ->
+                Logger.logInfo $"TrayUi: Auto Start set to {autoStart}."
+            | Error e ->
+                Logger.logError $"TrayUi: Failed to save Auto Start setting: '%A{e}'."
+
+            // Update menu item checked state
+            match autoStartMenuItem with
+            | Some item -> item.Checked <- autoStart
+            | None -> ()
+
         /// Create the context menu.
         let createContextMenu () =
             let menu = new ContextMenuStrip()
+
+            // VPN Connection submenu
+            let vpnConnectionMenu = new ToolStripMenuItem("VPN Connection")
+
+            if vpnConnections.IsEmpty then
+                // No connections available - show disabled placeholder
+                let noConnectionsItem = new ToolStripMenuItem("(No VPN connections available)")
+                noConnectionsItem.Enabled <- false
+                vpnConnectionMenu.DropDownItems.Add(noConnectionsItem) |> ignore
+            else
+                // Populate with available VPN connections
+                vpnConnectionMenuItems <- vpnConnections |> List.map (fun conn ->
+                    let item = new ToolStripMenuItem(conn.vpnConnectionName.value)
+                    item.Tag <- conn.vpnConnectionName
+                    item.CheckOnClick <- false
+                    item.Checked <- conn.vpnConnectionName = selectedVpnConnectionName
+                    item.Click.Add(fun _ -> handleVpnConnectionSelect conn.vpnConnectionName)
+                    vpnConnectionMenu.DropDownItems.Add(item) |> ignore
+                    item
+                )
+
+            menu.Items.Add(vpnConnectionMenu) |> ignore
+
+            // Auto Start checkbox
+            let autoStartItem = new ToolStripMenuItem("Auto Start")
+            autoStartItem.CheckOnClick <- false
+            autoStartItem.Checked <- autoStart
+            autoStartItem.Click.Add(fun _ -> handleAutoStartToggle())
+            autoStartMenuItem <- Some autoStartItem
+            menu.Items.Add(autoStartItem) |> ignore
+
+            // Exit item
             let exitItem = new ToolStripMenuItem("Exit")
             exitItem.Click.Add(fun _ -> handleExit())
             menu.Items.Add(exitItem) |> ignore
+
             menu
 
         /// Create and set up the notification icon.
@@ -212,8 +386,11 @@ module TrayUi =
             let icon = new NotifyIcon()
             icon.Visible <- true
 
-            // Initial state
-            icon.Icon <- createIcon StateColors.serviceNotRunning
+            // Initial state - use grey if no connections
+            let initialColor =
+                if vpnConnections.IsEmpty then StateColors.serviceNotRunning
+                else StateColors.serviceNotRunning
+            icon.Icon <- createIcon initialColor
             icon.Text <- "VPN Client - Initializing..."
 
             // Setup event handlers
@@ -235,16 +412,22 @@ module TrayUi =
         let initialize () =
             Logger.logInfo "TrayUi: Initializing..."
             Logger.logInfo $"TrayUi: Admin access info: '{adminAccessInfo}'"
+            Logger.logInfo $"TrayUi: Found {vpnConnections.Length} VPN connections."
+            Logger.logInfo $"TrayUi: Selected VPN connection: '{selectedVpnConnectionName.value}'."
+            Logger.logInfo $"TrayUi: Auto Start: {autoStart}."
 
             let icon = createNotifyIcon()
             notifyIcon <- Some icon
 
-            // Query initial status
-            queryStatus()
-
             Logger.logInfo "TrayUi: Initialized successfully."
 
         do initialize()
+
+        /// Set the marshal control for UI thread invocation.
+        member _.SetMarshalControl(ctrl: Control) =
+            marshalControl <- Some ctrl
+            // Now that we have a marshal control, query initial status
+            queryStatusAsync()
 
         /// Handle Windows messages (for Explorer restart detection).
         member _.ProcessMessage(m: Message) =
@@ -287,6 +470,10 @@ module TrayUi =
             this.Visible <- false
             this.FormBorderStyle <- FormBorderStyle.None
             this.Size <- Size(0, 0)
+            // Force handle creation so BeginInvoke can be used
+            this.Handle |> ignore
+            // Register this form as the marshal control for UI thread invocation
+            context.SetMarshalControl(this)
 
         override _.WndProc(m: Message byref) =
             context.ProcessMessage(m)

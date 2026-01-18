@@ -59,19 +59,19 @@ module Service =
 
 
     let private getServerIp (data: VpnClientServiceData) =
-        match data.clientAccessInfo.serverAccessInfo with
+        match data.clientAccessInfo.vpnConnectionInfo.serverAccessInfo with
         | NetTcpServiceInfo info -> info.netTcpServiceAddress.value.ipAddress
         | HttpServiceInfo info -> info.httpServiceAddress.value.ipAddress
 
 
     let private getServerIpAddress (data: VpnClientServiceData) =
-        match data.clientAccessInfo.serverAccessInfo with
+        match data.clientAccessInfo.vpnConnectionInfo.serverAccessInfo with
         | NetTcpServiceInfo info -> info.netTcpServiceAddress.value
         | HttpServiceInfo info -> info.httpServiceAddress.value
 
 
     let private getServerPort (data: VpnClientServiceData) =
-        match data.clientAccessInfo.serverAccessInfo with
+        match data.clientAccessInfo.vpnConnectionInfo.serverAccessInfo with
         | NetTcpServiceInfo info -> info.netTcpServicePort.value
         | HttpServiceInfo info -> info.httpServicePort.value
 

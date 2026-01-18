@@ -68,6 +68,7 @@ module Primitives =
         | VpnConnectionName of string
 
         member this.value = let (VpnConnectionName v) = this in v
+        static member defaultValue = VpnConnectionName "default"
 
 
     type VpnClientHash =
