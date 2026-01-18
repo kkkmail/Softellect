@@ -1,0 +1,30 @@
+System.Net.Sockets
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Net.Sockets.dll
+----------------------------------------
+System.Threading.Overlapped
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Threading.Overlapped.dll
+----------------------------------------
+System.Runtime.Intrinsics
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Runtime.Intrinsics.dll
+----------------------------------------
+System.Diagnostics.StackTrace
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Diagnostics.StackTrace.dll
+----------------------------------------
+System.Reflection.Metadata
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Reflection.Metadata.dll
+----------------------------------------
+System.Collections.Immutable
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.Collections.Immutable.dll
+----------------------------------------
+System.IO.MemoryMappedFiles
+    Assembly Version: 10.0.0.0
+    Location: C:\Program Files\dotnet\shared\Microsoft.NETCore.App\10.0.2\System.IO.MemoryMappedFiles.dll
+----------------------------------------
+
+************** JIT Debugging **************
