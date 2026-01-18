@@ -89,6 +89,7 @@ module UdpProtocol =
 
     /// Stats logging interval in milliseconds
     [<Literal>]
+    // let PushStatsIntervalMs = 5_000
     let PushStatsIntervalMs = 3_600_000
 
 

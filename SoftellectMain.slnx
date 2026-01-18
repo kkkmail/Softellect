@@ -36,6 +36,9 @@
     <Project Path="Apps/Vpn/VpnServerAdm/VpnServerAdm.fsproj">
       <Platform Project="x64" />
     </Project>
+    <Project Path="Apps/Vpn/VpnServerLinux/VpnServerLinux.fsproj">
+      <Platform Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/DistributedProcessing/">
     <Project Path="DistributedProcessing/Core/Core.fsproj">
@@ -141,6 +144,20 @@
       <Platform Project="x64" />
     </Project>
     <Project Path="Vpn/Server/Server.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vpn/LinuxServer/LinuxServer.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Linux/">
+    <Project Path="Linux/Sys/Sys.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Linux/Wcf/Wcf.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Linux/Core/Core.fsproj">
       <Platform Project="x64" />
     </Project>
   </Folder>

@@ -7,6 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open Softellect.Sys.Logging
 open Softellect.Sys.Crypto
+open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.UdpProtocol
@@ -105,7 +106,7 @@ module UdpClient =
             Logger.logInfo "Receive loop started."
             while not clientCts.Token.IsCancellationRequested do
                 try
-                    // Get current auth snapshot
+                    // Get the current auth snapshot
                     match getAuth() with
                     | None ->
                         // No auth available - backoff and retry
@@ -124,12 +125,14 @@ module UdpClient =
                                 // Session mismatch - log and ignore (may be stale packet from old session)
                                 Logger.logWarn $"Push client: SessionId mismatch: expected {auth.sessionId.value}, got {receivedSessionId.value} - ignoring packet"
                             else
-                                // Decrypt if needed using current auth's session key
+                                // Decrypt if needed using the current auth's session key
                                 match decryptPayload auth.sessionAesKey payloadBytes nonce with
                                 | Ok plaintextPayload ->
                                     match tryParsePayload plaintextPayload with
                                     | Ok (cmd, cmdData) ->
                                         if cmd = PushCmdData && cmdData.Length > 0 then
+                                            Logger.logTrace (fun () -> $"HEAVY LOG - Received: {cmdData.Length} bytes, cmdData: {(summarizePacket cmdData)}.")
+
                                             // Inject directly if injector is available, otherwise queue.
                                             match packetInjector with
                                             | Some injector ->
@@ -194,6 +197,7 @@ module UdpClient =
                                 | Some packet ->
                                     // Generate nonce for this packet
                                     let nonce = Guid.NewGuid()
+                                    Logger.logTrace (fun () -> $"HEAVY LOG - About to send: {packet.Length} bytes, packet: {(summarizePacket packet)}.")
 
                                     // Build plaintext payload with command
                                     let plaintextPayload = buildPayload PushCmdData packet

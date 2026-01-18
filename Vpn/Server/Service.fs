@@ -135,7 +135,18 @@ module Service =
                 serverPublicIp = data.serverAccessInfo.serviceAccessInfo.getIpAddress()
             }
 
-        let router = PacketRouter(routerConfig, registry)
+        let ctx =
+            {
+                config = routerConfig
+                registry = registry
+#if LINUX
+                tryGetTunAdapter = fun name tunnelType guid -> Softellect.Vpn.LinuxServer.TunAdapter.create name tunnelType (Option.ofNullable guid)
+#else
+                tryGetTunAdapter = fun name tunnelType guid -> Softellect.Vpn.Interop.WinTunAdapter.Create(name, tunnelType, guid)
+#endif
+            }
+
+        let router = PacketRouter ctx
 
         let serverVpnIpUint = ipToUInt32 routerConfig.serverVpnIp.value
 

@@ -1,14 +1,17 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Microsoft.FSharp.Core;
 using Softellect.Sys;
+using static Softellect.Vpn.Core.Primitives;
 
+// ReSharper disable once CheckNamespace
 namespace Softellect.Vpn.Interop;
 
 /// <summary>
 /// Managed wrapper for WinTun adapter operations.
 /// </summary>
-public sealed class WinTunAdapter : IDisposable
+public sealed class WinTunAdapter : ITunAdapter
 {
     private IntPtr _adapter;
     private IntPtr _session;
@@ -28,6 +31,8 @@ public sealed class WinTunAdapter : IDisposable
         WinTun.WintunGetAdapterLUID(adapter, out _adapterLuid);
     }
 
+    #region Static Members
+
     /// <summary>
     /// Creates a new WinTun adapter.
     /// </summary>
@@ -35,7 +40,7 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="tunnelType">Tunnel type identifier.</param>
     /// <param name="guid">Optional GUID for the adapter.</param>
     /// <returns>Result containing the adapter or error message.</returns>
-    public static Result<WinTunAdapter> Create(string name, string tunnelType, Guid? guid = null)
+    public static FSharpResult<ITunAdapter, string> Create(string name, string tunnelType, Guid? guid = null)
     {
         var adapterGuid = guid ?? Guid.NewGuid();
         var adapter = WinTun.WintunCreateAdapter(name, tunnelType, ref adapterGuid);
@@ -43,10 +48,10 @@ public sealed class WinTunAdapter : IDisposable
         if (adapter == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
-            return Result<WinTunAdapter>.Failure($"Failed to create WinTun adapter: {new Win32Exception(error).Message} (Error: {error})");
+            return FSharpResult<ITunAdapter, string>.NewError($"Failed to create WinTun adapter: {new Win32Exception(error).Message} (Error: {error})");
         }
 
-        return Result<WinTunAdapter>.Success(new WinTunAdapter(adapter, name));
+        return FSharpResult<ITunAdapter, string>.NewOk(new WinTunAdapter(adapter, name));
     }
 
     /// <summary>
@@ -54,34 +59,119 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     /// <param name="name">Adapter name.</param>
     /// <returns>Result containing the adapter or error message.</returns>
-    public static Result<WinTunAdapter> Open(string name)
+    public static FSharpResult<ITunAdapter, string> Open(string name)
     {
         var adapter = WinTun.WintunOpenAdapter(name);
 
         if (adapter == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
-            return Result<WinTunAdapter>.Failure($"Failed to open WinTun adapter: {new Win32Exception(error).Message} (Error: {error})");
+            return FSharpResult<ITunAdapter, string>.NewError($"Failed to open WinTun adapter: {new Win32Exception(error).Message} (Error: {error})");
         }
 
-        return Result<WinTunAdapter>.Success(new WinTunAdapter(adapter, name));
+        return FSharpResult<ITunAdapter, string>.NewOk(new WinTunAdapter(adapter, name));
     }
+
+    /// <summary>
+    /// Runs a command and returns the result.
+    /// </summary>
+    /// <param name="fileName">Executable name.</param>
+    /// <param name="arguments">Command arguments.</param>
+    /// <param name="operationName">Name of the operation for error messages.</param>
+    /// <returns>Result indicating success or failure with stderr text.</returns>
+    public static FSharpResult<Unit, string> RunCommand(string fileName, string arguments, string operationName)
+    {
+        try
+        {
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            process?.WaitForExit(30_000);
+
+            if (process?.ExitCode != 0)
+            {
+                var error = process?.StandardError.ReadToEnd();
+                return FSharpResult<Unit, string>.NewError($"Failed to {operationName}: {error}");
+            }
+
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
+        }
+        catch (Exception ex)
+        {
+            return FSharpResult<Unit, string>.NewError($"Exception in {operationName}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Runs a netsh command and returns the result.
+    /// </summary>
+    /// <param name="arguments">Command arguments (without 'netsh' prefix).</param>
+    /// <param name="operationName">Name of the operation for error messages.</param>
+    /// <returns>Result indicating success or failure with stderr text.</returns>
+    public static FSharpResult<Unit, string> RunNetsh(string arguments, string operationName)
+    {
+        return RunCommand("netsh", arguments, operationName);
+    }
+
+    /// <summary>
+    /// Converts a subnet mask to CIDR notation.
+    /// </summary>
+    private static int MaskToCidr(string mask)
+    {
+        var parts = mask.Split('.');
+        if (parts.Length != 4) return 0;
+
+        int cidr = 0;
+        foreach (var part in parts)
+        {
+            if (byte.TryParse(part, out var b))
+            {
+                while (b != 0)
+                {
+                    cidr += (int)(b & 1);
+                    b >>= 1;
+                }
+            }
+        }
+        return cidr;
+    }
+
+    /// <summary>
+    /// Flushes the DNS resolver cache using ipconfig.
+    /// </summary>
+    /// <returns>Result indicating success or failure.</returns>
+    public static FSharpResult<Unit, string> FlushDns()
+    {
+        return RunCommand("ipconfig", "/flushdns", "flush DNS");
+    }
+
+    #endregion
+
+    #region Interface Implementation
 
     /// <summary>
     /// Starts a packet session on this adapter.
     /// </summary>
     /// <param name="ringCapacity">Ring buffer capacity (default: 4MB).</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> StartSession(uint ringCapacity = 0x400000)
+    public FSharpResult<Unit, string> StartSession(uint ringCapacity)
     {
         if (_session != IntPtr.Zero)
         {
-            return Result<Unit>.Failure("Session already active");
+            return FSharpResult<Unit, string>.NewError("Session already active");
         }
 
         if (ringCapacity < WinTun.MinRingCapacity || ringCapacity > WinTun.MaxRingCapacity)
         {
-            return Result<Unit>.Failure($"Ring capacity must be between {WinTun.MinRingCapacity} and {WinTun.MaxRingCapacity}");
+            return FSharpResult<Unit, string>.NewError($"Ring capacity must be between {WinTun.MinRingCapacity} and {WinTun.MaxRingCapacity}");
         }
 
         _session = WinTun.WintunStartSession(_adapter, ringCapacity);
@@ -89,12 +179,14 @@ public sealed class WinTunAdapter : IDisposable
         if (_session == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
-            return Result<Unit>.Failure($"Failed to start session: {new Win32Exception(error).Message} (Error: {error})");
+            return FSharpResult<Unit, string>.NewError($"Failed to start session: {new Win32Exception(error).Message} (Error: {error})");
         }
 
         _readWaitHandle = null;
-        return Result<Unit>.Success(Unit.Value);
+        return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
     }
+
+    public FSharpResult<Unit, string> StartSession() => StartSession(0x400000);
 
     /// <summary>
     /// Ends the current packet session.
@@ -150,21 +242,25 @@ public sealed class WinTunAdapter : IDisposable
     /// Receives a packet from the adapter.
     /// </summary>
     /// <returns>Packet data or null if no packet available.</returns>
-    public byte[]? ReceivePacket()
+    public FSharpOption<byte[]> ReceivePacket()
     {
         if (_session == IntPtr.Zero)
-            return null;
+        {
+            return FSharpOption<byte[]>.None;
+        }
 
         var packetPtr = WinTun.WintunReceivePacket(_session, out var packetSize);
 
         if (packetPtr == IntPtr.Zero)
-            return null;
+        {
+            return FSharpOption<byte[]>.None;
+        }
 
         try
         {
             var packet = new byte[packetSize];
             Marshal.Copy(packetPtr, packet, 0, (int)packetSize);
-            return packet;
+            return FSharpOption<byte[]>.Some(packet);
         }
         finally
         {
@@ -177,16 +273,16 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     /// <param name="packet">Packet data to send.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SendPacket(byte[] packet)
+    public FSharpResult<Unit, string> SendPacket(byte[] packet)
     {
         if (_session == IntPtr.Zero)
         {
-            return Result<Unit>.Failure("No active session");
+            return FSharpResult<Unit, string>.NewError("No active session");
         }
 
         if (packet.Length > WinTun.MaxIpPacketSize)
         {
-            return Result<Unit>.Failure($"Packet too large: {packet.Length} > {WinTun.MaxIpPacketSize}");
+            return FSharpResult<Unit, string>.NewError($"Packet too large: {packet.Length} > {WinTun.MaxIpPacketSize}");
         }
 
         var packetPtr = WinTun.WintunAllocateSendPacket(_session, (uint)packet.Length);
@@ -194,62 +290,13 @@ public sealed class WinTunAdapter : IDisposable
         if (packetPtr == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
-            return Result<Unit>.Failure($"Failed to allocate send packet: {new Win32Exception(error).Message}");
+            return FSharpResult<Unit, string>.NewError($"Failed to allocate send packet: {new Win32Exception(error).Message}");
         }
 
         Marshal.Copy(packet, 0, packetPtr, packet.Length);
         WinTun.WintunSendPacket(_session, packetPtr);
 
-        return Result<Unit>.Success(Unit.Value);
-    }
-
-    /// <summary>
-    /// Runs a command and returns the result.
-    /// </summary>
-    /// <param name="fileName">Executable name.</param>
-    /// <param name="arguments">Command arguments.</param>
-    /// <param name="operationName">Name of the operation for error messages.</param>
-    /// <returns>Result indicating success or failure with stderr text.</returns>
-    public static Result<Unit> RunCommand(string fileName, string arguments, string operationName)
-    {
-        try
-        {
-            var startInfo = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using var process = System.Diagnostics.Process.Start(startInfo);
-            process?.WaitForExit(30_000);
-
-            if (process?.ExitCode != 0)
-            {
-                var error = process?.StandardError.ReadToEnd();
-                return Result<Unit>.Failure($"Failed to {operationName}: {error}");
-            }
-
-            return Result<Unit>.Success(Unit.Value);
-        }
-        catch (Exception ex)
-        {
-            return Result<Unit>.Failure($"Exception in {operationName}: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Runs a netsh command and returns the result.
-    /// </summary>
-    /// <param name="arguments">Command arguments (without 'netsh' prefix).</param>
-    /// <param name="operationName">Name of the operation for error messages.</param>
-    /// <returns>Result indicating success or failure with stderr text.</returns>
-    public static Result<Unit> RunNetsh(string arguments, string operationName)
-    {
-        return RunCommand("netsh", arguments, operationName);
+        return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
     }
 
     /// <summary>
@@ -258,7 +305,7 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="ipAddress">IP address to assign.</param>
     /// <param name="subnetMask">Subnet mask.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetIpAddress(Primitives.IpAddress ipAddress, Primitives.IpAddress subnetMask)
+    public FSharpResult<Unit, string> SetIpAddress(Primitives.IpAddress ipAddress, Primitives.IpAddress subnetMask)
     {
         return RunNetsh(
             $"interface ip set address name=\"{_name}\" static {ipAddress.value} {subnetMask.value}",
@@ -270,7 +317,7 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     /// <param name="dnsServerIp">DNS server IP address.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetDnsServer(Primitives.IpAddress dnsServerIp)
+    public FSharpResult<Unit, string> SetDnsServer(Primitives.IpAddress dnsServerIp)
     {
         return RunNetsh(
             $"interface ip set dns name=\"{_name}\" static {dnsServerIp.value}",
@@ -285,7 +332,7 @@ public sealed class WinTunAdapter : IDisposable
     /// <param name="gateway">Gateway IP address.</param>
     /// <param name="metric">Route metric.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> AddRoute(Primitives.IpAddress destination, Primitives.IpAddress mask, Primitives.IpAddress gateway, int metric)
+    public FSharpResult<Unit, string> AddRoute(Primitives.IpAddress destination, Primitives.IpAddress mask, Primitives.IpAddress gateway, int metric)
     {
         try
         {
@@ -309,49 +356,17 @@ public sealed class WinTunAdapter : IDisposable
                 if (stderr.Contains("exists", StringComparison.OrdinalIgnoreCase) ||
                     stderr.Contains("object already exists", StringComparison.OrdinalIgnoreCase))
                 {
-                    return Result<Unit>.Success(Unit.Value);
+                    return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
                 }
-                return Result<Unit>.Failure($"Failed to add route: {stderr}");
+                return FSharpResult<Unit, string>.NewError($"Failed to add route: {stderr}");
             }
 
-            return Result<Unit>.Success(Unit.Value);
+            return FSharpResult<Unit, string>.NewOk(Primitives.FSharpUnit);
         }
         catch (Exception ex)
         {
-            return Result<Unit>.Failure($"Exception adding route: {ex.Message}");
+            return FSharpResult<Unit, string>.NewError($"Exception adding route: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// Converts a subnet mask to CIDR notation.
-    /// </summary>
-    private static int MaskToCidr(string mask)
-    {
-        var parts = mask.Split('.');
-        if (parts.Length != 4) return 0;
-
-        int cidr = 0;
-        foreach (var part in parts)
-        {
-            if (byte.TryParse(part, out var b))
-            {
-                while (b != 0)
-                {
-                    cidr += (int)(b & 1);
-                    b >>= 1;
-                }
-            }
-        }
-        return cidr;
-    }
-
-    /// <summary>
-    /// Flushes the DNS resolver cache using ipconfig.
-    /// </summary>
-    /// <returns>Result indicating success or failure.</returns>
-    public static Result<Unit> FlushDns()
-    {
-        return RunCommand("ipconfig", "/flushdns", "flush DNS");
     }
 
     /// <summary>
@@ -359,7 +374,7 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     /// <param name="metric">Interface metric value.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetInterfaceMetric(int metric)
+    public FSharpResult<Unit, string> SetInterfaceMetric(int metric)
     {
         return RunNetsh(
             $"interface ipv4 set interface \"{_name}\" metric={metric}",
@@ -371,10 +386,10 @@ public sealed class WinTunAdapter : IDisposable
     /// </summary>
     /// <param name="mtu">MTU value in bytes.</param>
     /// <returns>Result indicating success or failure.</returns>
-    public Result<Unit> SetMtu(int mtu)
+    public FSharpResult<Unit, string> SetMtu(int mtu)
     {
         if (mtu < 576 || mtu > 9000)
-            return Result<Unit>.Failure($"Invalid MTU: {mtu}");
+            return FSharpResult<Unit, string>.NewError($"Invalid MTU: {mtu}");
 
         // "subinterface" is the correct netsh target for MTU.
         // Name must match the interface name as shown by:
@@ -399,33 +414,6 @@ public sealed class WinTunAdapter : IDisposable
 
         _disposed = true;
     }
-}
 
-/// <summary>
-/// Simple Result type for error handling.
-/// </summary>
-/// <typeparam name="T">Success value type.</typeparam>
-public class Result<T>
-{
-    public bool IsSuccess { get; }
-    public T? Value { get; }
-    public string? Error { get; }
-
-    private Result(bool isSuccess, T? value, string? error)
-    {
-        IsSuccess = isSuccess;
-        Value = value;
-        Error = error;
-    }
-
-    public static Result<T> Success(T value) => new(true, value, null);
-    public static Result<T> Failure(string error) => new(false, default, error);
-}
-
-/// <summary>
-/// Unit type for void results.
-/// </summary>
-public readonly struct Unit
-{
-    public static readonly Unit Value = new();
+    #endregion
 }

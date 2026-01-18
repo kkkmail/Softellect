@@ -1,7 +1,7 @@
 ﻿namespace Softellect.Sys
 
 open System
-open System.Data.SQLite
+// open System.Data.SQLite
 open System.IO
 open FSharp.Data.Sql
 open System.Data
@@ -64,10 +64,10 @@ module DataAccess =
         conn
 
 
-    let getOpenSqliteConn (SqliteConnectionString connectionString) =
-        let conn = new SQLiteConnection(connectionString)
-        conn.Open()
-        conn
+    // let getOpenSqliteConn (SqliteConnectionString connectionString) =
+    //     let conn = new SQLiteConnection(connectionString)
+    //     conn.Open()
+    //     conn
 
 
     let toError g f = f |> g |> Error

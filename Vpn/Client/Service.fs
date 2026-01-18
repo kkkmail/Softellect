@@ -86,13 +86,11 @@ module Service =
         let serverPort = getServerPort data
         let exclusions = data.clientAccessInfo.localLanExclusions |> List.map (fun e -> e.value)
 
-        let result = ks.Enable(serverIp, serverPort, exclusions)
-
-        if result.IsSuccess then
+        match ks.Enable(serverIp, serverPort, exclusions) with
+        | Ok () ->
             Logger.logInfo "Kill-switch enabled"
             Ok ks
-        else
-            let errMsg = match result.Error with | null -> "Unknown error" | e -> e
+        | Error errMsg ->
             Logger.logError $"Failed to enable kill-switch: {errMsg}"
             ks.Dispose()
             Error errMsg
@@ -347,13 +345,11 @@ module Service =
                                             // Permit traffic from VPN local address in kill-switch
                                             match killSwitch with
                                             | Some ks ->
-                                                let r = ks.AddPermitFilterForLocalHost(authResponse.assignedIp.value.ipAddress, $"Permit VPN Local {authResponse.assignedIp.value}")
-                                                if r.IsSuccess then
+                                                match ks.AddPermitFilterForLocalHost(authResponse.assignedIp.value.ipAddress, $"Permit VPN Local {authResponse.assignedIp.value}") with
+                                                | Ok () ->
                                                     Logger.logInfo $"Kill-switch: permitted VPN local address {authResponse.assignedIp.value}"
                                                     tunnelStarted <- true
-                                                else
-                                                    let errMsg = match r.Error with | null -> "Unknown error" | e -> e
-                                                    Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
+                                                | Error errMsg -> Logger.logError $"Failed to permit VPN local address in kill-switch: {errMsg}"
                                             | None -> Logger.logError "Kill-switch instance is missing"
                                         | Error msg -> Logger.logError $"Push: Failed to start tunnel: {msg}"
 

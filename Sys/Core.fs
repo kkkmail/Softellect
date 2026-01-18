@@ -653,10 +653,10 @@ module Core =
 
 
     /// Well-known Windows top-level folders we must never delete
-#if ANDROID
-    let private wellKnownTopFolders = []
+#if ANDROID || LINUX
+    let private getWellKnownTopFolders () = []
 #else
-    let private wellKnownTopFolders =
+    let private getWellKnownTopFolders () =
         [
             Path.GetPathRoot(Environment.SystemDirectory)          // e.g. "C:\"
             Environment.GetFolderPath(Environment.SpecialFolder.Windows)
@@ -671,7 +671,7 @@ module Core =
     /// Check if the folder is dangerous (one of the system folders).
     let private isWellKnownTopFolder (FolderName folderPath) =
         let normalized = folderPath.TrimEnd(Path.DirectorySeparatorChar).ToLowerInvariant()
-        wellKnownTopFolders |> List.exists (fun top -> normalized = top)
+        getWellKnownTopFolders () |> List.exists (fun top -> normalized = top)
 
 
     /// Tries to delete a file safely.

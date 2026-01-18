@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Softellect.Vpn.Core</AssemblyName>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked files from Vpn\Core -->
+    <Compile Include="..\..\Vpn\Core\Primitives.fs" Link="Primitives.fs" />
+    <Compile Include="..\..\Vpn\Core\Errors.fs" Link="Errors.fs" />
+    <Compile Include="..\..\Vpn\Core\KeyManagement.fs" Link="KeyManagement.fs" />
+    <Compile Include="..\..\Vpn\Core\PacketDebug.fs" Link="PacketDebug.fs" />
+    <Compile Include="..\..\Vpn\Core\ServiceInfo.fs" Link="ServiceInfo.fs" />
+    <Compile Include="..\..\Vpn\Core\UdpProtocol.fs" Link="UdpProtocol.fs" />
+    <Compile Include="..\..\Vpn\Core\AppSettings.fs" Link="AppSettings.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+    <ProjectReference Include="..\Wcf\Wcf.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+  </ItemGroup>
+</Project>
