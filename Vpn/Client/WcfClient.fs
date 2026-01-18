@@ -94,7 +94,7 @@ module WcfClient =
 
     /// Encrypted auth WCF client.
     type AuthWcfClient (data: VpnClientServiceData) =
-        let clientAccessInfo = data.clientAccessInfo
+        let clientAccessInfo = data.clientAccessInfo.vpnConnectionInfo
         let url = clientAccessInfo.serverAccessInfo.getUrl()
         let commType = clientAccessInfo.serverAccessInfo.communicationType
 

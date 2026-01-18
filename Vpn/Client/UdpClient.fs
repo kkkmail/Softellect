@@ -45,7 +45,7 @@ module UdpClient =
     /// Wire format: [sessionId: 1 byte][nonce: 16 bytes][payload]
     /// Per spec 042: Does not store session data. Uses getAuth() on each iteration.
     type VpnPushUdpClient(data: VpnClientServiceData, getAuth: unit -> VpnAuthResponse option) =
-        let clientAccessInfo = data.clientAccessInfo
+        let clientAccessInfo = data.clientAccessInfo.vpnConnectionInfo
         let serverIp = clientAccessInfo.serverAccessInfo.getIpAddress()
         let serverPort = clientAccessInfo.serverAccessInfo.getServicePort().value
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
@@ -54,8 +54,8 @@ module UdpClient =
         let clientPushStats = ClientPushStats()
 
         // Encryption config
-        let useEncryption = clientAccessInfo.useEncryption
-        let vpnClientId = clientAccessInfo.vpnClientId
+        let useEncryption = data.clientAccessInfo.useEncryption
+        let vpnClientId = data.clientAccessInfo.vpnClientId
 
         // Bounded queue for outbound packets (from TUN to server).
         let outboundQueue = BoundedPacketQueue(PushQueueMaxBytes, PushQueueMaxPackets)

@@ -160,7 +160,7 @@ module Implementation =
         Logger.logInfo $"  Client ID: {ctx.clientAccessInfo.vpnClientId.value}"
         Logger.logInfo $"  Server ID: {ctx.clientAccessInfo.vpnServerId.value}"
 
-        match ctx.clientAccessInfo.serverAccessInfo with
+        match ctx.clientAccessInfo.vpnConnectionInfo.serverAccessInfo with
         | NetTcpServiceInfo info ->
             Logger.logInfo $"  Server: {info.netTcpServiceAddress.value}:{info.netTcpServicePort.value}"
             Logger.logInfo $"  Protocol: NetTcp"
@@ -191,31 +191,32 @@ module Implementation =
 
 
     let setServer (ctx: ClientAdmContext) (args: SetServerArgs list) =
-        let address = args |> List.tryPick (function Address a -> Some a | _ -> None) |> Option.defaultValue ""
-        let port = args |> List.tryPick (function Port p -> Some p | _ -> None) |> Option.defaultValue 5080
-
-        if String.IsNullOrWhiteSpace address then
-            Error "Server address is required."
-        else
-            let newServerInfo =
-                {
-                    netTcpServiceAddress = ServiceAddress (Ip4 address)
-                    netTcpServicePort = ServicePort port
-                    netTcpServiceName = ServiceName "VpnService"
-                    netTcpSecurityMode = NoSecurity
-                }
-                |> NetTcpServiceInfo
-
-            let updatedClientInfo =
-                { ctx.clientAccessInfo with serverAccessInfo = newServerInfo }
-
-            match updateVpnClientAccessInfo updatedClientInfo with
-            | Ok () ->
-                Logger.logInfo $"Server configured: {address}:{port}"
-                Ok $"Server configured successfully: {address}:{port}"
-            | Error e ->
-                Logger.logError $"Failed to update configuration: %A{e}"
-                Error $"Failed to update configuration: %A{e}"
+        // let address = args |> List.tryPick (function Address a -> Some a | _ -> None) |> Option.defaultValue ""
+        // let port = args |> List.tryPick (function Port p -> Some p | _ -> None) |> Option.defaultValue 5080
+        //
+        // if String.IsNullOrWhiteSpace address then
+        //     Error "Server address is required."
+        // else
+        //     let newServerInfo =
+        //         {
+        //             netTcpServiceAddress = ServiceAddress (Ip4 address)
+        //             netTcpServicePort = ServicePort port
+        //             netTcpServiceName = ServiceName "VpnService"
+        //             netTcpSecurityMode = NoSecurity
+        //         }
+        //         |> NetTcpServiceInfo
+        //
+        //     let updatedClientInfo =
+        //         { ctx.clientAccessInfo with serverAccessInfo = newServerInfo }
+        //
+        //     match updateVpnClientAccessInfo updatedClientInfo with
+        //     | Ok () ->
+        //         Logger.logInfo $"Server configured: {address}:{port}"
+        //         Ok $"Server configured successfully: {address}:{port}"
+        //     | Error e ->
+        //         Logger.logError $"Failed to update configuration: %A{e}"
+        //         Error $"Failed to update configuration: %A{e}"
+        failwith "setServer is not implemented due to change how server info is stored."
 
 
     let private tryParseDefaultRoute (routeOutput: string) =
