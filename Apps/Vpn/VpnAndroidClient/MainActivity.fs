@@ -378,6 +378,7 @@ type MainActivity() =
 
             // Parse VPN connections
             parsedConnections <- parseVpnConnections config.vpnConnections
+            Logger.logInfo $"Found {parsedConnections.Length} VPN connection points."
 
             if parsedConnections.IsEmpty then
                 let errMsg = "No VPN connections configured"
@@ -496,7 +497,12 @@ type MainActivity() =
 
     /// Handle VPN connection selection change from Spinner.
     member private this.OnVpnConnectionSelected(newConnectionName: string) =
-        if newConnectionName <> selectedConnectionName && not (String.IsNullOrEmpty newConnectionName) then
+        // Ignore placeholder "No connections" and same-selection events
+        if newConnectionName <> selectedConnectionName
+           && not (String.IsNullOrEmpty newConnectionName)
+           && newConnectionName <> "No connections"
+           && parsedConnections |> List.exists (fun c -> c.vpnConnectionName.value = newConnectionName) then
+
             let oldName = selectedConnectionName
             selectedConnectionName <- newConnectionName
 
@@ -782,7 +788,10 @@ type MainActivity() =
 
             Logger.logInfo "VPN Android client starting"
 
-            // Build and set the layout FIRST
+            // Load config from Assets FIRST so parsedConnections is populated before UI build
+            this.LoadConfig()
+
+            // Build and set the layout AFTER config is loaded
             let layout = this.BuildLayout()
             this.SetContentView(layout)
 
@@ -791,8 +800,6 @@ type MainActivity() =
                 this.RunOnUiThread(fun () -> this.UpdateLogPane())
             )
 
-            // Load config from Assets
-            this.LoadConfig()
             this.UpdateUI()
         with
         | ex ->
