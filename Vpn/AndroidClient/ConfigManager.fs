@@ -83,14 +83,8 @@ module ConfigManager =
     [<CLIMutable>]
     type VpnClientConfig =
         {
-            /// Server hostname or IP address.
-            serverHost : string
-
-            /// BasicHttp port for WCF auth/ping.
-            basicHttpPort : int
-
-            /// UDP port for data plane.
-            udpPort : int
+            /// Default VPN connection name.
+            vpnConnectionName : string
 
             /// Client ID (GUID string).
             clientId : string
@@ -112,13 +106,14 @@ module ConfigManager =
 
             /// Encryption type (default "AES").
             encryptionType : string
+
+            /// VPN connections mapping: name -> serialized ServiceAccessInfo string.
+            vpnConnections : Dictionary<string, string>
         }
 
         static member defaultValue =
             {
-                serverHost = ""
-                basicHttpPort = 0
-                udpPort = 0
+                vpnConnectionName = ""
                 clientId = ""
                 serverId = ""
                 clientPrivateKey = ""
@@ -126,6 +121,7 @@ module ConfigManager =
                 serverPublicKey = ""
                 useEncryption = true
                 encryptionType = "AES"
+                vpnConnections = null
             }
 
 
@@ -141,16 +137,10 @@ module ConfigManager =
     let tryLoadConfigFromJson (json: string) : Result<VpnClientConfig, string> =
         try
             let config = JsonConvert.DeserializeObject<VpnClientConfig>(json)
-            if String.IsNullOrWhiteSpace(config.serverHost) then
-                Error "serverHost is required"
-            elif config.basicHttpPort <= 0 then
-                Error "basicHttpPort must be positive"
-            elif config.udpPort <= 0 then
-                Error "udpPort must be positive"
+            if isNull config.vpnConnections || config.vpnConnections.Count = 0 then
+                Error "No VPN connections configured"
             elif String.IsNullOrWhiteSpace(config.clientId) then
                 Error "clientId is required"
-            //elif String.IsNullOrWhiteSpace(config.serverId) then
-            //    Error "serverId is required"
             elif String.IsNullOrWhiteSpace(config.clientPrivateKey) then
                 Error "clientPrivateKey is required"
             elif String.IsNullOrWhiteSpace(config.clientPublicKey) then
@@ -282,59 +272,133 @@ module ConfigManager =
         | ex -> Error $"Failed to read config file: {ex.Message}"
 
 
-    /// Convert VpnClientConfig to VpnClientServiceData.
-    let toVpnClientServiceData (config: VpnClientConfig) : Result<VpnClientServiceData, string> =
+    // SharedPreferences constants
+    let private preferencesName = "SoftellectVpn"
+    let private vpnConnectionNameKey = "vpnConnectionName"
+
+
+    /// Load persisted VPN connection name from SharedPreferences.
+    let loadPersistedVpnConnectionName (context: Context) : string option =
         try
-            let clientId = VpnClientId (Guid.Parse(config.clientId))
-            let clientPrivateKey = PrivateKey config.clientPrivateKey
-            let clientPublicKey = PublicKey config.clientPublicKey
-            let serverPublicKey = PublicKey config.serverPublicKey
-            let encryptionType = parseEncryptionType config.encryptionType
-            let serviceAddress = IpAddress.Ip4 config.serverHost |> ServiceAddress
-            let servicePort = config.udpPort |> ServicePort
-            let serviceName = ServiceName "VpnService"
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            let value = prefs.GetString(vpnConnectionNameKey, null)
+            if String.IsNullOrWhiteSpace(value) then None
+            else Some value
+        with
+        | ex ->
+            Logger.logWarn $"loadPersistedVpnConnectionName: Failed to load: {ex.Message}"
+            None
 
-            let httpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicePort serviceName
 
-            let clientAccessInfo : VpnClientAccessInfo =
-                {
-                    vpnClientId = clientId
-                    vpnServerId = VpnServerId Guid.Empty // Not needed for Android client ???
-                    serverAccessInfo = HttpServiceInfo httpServiceInfo
-                    clientKeyPath = FolderName String.Empty // Not used on Android ???
-                    serverPublicKeyPath = FolderName String.Empty // Not used on Android ???
-                    localLanExclusions = []
-                    vpnTransportProtocol = UDP_Push
-                    physicalGatewayIp = getPhysicalGatewayIp()
-                    physicalInterfaceName = getPhysicalInterfaceName()
-                    useEncryption = config.useEncryption
-                    encryptionType = encryptionType
+    /// Persist selected VPN connection name to SharedPreferences.
+    let persistVpnConnectionName (context: Context) (name: string) : unit =
+        try
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            let editor = prefs.Edit()
+            editor.PutString(vpnConnectionNameKey, name) |> ignore
+            editor.Apply()
+        with
+        | ex ->
+            Logger.logError $"persistVpnConnectionName: Failed to persist: {ex.Message}"
+
+
+    /// Parse VPN connections from config dictionary.
+    /// Returns list of parsed VpnConnectionInfo values.
+    let parseVpnConnections (vpnConnections: Dictionary<string, string>) : VpnConnectionInfo list =
+        vpnConnections
+        |> Seq.choose (fun kvp ->
+            match ServiceAccessInfo.tryDeserialize kvp.Value with
+            | Ok serviceInfo ->
+                Some {
+                    vpnConnectionName = VpnConnectionName kvp.Key
+                    serverAccessInfo = serviceInfo
                 }
+            | Error _ ->
+                Logger.logWarn $"parseVpnConnections: Failed to parse connection '{kvp.Key}': '{kvp.Value}'"
+                None
+        )
+        |> Seq.toList
 
-            let wcfHttpServiceInfo = HttpServiceAccessInfo.create serviceAddress servicePort serviceName
 
-            let clientAccessInfoWithCorrectPort = { clientAccessInfo with serverAccessInfo = HttpServiceInfo wcfHttpServiceInfo }
+    /// Resolve effective VPN connection name.
+    /// Order: 1) Persisted value from SharedPreferences, 2) vpnConnectionName from config.
+    /// Validates against available connections, falls back to first available if invalid.
+    let resolveEffectiveVpnConnectionName
+        (context: Context)
+        (config: VpnClientConfig)
+        (parsedConnections: VpnConnectionInfo list)
+        : string option =
+        match parsedConnections with
+        | [] -> None
+        | connections ->
+            let connectionNames = connections |> List.map (fun c -> c.vpnConnectionName.value) |> Set.ofList
 
-            let serviceData : VpnClientServiceData =
-                {
-                    clientAccessInfo = clientAccessInfoWithCorrectPort
-                    clientPrivateKey = clientPrivateKey
-                    clientPublicKey = clientPublicKey
-                    serverPublicKey = serverPublicKey
-                }
+            // Try persisted first
+            let persisted = loadPersistedVpnConnectionName context
+            match persisted with
+            | Some name when connectionNames.Contains name -> Some name
+            | Some name ->
+                Logger.logWarn $"resolveEffectiveVpnConnectionName: Persisted name '{name}' not found in available connections."
+                // Fall through to config default
+                let configName = config.vpnConnectionName
+                if not (String.IsNullOrWhiteSpace configName) && connectionNames.Contains configName then
+                    Some configName
+                else
+                    // Fall back to first available
+                    Some (connections.Head.vpnConnectionName.value)
+            | None ->
+                // No persisted value, try config default
+                let configName = config.vpnConnectionName
+                if not (String.IsNullOrWhiteSpace configName) && connectionNames.Contains configName then
+                    Some configName
+                else
+                    // Fall back to first available
+                    Some (connections.Head.vpnConnectionName.value)
 
-            Ok serviceData
+
+    /// Convert VpnClientConfig to VpnClientServiceData.
+    /// Takes the selected connection name and pre-parsed connections list.
+    let toVpnClientServiceData
+        (config: VpnClientConfig)
+        (selectedConnectionName: string)
+        (parsedConnections: VpnConnectionInfo list)
+        : Result<VpnClientServiceData, string> =
+        try
+            // Find the selected connection
+            match parsedConnections |> List.tryFind (fun c -> c.vpnConnectionName.value = selectedConnectionName) with
+            | None ->
+                Error $"Selected connection '{selectedConnectionName}' not found in parsed connections"
+            | Some selectedConnection ->
+                let clientId = VpnClientId (Guid.Parse(config.clientId))
+                let clientPrivateKey = PrivateKey config.clientPrivateKey
+                let clientPublicKey = PublicKey config.clientPublicKey
+                let serverPublicKey = PublicKey config.serverPublicKey
+                let encryptionType = parseEncryptionType config.encryptionType
+
+                let clientAccessInfo : VpnClientAccessInfo =
+                    {
+                        vpnClientId = clientId
+                        vpnServerId = VpnServerId Guid.Empty
+                        vpnConnectionInfo = selectedConnection
+                        vpnConnections = parsedConnections
+                        clientKeyPath = FolderName String.Empty
+                        serverPublicKeyPath = FolderName String.Empty
+                        localLanExclusions = []
+                        vpnTransportProtocol = UDP_Push
+                        physicalGatewayIp = getPhysicalGatewayIp()
+                        physicalInterfaceName = getPhysicalInterfaceName()
+                        useEncryption = config.useEncryption
+                        encryptionType = encryptionType
+                    }
+
+                let serviceData : VpnClientServiceData =
+                    {
+                        clientAccessInfo = clientAccessInfo
+                        clientPrivateKey = clientPrivateKey
+                        clientPublicKey = clientPublicKey
+                        serverPublicKey = serverPublicKey
+                    }
+
+                Ok serviceData
         with
         | ex -> Error $"Failed to convert config: {ex.Message}"
-
-
-    ///// Load and convert config from file.
-    //let tryLoadServiceDataFromFile (filePath: string) : Result<VpnClientServiceData, string> =
-    //    tryLoadConfigFromFile filePath
-    //    |> Result.bind toVpnClientServiceData
-
-
-    ///// Load and convert config from JSON string.
-    //let tryLoadServiceDataFromJson (json: string) : Result<VpnClientServiceData, string> =
-    //    tryLoadConfigFromJson json
-    //    |> Result.bind toVpnClientServiceData

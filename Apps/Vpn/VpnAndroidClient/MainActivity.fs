@@ -83,6 +83,7 @@ type MainActivity() =
     let mutable logPaneText: TextView = null
     let mutable logScrollView: ScrollView = null
     let mutable titleBar: LinearLayout = null  // Spec 057: Reference to title bar for color changes
+    let mutable vpnConnectionSpinner: Spinner = null  // Spec 064: VPN connection selector
     let mutable vpnService: VpnTunnelServiceImpl option = None
     let mutable serviceData: VpnClientServiceData option = None
     let mutable statsTimer: Timer = null
@@ -91,10 +92,13 @@ type MainActivity() =
     let mutable versionState: VersionState = VersionOkState  // Spec 057: Version state for UI
     let mutable versionInfo: VersionCheckInfo option = None  // Spec 057: Version info for display
 
+    // Spec 064: VPN connection selection
+    let mutable vpnConfig: VpnClientConfig option = None
+    let mutable parsedConnections: VpnConnectionInfo list = []
+    let mutable selectedConnectionName: string = ""
+    let mutable reconnectRequired: bool = false
+
     // Connection info from config
-    let mutable serverHost = ""
-    let mutable basicHttpPort = 0
-    let mutable udpPort = 0
     let mutable clientId = ""
     let mutable serverId = ""
     let mutable sessionId: byte = 0uy
@@ -157,11 +161,10 @@ type MainActivity() =
 
         // Configuration section
         sb.AppendLine("── Configuration ──") |> ignore
-        sb.AppendLine($"""Server: {(if String.IsNullOrEmpty serverHost then "\"not configured\"" else serverHost)}""") |> ignore
-        sb.AppendLine($"BasicHttp Port: {basicHttpPort}") |> ignore
-        sb.AppendLine($"UDP Port: {udpPort}") |> ignore
+        sb.AppendLine($"VPN Connection: {selectedConnectionName}") |> ignore
         sb.AppendLine($"ClientId: {clientId}") |> ignore
         sb.AppendLine($"ServerId: {serverId}") |> ignore
+        sb.AppendLine($"Reconnect required: {reconnectRequired}") |> ignore
         sb.AppendLine() |> ignore
 
         // Spec 057: Version section
@@ -369,20 +372,37 @@ type MainActivity() =
     member private this.LoadConfig() =
         match tryLoadConfigFromFile this with
         | Ok config ->
-            serverHost <- config.serverHost
-            basicHttpPort <- config.basicHttpPort
-            udpPort <- config.udpPort
+            vpnConfig <- Some config
             clientId <- config.clientId
             serverId <- config.serverId
-            match toVpnClientServiceData config with
-            | Ok data ->
-                serviceData <- Some data
-                configLoadError <- None
-                Logger.logInfo $"Config loaded: {serverHost}:{basicHttpPort}"
-            | Error e ->
-                this.SetLastError $"Failed to convert config: {e}"
+
+            // Parse VPN connections
+            parsedConnections <- parseVpnConnections config.vpnConnections
+
+            if parsedConnections.IsEmpty then
+                let errMsg = "No VPN connections configured"
+                this.SetLastError errMsg
                 serviceData <- None
-                configLoadError <- Some e
+                configLoadError <- Some errMsg
+            else
+                // Resolve effective connection name
+                match resolveEffectiveVpnConnectionName this config parsedConnections with
+                | Some name ->
+                    selectedConnectionName <- name
+                    match toVpnClientServiceData config name parsedConnections with
+                    | Ok data ->
+                        serviceData <- Some data
+                        configLoadError <- None
+                        Logger.logInfo $"Config loaded: VPN connection '{name}'"
+                    | Error e ->
+                        this.SetLastError $"Failed to convert config: {e}"
+                        serviceData <- None
+                        configLoadError <- Some e
+                | None ->
+                    let errMsg = "Failed to resolve VPN connection name"
+                    this.SetLastError errMsg
+                    serviceData <- None
+                    configLoadError <- Some errMsg
         | Error e ->
             this.SetLastError $"Failed to load config: {e}"
             serviceData <- None
@@ -445,6 +465,7 @@ type MainActivity() =
         packetsReceived <- 0L
         connectionState <- Disconnected
         pendingDisconnect <- false // Spec 055: Clear pending flag when disconnect completes
+        reconnectRequired <- false // Spec 064: Clear reconnect required on disconnect
         this.UpdateUI()
 
 
@@ -473,7 +494,34 @@ type MainActivity() =
         Toast.MakeText(this, $"{label} copied", ToastLength.Short).Show()
 
 
-    /// Create the top control row with power button and status text.
+    /// Handle VPN connection selection change from Spinner.
+    member private this.OnVpnConnectionSelected(newConnectionName: string) =
+        if newConnectionName <> selectedConnectionName && not (String.IsNullOrEmpty newConnectionName) then
+            let oldName = selectedConnectionName
+            selectedConnectionName <- newConnectionName
+
+            // Persist the selection
+            persistVpnConnectionName this newConnectionName
+            Logger.logInfo $"VPN connection changed from '{oldName}' to '{newConnectionName}'"
+
+            // Mark reconnect required if not disconnected
+            if connectionState <> Disconnected then
+                reconnectRequired <- true
+
+            // Update service data with new connection
+            match vpnConfig with
+            | Some config ->
+                match toVpnClientServiceData config newConnectionName parsedConnections with
+                | Ok data ->
+                    serviceData <- Some data
+                | Error e ->
+                    this.SetLastError $"Failed to update service data: {e}"
+            | None -> ()
+
+            this.UpdateUI()
+
+
+    /// Create the top control row with power button, status text, and VPN connection spinner.
     member private this.CreateTopControlRow() =
         let row = new LinearLayout(this)
         row.Orientation <- Orientation.Horizontal
@@ -505,8 +553,41 @@ type MainActivity() =
         let statusParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WrapContent,
             LinearLayout.LayoutParams.WrapContent)
+        statusParams.RightMargin <- 16
         statusText.LayoutParameters <- statusParams
         row.AddView(statusText)
+
+        // VPN Connection Spinner (right of status text)
+        vpnConnectionSpinner <- new Spinner(this)
+        let spinnerParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WrapContent,
+            LinearLayout.LayoutParams.WrapContent)
+        vpnConnectionSpinner.LayoutParameters <- spinnerParams
+
+        // Populate spinner with VPN connection names
+        let connectionNames =
+            if parsedConnections.IsEmpty then [| "No connections" |]
+            else parsedConnections |> List.map (fun c -> c.vpnConnectionName.value) |> List.toArray
+
+        let adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, connectionNames)
+        adapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem)
+        vpnConnectionSpinner.Adapter <- adapter
+
+        // Set initial selection
+        if not parsedConnections.IsEmpty then
+            let selectedIndex = connectionNames |> Array.tryFindIndex (fun n -> n = selectedConnectionName) |> Option.defaultValue 0
+            vpnConnectionSpinner.SetSelection(selectedIndex)
+
+        // Handle selection changes
+        vpnConnectionSpinner.ItemSelected.Add(fun args ->
+            let selected = connectionNames.[args.Position]
+            this.OnVpnConnectionSelected(selected)
+        )
+
+        // Disable spinner if no valid connections
+        vpnConnectionSpinner.Enabled <- not parsedConnections.IsEmpty
+
+        row.AddView(vpnConnectionSpinner)
 
         row
 
