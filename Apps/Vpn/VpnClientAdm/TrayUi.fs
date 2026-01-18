@@ -165,6 +165,9 @@ module TrayUi =
         let mutable isDisposed = false
         let mutable isQueryingStatus = false
         let mutable marshalControl : Control option = None
+        // Track last displayed values to avoid redundant UI updates
+        let mutable lastDisplayedColor : Color option = None
+        let mutable lastDisplayedText : string option = None
 
         /// Get the tooltip text based on current state and VPN connection name.
         let getTooltipText () =
@@ -186,6 +189,7 @@ module TrayUi =
                     baseText
 
         /// Update the tray icon and tooltip based on the current state.
+        /// Only updates if color or text has actually changed to avoid blinking.
         let updateUi () =
             match notifyIcon with
             | Some icon ->
@@ -193,22 +197,37 @@ module TrayUi =
                     if vpnConnections.IsEmpty then StateColors.serviceNotRunning
                     else getStateColor currentState
                 let text = getTooltipText()
+                let truncatedText = if text.Length > 63 then text.Substring(0, 60) + "..." else text
 
-                // Dispose old icon before creating a new one
-                if icon.Icon <> null then
-                    icon.Icon.Dispose()
+                let colorChanged = lastDisplayedColor <> Some color
+                let textChanged = lastDisplayedText <> Some truncatedText
 
-                icon.Icon <- createIcon color
-                // Tooltip is limited to 63 characters
-                icon.Text <- if text.Length > 63 then text.Substring(0, 60) + "..." else text
+                // Only update icon if color changed
+                if colorChanged then
+                    let oldIcon = icon.Icon
+                    icon.Icon <- createIcon color
+                    lastDisplayedColor <- Some color
+                    // Dispose old icon after setting new one to avoid GDI+ errors
+                    if oldIcon <> null then
+                        oldIcon.Dispose()
+
+                // Only update tooltip if text changed
+                if textChanged then
+                    icon.Text <- truncatedText
+                    lastDisplayedText <- Some truncatedText
             | None -> ()
 
         /// Query status from the service asynchronously.
         let queryStatusAsync () =
             if not isQueryingStatus then
                 isQueryingStatus <- true
-                currentState <- QueryingStatus
-                updateUi()
+
+                // Only show "Checking service..." if we don't have a valid state yet
+                match currentState with
+                | ServiceNotRunning ->
+                    currentState <- QueryingStatus
+                    updateUi()
+                | _ -> ()
 
                 // Start background thread for the query
                 let worker = new System.ComponentModel.BackgroundWorker()
