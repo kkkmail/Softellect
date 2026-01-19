@@ -24,6 +24,7 @@
     <!-- Linked files from Vpn\Core - only what's needed for Android -->
     <Compile Include="..\..\Vpn\Core\Primitives.fs" Link="Primitives.fs" />
     <Compile Include="..\..\Vpn\Core\Errors.fs" Link="Errors.fs" />
+    <Compile Include="..\..\Vpn\Core\PacketDebug.fs" Link="PacketDebug.fs" />
     <Compile Include="..\..\Vpn\Core\ServiceInfo.fs" Link="ServiceInfo.fs" />
     <Compile Include="..\..\Vpn\Core\UdpProtocol.fs" Link="UdpProtocol.fs" />
   </ItemGroup>
