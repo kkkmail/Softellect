@@ -552,22 +552,24 @@ type MainActivity() =
         powerButton.Click.Add(fun _ -> this.OnPowerButtonClick())
         row.AddView(powerButton)
 
-        // Status text (right of button)
+        // Status text (right of button) - use weight=1 to push spinner to the right
         statusText <- new TextView(this)
         statusText.TextSize <- 20.0f
         statusText.SetTypeface(Typeface.DefaultBold, TypefaceStyle.Bold)
         let statusParams = new LinearLayout.LayoutParams(
+            0,
             LinearLayout.LayoutParams.WrapContent,
-            LinearLayout.LayoutParams.WrapContent)
+            1.0f)
         statusParams.RightMargin <- 16
         statusText.LayoutParameters <- statusParams
         row.AddView(statusText)
 
-        // VPN Connection Spinner (right of status text)
+        // VPN Connection Spinner (right-aligned)
         vpnConnectionSpinner <- new Spinner(this)
         let spinnerParams = new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WrapContent,
             LinearLayout.LayoutParams.WrapContent)
+        spinnerParams.Gravity <- GravityFlags.End ||| GravityFlags.CenterVertical
         vpnConnectionSpinner.LayoutParameters <- spinnerParams
 
         // Populate spinner with VPN connection names
