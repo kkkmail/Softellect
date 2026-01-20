@@ -2,4 +2,9 @@
   <PropertyGroup>
     <AndroidSdkDirectory>C:\Users\kkkma\AppData\Local\Android\Sdk\</AndroidSdkDirectory>
   </PropertyGroup>
+  <PropertyGroup>
+    <RestoreUseLegacyDependencyResolver>true</RestoreUseLegacyDependencyResolver>
+    <RestoreDisableParallel>true</RestoreDisableParallel>
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
+  </PropertyGroup>
 </Project>

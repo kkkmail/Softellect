@@ -13,7 +13,7 @@ let checkTimeStamp = false
 /// Configure projects to update (relative paths from script location)
 /// List of (project name, relative path to a project file).
 let projectsToUpdate = [
-    ("Sys", "Sys.fsproj")
+    ("Sys", "..\Sys\Sys.fsproj")
     ("Wcf", @"..\Wcf\Wcf.fsproj")
     ("Analytics", @"..\Analytics\Analytics.fsproj")
     ("Math", @"..\Math\Math.fsproj")
@@ -33,13 +33,13 @@ let projectsToUpdate = [
 let scriptDir = __SOURCE_DIRECTORY__
 
 /// Path to the BuildInfo.fs file (relative to script location)
-let buildInfoPath = Path.Combine(scriptDir, "BuildInfo.fs")
+let buildInfoPath = Path.Combine(scriptDir, "..\Sys", "BuildInfo.fs")
 
 /// Path to the BuildInfo.ps1 file (relative to script location)
-let buildInfoPsPath = Path.Combine(scriptDir, "BuildInfo.ps1")
+let buildInfoPsPath = Path.Combine(scriptDir, "..\Sys", "BuildInfo.ps1")
 
 /// Path to a lock file to prevent infinite loops
-let lockFilePath = Path.Combine(scriptDir, ".version-update-lock")
+let lockFilePath = Path.Combine(scriptDir, "..\Sys", ".version-update-lock")
 
 /// Checks if a lock file exists and if we're in a loop
 let checkForLoop() =

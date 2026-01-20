@@ -167,7 +167,7 @@
   <Project Path="Math/Math.fsproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="Sys/PreBuild.fsproj">
+  <Project Path="PreBuild/PreBuild.fsproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="Sys/Sys.fsproj">

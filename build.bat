@@ -34,7 +34,7 @@ set "RestoreForce=true"
 echo ============================================
 echo Restore (forced, no-cache)...
 echo ============================================
-"%MSBUILD%" "%SOLUTION%" /t:Restore /p:Configuration=%CONFIG% /p:Platform=%PLATFORM% /p:RestoreNoCache=true /p:RestoreForce=true /m:1 /nodeReuse:false /v:minimal
+"%MSBUILD%" "%SOLUTION%" /t:Restore /p:Configuration=%CONFIG% /p:Platform=%PLATFORM% /p:RestoreNoCache=true /p:RestoreForce=true /p:RestoreForceEvaluate=true /p:RestoreUseLegacyDependencyResolver=true /p:RestoreDisableParallel=true /p:RestoreUseStaticGraphEvaluation=false /m:1 /nodeReuse:false /v:minimal
 if errorlevel 1 exit /b 1
 
 echo ============================================

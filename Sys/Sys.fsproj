@@ -29,7 +29,7 @@
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
   <Target Name="EnsurePreBuildIsBuilt" BeforeTargets="BeforeBuild">
-    <MSBuild Projects="PreBuild.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" BuildInParallel="false" />
+    <MSBuild Projects="..\PreBuild\PreBuild.fsproj" Targets="Build" Properties="Configuration=$(Configuration)" BuildInParallel="false" />
   </Target>
   <ItemGroup>
     <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\">
@@ -53,9 +53,6 @@
     <Compile Include="Crypto.fs" />
     <Compile Include="DataAccess.fs" />
     <Compile Include="FileSystemTypes.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="PreBuild.fsproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Argu" Version="6.2.5" />
@@ -82,5 +79,8 @@
     <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
     <PackageReference Include="FSharp.Data" Version="6.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PreBuild\PreBuild.fsproj"  ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
