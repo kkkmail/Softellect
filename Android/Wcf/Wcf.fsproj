@@ -31,8 +31,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- WCF client packages for Android -->
-    <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
-    <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.0" />
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Include="System.ServiceModel.Http" Version="10.0.652802" />
+    <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
 </Project>
