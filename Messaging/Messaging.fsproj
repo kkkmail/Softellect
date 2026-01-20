@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>10.0.101.42</Version>
-    <PackageVersion>10.0.101.42</PackageVersion>
+    <Version>10.0.101.43</Version>
+    <PackageVersion>10.0.101.43</PackageVersion>
     <Description>Softellect Messaging Library provides a simple general framework to exchange large messages without specific IO.</Description>
     <PackageTags>messaging;client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -49,10 +49,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SQLProvider" Version="1.5.17" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     <PackageReference Include="SQLite.Interop.dll" Version="1.0.103" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.2" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
 </Project>

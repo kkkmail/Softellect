@@ -68,10 +68,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2" />
         <ProjectReference Include="..\VpnServerAdm\VpnServerAdm.fsproj" />
         <ProjectReference Include="..\..\..\Vpn\Server\Server.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="10.0.101" />
+        <PackageReference Update="FSharp.Core" Version="10.0.102" />
     </ItemGroup>
 
 </Project>

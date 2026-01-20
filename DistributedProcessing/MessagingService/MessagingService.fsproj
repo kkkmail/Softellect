@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>10.0.101.42</Version>
-    <PackageVersion>10.0.101.42</PackageVersion>
+    <Version>10.0.101.43</Version>
+    <PackageVersion>10.0.101.43</PackageVersion>
     <Description>Distributed processing messaging service...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -49,8 +49,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.1" />
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.2" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\MessagingService\MessagingService.fsproj" />

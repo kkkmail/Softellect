@@ -56,7 +56,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <ProjectReference Include="..\Math\Math.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="10.0.101" />
+        <PackageReference Update="FSharp.Core" Version="10.0.102" />
     </ItemGroup>
 
 </Project>

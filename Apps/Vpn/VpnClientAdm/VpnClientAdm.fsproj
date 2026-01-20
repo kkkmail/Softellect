@@ -35,7 +35,7 @@
         <ProjectReference Include="..\..\..\Wcf\Wcf.fsproj" />
         <ProjectReference Include="..\..\..\Vpn\Core\Core.fsproj" />
         <ProjectReference Include="..\..\..\Vpn\Client\Client.fsproj" />
-        <PackageReference Update="FSharp.Core" Version="10.0.101" />
+        <PackageReference Update="FSharp.Core" Version="10.0.102" />
     </ItemGroup>
 
 </Project>
