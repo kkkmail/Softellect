@@ -36,6 +36,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="FsPickler" Version="5.3.2" />
     <PackageReference Include="Argu" Version="6.2.5" />
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
 </Project>

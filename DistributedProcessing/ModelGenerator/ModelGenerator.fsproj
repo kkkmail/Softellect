@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>10.0.101.42</Version>
-    <PackageVersion>10.0.101.42</PackageVersion>
+    <Version>10.0.101.43</Version>
+    <PackageVersion>10.0.101.43</PackageVersion>
     <Description>Softellect Model Generator ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -47,6 +47,6 @@
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
   </ItemGroup>
 </Project>

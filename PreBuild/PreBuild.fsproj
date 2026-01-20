@@ -24,8 +24,8 @@
     <None Include="IncrementBuildNumber.fsx" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Update="FSharp.Core" Version="10.0.101" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.6" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
+    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Core" Version="2.3.9" />
   </ItemGroup>
   <Target Name="IncrementBuildNumber" BeforeTargets="CoreCompile">
     <Exec Command="dotnet fsi $(ProjectDir)IncrementBuildNumber.fsx" />
