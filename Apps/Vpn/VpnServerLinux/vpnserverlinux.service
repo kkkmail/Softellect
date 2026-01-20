@@ -1,0 +1,27 @@
+[Unit]
+Description=VpnServerLinux
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vpn
+User=root
+Group=root
+
+# Bind Kestrel to all interfaces on port 47291
+Environment=ASPNETCORE_URLS=http://0.0.0.0:47291
+
+# Service-mode marker for your Linux isService() implementation
+Environment=RUNNING_AS_SERVICE=1
+
+ExecStart=/usr/local/bin/dotnet /opt/vpn/VpnServerLinux.dll
+Restart=always
+RestartSec=2
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=VpnServerLinux
+
+[Install]
+WantedBy=multi-user.target

@@ -10,7 +10,26 @@ open Softellect.Sys.Logging
 /// Collection of various primitive abstractions.
 module Primitives =
 
-    let isService() = not Environment.UserInteractive
+    // let isService() = not Environment.UserInteractive
+
+    let isService () =
+    #if LINUX
+        try
+            // systemd unit sets RUNNING_AS_SERVICE=1; manual run doesn't.
+            match Environment.GetEnvironmentVariable("RUNNING_AS_SERVICE") with
+            | null -> false
+            | v ->
+                match v.Trim().ToLower() with
+                | "1" | "true" -> true
+                | _ -> false
+        with
+        | e ->
+            Logger.logError $"Error trying to determine if running as service: '{e.Message}'."
+            false
+    #else
+        not Environment.UserInteractive
+    #endif
+
 
     /// Exposes F# unit to C#
     let FSharpUnit = ()
