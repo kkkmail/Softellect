@@ -12,6 +12,7 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Core.KeyManagement
 open Softellect.Wcf.Common
 open Softellect.Vpn.ClientAdm.CommandLine
+open Softellect.Vpn.Interop
 
 module Implementation =
 
@@ -232,13 +233,13 @@ module Implementation =
             // Look for 0.0.0.0/0 in the line
             let hasDefaultRoute = parts |> Array.exists (fun p -> p = "0.0.0.0/0")
             if hasDefaultRoute && parts.Length >= 6 then
-                // Last part is gateway IP, second to last is interface index
+                // The last part is gateway IP, second to last is interface index
                 let gateway = parts[parts.Length - 1]
                 let interfaceIdx = parts[parts.Length - 2]
                 match Int32.TryParse(interfaceIdx) with
                 | true, idx -> Some (idx, gateway)
                 | false, _ ->
-                    // Maybe gateway is at different position, try to find IP-like strings
+                    // Maybe gateway is at a different position, try to find IP-like strings
                     let ipParts = parts |> Array.filter (fun p ->
                         match IpAddress.tryCreate p with
                         | Some _ -> true
@@ -285,39 +286,89 @@ module Implementation =
         | Error e -> Error $"%A{e}"
 
 
-    let detectPhysicalNetwork (_ctx: ClientAdmContext) =
-        Logger.logInfo "Detecting physical network configuration..."
+    let tryDetectPhysicalNetwork1 () =
+        Logger.logInfo "Detecting physical network configuration using netsh..."
 
         match tryExecuteFile (FileName "netsh") "interface ipv4 show route" with
         | Ok (_, routeOutput) ->
             match tryParseDefaultRoute routeOutput with
             | Some (interfaceIdx, gatewayIp) ->
-                Logger.logInfo $"Detected default gateway: {gatewayIp} (interface index: {interfaceIdx})"
+                Logger.logInfo $"Detected default gateway: '{gatewayIp}' (interface index: {interfaceIdx}) using netsh."
 
                 match tryGetInterfaceName interfaceIdx with
                 | Ok interfaceName ->
-                    Logger.logInfo $"Detected interface name: {interfaceName}"
+                    Logger.logInfo $"Detected interface name: '{interfaceName}'."
 
                     match IpAddress.tryCreate gatewayIp with
-                    | Some ip ->
-                        Logger.logInfo $"Writing to appsettings.json: PhysicalGatewayIp={gatewayIp}, PhysicalInterfaceName={interfaceName}"
-
-                        match tryWritePhysicalNetworkConfig ip interfaceName with
-                        | Ok () ->
-                            Logger.logInfo "Physical network configuration saved successfully."
-                            Ok $"Detected and saved: PhysicalGatewayIp={gatewayIp}, PhysicalInterfaceName={interfaceName}"
-                        | Error e ->
-                            Logger.logError $"Failed to write config: %A{e}"
-                            Error $"Failed to write config: %A{e}"
+                    | Some ip -> Ok (ip, interfaceName)
                     | None ->
-                        Logger.logError $"Invalid gateway IP format: {gatewayIp}"
-                        Error $"Invalid gateway IP format: {gatewayIp}"
+                        let errMsg = $"Invalid gateway IP format: '{gatewayIp}'."
+                        Logger.logError errMsg
+                        Error errMsg
                 | Error e ->
-                    Logger.logError $"Failed to get interface name: {e}"
-                    Error $"Failed to get interface name: {e}"
+                    let errMsg = $"Failed to get interface name: '{e}'."
+                    Logger.logError errMsg
+                    Error errMsg
             | None ->
-                Logger.logError "Could not find default route (0.0.0.0/0) in routing table"
-                Error "Could not find default route (0.0.0.0/0) in routing table"
+                let errMsg = "Could not find default route (0.0.0.0/0) in routing table"
+                Logger.logError errMsg
+                Error errMsg
         | Error e ->
-            Logger.logError $"Failed to get routing table: %A{e}"
-            Error $"Failed to get routing table: %A{e}"
+            let errMsg = $"Failed to get routing table: '%A{e}'."
+            Logger.logError errMsg
+            Error errMsg
+
+
+    let tryDetectPhysicalNetwork2 () =
+        Logger.logInfo "Detecting physical network configuration using Windows API..."
+        try
+            let ip = PhysicalNetworkDetector.GetPhysicalGatewayIpv4() |> Ip4
+            let name = PhysicalNetworkDetector.GetPhysicalInterfaceName()
+            Logger.logInfo $"Detected default gateway: '{ip}', interface name: '{name}' using Windows API."
+            Ok (ip, name)
+        with
+        | e ->
+            Logger.logError $"Exception: '{e}'."
+            Error $"{e}"
+
+
+    let tryDetectPhysicalNetwork () =
+        let v1 = tryDetectPhysicalNetwork1()
+        let v2 = tryDetectPhysicalNetwork2 ()
+
+        match v1, v2 with
+        | Ok d1, Ok d2 ->
+            match d1 = d2 with
+            | true -> Ok d2
+            | false ->
+                Logger.logError $""
+                Ok d1
+        | Error e1, Ok d2 ->
+            Logger.logError $"V1 error: '{e1}'."
+            Ok d2
+        | Ok d1, Error e2 ->
+            Logger.logError $"V2 error: '{e2}'."
+            Ok d1
+        | Error e1, Error e2 ->
+            let errMsg = $"V1 error: '{e1}', V2 error: '{e2}'."
+            Logger.logError errMsg
+            Error errMsg
+
+
+    let detectPhysicalNetwork (_ctx: ClientAdmContext) =
+        match tryDetectPhysicalNetwork () with
+        | Ok (ip, interfaceName) ->
+            Logger.logInfo $"Writing to appsettings.json: PhysicalGatewayIp = '%A{ip}', PhysicalInterfaceName = '{interfaceName}'."
+
+            match tryWritePhysicalNetworkConfig ip interfaceName with
+            | Ok () ->
+                Logger.logInfo "Physical network configuration saved successfully."
+                Ok $"Detected and saved: PhysicalGatewayIp = '%A{ip}', PhysicalInterfaceName = '{interfaceName}'."
+            | Error e ->
+                let errMsg = $"Failed to write config: '%A{e}'."
+                Logger.logError errMsg
+                Error errMsg
+        | Error e ->
+            let errMsg = $"Failed to get physical interface info: '%A{e}'."
+            Logger.logError errMsg
+            Error errMsg

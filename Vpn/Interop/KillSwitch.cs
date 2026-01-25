@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Microsoft.FSharp.Core;
 using Softellect.Sys;
 
+// ReSharper disable once CheckNamespace
 namespace Softellect.Vpn.Interop;
 
 /// <summary>
