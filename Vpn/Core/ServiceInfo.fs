@@ -83,8 +83,7 @@ module ServiceInfo =
             serverPublicKeyPath : FolderName
             localLanExclusions : LocalLanExclusion list
             vpnTransportProtocol : VpnTransportProtocol
-            physicalGatewayIp : IpAddress
-            physicalInterfaceName : string
+            physicalGatewayInfo : PhysicalGatewayInfo
             useEncryption : bool
             encryptionType : EncryptionType
         }

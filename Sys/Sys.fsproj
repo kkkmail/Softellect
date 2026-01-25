@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>10.0.101.43</Version>
-    <PackageVersion>10.0.101.43</PackageVersion>
+    <Version>10.0.102.44</Version>
+    <PackageVersion>10.0.102.44</PackageVersion>
     <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
@@ -81,6 +81,6 @@
     <PackageReference Include="FSharp.Data" Version="6.6.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PreBuild\PreBuild.fsproj"  ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\PreBuild\PreBuild.fsproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

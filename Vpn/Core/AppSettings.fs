@@ -75,8 +75,11 @@ module AppSettings =
                 serverPublicKeyPath = FolderName @"C:\Keys\VpnServer"
                 localLanExclusions = LocalLanExclusion.defaultValues
                 vpnTransportProtocol = getVpnTransportProtocol()
-                physicalGatewayIp = defaultPhysicalGatewayIp
-                physicalInterfaceName = defaultPhysicalInterfaceName
+                physicalGatewayInfo =
+                    {
+                        gatewayIp = defaultPhysicalGatewayIp
+                        interfaceName = defaultPhysicalInterfaceName
+                    }
                 useEncryption = false
                 encryptionType = EncryptionType.defaultValue
             }
@@ -240,6 +243,18 @@ module AppSettings =
             s
 
 
+    let getPhysicalGatewayInfo (provider : AppSettingsProvider) tryDetectPhysicalNetwork =
+        match tryDetectPhysicalNetwork () with
+        | Ok x -> x
+        | Error e ->
+            Logger.logError $"Physical gateway discovery failed: '%A{e}'. Resorting to appsettings.json data."
+
+            {
+                gatewayIp = getPhysicalGatewayIp provider
+                interfaceName = getPhysicalInterfaceName provider
+            }
+
+
     let getUseEncryption (provider : AppSettingsProvider) =
         let s = provider.getStringOrDefault useEncryptionKey ""
         s.ToLower() = "true"
@@ -253,7 +268,7 @@ module AppSettings =
             EncryptionType.create s
 
 
-    let loadVpnClientAccessInfo () =
+    let loadVpnClientAccessInfo tryDetectPhysicalNetwork =
         let result =
             match AppSettingsProvider.tryCreate() with
             | Ok provider ->
@@ -275,8 +290,7 @@ module AppSettings =
                             serverPublicKeyPath = provider.getStringOrDefault serverPublicKeyPathKey d.serverPublicKeyPath.value |> FolderName
                             localLanExclusions = getLocalLanExclusions provider
                             vpnTransportProtocol = getVpnTransportProtocol()
-                            physicalGatewayIp = getPhysicalGatewayIp provider
-                            physicalInterfaceName = getPhysicalInterfaceName provider
+                            physicalGatewayInfo = getPhysicalGatewayInfo provider tryDetectPhysicalNetwork
                             useEncryption = getUseEncryption provider
                             encryptionType = getEncryptionType1 provider
                         }
@@ -330,8 +344,8 @@ module AppSettings =
                 |> String.concat ";"
 
             provider.trySet localLanExclusionsKey exclusionsStr |> ignore
-            provider.trySet physicalGatewayIpKey info.physicalGatewayIp.value |> ignore
-            provider.trySet physicalInterfaceNameKey info.physicalInterfaceName |> ignore
+            provider.trySet physicalGatewayIpKey info.physicalGatewayInfo.gatewayIp.value |> ignore
+            provider.trySet physicalInterfaceNameKey info.physicalGatewayInfo.interfaceName |> ignore
 
             match provider.trySave() with
             | Ok () -> Ok ()

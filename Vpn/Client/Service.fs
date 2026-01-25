@@ -114,8 +114,8 @@ module Service =
             gatewayIp = gatewayIp
             dnsServerIp = gatewayIp
             serverPublicIp = getServerIpAddress data
-            physicalGatewayIp = data.clientAccessInfo.physicalGatewayIp
-            physicalInterfaceName = data.clientAccessInfo.physicalInterfaceName
+            physicalGatewayIp = data.clientAccessInfo.physicalGatewayInfo.gatewayIp
+            physicalInterfaceName = data.clientAccessInfo.physicalGatewayInfo.interfaceName
         }
 
 

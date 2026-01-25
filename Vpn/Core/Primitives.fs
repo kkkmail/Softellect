@@ -207,6 +207,14 @@ module Primitives =
             minAllowedClientBuildNumber : int
         }
 
+
+    type PhysicalGatewayInfo =
+        {
+            gatewayIp : IpAddress
+            interfaceName : string
+        }
+
+
     type ITunAdapter =
         inherit IDisposable
 
