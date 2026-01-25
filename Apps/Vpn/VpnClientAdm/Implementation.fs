@@ -334,14 +334,14 @@ module Implementation =
 
     let tryDetectPhysicalNetwork () =
         let v1 = tryDetectPhysicalNetwork1()
-        let v2 = tryDetectPhysicalNetwork2 ()
+        let v2 = tryDetectPhysicalNetwork2()
 
         match v1, v2 with
         | Ok d1, Ok d2 ->
             match d1 = d2 with
             | true -> Ok d2
             | false ->
-                Logger.logError $""
+                Logger.logError $"d1: '%A{d1}' does not match d2: '%A{d2}'."
                 Ok d1
         | Error e1, Ok d2 ->
             Logger.logError $"V1 error: '{e1}'."
