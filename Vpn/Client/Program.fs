@@ -7,6 +7,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Sys.Crypto
 open Softellect.Sys.AppSettings
+open Softellect.Vpn.Client.NetworkDetector
 open Softellect.Wcf.Program
 open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
@@ -63,7 +64,7 @@ module Program =
 
     let vpnClientMain programName argv =
         setLogLevel()
-        let clientAccessInfo = loadVpnClientAccessInfo()
+        let clientAccessInfo = loadVpnClientAccessInfo tryDetectPhysicalNetwork
         let adminAccessInfo = loadAdminAccessInfo()
         let autoStart = loadAutoStart() || (not (isService())) // If we run as EXE, then connect to VPN.
 

@@ -9,80 +9,206 @@ namespace Softellect.Vpn.Interop;
 
 public static class PhysicalNetworkDetector
 {
+    private const string VpnInterfaceAliasToExclude = "SoftellectVPN";
+
+    private static void WriteLine(string s)
+    {
+#if DEBUG
+        Console.WriteLine(s);
+#endif
+    }
+
     public static string GetPhysicalGatewayIpv4()
     {
-        var info = GetGatewayAndInterfaceAlias();
-        return info.gatewayIp;
+        var (gw, _) = GetPhysicalGatewayAndInterfaceAlias();
+        return gw;
     }
 
     public static string GetPhysicalInterfaceName()
     {
-        var info = GetGatewayAndInterfaceAlias();
-        return info.interfaceAlias;
+        var (_, iface) = GetPhysicalGatewayAndInterfaceAlias();
+        return iface;
     }
 
-    #region Implementation
+    public static (string gatewayIp, string interfaceAlias) GetPhysicalGatewayAndInterface() =>
+        GetPhysicalGatewayAndInterfaceAlias();
 
-    private static (string gatewayIp, string interfaceAlias) GetGatewayAndInterfaceAlias()
+    #region Core logic
+
+    private static unsafe (string gatewayIp, string interfaceAlias) GetPhysicalGatewayAndInterfaceAlias()
     {
-        // A stable public IPv4 destination to force selection of the real “best” route.
-        var destination = CreateSockaddrInetIPv4(IPAddress.Parse("8.8.8.8"));
+        var tablePtr = IntPtr.Zero;
 
-        var err = GetBestRoute2(
-            IntPtr.Zero, // InterfaceLuid (optional)
-            0,           // InterfaceIndex (optional)
-            IntPtr.Zero, // SourceAddress (optional)
-            ref destination,
-            0,
-            out MIB_IPFORWARD_ROW2 bestRoute,
-            out SOCKADDR_INET _);
-
-        if (err != 0)
+        try
         {
-            throw new Win32Exception(err, $"GetBestRoute2 failed (err={err}).");
+            var err = GetIpForwardTable2(ADDRESS_FAMILY.AF_INET, out tablePtr);
+
+            if (err != 0)
+            {
+                throw new Win32Exception(err, "GetIpForwardTable2(AF_INET) failed.");
+            }
+
+            var numEntries = (uint)Marshal.ReadInt32(tablePtr);
+            WriteLine($"[IPHLAPI] Route table entries: {numEntries}");
+
+            var rowSize = (uint)sizeof(MIB_IPFORWARD_ROW2);
+            WriteLine($"[IPHLAPI] sizeof(MIB_IPFORWARD_ROW2) = {rowSize} bytes");
+
+            // IMPORTANT:
+            // MIB_IPFORWARD_TABLE2 has ULONG NumEntries, then Table[].
+            // Table[] is 8-byte aligned because row begins with NET_LUID (ulong).
+            var p = (byte*)tablePtr + sizeof(uint); // right after NumEntries
+
+            var pRaw = (ulong)p;
+            var pAligned = (pRaw + 7UL) & ~7UL; // align to 8
+
+            var rowsBase = (byte*)pAligned;
+
+            WriteLine(
+                $"[IPHLAPI] tablePtr=0x{(ulong)tablePtr:X}, rowsBaseRaw=0x{pRaw:X}, rowsBaseAligned=0x{pAligned:X}, pad={(long)(pAligned - pRaw)}");
+
+            string? bestGw = null;
+            string? bestAlias = null;
+            var bestMetric = uint.MaxValue;
+
+            for (uint i = 0; i < numEntries; i++)
+            {
+                MIB_IPFORWARD_ROW2 row;
+                try
+                {
+                    row = *(MIB_IPFORWARD_ROW2*)(rowsBase + (i * rowSize));
+                }
+                catch (Exception ex)
+                {
+                    WriteLine($"[IPHLAPI] row#{i:D2}: FAILED TO READ ROW: {ex}");
+                    continue;
+                }
+
+                string alias;
+                try
+                {
+                    alias = ConvertLuidToAlias(row.InterfaceLuid);
+                }
+                catch (Exception ex)
+                {
+                    alias = $"<alias-error: {ex.GetType().Name}: {ex.Message}>";
+                }
+
+                var destFamily = row.DestinationPrefix.Prefix.si_family;
+                var destPrefixLen = row.DestinationPrefix.PrefixLength;
+                var destAddr = FormatSockaddrInet(row.DestinationPrefix.Prefix);
+
+                var hopFamily = row.NextHop.si_family;
+                var nextHopAddr = FormatSockaddrInet(row.NextHop);
+
+                WriteLine(
+                    $"[IPHLAPI] row#{i:D2} " +
+                    $"ifIndex={row.InterfaceIndex} alias='{alias}' " +
+                    $"destFam={destFamily} dest='{destAddr}/{destPrefixLen}' " +
+                    $"hopFam={hopFamily} nextHop='{nextHopAddr}' " +
+                    $"metric={row.Metric} proto={row.Protocol} " +
+                    $"loop={row.Loopback} pub={row.Publish} immortal={row.Immortal} " +
+                    $"age={row.Age} origin={row.Origin}");
+
+                var isIpv4Default =
+                    destFamily == (ushort)ADDRESS_FAMILY.AF_INET &&
+                    destPrefixLen == 0 &&
+                    row.DestinationPrefix.Prefix.Ipv4.sin_addr.S_addr == 0;
+
+                if (!isIpv4Default)
+                {
+                    continue;
+                }
+
+                if (string.Equals(alias, VpnInterfaceAliasToExclude, StringComparison.OrdinalIgnoreCase))
+                {
+                    WriteLine($"[IPHLAPI] row#{i:D2} -> default route but EXCLUDED (VPN alias match)");
+                    continue;
+                }
+
+                if (hopFamily != (ushort)ADDRESS_FAMILY.AF_INET)
+                {
+                    WriteLine($"[IPHLAPI] row#{i:D2} -> default route but SKIPPED (nextHop not IPv4)");
+                    continue;
+                }
+
+                var gw = ExtractIpv4FromSockaddrInet(row.NextHop);
+
+                if (string.IsNullOrWhiteSpace(gw) || gw == "0.0.0.0")
+                {
+                    WriteLine($"[IPHLAPI] row#{i:D2} -> default route but SKIPPED (gateway='{gw}')");
+                    continue;
+                }
+
+                if (row.Metric < bestMetric)
+                {
+                    bestMetric = row.Metric;
+                    bestGw = gw;
+                    bestAlias = alias;
+                    WriteLine(
+                        $"[IPHLAPI] row#{i:D2} -> BEST SO FAR: gw='{bestGw}', iface='{bestAlias}', metric={bestMetric}");
+                }
+            }
+
+            if (bestGw == null || bestAlias == null)
+            {
+                throw new InvalidOperationException(
+                    $"No physical IPv4 default route found after excluding '{VpnInterfaceAliasToExclude}'");
+            }
+
+            WriteLine($"[IPHLAPI] FINAL: gw='{bestGw}', iface='{bestAlias}', metric={bestMetric}");
+            return (bestGw, bestAlias);
         }
-
-        var gateway = ExtractIpv4FromSockaddrInet(bestRoute.NextHop);
-        var alias = ConvertLuidToAlias(bestRoute.InterfaceLuid);
-
-        return (gateway, alias);
+        finally
+        {
+            if (tablePtr != IntPtr.Zero)
+            {
+                FreeMibTable(tablePtr);
+            }
+        }
     }
 
     private static string ConvertLuidToAlias(NET_LUID luid)
     {
         const int IF_MAX_STRING_SIZE = 256;
-        var sb = new StringBuilder(IF_MAX_STRING_SIZE + 1);
+        var sb = new StringBuilder(IF_MAX_STRING_SIZE);
 
         var err = ConvertInterfaceLuidToAlias(ref luid, sb, sb.Capacity);
 
         if (err != 0)
         {
-            throw new Win32Exception(err, $"ConvertInterfaceLuidToAlias failed (err={err}).");
+            throw new Win32Exception(err, "ConvertInterfaceLuidToAlias failed.");
         }
 
         return sb.ToString();
     }
 
-    private static SOCKADDR_INET CreateSockaddrInetIPv4(IPAddress ipv4)
+    private static unsafe string FormatSockaddrInet(SOCKADDR_INET sa)
     {
-        if (ipv4.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+        if (sa.si_family == (ushort)ADDRESS_FAMILY.AF_INET)
         {
-            throw new ArgumentException("IPv4 address required.", nameof(ipv4));
+            var s_addr = sa.Ipv4.sin_addr.S_addr;
+            var bytes = BitConverter.GetBytes(s_addr);
+            return new IPAddress(bytes).ToString();
         }
 
-        var bytes = ipv4.GetAddressBytes();
+        if (sa.si_family == (ushort)ADDRESS_FAMILY.AF_INET6)
+        {
+            Span<byte> b = stackalloc byte[16];
+            for (var i = 0; i < 16; i++)
+                b[i] = sa.Ipv6.sin6_addr.Byte[i];
 
-        // SOCKADDR_INET is a union; fill IPv4 view.
-        SOCKADDR_INET sa = default;
-        sa.si_family = (ushort)ADDRESS_FAMILY.AF_INET;
-        sa.Ipv4.sin_family = (short)ADDRESS_FAMILY.AF_INET;
-        sa.Ipv4.sin_port = 0;
+            try
+            {
+                return new IPAddress(b.ToArray()).ToString();
+            }
+            catch
+            {
+                return "<ipv6>";
+            }
+        }
 
-        // Note: BitConverter.ToUInt32 uses machine endianness, but IPAddress(byte[]) expects same ordering
-        // when we reverse it back with GetBytes below. This is consistent as long as we treat it symmetrically.
-        sa.Ipv4.sin_addr.S_addr = BitConverter.ToUInt32(bytes, 0);
-
-        return sa;
+        return "<unspec>";
     }
 
     private static string ExtractIpv4FromSockaddrInet(SOCKADDR_INET sa)
@@ -99,7 +225,7 @@ public static class PhysicalNetworkDetector
 
     #endregion
 
-    #region P/Invoke
+    #region Native structs (blittable)
 
     private enum ADDRESS_FAMILY : ushort
     {
@@ -120,17 +246,15 @@ public static class PhysicalNetworkDetector
         public uint S_addr;
     }
 
-    // IMPORTANT: blittable (no byte[])
     [StructLayout(LayoutKind.Sequential)]
     private unsafe struct SOCKADDR_IN
     {
-        public short sin_family;  // AF_INET
-        public ushort sin_port;   // network byte order
-        public IN_ADDR sin_addr;  // IPv4 address
+        public short sin_family;
+        public ushort sin_port;
+        public IN_ADDR sin_addr;
         public fixed byte sin_zero[8];
     }
 
-    // IMPORTANT: blittable (no byte[])
     [StructLayout(LayoutKind.Sequential)]
     private unsafe struct IN6_ADDR
     {
@@ -140,14 +264,13 @@ public static class PhysicalNetworkDetector
     [StructLayout(LayoutKind.Sequential)]
     private struct SOCKADDR_IN6
     {
-        public short sin6_family; // AF_INET6
-        public ushort sin6_port;  // network byte order
+        public short sin6_family;
+        public ushort sin6_port;
         public uint sin6_flowinfo;
         public IN6_ADDR sin6_addr;
         public uint sin6_scope_id;
     }
 
-    // Union of IPv4/IPv6. Now safe because the overlapped structs are blittable.
     [StructLayout(LayoutKind.Explicit)]
     private struct SOCKADDR_INET
     {
@@ -159,20 +282,15 @@ public static class PhysicalNetworkDetector
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct IP_ADDRESS_PREFIX
+    private unsafe struct IP_ADDRESS_PREFIX
     {
         public SOCKADDR_INET Prefix;
         public byte PrefixLength;
-
-        // Native struct has implicit padding; make it explicit for stable layout.
-        // (This matches typical SDK packing; keeps following fields aligned.)
-        public byte Pad1;
-        public ushort Pad2;
+        public fixed byte Padding[3]; // critical
     }
 
-    // This matches the SDK layout sufficiently for InterfaceLuid + NextHop.
     [StructLayout(LayoutKind.Sequential)]
-    private struct MIB_IPFORWARD_ROW2
+    private unsafe struct MIB_IPFORWARD_ROW2
     {
         public NET_LUID InterfaceLuid;
         public uint InterfaceIndex;
@@ -181,8 +299,7 @@ public static class PhysicalNetworkDetector
         public SOCKADDR_INET NextHop;
 
         public byte SitePrefixLength;
-        public byte Pad1;
-        public ushort Pad2;
+        public fixed byte Padding1[3];
 
         public uint ValidLifetime;
         public uint PreferredLifetime;
@@ -198,21 +315,23 @@ public static class PhysicalNetworkDetector
         public uint Origin;
     }
 
-    [DllImport("iphlpapi.dll", SetLastError = false)]
-    private static extern int GetBestRoute2(
-        IntPtr interfaceLuid,
-        uint interfaceIndex,
-        IntPtr sourceAddress,
-        ref SOCKADDR_INET destinationAddress,
-        uint addressSortOptions,
-        out MIB_IPFORWARD_ROW2 bestRoute,
-        out SOCKADDR_INET bestSourceAddress);
+    #endregion
 
-    [DllImport("iphlpapi.dll", CharSet = CharSet.Unicode, SetLastError = false)]
+    #region PInvoke
+
+    [DllImport("iphlpapi.dll")]
+    private static extern int GetIpForwardTable2(
+        ADDRESS_FAMILY Family,
+        out IntPtr Table);
+
+    [DllImport("iphlpapi.dll")]
+    private static extern void FreeMibTable(IntPtr Memory);
+
+    [DllImport("iphlpapi.dll", CharSet = CharSet.Unicode)]
     private static extern int ConvertInterfaceLuidToAlias(
-        ref NET_LUID interfaceLuid,
-        [Out] StringBuilder interfaceAlias,
-        int length);
+        ref NET_LUID InterfaceLuid,
+        StringBuilder InterfaceAlias,
+        int Length);
 
     #endregion
 }

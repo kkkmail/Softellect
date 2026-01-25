@@ -16,6 +16,9 @@
     <PlatformTarget>x64</PlatformTarget>
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <ItemGroup>
     <None Include="..\Native\wintun.dll" Link="wintun.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
