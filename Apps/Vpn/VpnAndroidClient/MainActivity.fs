@@ -35,6 +35,24 @@ type VpnConnectionState =
     | VersionMismatch  // Spec 057: Version mismatch (WARN or ERROR)
 
 
+/// Spec 065: Service connection for binding to VpnTunnelServiceImpl.
+type VpnServiceConnection(onConnected: VpnTunnelServiceImpl -> unit, onDisconnected: unit -> unit) =
+    inherit Java.Lang.Object()
+    interface Android.Content.IServiceConnection with
+        member _.OnServiceConnected(name: ComponentName, binder: IBinder) =
+            Logger.logInfo "VpnServiceConnection: Service connected"
+            match binder with
+            | :? VpnTunnelServiceBinder as vpnBinder ->
+                let service = vpnBinder.GetService()
+                onConnected service
+            | _ ->
+                Logger.logError "VpnServiceConnection: Unexpected binder type"
+
+        member _.OnServiceDisconnected(name: ComponentName) =
+            Logger.logInfo "VpnServiceConnection: Service disconnected"
+            onDisconnected()
+
+
 /// Request codes for activity results.
 module RequestCodes =
     [<Literal>]
@@ -91,6 +109,11 @@ type MainActivity() =
     let mutable lastError: string = ""
     let mutable versionState: VersionState = VersionOkState  // Spec 057: Version state for UI
     let mutable versionInfo: VersionCheckInfo option = None  // Spec 057: Version info for display
+    let mutable isOtherVpnBlocking = false  // Spec 065: True if another VPN is blocking our app
+
+    // Spec 065: Service binding fields
+    let mutable serviceConnection: VpnServiceConnection option = None
+    let mutable isServiceBound = false
 
     // Spec 064: VPN connection selection
     let mutable vpnConfig: VpnClientConfig option = None
@@ -129,6 +152,82 @@ type MainActivity() =
         )
 
 
+    /// Spec 065: Check if our own VPN is connected.
+    member private this.isOurVpnConnected() : bool =
+        match vpnService with
+        | Some svc when svc.IsRunning ->
+            match svc.State with
+            | VpnServiceConnectionState.Connected -> true
+            | _ -> false
+        | _ -> false
+
+
+    /// Spec 065: Check for other VPN blocking and update state with logging.
+    /// Only logs on state transitions (not on every call).
+    member private this.checkAndUpdateOtherVpnBlocking() : unit =
+        let someVpnActive = isSomeVpnActiveOnDevice()
+        let ourVpnConnected = this.isOurVpnConnected()
+        let nowBlocking = someVpnActive && not ourVpnConnected
+
+        // Get previous state for logging transitions only
+        let wasBlocking = getWasOtherVpnBlocking this
+
+        if nowBlocking <> wasBlocking then
+            // State transition - log it
+            if nowBlocking then
+                let infoMsg = "Another VPN is currently active on this device. Disconnect it first, then reopen this app."
+                let logMsg = "Detected active VPN transport: blocking actions until the other VPN is disconnected."
+                LogBuffer.addLine $"[INFO] {logMsg}"
+                Logger.logInfo logMsg
+            else
+                Logger.logInfo "Other VPN blocking cleared - app functionality restored."
+
+            // Persist new state
+            setWasOtherVpnBlocking this nowBlocking
+
+        isOtherVpnBlocking <- nowBlocking
+
+
+    /// Spec 065: Bind to VPN service.
+    member private this.BindVpnService() =
+        if not isServiceBound then
+            let onConnected (service: VpnTunnelServiceImpl) =
+                this.RunOnUiThread(fun () ->
+                    vpnService <- Some service
+                    isServiceBound <- true
+                    Logger.logInfo "VPN service bound successfully"
+                    this.UpdateStats()
+                )
+
+            let onDisconnected () =
+                this.RunOnUiThread(fun () ->
+                    Logger.logWarn "VPN service disconnected unexpectedly"
+                    isServiceBound <- false
+                )
+
+            let conn = new VpnServiceConnection(onConnected, onDisconnected)
+            serviceConnection <- Some conn
+            let intent = new Intent(this, typeof<VpnTunnelServiceImpl>)
+            let bindFlags = Bind.AutoCreate
+            let bound = this.BindService(intent, conn, bindFlags)
+            if not bound then
+                Logger.logError "Failed to bind to VPN service"
+
+    /// Spec 065: Unbind from VPN service.
+    member private this.UnbindVpnService() =
+        match serviceConnection with
+        | Some conn when isServiceBound ->
+            try
+                this.UnbindService(conn)
+                isServiceBound <- false
+                serviceConnection <- None
+                Logger.logInfo "VPN service unbound"
+            with
+            | ex ->
+                Logger.logError $"Failed to unbind service: {ex.Message}"
+        | _ -> ()
+
+
     /// Set the last error and log it.
     member private this.SetLastError(error: string) =
         lastError <- error
@@ -158,6 +257,13 @@ type MainActivity() =
     /// Build the Info pane content.
     member private this.BuildInfoPaneText() =
         let sb = System.Text.StringBuilder()
+
+        // Spec 065: Show blocking message at top if other VPN is active
+        if isOtherVpnBlocking then
+            sb.AppendLine("⚠ BLOCKED BY OTHER VPN ⚠") |> ignore
+            sb.AppendLine("Another VPN is currently active on this device.") |> ignore
+            sb.AppendLine("Disconnect it first, then reopen this app.") |> ignore
+            sb.AppendLine() |> ignore
 
         // Configuration section
         sb.AppendLine("── Configuration ──") |> ignore
@@ -207,6 +313,16 @@ type MainActivity() =
         // Errors section
         sb.AppendLine("── Errors ──") |> ignore
         sb.AppendLine($"""Last error: {(if String.IsNullOrEmpty lastError then "\"None\"" else lastError)}""") |> ignore
+        sb.AppendLine() |> ignore
+
+        // Spec 065: Battery optimization hint (one-time, non-blocking)
+        if not (hasBatteryHintBeenShown this) then
+            sb.AppendLine("── Battery Optimization ──") |> ignore
+            sb.AppendLine("If you experience disconnects after long idle,") |> ignore
+            sb.AppendLine("exclude Softellect VPN from battery") |> ignore
+            sb.AppendLine("optimizations in Android settings.") |> ignore
+            // Mark as shown
+            markBatteryHintShown this
 
         sb.ToString()
 
@@ -215,19 +331,23 @@ type MainActivity() =
     member private this.UpdatePowerButton() =
         if isNull powerButton then () else
         let (bgColor, enabled) =
-            match configLoadError with
-            | Some _ -> (PastelColors.paleRed(), false) // Fatal config error - disabled
-            | None ->
-                // Spec 055: Check pending disconnect first for immediate UI feedback
-                if pendingDisconnect then
-                    (PastelColors.palePurple(), true)
-                else
-                    match connectionState with
-                    | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
-                    | Connecting -> (PastelColors.paleYellow(), true)
-                    | Connected -> (PastelColors.paleGreen(), true)
-                    | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
-                    | VersionMismatch -> (PastelColors.paleRed(), false) // Spec 057: Disabled on version mismatch
+            // Spec 065: Disable button if other VPN is blocking
+            if isOtherVpnBlocking then
+                (PastelColors.paleRed(), false)
+            else
+                match configLoadError with
+                | Some _ -> (PastelColors.paleRed(), false) // Fatal config error - disabled
+                | None ->
+                    // Spec 055: Check pending disconnect first for immediate UI feedback
+                    if pendingDisconnect then
+                        (PastelColors.palePurple(), true)
+                    else
+                        match connectionState with
+                        | Disconnected -> (PastelColors.paleRed(), serviceData.IsSome)
+                        | Connecting -> (PastelColors.paleYellow(), true)
+                        | Connected -> (PastelColors.paleGreen(), true)
+                        | Reconnecting -> (PastelColors.paleOrange(), true) // Spec 050
+                        | VersionMismatch -> (PastelColors.paleRed(), false) // Spec 057: Disabled on version mismatch
 
         // Create round drawable background
         let drawable = new GradientDrawable()
@@ -423,26 +543,42 @@ type MainActivity() =
         | Some data ->
             async {
                 try
-                    let svc = new VpnTunnelServiceImpl()
-                    svc.SetContext(this)
-                    vpnService <- Some svc
-                    if svc.StartVpn(data) then
-                        // Spec 050: Read state from service
-                        connectionState <- this.mapServiceStateToUiState svc.State
-                        sessionId <- svc.SessionId
-                        lastError <- svc.LastError
-                        this.StartStatsTimer()
-                        Logger.logInfo "VPN connected successfully"
+                    // Spec 065: Start foreground service
+                    let intent = new Intent(this, typeof<VpnTunnelServiceImpl>)
+                    if Build.VERSION.SdkInt >= BuildVersionCodes.O then
+                        this.StartForegroundService(intent) |> ignore
                     else
-                        // Spec 050: Read state and lastError from service
-                        connectionState <- this.mapServiceStateToUiState svc.State
-                        lastError <- svc.LastError
-                        vpnService <- None
+                        this.StartService(intent) |> ignore
+
+                    Logger.logInfo "VPN service start requested"
+
+                    // Bind to service to get reference
+                    this.BindVpnService()
+
+                    // Wait a bit for service to bind, then start VPN
+                    do! Async.Sleep(500)
+
+                    match vpnService with
+                    | Some svc ->
+                        svc.SetContext(this)
+                        if svc.StartVpn(data) then
+                            // Spec 050: Read state from service
+                            connectionState <- this.mapServiceStateToUiState svc.State
+                            sessionId <- svc.SessionId
+                            lastError <- svc.LastError
+                            this.StartStatsTimer()
+                            Logger.logInfo "VPN connected successfully"
+                        else
+                            // Spec 050: Read state and lastError from service
+                            connectionState <- this.mapServiceStateToUiState svc.State
+                            lastError <- svc.LastError
+                    | None ->
+                        this.SetLastError "Failed to bind to VPN service"
+                        connectionState <- Disconnected
                 with
                 | ex ->
                     this.SetLastError $"VPN start failed: {ex.Message}"
                     connectionState <- Disconnected
-                    vpnService <- None
                 this.UpdateUI()
             } |> Async.Start
         | None ->
@@ -456,9 +592,13 @@ type MainActivity() =
         match vpnService with
         | Some svc ->
             svc.StopVpn()
-            vpnService <- None
             Logger.logInfo "VPN disconnected"
         | None -> ()
+
+        // Spec 065: Stop the service
+        let intent = new Intent(this, typeof<VpnTunnelServiceImpl>)
+        this.StopService(intent) |> ignore
+
         sessionId <- 0uy
         bytesSent <- 0L
         bytesReceived <- 0L
@@ -471,21 +611,26 @@ type MainActivity() =
 
 
     member private this.OnPowerButtonClick() =
-        match connectionState with
-        | Disconnected ->
-            connectionState <- Connecting
+        // Spec 065: No-op with message if other VPN is blocking
+        if isOtherVpnBlocking then
+            Logger.logWarn "Connect blocked: Another VPN is active on this device."
             this.UpdateUI()
-            this.RequestVpnPermission()
-        | Connecting
-        | Connected
-        | Reconnecting ->
-            // Spec 055: Set pending disconnect immediately for instant UI feedback
-            pendingDisconnect <- true
-            this.UpdateUI()
-            // Spec 055: Run StopVpnConnection asynchronously so UI update happens first
-            async { this.StopVpnConnection() } |> Async.Start
-        | VersionMismatch ->
-            this.UpdateUI()
+        else
+            match connectionState with
+            | Disconnected ->
+                connectionState <- Connecting
+                this.UpdateUI()
+                this.RequestVpnPermission()
+            | Connecting
+            | Connected
+            | Reconnecting ->
+                // Spec 055: Set pending disconnect immediately for instant UI feedback
+                pendingDisconnect <- true
+                this.UpdateUI()
+                // Spec 055: Run StopVpnConnection asynchronously so UI update happens first
+                async { this.StopVpnConnection() } |> Async.Start
+            | VersionMismatch ->
+                this.UpdateUI()
 
 
     member private this.CopyToClipboard(text: string, label: string) =
@@ -790,10 +935,15 @@ type MainActivity() =
 
             Logger.logInfo "VPN Android client starting"
 
-            // Load config from Assets FIRST so parsedConnections is populated before UI build
-            this.LoadConfig()
+            // Spec 065: Check for other VPN BEFORE loading config (early gate)
+            this.checkAndUpdateOtherVpnBlocking()
 
-            // Build and set the layout AFTER config is loaded
+            // If blocked by other VPN, skip config loading and network queries
+            if not isOtherVpnBlocking then
+                // Load config from Assets FIRST so parsedConnections is populated before UI build
+                this.LoadConfig()
+
+            // Build and set the layout (whether blocked or not, we need UI)
             let layout = this.BuildLayout()
             this.SetContentView(layout)
 
@@ -818,10 +968,20 @@ type MainActivity() =
         this.UpdateUI()
 
 
+    override this.OnResume() =
+        base.OnResume()
+        // Spec 065: Check for other VPN blocking on resume
+        this.checkAndUpdateOtherVpnBlocking()
+        // Spec 065: Bind to service if not already bound (to query state)
+        if not isServiceBound then
+            this.BindVpnService()
+        this.UpdateUI()
+
+
     override this.OnDestroy() =
         this.StopStatsTimer()
-        match vpnService with
-        | Some svc -> svc.StopVpn()
-        | None -> ()
+        // Spec 065: Unbind service (but don't stop it - let it run in background)
+        this.UnbindVpnService()
+        vpnService <- None
         LogBuffer.onLogAdded <- None
         base.OnDestroy()
