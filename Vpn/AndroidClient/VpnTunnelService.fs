@@ -60,11 +60,44 @@ type VpnServiceConnectionState =
     | VersionError of string  // Spec 057: Version incompatibility error
 
 
+/// Spec 065: NetworkCallback for detecting connectivity changes.
+type VpnNetworkCallback(getState: unit -> VpnServiceConnectionState,
+                        setState: VpnServiceConnectionState -> unit, setAuth: VpnAuthResponse option -> unit,
+                        updateNotification: string -> unit, lastNetworkRef: Network option ref) =
+    inherit ConnectivityManager.NetworkCallback()
+
+    override _.OnAvailable(network: Network) =
+        // Network became available - might be a new network
+        let currentState = getState()
+        if currentState = VpnServiceConnectionState.Connected then
+            match !lastNetworkRef with
+            | Some lastNet when lastNet <> network ->
+                Logger.logInfo "Network changed (new network available) - triggering reconnection"
+                setState VpnServiceConnectionState.Reconnecting
+                setAuth None
+                updateNotification("Reconnecting...")
+            | _ ->
+                Logger.logInfo "Network available (initial or same network)"
+        lastNetworkRef := Some network
+
+    override _.OnLost(network: Network) =
+        Logger.logWarn "Network lost - will attempt reconnection when available"
+        let currentState = getState()
+        if currentState = VpnServiceConnectionState.Connected then
+            setState VpnServiceConnectionState.Reconnecting
+            setAuth None
+            updateNotification("Reconnecting...")
+        lastNetworkRef := None
+
+
 /// Android VpnService implementation for Softellect VPN.
 /// Spec 065: Started + Bound service for foreground operation.
 /// Call SetContext() before StartVpn() to provide the Android context.
 /// Implements resilience/reconnect per spec 050.
-[<Service(Name = "com.softellect.vpn.VpnTunnelService", Permission = "android.permission.BIND_VPN_SERVICE", Exported = false)>]
+[<Service(Name = "com.softellect.vpn.VpnTunnelService",
+          Permission = "android.permission.BIND_VPN_SERVICE",
+          Exported = false,
+          ForegroundServiceType = ForegroundService.TypeSpecialUse)>]
 type VpnTunnelServiceImpl() =
     inherit VpnService()
 
@@ -92,6 +125,10 @@ type VpnTunnelServiceImpl() =
 
     // Spec 056: Device binding hash (computed once at StartVpn from context)
     let mutable clientHash: VpnClientHash option = None
+
+    // Spec 065: Network callback for handling connectivity changes
+    let mutable networkCallback: VpnNetworkCallback option = None
+    let lastNetworkRef: Network option ref = ref None
 
     let authLock = obj()
 
@@ -374,6 +411,43 @@ type VpnTunnelServiceImpl() =
 
         Logger.logInfo "Supervisor loop stopped"
 
+    /// Spec 065: Register network callback to detect connectivity changes.
+    member private this.RegisterNetworkCallback() =
+        try
+            let cm = this.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+            if cm <> null then
+                match networkCallback with
+                | None ->
+                    let callback = new VpnNetworkCallback(getState, setState, setAuth, this.UpdateNotification, lastNetworkRef)
+                    networkCallback <- Some callback
+
+                    let request = (new NetworkRequest.Builder())
+                                        .AddCapability(NetCapability.Internet)
+                                        .Build()
+                    cm.RegisterNetworkCallback(request, callback)
+                    Logger.logInfo "Network callback registered"
+                | Some _ ->
+                    Logger.logInfo "Network callback already registered"
+        with
+        | ex ->
+            Logger.logError $"Failed to register network callback: {ex.Message}"
+
+    /// Spec 065: Unregister network callback.
+    member private this.UnregisterNetworkCallback() =
+        try
+            match networkCallback with
+            | Some callback ->
+                let cm = this.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+                if cm <> null then
+                    cm.UnregisterNetworkCallback(callback)
+                    Logger.logInfo "Network callback unregistered"
+                networkCallback <- None
+                lastNetworkRef := None
+            | None -> ()
+        with
+        | ex ->
+            Logger.logError $"Failed to unregister network callback: {ex.Message}"
+
     /// Spec 065: Create notification channel (must be called on Android O+).
     member private this.CreateNotificationChannel() =
         if Build.VERSION.SdkInt >= BuildVersionCodes.O then
@@ -557,6 +631,9 @@ type VpnTunnelServiceImpl() =
                         supervisorThread.Name <- "Supervisor"
                         supervisorThread.Start()
 
+                        // Spec 065: Register network callback for connectivity changes
+                        this.RegisterNetworkCallback()
+
                         // Set initial Connected state
                         setState VpnServiceConnectionState.Connected
                         Logger.logInfo "VPN service started successfully"
@@ -589,6 +666,9 @@ type VpnTunnelServiceImpl() =
 
         // Spec 065: Stop foreground notification
         this.StopForegroundNotification()
+
+        // Spec 065: Unregister network callback
+        this.UnregisterNetworkCallback()
 
         // Cancel all threads
         if cts <> null then
