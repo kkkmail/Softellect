@@ -13,6 +13,7 @@ open Softellect.Vpn.Core.ServiceInfo
 open Softellect.Vpn.Client.UdpClient
 open Softellect.Vpn.Client.WcfClient
 open Softellect.Vpn.AndroidClient.ConfigManager
+open Android.Content.PM
 
 module VpnTunnelService =
 
@@ -36,6 +37,18 @@ module VpnTunnelService =
     [<Literal>]
     let NoAuthBackoffMs = 100
 
+    /// Spec 065: Notification channel ID for foreground service.
+    [<Literal>]
+    let NotificationChannelId = "SoftellectVpnChannel"
+
+    /// Spec 065: Notification channel name.
+    [<Literal>]
+    let NotificationChannelName = "Softellect VPN Service"
+
+    /// Spec 065: Notification ID for foreground service.
+    [<Literal>]
+    let ForegroundNotificationId = 1001
+
 
 /// VPN connection state for service layer (spec 050/057).
 type VpnServiceConnectionState =
@@ -47,11 +60,44 @@ type VpnServiceConnectionState =
     | VersionError of string  // Spec 057: Version incompatibility error
 
 
+/// Spec 065: NetworkCallback for detecting connectivity changes.
+type VpnNetworkCallback(getState: unit -> VpnServiceConnectionState,
+                        setState: VpnServiceConnectionState -> unit, setAuth: VpnAuthResponse option -> unit,
+                        updateNotification: string -> unit, lastNetworkRef: Network option ref) =
+    inherit ConnectivityManager.NetworkCallback()
+
+    override _.OnAvailable(network: Network) =
+        // Network became available - might be a new network
+        let currentState = getState()
+        if currentState = VpnServiceConnectionState.Connected then
+            match !lastNetworkRef with
+            | Some lastNet when lastNet <> network ->
+                Logger.logInfo "Network changed (new network available) - triggering reconnection"
+                setState VpnServiceConnectionState.Reconnecting
+                setAuth None
+                updateNotification("Reconnecting...")
+            | _ ->
+                Logger.logInfo "Network available (initial or same network)"
+        lastNetworkRef := Some network
+
+    override _.OnLost(network: Network) =
+        Logger.logWarn "Network lost - will attempt reconnection when available"
+        let currentState = getState()
+        if currentState = VpnServiceConnectionState.Connected then
+            setState VpnServiceConnectionState.Reconnecting
+            setAuth None
+            updateNotification("Reconnecting...")
+        lastNetworkRef := None
+
+
 /// Android VpnService implementation for Softellect VPN.
-/// Note: This class is used directly (not as a bound service).
+/// Spec 065: Started + Bound service for foreground operation.
 /// Call SetContext() before StartVpn() to provide the Android context.
 /// Implements resilience/reconnect per spec 050.
-[<Service(Name = "com.softellect.vpn.VpnTunnelService", Permission = "android.permission.BIND_VPN_SERVICE")>]
+[<Service(Name = "com.softellect.vpn.VpnTunnelService",
+          Permission = "android.permission.BIND_VPN_SERVICE",
+          Exported = false,
+          ForegroundServiceType = ForegroundService.TypeSpecialUse)>]
 type VpnTunnelServiceImpl() =
     inherit VpnService()
 
@@ -79,6 +125,10 @@ type VpnTunnelServiceImpl() =
 
     // Spec 056: Device binding hash (computed once at StartVpn from context)
     let mutable clientHash: VpnClientHash option = None
+
+    // Spec 065: Network callback for handling connectivity changes
+    let mutable networkCallback: VpnNetworkCallback option = None
+    let lastNetworkRef: Network option ref = ref None
 
     let authLock = obj()
 
@@ -280,7 +330,8 @@ type VpnTunnelServiceImpl() =
     /// Supervisor loop - handles health checks and reconnection (spec 050).
     /// Runs forever until stopped. Mirrors Windows logic with Android-specific network refresh.
     /// Spec 056: hash parameter for device binding.
-    let supervisorLoop (serviceData: VpnClientServiceData) (hash: VpnClientHash) (token: CancellationToken) =
+    /// Spec 065: updateNotification callback for foreground notification updates.
+    let supervisorLoop (serviceData: VpnClientServiceData) (hash: VpnClientHash) (updateNotification: string -> unit) (token: CancellationToken) =
         Logger.logInfo "Supervisor loop started"
         let mutable currentBackoffMs = VpnTunnelService.HealthCheckIntervalMs
         let mutable authFailedOnce = false
@@ -314,6 +365,8 @@ type VpnTunnelServiceImpl() =
                             currentBackoffMs <- VpnTunnelService.HealthCheckIntervalMs
                             // Transition to Connected
                             setState VpnServiceConnectionState.Connected
+                            // Spec 065: Update notification to Connected
+                            updateNotification("Connected")
                             Logger.logInfo $"VPN connected with sessionId: {response.sessionId.value}"
                         | Error _ ->
                             // Log auth failure once, then occasionally
@@ -341,6 +394,8 @@ type VpnTunnelServiceImpl() =
                                 // Session expired or ping failed - need to re-authenticate
                                 Logger.logInfo "Session expired, entering Reconnecting state..."
                                 setState VpnServiceConnectionState.Reconnecting
+                                // Spec 065: Update notification to Reconnecting
+                                updateNotification("Reconnecting...")
                                 // Clear auth to trigger re-authentication on the next iteration
                                 // UDP loops will skip when getAuth() returns None (spec 050)
                                 setAuth None
@@ -355,6 +410,106 @@ type VpnTunnelServiceImpl() =
                 currentBackoffMs <- min (currentBackoffMs * 2) VpnTunnelService.MaxHealthCheckBackoffMs
 
         Logger.logInfo "Supervisor loop stopped"
+
+    /// Spec 065: Register network callback to detect connectivity changes.
+    member private this.RegisterNetworkCallback() =
+        try
+            let cm = this.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+            if cm <> null then
+                match networkCallback with
+                | None ->
+                    let callback = new VpnNetworkCallback(getState, setState, setAuth, this.UpdateNotification, lastNetworkRef)
+                    networkCallback <- Some callback
+
+                    let request = (new NetworkRequest.Builder())
+                                        .AddCapability(NetCapability.Internet)
+                                        .Build()
+                    cm.RegisterNetworkCallback(request, callback)
+                    Logger.logInfo "Network callback registered"
+                | Some _ ->
+                    Logger.logInfo "Network callback already registered"
+        with
+        | ex ->
+            Logger.logError $"Failed to register network callback: {ex.Message}"
+
+    /// Spec 065: Unregister network callback.
+    member private this.UnregisterNetworkCallback() =
+        try
+            match networkCallback with
+            | Some callback ->
+                let cm = this.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+                if cm <> null then
+                    cm.UnregisterNetworkCallback(callback)
+                    Logger.logInfo "Network callback unregistered"
+                networkCallback <- None
+                lastNetworkRef := None
+            | None -> ()
+        with
+        | ex ->
+            Logger.logError $"Failed to unregister network callback: {ex.Message}"
+
+    /// Spec 065: Create notification channel (must be called on Android O+).
+    member private this.CreateNotificationChannel() =
+        if Build.VERSION.SdkInt >= BuildVersionCodes.O then
+            let notificationManager = this.GetSystemService(Context.NotificationService) :?> NotificationManager
+            if notificationManager <> null then
+                let channel = new NotificationChannel(
+                    VpnTunnelService.NotificationChannelId,
+                    VpnTunnelService.NotificationChannelName,
+                    NotificationImportance.Low)
+                channel.Description <- "VPN connection status"
+                channel.SetShowBadge(false)
+                notificationManager.CreateNotificationChannel(channel)
+
+    /// Spec 065: Build foreground notification.
+    member private this.BuildNotification(text: string) : Notification =
+        // Create intent to open MainActivity when notification is tapped
+        let packageName = this.PackageName
+        let intent = this.PackageManager.GetLaunchIntentForPackage(packageName)
+        if intent <> null then
+            intent.SetFlags(ActivityFlags.NewTask ||| ActivityFlags.SingleTop) |> ignore
+        let pendingIntent = PendingIntent.GetActivity(this, 0, intent, PendingIntentFlags.Immutable)
+
+        let builder =
+            if Build.VERSION.SdkInt >= BuildVersionCodes.O then
+                new Notification.Builder(this, VpnTunnelService.NotificationChannelId)
+            else
+                new Notification.Builder(this)
+
+        builder.SetContentTitle("Softellect VPN")
+               .SetContentText(text)
+               .SetSmallIcon(Android.Resource.Drawable.IcMenuMyLocation)  // System VPN icon
+               .SetContentIntent(pendingIntent)
+               .SetOngoing(true)
+               .Build()
+
+    /// Spec 065: Start foreground with notification.
+    member private this.StartForegroundService(text: string) =
+        try
+            let notification = this.BuildNotification(text)
+            base.StartForeground(VpnTunnelService.ForegroundNotificationId, notification)
+        with
+        | ex ->
+            Logger.logError $"Failed to start foreground: {ex.Message}"
+
+    /// Spec 065: Update foreground notification text.
+    member private this.UpdateNotification(text: string) =
+        try
+            let notification = this.BuildNotification(text)
+            let notificationManager = this.GetSystemService(Context.NotificationService) :?> NotificationManager
+            if notificationManager <> null then
+                notificationManager.Notify(VpnTunnelService.ForegroundNotificationId, notification)
+        with
+        | ex ->
+            Logger.logError $"Failed to update notification: {ex.Message}"
+
+    /// Spec 065: Stop foreground and remove notification.
+    member private this.StopForegroundNotification() =
+        try
+            base.StopForeground(StopForegroundFlags.Remove)
+        with
+        | ex ->
+            Logger.logError $"Failed to stop foreground: {ex.Message}"
 
     /// Set the Android context. Must be called before StartVpn().
     member _.SetContext(ctx: Context) =
@@ -371,6 +526,10 @@ type VpnTunnelServiceImpl() =
             Logger.logInfo "Starting VPN service..."
             setState VpnServiceConnectionState.Connecting
             clearLastError ()
+
+            // Spec 065: Create notification channel and start foreground immediately
+            this.CreateNotificationChannel()
+            this.StartForegroundService("Connecting...")
 
             // Spec 056: Compute client hash from Android Secure ID
             match getAndroidClientHash context with
@@ -467,9 +626,13 @@ type VpnTunnelServiceImpl() =
 
                         // Start supervisor thread (handles health checks and reconnection - spec 050)
                         // Spec 056: Pass hash to supervisor loop for device binding
-                        supervisorThread <- new Thread(fun () -> supervisorLoop serviceData hash token)
+                        // Spec 065: Pass UpdateNotification callback for foreground notification
+                        supervisorThread <- new Thread(fun () -> supervisorLoop serviceData hash this.UpdateNotification token)
                         supervisorThread.Name <- "Supervisor"
                         supervisorThread.Start()
+
+                        // Spec 065: Register network callback for connectivity changes
+                        this.RegisterNetworkCallback()
 
                         // Set initial Connected state
                         setState VpnServiceConnectionState.Connected
@@ -500,6 +663,12 @@ type VpnTunnelServiceImpl() =
 
     member this.StopVpn() =
         Logger.logInfo "Stopping VPN service..."
+
+        // Spec 065: Stop foreground notification
+        this.StopForegroundNotification()
+
+        // Spec 065: Unregister network callback
+        this.UnregisterNetworkCallback()
 
         // Cancel all threads
         if cts <> null then
@@ -585,9 +754,31 @@ type VpnTunnelServiceImpl() =
     member _.VersionCheckResult : (VersionCheckResult * VersionCheckInfo) option =
         getVersionCheckResult()
 
+    /// Spec 065: OnBind for service binding support.
+    override this.OnBind(intent: Intent) : IBinder =
+        new VpnTunnelServiceBinder(this) :> IBinder
+
+    /// Spec 065: OnStartCommand - START_STICKY for automatic restart.
     override this.OnStartCommand(intent: Intent, flags: StartCommandFlags, startId: int) =
+        Logger.logInfo "VpnTunnelService: OnStartCommand called"
         StartCommandResult.Sticky
 
+    /// Spec 065: OnRevoke - handle forced VPN permission revocation.
+    override this.OnRevoke() =
+        Logger.logWarn "VpnTunnelService: VPN permission revoked by system"
+        setLastError "VPN permission revoked"
+        setState VpnServiceConnectionState.Disconnected
+        this.StopVpn()
+        base.OnRevoke()
+
+    /// Spec 065: OnDestroy - clean shutdown.
     override this.OnDestroy() =
+        Logger.logInfo "VpnTunnelService: OnDestroy called"
         this.StopVpn()
         base.OnDestroy()
+
+
+/// Spec 065: Binder class for service binding.
+and VpnTunnelServiceBinder(service: VpnTunnelServiceImpl) =
+    inherit Android.OS.Binder()
+    member _.GetService() = service

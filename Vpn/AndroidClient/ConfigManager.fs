@@ -184,6 +184,31 @@ module ConfigManager =
         | _ -> Unknown
 
 
+    /// Spec 065: Check if any VPN is active on the device.
+    /// Uses ConnectivityManager to check for VPN transport on active networks.
+    /// Returns true if any VPN transport is detected, false otherwise.
+    let isSomeVpnActiveOnDevice() : bool =
+        try
+            let ctx = Application.Context
+            let cm = ctx.GetSystemService(Context.ConnectivityService) :?> ConnectivityManager
+            if isNull cm then false
+            else
+                // Check all active networks for VPN transport
+                let networks = cm.GetAllNetworks()
+                if isNull networks then false
+                else
+                    networks
+                    |> Array.exists (fun net ->
+                        if isNull net then false
+                        else
+                            let caps = cm.GetNetworkCapabilities(net)
+                            if isNull caps then false
+                            else caps.HasTransport(TransportType.Vpn)
+                    )
+        with
+        | _ -> false
+
+
     /// Requires Android permission: android.permission.ACCESS_NETWORK_STATE
     let getPhysicalInterfaceName() =
         let ctx = Application.Context
@@ -275,6 +300,8 @@ module ConfigManager =
     // SharedPreferences constants
     let private preferencesName = "SoftellectVpn"
     let private vpnConnectionNameKey = "vpnConnectionName"
+    let private batteryHintShownKey = "batteryHintShown"  // Spec 065: One-time hint flag
+    let private wasOtherVpnBlockingKey = "wasOtherVpnBlocking"  // Spec 065: Track blocking state for logging
 
 
     /// Load persisted VPN connection name from SharedPreferences.
@@ -300,6 +327,48 @@ module ConfigManager =
         with
         | ex ->
             Logger.logError $"persistVpnConnectionName: Failed to persist: {ex.Message}"
+
+
+    /// Spec 065: Check if battery optimization hint has been shown.
+    let hasBatteryHintBeenShown (context: Context) : bool =
+        try
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            prefs.GetBoolean(batteryHintShownKey, false)
+        with
+        | _ -> false
+
+
+    /// Spec 065: Mark battery optimization hint as shown.
+    let markBatteryHintShown (context: Context) : unit =
+        try
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            let editor = prefs.Edit()
+            editor.PutBoolean(batteryHintShownKey, true) |> ignore
+            editor.Apply()
+        with
+        | ex ->
+            Logger.logError $"markBatteryHintShown: Failed to persist: {ex.Message}"
+
+
+    /// Spec 065: Get the last "other VPN blocking" state for logging state changes.
+    let getWasOtherVpnBlocking (context: Context) : bool =
+        try
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            prefs.GetBoolean(wasOtherVpnBlockingKey, false)
+        with
+        | _ -> false
+
+
+    /// Spec 065: Persist the "other VPN blocking" state.
+    let setWasOtherVpnBlocking (context: Context) (blocking: bool) : unit =
+        try
+            let prefs = context.GetSharedPreferences(preferencesName, FileCreationMode.Private)
+            let editor = prefs.Edit()
+            editor.PutBoolean(wasOtherVpnBlockingKey, blocking) |> ignore
+            editor.Apply()
+        with
+        | ex ->
+            Logger.logError $"setWasOtherVpnBlocking: Failed to persist: {ex.Message}"
 
 
     /// Parse VPN connections from config dictionary.
@@ -385,8 +454,11 @@ module ConfigManager =
                         serverPublicKeyPath = FolderName String.Empty
                         localLanExclusions = []
                         vpnTransportProtocol = UDP_Push
-                        physicalGatewayIp = getPhysicalGatewayIp()
-                        physicalInterfaceName = getPhysicalInterfaceName()
+                        physicalGatewayInfo =
+                            {
+                                gatewayIp = getPhysicalGatewayIp()
+                                interfaceName = getPhysicalInterfaceName()
+                            }
                         useEncryption = config.useEncryption
                         encryptionType = encryptionType
                     }
