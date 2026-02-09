@@ -68,6 +68,13 @@ function Reinstall-WindowsService {
         # Creating Windows Service using all provided parameters.
         Write-ServiceLog -Message "Installing service: $ServiceName with user name: '$Login'..."
         New-Service -Name $ServiceName -BinaryPathName $BinaryPath -Description $Description -DisplayName $ServiceName -StartupType $StartupType -Credential $mycreds
+
+        Write-ServiceLog -Message "Setting delayded start..."
+        sc.exe config $ServiceName start= delayed-auto
+
+        Write-ServiceLog -Message "Setting network dependencies..."
+        sc.exe config $ServiceName depend= NlaSvc/Netman/Dnscache
+
         Write-ServiceLog -Message "Installed service: $ServiceName."
 
         # Trying to start new service.

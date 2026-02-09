@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>10.0.102.44</Version>
-    <PackageVersion>10.0.102.44</PackageVersion>
+    <Version>10.0.102.45</Version>
+    <PackageVersion>10.0.102.45</PackageVersion>
     <Description>Softellect Math Library provides primitive mathematical types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
