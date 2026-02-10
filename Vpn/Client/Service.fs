@@ -7,6 +7,7 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Win32
 open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
+open Softellect.Vpn.Client.NetworkDetector
 open Softellect.Wcf.Common
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
@@ -117,6 +118,23 @@ module Service =
             physicalGatewayIp = data.clientAccessInfo.physicalGatewayInfo.gatewayIp
             physicalInterfaceName = data.clientAccessInfo.physicalGatewayInfo.interfaceName
         }
+
+
+    let waitForNetworkConnection () =
+        let minDelayMs = 30_000
+        let maxDelayMs = 300_000
+
+        let rec wait delayMs =
+            match tryDetectPhysicalNetwork () with
+            | Ok networkInfo ->
+                Logger.logInfo $"physical network detected - gateway = '{networkInfo.gatewayIp}', interface = '{networkInfo.interfaceName}'."
+            | Error e ->
+                Logger.logWarn $"physical network not detected: '{e}'. Retrying in {delayMs / 1000} seconds..."
+                Thread.Sleep(delayMs)
+                let newDelayMs = min (delayMs + minDelayMs) maxDelayMs
+                wait newDelayMs
+
+        wait minDelayMs
 
 
     /// Tunnel wrapper that implements IPacketInjector for a push client.
@@ -422,6 +440,7 @@ module Service =
                     Ok ()
                 else
                     Logger.logInfo "Starting VPN connection..."
+                    waitForNetworkConnection ()
 
                     // Enable kill-switch FIRST - this is a critical startup requirement
                     match enableKillSwitch data with

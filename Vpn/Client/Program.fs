@@ -1,7 +1,6 @@
 namespace Softellect.Vpn.Client
 
 open System.IO
-open System.Threading
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Softellect.Sys.Logging
@@ -57,22 +56,6 @@ module Program =
                 | Error e ->
                     Logger.logError $"Failed to import server public key: %A{e}"
                     Error $"Failed to import server public key: %A{e}"
-
-    let private waitForNetworkConnection () =
-        let minDelayMs = 30_000
-        let maxDelayMs = 300_000
-
-        let rec wait delayMs =
-            match tryDetectPhysicalNetwork () with
-            | Ok networkInfo ->
-                Logger.logInfo $"waitForNetworkConnection: physical network detected - gateway = '{networkInfo.gatewayIp}', interface = '{networkInfo.interfaceName}'."
-            | Error e ->
-                Logger.logWarn $"waitForNetworkConnection: physical network not detected: '{e}'. Retrying in {delayMs / 1000} seconds..."
-                Thread.Sleep(delayMs)
-                let newDelayMs = min (delayMs + minDelayMs) maxDelayMs
-                wait newDelayMs
-
-        wait minDelayMs
 
 
     let getClientService (serviceData : VpnClientServiceData) (autoStart: bool) =
