@@ -82,6 +82,10 @@ module Program =
 
     let vpnClientMain programName argv =
         setLogLevel()
+
+        // Wait for physical network to be available before starting VPN.
+        waitForNetworkConnection()
+
         let clientAccessInfo = loadVpnClientAccessInfo tryDetectPhysicalNetwork
         let adminAccessInfo = loadAdminAccessInfo()
         let autoStart = loadAutoStart() || (not (isService())) // If we run as EXE, then connect to VPN.
@@ -100,9 +104,6 @@ module Program =
                         clientPublicKey = clientPublicKey
                         serverPublicKey = serverPublicKey
                     }
-
-                // Wait for physical network to be available before starting VPN.
-                waitForNetworkConnection ()
 
                 // Create the VPN client service (implements both IHostedService and IAdminService)
                 let vpnService = getClientService serviceData autoStart
