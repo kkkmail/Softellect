@@ -57,6 +57,7 @@ module Program =
                     Logger.logError $"Failed to import server public key: %A{e}"
                     Error $"Failed to import server public key: %A{e}"
 
+
     let getClientService (serviceData : VpnClientServiceData) (autoStart: bool) =
         match serviceData.clientAccessInfo.vpnTransportProtocol with
         | UDP_Push -> VpnPushClientService(serviceData, autoStart)
@@ -64,6 +65,10 @@ module Program =
 
     let vpnClientMain programName argv =
         setLogLevel()
+
+        // Wait for physical network to be available before starting VPN.
+        waitForNetworkConnection()
+
         let clientAccessInfo = loadVpnClientAccessInfo tryDetectPhysicalNetwork
         let adminAccessInfo = loadAdminAccessInfo()
         let autoStart = loadAutoStart() || (not (isService())) // If we run as EXE, then connect to VPN.
