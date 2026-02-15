@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>10.0.102.45</Version>
-    <PackageVersion>10.0.102.45</PackageVersion>
+    <Version>10.0.102.46</Version>
+    <PackageVersion>10.0.102.46</PackageVersion>
     <Description>Softellect WorkerNode Administration ...</Description>
     <PackageTags>client;server;framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>

@@ -8,8 +8,8 @@
     <Authors>Konstantin Konstantinov</Authors>
     <Company>Softellect Systems, Inc.</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>10.0.102.45</Version>
-    <PackageVersion>10.0.102.45</PackageVersion>
+    <Version>10.0.102.46</Version>
+    <PackageVersion>10.0.102.46</PackageVersion>
     <Description>Softellect Sys Library provides primitive types and functionality needed by other Softellect packages.</Description>
     <PackageTags>framework</PackageTags>
     <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
