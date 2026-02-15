@@ -1,7 +1,7 @@
 # Softellect VNC - Feasibility Analysis & Recommendations
 
 **Date:** 2026-02-15
-**Status:** Draft v2
+**Status:** Final
 
 ---
 
@@ -30,7 +30,7 @@ Non-goals: multi-monitor negotiation, audio, printing, chat, scaling to thousand
 
 | Capability | Existing Code | Reuse Assessment |
 |---|---|---|
-| **UDP data plane** | `Vpn/Core/UdpProtocol.fs` - push datagrams with AES per-packet encryption, bounded packet queues, reassembly, keepalive | **Direct reuse.** Screen frame data goes over UDP. The `BoundedPacketQueue`, `buildPushDatagram`, `tryParsePushDatagram`, `derivePacketAesKey` are all directly applicable. |
+| **UDP data plane** | `Vpn/Core/UdpProtocol.fs` - push datagrams with AES per-packet encryption, bounded packet queues, reassembly, keepalive. Will be extracted into `Softellect.Transport` (see Section 13). | **Direct reuse via Softellect.Transport.** Screen frame data goes over UDP. The `BoundedPacketQueue`, `buildPushDatagram`, `tryParsePushDatagram`, `derivePacketAesKey` are all directly applicable. |
 | **WCF control plane** | `Wcf/` - CoreWCF wrapper with NetTcp/Http bindings, FsPickler binary+gzip serialization, `tryReply`/`tryCommunicate` pattern | **Direct reuse.** Auth handshake, session management, clipboard sync, file transfer control messages all go here. |
 | **Pre-shared key auth** | `Sys/Crypto.fs` - RSA 4096-bit keys, AES hybrid encryption, sign+encrypt/decrypt+verify. `Vpn/Core/KeyManagement.fs` - key import/export. `Vpn/Server/WcfServer.fs` - `tryDecryptAndVerifyRequest`/`trySignAndEncryptResponse` pattern. | **Direct reuse.** The exact same auth flow (client sends encrypted+signed request, server decrypts with private key, verifies with client public key, responds encrypted with client public key) works for VNC. |
 | **Windows service hosting** | `Wcf/Program.fs` - `wcfMain` with `Host.CreateDefaultBuilder().UseWindowsService()`, `IHostedService` pattern. `Sys/ServiceInstaller.fs` - install/uninstall/start/stop. | **Direct reuse.** The VNC service host follows the same pattern as `VpnServer`. |
@@ -264,7 +264,7 @@ ClipboardData:
 ```
 Vnc/
   Core/
-    Core.fsproj          -- References: Sys, Wcf
+    Core.fsproj          -- References: Sys, Wcf, Transport
     Primitives.fs        -- VncMachineName, VncMachineId, VncSessionId, FrameData, InputEvent, etc.
     Errors.fs            -- VncError DU
     ServiceInfo.fs       -- IVncService, IVncWcfService contracts
@@ -525,8 +525,19 @@ The repeater code will use `#if LINUX` only for the hosting difference (`UseWind
 
 ## 7. Build Order & Milestones
 
+### Phase 0: Softellect.Transport Extraction (prerequisite)
+1. Create `Transport/Transport.fsproj` with NuGet packaging (see Section 13)
+2. Move `UdpProtocol.fs` from `Vpn/Core/` to `Transport/`, change namespace to `Softellect.Transport`
+3. Update `Vpn/Core/Core.fsproj` to reference `Transport` and remove `UdpProtocol.fs`
+4. Update all `open Softellect.Vpn.Core.UdpProtocol` to `open Softellect.Transport.UdpProtocol` in VPN codebase
+5. Add `Transport` to `IncrementBuildNumber.fsx` and `copyPackages.bat`
+6. Create `TransportTests/` with tests (see Section 13.9)
+7. Add `Transport` and `TransportTests` to `SoftellectMain.slnx`
+8. Build and run all tests to verify no regressions
+9. **Validates:** Transport library works standalone, VPN still passes all tests
+
 ### Phase 1: Screen Capture Proof of Concept
-1. `Vnc/Interop/` - DXGI Desktop Duplication wrapper in C#
+1. `Vnc/Interop/` - DXGI Desktop Duplication wrapper in C# (evaluate Vortice.DirectX first)
 2. `Vnc/Core/` - Frame data types, basic encoding (dirty rects + GZip)
 3. Simple console app: capture screen, encode, decode, display in a WinForms window on the same machine
 4. **Validates:** DXGI works, encoding pipeline, rendering
@@ -605,7 +616,7 @@ The repeater code will use `#if LINUX` only for the hosting difference (`UseWind
 
 1. **Start with Phase 1 (DXGI PoC).** The screen capture C# interop is the single piece with the most unknowns. Validate it first in isolation before building the full pipeline.
 
-2. **Reuse, don't rewrite.** Reference `Softellect.Sys`, `Softellect.Wcf`, and `Softellect.Vpn.Core` directly. The VPN's UDP protocol, crypto, and service hosting code should be consumed as library dependencies, not copied.
+2. **Reuse, don't rewrite.** Reference `Softellect.Sys`, `Softellect.Wcf`, and `Softellect.Transport` directly. The transport-level code (UDP protocol, bounded queues, reassembly, per-packet AES) will be extracted from `Vpn.Core` into a new `Softellect.Transport` NuGet package (see Section 13). Both VPN and VNC then reference `Softellect.Transport` instead of VNC depending on `Vpn.Core`.
 
 3. **Follow the VPN's architectural pattern exactly.** The VNC project structure should mirror the VPN:
    - `Vnc/Core/` = `Vpn/Core/` (primitives, errors, protocol, app settings)
@@ -661,18 +672,238 @@ Based on examination of UltraVNC's architecture:
 **Existing Softellect packages reused:**
 - `Softellect.Sys` (crypto, errors, logging, config, service installer, core utilities)
 - `Softellect.Wcf` (CoreWCF wrapper, client/service, serialization)
-- `Softellect.Vpn.Core` (UDP protocol, bounded queues, reassembly - consider extracting the non-VPN-specific parts into `Softellect.Sys` or a shared transport library)
+- `Softellect.Transport` (NEW - UDP push protocol, bounded packet queues, reassembly, per-packet AES key derivation; extracted from `Vpn/Core/UdpProtocol.fs`. See Section 13.)
 
 ---
 
-## 12. Open Questions for Owner
+## 12. Decisions (Resolved)
 
-1. **Viewer technology:** WinForms (simplest, fastest to build) vs WPF (better rendering pipeline, supports GPU composition) vs bare SDL2/OpenGL (lowest latency but more work). **Recommendation: WinForms for v1.**
+1. **Viewer technology:** WinForms for v1. Simplest, fastest to build.
 
-2. **Frame encoding:** Start with raw dirty rects + GZip, or invest in a codec (JPEG/WebP per rect) from the start? **Recommendation: GZip first, profile later.**
+2. **Frame encoding:** GZip first (already integrated via `BinaryZippedFormat`). Profile later, switch to LZ4/Zstd only if GZip is a measured bottleneck.
 
-3. **Repeater deployment:** Single repeater, or support for multiple repeaters with failover? **Recommendation: Single repeater for v1.**
+3. **Repeater deployment:** Single repeater for v1.
 
-4. **Shared transport library:** The UDP push protocol (`UdpProtocol.fs`), `BoundedPacketQueue`, and `derivePacketAesKey` are not VPN-specific. Consider extracting them into `Softellect.Sys` or a new `Softellect.Transport` library so both VPN and VNC reference the same code without VNC depending on `Vpn.Core`. **Recommendation: Yes, do this before starting VNC development.**
+4. **Shared transport library:** Extract into `Softellect.Transport` as a NuGet package. See Section 13 for full specification.
 
-5. **DXGI wrapper approach:** Raw P/Invoke in C# vs using `Vortice.DirectX` (a well-maintained, lightweight .NET wrapper for DirectX APIs including DXGI). Vortice would reduce the C# interop code significantly. **Recommendation: Evaluate Vortice - if it provides clean DXGI Desktop Duplication support, it saves writing COM interop by hand.**
+5. **DXGI wrapper approach:** Evaluate `Vortice.DirectX` first. If it provides clean DXGI Desktop Duplication support, use it to avoid writing COM interop by hand. Fall back to raw P/Invoke only if Vortice introduces unacceptable overhead or limitations.
+
+---
+
+## 13. Softellect.Transport - Shared Transport Library
+
+### 13.1 Purpose
+
+Extract the transport-agnostic UDP push protocol code from `Vpn/Core/UdpProtocol.fs` into a new NuGet package `Softellect.Transport`. Both `Softellect.Vpn.Core` and `Softellect.Vnc.Core` will reference `Softellect.Transport` instead of duplicating this code. This extraction must happen **before** starting VNC development.
+
+### 13.2 What Moves to Softellect.Transport
+
+From `Vpn/Core/UdpProtocol.fs` (the entire module, refactored):
+
+| Code | Current Location | Notes |
+|---|---|---|
+| **Push datagram constants** (`PushSessionIdSize`, `PushNonceSize`, `PushHeaderSize`, `PushMtu`, `MtuSize`, `PushMaxPayload`, `PushKeepaliveIntervalMs`, `PushSessionFreshnessSeconds`, `PushQueueMaxBytes`, `PushQueueMaxPackets`, `PushStatsIntervalMs`) | `UdpProtocol.fs` lines 13-93 | Transport-level constants. Move as-is. |
+| **Push command types** (`PushCmdData`, `PushCmdKeepalive`, `PushCmdControl`) | `UdpProtocol.fs` lines 63-69 | Generic command framing. |
+| **Reassembly** (`ReassemblyState`, `CleanupIntervalMs`, `ServerReassemblyTimeoutMs`, `ServerReceiveTimeoutMs`, `SendBufferSize`) | `UdpProtocol.fs` lines 36-45, 52-59 | Generic packet reassembly. |
+| **Per-packet AES key derivation** (`derivePacketAesKey`) | `UdpProtocol.fs` lines 109-121 | Uses `Sys/Crypto.fs` `AesKey`. Generic crypto, not VPN-specific. |
+| **Datagram building/parsing** (`packByteAndGuid`, `unpackByteAndGuid`, `buildPushDatagram`, `tryParsePushDatagram`, `buildPayload`, `tryParsePayload`) | `UdpProtocol.fs` lines 124-255 | Core framing protocol. |
+| **BoundedPacketQueue** | `UdpProtocol.fs` lines 260-334 | Thread-safe bounded queue with head-drop. Completely generic. |
+| **AtomicCounter** | `UdpProtocol.fs` lines 338-345 | Generic observability counter. |
+| **ClientPushStats**, **ServerPushStats** | `UdpProtocol.fs` lines 349-427 | Generalize to `SenderStats` / `ReceiverStats` or keep as-is with VPN-agnostic naming. |
+
+**What stays in `Vpn/Core/`:**
+- `Vpn/Core/Primitives.fs` - VPN-specific types (`VpnServerId`, `VpnClientId`, `VpnSessionId`, etc.)
+- `Vpn/Core/Errors.fs` - VPN-specific error types
+- `Vpn/Core/ServiceInfo.fs` - VPN service contracts
+- `Vpn/Core/KeyManagement.fs` - VPN key management (references `Sys/Crypto.fs` directly)
+- `Vpn/Core/PacketDebug.fs` - VPN packet debugging (IP/TCP/UDP/ICMP parsing)
+- `Vpn/Core/AppSettings.fs` - VPN configuration
+
+After extraction, `Vpn/Core/Core.fsproj` adds a reference to `Softellect.Transport` and removes the code that moved.
+
+### 13.3 Project File: `Transport/Transport.fsproj`
+
+Following the established pattern from `Sys/Sys.fsproj` and `Wcf/Wcf.fsproj`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Platforms>x64</Platforms>
+    <AssemblyName>Softellect.Transport</AssemblyName>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Konstantin Konstantinov</Authors>
+    <Company>Softellect Systems, Inc.</Company>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>10.0.102.XX</Version>
+    <PackageVersion>10.0.102.XX</PackageVersion>
+    <Description>Softellect Transport Library provides UDP push protocol, bounded packet queues, packet reassembly, and per-packet AES key derivation for building encrypted datagram-based communication.</Description>
+    <PackageTags>transport;udp;encryption;framework</PackageTags>
+    <RepositoryUrl>https://github.com/kkkmail/Softellect</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/kkkmail/Softellect/tree/master/Transport</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>DEBUG</DefineConstants>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
+    <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Link="README.md" Pack="true" PackagePath="\" >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Compile Include="UdpProtocol.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Sys\Sys.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
+  </ItemGroup>
+</Project>
+```
+
+Key properties matching existing packages:
+- `GeneratePackageOnBuild=true` (emits `.nupkg` on build, same as `Sys.fsproj` line 10 and `Wcf.fsproj` line 7)
+- `Version` / `PackageVersion` managed by `IncrementBuildNumber.fsx`
+- References `Softellect.Sys` (for `AesKey`, `Logging`, etc.)
+- Does NOT reference `Softellect.Wcf` (transport layer is below WCF)
+
+### 13.4 Directory Structure
+
+```
+Transport/
+  Transport.fsproj       -- NuGet package project
+  UdpProtocol.fs         -- Extracted from Vpn/Core/UdpProtocol.fs
+```
+
+The namespace changes from `Softellect.Vpn.Core` to `Softellect.Transport`:
+```fsharp
+namespace Softellect.Transport
+
+module UdpProtocol =
+    // ... same code, new namespace
+```
+
+### 13.5 IncrementBuildNumber.fsx Update
+
+Add `Softellect.Transport` to the `projectsToUpdate` list in `PreBuild/IncrementBuildNumber.fsx`:
+
+```fsharp
+let projectsToUpdate = [
+    ("Sys", "..\Sys\Sys.fsproj")
+    ("Wcf", @"..\Wcf\Wcf.fsproj")
+    ("Transport", @"..\Transport\Transport.fsproj")        // <-- NEW
+    ("Analytics", @"..\Analytics\Analytics.fsproj")
+    ("Math", @"..\Math\Math.fsproj")
+    // ... rest unchanged
+]
+```
+
+This ensures:
+- Build number increments propagate to `Transport.fsproj`
+- `Version` and `PackageVersion` stay in sync across all packages
+- The NuGet package version matches the rest of the Softellect package family
+
+### 13.6 copyPackages.bat Update
+
+Add a line to copy the Transport NuGet package:
+
+```bat
+copy /b /y .\Transport\bin\x64\Release\*.nupkg  ..\Packages\
+```
+
+### 13.7 Solution File Update
+
+Add `Transport/Transport.fsproj` to `SoftellectMain.slnx`.
+
+### 13.8 Vpn/Core/Core.fsproj Update
+
+After extraction, `Vpn/Core/Core.fsproj` adds:
+```xml
+<ProjectReference Include="..\..\Transport\Transport.fsproj" />
+```
+
+And removes the `<Compile Include="UdpProtocol.fs" />` line, since that code now lives in `Transport/`.
+
+`Vpn/Core/` files that imported `Softellect.Vpn.Core.UdpProtocol` will change their `open` to `Softellect.Transport.UdpProtocol`.
+
+### 13.9 TransportTests - Test Project
+
+A new test project `TransportTests/TransportTests.fsproj` following the `SysTests` pattern:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Softellect.Tests.TransportTests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <IsTestProject>true</IsTestProject>
+    <Platforms>x64</Platforms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <!-- Debug/Release configs same as SysTests -->
+  <ItemGroup>
+    <Compile Include="UdpProtocolTests.fs" />
+    <Compile Include="BoundedPacketQueueTests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="FluentAssertions" Version="[7.2.0]" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <ProjectReference Include="..\Transport\Transport.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="10.0.102" />
+  </ItemGroup>
+</Project>
+```
+
+**Test coverage for `UdpProtocolTests.fs`:**
+
+| Test | What it verifies |
+|---|---|
+| `buildPushDatagram_roundtrip` | Build a datagram, parse it back; sessionId, nonce, and payload match. |
+| `buildPushDatagram_maxPayload` | Payload at exactly `PushMaxPayload` bytes succeeds. |
+| `buildPushDatagram_oversize_throws` | Payload exceeding `PushMaxPayload` raises exception. |
+| `tryParsePushDatagram_tooShort` | Data shorter than `PushHeaderSize` returns `Error`. |
+| `buildPayload_roundtrip` | Build a command payload, parse it back; command byte and data match. |
+| `tryParsePayload_empty` | Empty payload returns `Error`. |
+| `derivePacketAesKey_deterministic` | Same session key + nonce always produces the same AES key and IV. |
+| `derivePacketAesKey_different_nonces` | Different nonces produce different keys. |
+| `derivePacketAesKey_keyLength` | Derived key is 32 bytes, IV is 16 bytes. |
+| `packByteAndGuid_roundtrip` | Various sessionId and Guid combinations round-trip correctly (tested via `buildPushDatagram`/`tryParsePushDatagram`). |
+
+**Test coverage for `BoundedPacketQueueTests.fs`:**
+
+| Test | What it verifies |
+|---|---|
+| `enqueue_dequeue_single` | Enqueue one packet, dequeue returns it. |
+| `enqueue_dequeue_fifo` | Multiple packets dequeue in FIFO order. |
+| `tryDequeue_empty` | Empty queue returns `None`. |
+| `headDrop_maxPackets` | When `maxPackets` exceeded, oldest packet is dropped. |
+| `headDrop_maxBytes` | When `maxBytes` exceeded, oldest packets dropped until there is room. |
+| `oversizePacket_rejected` | Single packet larger than `maxBytes` returns `false`. |
+| `dequeueMany_partial` | `dequeueMany(n)` with fewer than `n` packets returns all available. |
+| `dequeueMany_limit` | `dequeueMany(n)` with more than `n` packets returns exactly `n`. |
+| `wait_signaled` | `wait()` returns `true` after enqueue. |
+| `wait_timeout` | `wait()` returns `false` on empty queue after timeout. |
+| `droppedCounters_accurate` | `droppedPackets` and `droppedBytes` reflect actual drops. |
+| `resetDropCounters` | Counters reset to zero. |
+| `atomicCounter_increment_add` | `AtomicCounter` increment and add work correctly. |
+| `atomicCounter_reset` | `AtomicCounter` reset returns previous value and sets to zero. |
+
+Run with:
+```bash
+dotnet test TransportTests/TransportTests.fsproj
+```
