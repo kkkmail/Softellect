@@ -4,7 +4,12 @@
       "Bash(find:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\18\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" SoftellectMain.slnx /p:Configuration=Release /p:Platform=x64)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\18\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" SoftellectMain.slnx -p:Configuration=Release -p:Platform=x64)",
+      "Bash(dotnet test:*)",
+      "Bash(ls:*)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\18\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Softellect\\\\SoftellectMain.slnx\" -p:Configuration=Release -p:Platform=x64)"
     ]
   }
 }

@@ -15,6 +15,7 @@ let checkTimeStamp = false
 let projectsToUpdate = [
     ("Sys", "..\Sys\Sys.fsproj")
     ("Wcf", @"..\Wcf\Wcf.fsproj")
+    ("Transport", @"..\Transport\Transport.fsproj")
     ("Analytics", @"..\Analytics\Analytics.fsproj")
     ("Math", @"..\Math\Math.fsproj")
     ("Messaging", @"..\Messaging\Messaging.fsproj")

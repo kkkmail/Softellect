@@ -10,7 +10,7 @@ open Softellect.Sys.Crypto
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 
 module UdpClient =
 
@@ -51,7 +51,7 @@ module UdpClient =
         let serverEndpoint = IPEndPoint(serverIp.ipAddress, serverPort)
         let udpClient = new UdpClient()
         let clientCts = new CancellationTokenSource()
-        let clientPushStats = ClientPushStats()
+        let clientPushStats = SenderPushStats()
 
         // Encryption config
         let useEncryption = data.clientAccessInfo.useEncryption
@@ -119,7 +119,8 @@ module UdpClient =
                         clientPushStats.udpRxBytes.addInt(rawData.Length)
 
                         match tryParsePushDatagram rawData with
-                        | Ok (receivedSessionId, nonce, payloadBytes) ->
+                        | Ok (receivedPushSessionId, nonce, payloadBytes) ->
+                            let receivedSessionId = VpnSessionId.fromPushSessionId receivedPushSessionId
                             // Verify sessionId matches current auth
                             if receivedSessionId <> auth.sessionId then
                                 // Session mismatch - log and ignore (may be stale packet from old session)
@@ -210,7 +211,7 @@ module UdpClient =
                                             clientPushStats.droppedMtu.increment()
                                             Logger.logWarn $"Push client: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload})"
                                         else
-                                            let datagram = buildPushDatagram auth.sessionId nonce finalPayload
+                                            let datagram = buildPushDatagram auth.sessionId.toPushSessionId nonce finalPayload
 
                                             try
                                                 udpClient.Send(datagram, datagram.Length) |> ignore
@@ -252,7 +253,7 @@ module UdpClient =
                             // Encrypt if needed using current auth's session key
                             match encryptPayload auth.sessionAesKey plaintextPayload nonce with
                             | Ok finalPayload ->
-                                let datagram = buildPushDatagram auth.sessionId nonce finalPayload
+                                let datagram = buildPushDatagram auth.sessionId.toPushSessionId nonce finalPayload
 
                                 try
                                     udpClient.Send(datagram, datagram.Length) |> ignore

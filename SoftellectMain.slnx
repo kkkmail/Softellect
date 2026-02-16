@@ -127,6 +127,9 @@
     <Project Path="SysTests/SysTests.fsproj">
       <Platform Project="x64" />
     </Project>
+    <Project Path="TransportTests/TransportTests.fsproj">
+      <Platform Project="x64" />
+    </Project>
   </Folder>
   <Folder Name="/Tests/VpnTests/">
     <Project Path="Vpn/Tests/TestClient/TestClient.fsproj">
@@ -147,6 +150,23 @@
       <Platform Project="x64" />
     </Project>
     <Project Path="Vpn/LinuxServer/LinuxServer.fsproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Folder Name="/Vnc/">
+    <Project Path="Vnc/Core/Core.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vnc/Interop/Interop.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vnc/Service/Service.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vnc/Viewer/Viewer.fsproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="Vnc/Adm/Adm.fsproj">
       <Platform Project="x64" />
     </Project>
   </Folder>
@@ -174,6 +194,9 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="Wcf/Wcf.fsproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="Transport/Transport.fsproj">
     <Platform Project="x64" />
   </Project>
 </Solution>

@@ -3,6 +3,7 @@ namespace Softellect.Vpn.Core
 open System
 open Softellect.Sys.Primitives
 open Softellect.Sys.AppSettings
+open Softellect.Transport.UdpProtocol
 
 module Primitives =
 
@@ -163,6 +164,8 @@ module Primitives =
         | VpnSessionId of byte
 
         member this.value = let (VpnSessionId v) = this in v
+        member this.toPushSessionId = PushSessionId this.value
+        static member fromPushSessionId (PushSessionId v) = VpnSessionId v
 
         static member serverReserved = VpnSessionId 0uy
 

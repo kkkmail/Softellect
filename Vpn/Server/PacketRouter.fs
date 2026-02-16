@@ -8,7 +8,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 open Softellect.Vpn.Server.DnsProxy
 open Softellect.Vpn.Server.IcmpProxy
 open Softellect.Vpn.Server.ExternalInterface

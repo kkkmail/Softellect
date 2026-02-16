@@ -7,7 +7,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Primitives
 open Softellect.Vpn.Core.PacketDebug
 open Softellect.Vpn.Core.Primitives
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 open Softellect.Vpn.Interop
 
 module Tunnel =

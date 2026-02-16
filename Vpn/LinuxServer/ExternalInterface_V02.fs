@@ -9,7 +9,7 @@ open Microsoft.Win32.SafeHandles
 
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 
 /// Linux external interface using TUN.
 /// Decrypted IP packets are written to TUN.

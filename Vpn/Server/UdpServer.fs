@@ -12,7 +12,7 @@ open Softellect.Sys.Logging
 open Softellect.Sys.Crypto
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.ServiceInfo
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 open Softellect.Vpn.Server.ClientRegistry
 open Softellect.Vpn.Server.Service
 
@@ -30,7 +30,7 @@ module UdpServer =
 
         let serverPort = data.serverAccessInfo.serviceAccessInfo.getServicePort().value
         let reassemblyMap = ConcurrentDictionary<ServerReassemblyKey, ReassemblyState>()
-        let pushStats = ServerPushStats()
+        let pushStats = ReceiverPushStats()
         let mutable udpClient : UdpClient option = None
         let mutable cancellationTokenSource : CancellationTokenSource option = None
         let reassemblyTimeoutTicks = int64 ServerReassemblyTimeoutMs * Stopwatch.Frequency / 1000L
@@ -105,7 +105,8 @@ module UdpServer =
                         pushStats.udpRxBytes.addInt(rawData.Length)
 
                         match tryParsePushDatagram rawData with
-                        | Ok (sessionId, nonce, payloadBytes) ->
+                        | Ok (pushSessionId, nonce, payloadBytes) ->
+                            let sessionId = VpnSessionId.fromPushSessionId pushSessionId
                             let capturedEp = IPEndPoint(remoteEp.Address, remoteEp.Port)
 
                             // Check if the session was kicked (stop processing)
@@ -197,7 +198,7 @@ module UdpServer =
                                                                 Logger.logWarn $"Push: Dropping oversized packet ({finalPayload.Length} > {PushMaxPayload}) for {session.clientId.value}"
                                                                 None
                                                             else
-                                                                let datagram = buildPushDatagram session.sessionId nonce finalPayload
+                                                                let datagram = buildPushDatagram session.sessionId.toPushSessionId nonce finalPayload
                                                                 Some (client.SendAsync(datagram, datagram.Length, endpoint))
                                                         | Error () ->
                                                             sessionKicked <- true

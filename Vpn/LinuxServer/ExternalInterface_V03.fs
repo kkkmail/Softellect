@@ -7,7 +7,7 @@ open System.Threading
 
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 
 /// Linux external interface for sending/receiving raw IPv4 packets to/from the real internet.
 /// Linux does NOT support SocketType.Raw + ProtocolType.IP (EPROTONOSUPPORT).

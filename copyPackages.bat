@@ -12,6 +12,7 @@ copy /b /y .\Analytics\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Math\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Sys\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y .\Wcf\bin\x64\Release\*.nupkg  ..\Packages\
+copy /b /y .\Transport\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y ..\OdePackInterop\OdePackInterop\bin\x64\Release\*.nupkg  ..\Packages\
 copy /b /y ..\AddressProcessor\AddressProcessor\bin\Release\*.nupkg  ..\Packages\
 copy /b /y ..\Berreman\Berreman\Analytics\bin\x64\Release\*.nupkg  ..\Packages\ 

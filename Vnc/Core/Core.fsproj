@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>Softellect.Vpn.Core</AssemblyName>
+    <AssemblyName>Softellect.Vnc.Core</AssemblyName>
     <Platforms>x64</Platforms>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -19,8 +19,9 @@
   <ItemGroup>
     <Compile Include="Primitives.fs" />
     <Compile Include="Errors.fs" />
-    <Compile Include="KeyManagement.fs" />
-    <Compile Include="PacketDebug.fs" />
+    <Compile Include="CryptoHelpers.fs" />
+    <Compile Include="Protocol.fs" />
+    <Compile Include="FileSystemTypes.fs" />
     <Compile Include="ServiceInfo.fs" />
     <Compile Include="AppSettings.fs" />
   </ItemGroup>

@@ -7,7 +7,7 @@ open System.Threading
 
 open Softellect.Sys.Logging
 open Softellect.Vpn.Core.PacketDebug
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 
 /// User-space external interface for sending/receiving raw IPv4 packets to/from the real internet.
 /// This module handles both TCP and UDP traffic by working at the raw IP packet level.

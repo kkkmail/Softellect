@@ -11,7 +11,7 @@ open Softellect.Vpn.Core.AppSettings
 open Softellect.Vpn.Core.Primitives
 open Softellect.Vpn.Core.Errors
 open Softellect.Vpn.Core.ServiceInfo
-open Softellect.Vpn.Core.UdpProtocol
+open Softellect.Transport.UdpProtocol
 open Softellect.Sys.Core
 open System.IO
 

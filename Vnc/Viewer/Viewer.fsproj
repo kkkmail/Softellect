@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>Softellect.Vpn.Core</AssemblyName>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>Softellect.Vnc.Viewer</AssemblyName>
     <Platforms>x64</Platforms>
+    <UseWindowsForms>true</UseWindowsForms>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
     <PlatformTarget>x64</PlatformTarget>
+    <OtherFlags>--warnaserror+:25 --platform:x64</OtherFlags>
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -17,17 +19,17 @@
     <NoWarn>NU5100;NU5110;NU5111;NU1903</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Primitives.fs" />
-    <Compile Include="Errors.fs" />
-    <Compile Include="KeyManagement.fs" />
-    <Compile Include="PacketDebug.fs" />
-    <Compile Include="ServiceInfo.fs" />
-    <Compile Include="AppSettings.fs" />
+    <Compile Include="WcfClient.fs" />
+    <Compile Include="ScreenRenderer.fs" />
+    <Compile Include="InputCapture.fs" />
+    <Compile Include="ViewerForm.fs" />
+    <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Sys\Sys.fsproj" />
     <ProjectReference Include="..\..\Wcf\Wcf.fsproj" />
     <ProjectReference Include="..\..\Transport\Transport.fsproj" />
+    <ProjectReference Include="..\Core\Core.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="10.0.102" />

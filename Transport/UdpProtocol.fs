@@ -1,4 +1,4 @@
-namespace Softellect.Vpn.Core
+namespace Softellect.Transport
 
 open System
 open System.Collections.Generic
@@ -6,9 +6,13 @@ open System.Diagnostics
 open System.Security.Cryptography
 open System.Threading
 open Softellect.Sys.Crypto
-open Softellect.Vpn.Core.Primitives
 
 module UdpProtocol =
+
+    type PushSessionId =
+        | PushSessionId of byte
+        member this.value = let (PushSessionId v) = this in v
+        static member serverReserved = PushSessionId 0uy
 
     /// New push header layout (spec 041):
     /// sessionId (1 byte) + nonce (16 bytes) + payload
@@ -122,7 +126,7 @@ module UdpProtocol =
 
 
     /// Packs a byte and Guid into a 17-byte array
-    let private packByteAndGuid (VpnSessionId b) (g: Guid) : byte[] =
+    let private packByteAndGuid (PushSessionId b) (g: Guid) : byte[] =
         let guidBytes = g.ToByteArray()
 
         // XOR of all 17 bytes
@@ -173,12 +177,12 @@ module UdpProtocol =
                     guidBytes[gi] <- header[i]
                     gi <- gi + 1
 
-            Ok (VpnSessionId b, Guid(guidBytes))
+            Ok (PushSessionId b, Guid(guidBytes))
 
 
     /// Build a push datagram with the new format (spec 041).
     /// Wire layout: sessionId (1 byte) + nonce (16 bytes) + payload
-    let buildPushDatagram (sessionId: VpnSessionId) (nonce: Guid) (payload: byte[]) : byte[] =
+    let buildPushDatagram (sessionId: PushSessionId) (nonce: Guid) (payload: byte[]) : byte[] =
         let payloadLen = payload.Length
         if payloadLen > PushMaxPayload then
             failwithf $"Payload too large for push datagram: %d{payloadLen} > %d{PushMaxPayload}"
@@ -186,13 +190,6 @@ module UdpProtocol =
         let result = Array.zeroCreate (PushHeaderSize + payloadLen)
         let packedArray = packByteAndGuid sessionId nonce
         Array.Copy(packedArray, 0, result, 0, PushHeaderSize)
-
-        // // sessionId (1 byte)
-        // result[0] <- sessionId.value
-        //
-        // // nonce (16 bytes)
-        // let nonceBytes = nonce.ToByteArray()
-        // Array.Copy(nonceBytes, 0, result, PushSessionIdSize, PushNonceSize)
 
         // payload
         if payloadLen > 0 then
@@ -209,9 +206,6 @@ module UdpProtocol =
         else
             match unpackByteAndGuid data with
             | Ok (sessionId, nonce) ->
-                // let sessionId = data[0] |> VpnSessionId
-                // let nonceBytes = data[1..16]
-                // let nonce = Guid(nonceBytes)
                 let payload =
                     if data.Length > PushHeaderSize then
                         Array.sub data PushHeaderSize (data.Length - PushHeaderSize)
@@ -227,18 +221,6 @@ module UdpProtocol =
         if data.Length > 0 then
             Array.Copy(data, 0, result, 1, data.Length)
         result
-
-
-    // /// Build a push keepalive datagram (command byte only, no data).
-    // let buildPushKeepalive (clientId: VpnClientId) : byte[] =
-    //     let payload = buildPayload PushCmdKeepalive [||]
-    //     buildPushDatagram clientId payload
-
-
-    // /// Build a push data datagram.
-    // let buildPushData (clientId: VpnClientId) (data: byte[]) : byte[] =
-    //     let payload = buildPayload PushCmdData data
-    //     buildPushDatagram clientId payload
 
 
     /// Try to parse plaintext payload into (command, data).
@@ -345,8 +327,8 @@ module UdpProtocol =
         member _.reset() = Interlocked.Exchange(&valueCounter, 0L)
 
 
-    /// Client-side observability counters.
-    type ClientPushStats() =
+    /// Sender-side observability counters.
+    type SenderPushStats() =
         let tunRxPacketsCounter = AtomicCounter()
         let tunRxBytesCounter = AtomicCounter()
         let udpTxDatagramsCounter = AtomicCounter()
@@ -380,15 +362,15 @@ module UdpProtocol =
 
         /// Get stats summary string.
         member this.getSummary() =
-            $"CLIENT PUSH STATS: tun_rx=%d{tunRxPacketsCounter.value}/%d{tunRxBytesCounter.value}B " +
+            $"SENDER PUSH STATS: tun_rx=%d{tunRxPacketsCounter.value}/%d{tunRxBytesCounter.value}B " +
             $"udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B " +
             $"udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
             $"dropped(mtu=%d{droppedMtuCounter.value} outQ=%d{droppedQueueFullOutboundCounter.value} " +
             $"injQ=%d{droppedQueueFullInjectCounter.value})"
 
 
-    /// Server-side observability counters.
-    type ServerPushStats() =
+    /// Receiver-side observability counters.
+    type ReceiverPushStats() =
         let udpRxDatagramsCounter = AtomicCounter()
         let udpRxBytesCounter = AtomicCounter()
         let udpTxDatagramsCounter = AtomicCounter()
@@ -420,7 +402,7 @@ module UdpProtocol =
 
         /// Get stats summary string.
         member this.getSummary() =
-            $"SERVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
+            $"RECEIVER PUSH STATS: udp_rx=%d{udpRxDatagramsCounter.value}/%d{udpRxBytesCounter.value}B " +
             $"udp_tx=%d{udpTxDatagramsCounter.value}/%d{udpTxBytesCounter.value}B " +
             $"dropped(unknown=%d{unknownClientDropsCounter.value} noEp=%d{noEndpointDropsCounter.value} " +
             $"qFull=%d{queueFullDropsCounter.value} mtu=%d{overSizeDropsCounter.value})"
